@@ -9,6 +9,7 @@ public class DeliveryOrder
     public Guid OriginStationId { get; set; }
     public Guid DestinationStationId { get; set; }
     public Guid? DispatcherId { get; set; }
+    public Guid? DeliveryAddressId { get; set; }
     
     public string Status { get; set; } = "PENDING";
     public string? CancelReason { get; set; }
@@ -30,7 +31,9 @@ public class DeliveryOrder
     public LandingStation OriginStation { get; set; } = null!;
     public LandingStation DestinationStation { get; set; } = null!;
     public User? Dispatcher { get; set; }
+    public CustomerAddress? DeliveryAddress { get; set; }
     public FlightMission? FlightMission { get; set; }
     public AiEtaPrediction? AiEtaPrediction { get; set; }
     public ICollection<DeliveryStatusLog> StatusLogs { get; set; } = new List<DeliveryStatusLog>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }

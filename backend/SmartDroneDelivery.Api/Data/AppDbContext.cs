@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
     public DbSet<AiChatSession> AiChatSessions => Set<AiChatSession>();
     public DbSet<AiChatMessage> AiChatMessages => Set<AiChatMessage>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -169,6 +171,11 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Dispatcher)
                 .WithMany(u => u.DispatchedOrders)
                 .HasForeignKey(e => e.DispatcherId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.DeliveryAddress)
+                .WithMany(a => a.DeliveryOrders)
+                .HasForeignKey(e => e.DeliveryAddressId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -317,6 +324,53 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.User)
                 .WithMany(u => u.AuditLogs)
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 16. CustomerAddress
+        modelBuilder.Entity<CustomerAddress>(entity =>
+        {
+            entity.ToTable("customer_addresses");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Label).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.ContactName).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.ContactPhone).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.AddressLine).IsRequired();
+            entity.Property(e => e.Latitude).HasPrecision(9, 6);
+            entity.Property(e => e.Longitude).HasPrecision(9, 6);
+            entity.Property(e => e.IsDefault).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.Addresses)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 17. Notification
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Type).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Message).IsRequired();
+            entity.Property(e => e.IsRead).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+
+            entity.HasIndex(e => new { e.UserId, e.IsRead });
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.Notifications)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.Notifications)
+                .HasForeignKey(e => e.OrderId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

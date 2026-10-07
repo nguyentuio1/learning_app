@@ -22,4 +22,6 @@ public class User
     public ICollection<DeliveryStatusLog> StatusLogs { get; set; } = new List<DeliveryStatusLog>();
     public ICollection<AiChatSession> ChatSessions { get; set; } = new List<AiChatSession>();
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+    public ICollection<CustomerAddress> Addresses { get; set; } = new List<CustomerAddress>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }
