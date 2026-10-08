@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<title>05 · Roles</title>
+<rect width="1440" height="900" fill="#FFFFFF"/>
+<rect x="0" y="0" width="220" height="900" rx="0" fill="#F4F4F4" stroke="none" stroke-width="1"/>
+<line x1="220" y1="0" x2="220" y2="900" stroke="#999999" stroke-width="1"/>
+<text x="24" y="48.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">SmartDrone</tspan>
+</text>
+<line x1="24" y1="82" x2="196" y2="82" stroke="#999999" stroke-width="1"/>
+<text x="24" y="114.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">Administrator</tspan>
+</text>
+<text x="28" y="167.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Dashboard</tspan>
+</text>
+<text x="28" y="215.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Users</tspan>
+</text>
+<rect x="14" y="238" width="192" height="42" rx="0" fill="#DDDDDD" stroke="#999999" stroke-width="1"/>
+<text x="28" y="263.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="28" dy="0">Roles</tspan>
+</text>
+<text x="28" y="311.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Audit logs</tspan>
+</text>
+<text x="28" y="359.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">System monitoring</tspan>
+</text>
+<line x1="24" y1="748" x2="196" y2="748" stroke="#999999" stroke-width="1"/>
+<text x="24" y="782.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="24" dy="0">Sign out</tspan>
+</text>
+<rect x="220" y="0" width="1220" height="72" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<line x1="220" y1="72" x2="1440" y2="72" stroke="#999999" stroke-width="1"/>
+<text x="1388" y="39.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end">
+<tspan x="1388" dy="0">[User]</tspan>
+</text>
+<text x="252" y="130.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="600" text-anchor="start">
+<tspan x="252" dy="0">Roles</tspan>
+</text>
+<line x1="252" y1="164" x2="1388" y2="164" stroke="#999999" stroke-width="1"/>
+<rect x="252" y="188" width="558" height="148" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="272" y="225.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" text-anchor="start">
+<tspan x="272" dy="0">Customer</tspan>
+</text>
+<rect x="640" y="206" width="150" height="26" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="715.0" y="223.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="715.0" dy="0">CUSTOMER</tspan>
+</text>
+<text x="272" y="258" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="272" dy="0">Orders, packages, addresses, tracking and AI assistant</tspan>
+</text>
+<text x="272" y="312.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="272" dy="0">[n] users</tspan>
+</text>
+<text x="790" y="311.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="790" dy="0">View users →</tspan>
+</text>
+<rect x="830" y="188" width="558" height="148" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="850" y="225.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" text-anchor="start">
+<tspan x="850" dy="0">Dispatcher</tspan>
+</text>
+<rect x="1218" y="206" width="150" height="26" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="1293.0" y="223.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="1293.0" dy="0">DISPATCHER</tspan>
+</text>
+<text x="850" y="258" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="850" dy="0">Approval, scheduling, drones and failed deliveries</tspan>
+</text>
+<text x="850" y="312.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="850" dy="0">[n] users</tspan>
+</text>
+<text x="1368" y="311.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1368" dy="0">View users →</tspan>
+</text>
+<rect x="252" y="362" width="558" height="148" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="272" y="399.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" text-anchor="start">
+<tspan x="272" dy="0">Station Operator</tspan>
+</text>
+<rect x="640" y="380" width="150" height="26" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="715.0" y="397.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="715.0" dy="0">STATION_OPERATOR</tspan>
+</text>
+<text x="272" y="432" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="272" dy="0">Stations, slots and package pickup</tspan>
+</text>
+<text x="272" y="486.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="272" dy="0">[n] users</tspan>
+</text>
+<text x="790" y="485.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="790" dy="0">View users →</tspan>
+</text>
+<rect x="830" y="362" width="558" height="148" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="850" y="399.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" text-anchor="start">
+<tspan x="850" dy="0">Logistics Manager</tspan>
+</text>
+<rect x="1218" y="380" width="150" height="26" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="1293.0" y="397.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="1293.0" dy="0">MANAGER</tspan>
+</text>
+<text x="850" y="432" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="850" dy="0">Dashboard, statistics and reports</tspan>
+</text>
+<text x="850" y="486.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="850" dy="0">[n] users</tspan>
+</text>
+<text x="1368" y="485.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1368" dy="0">View users →</tspan>
+</text>
+<rect x="252" y="536" width="1136" height="148" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="272" y="573.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" text-anchor="start">
+<tspan x="272" dy="0">System Administrator</tspan>
+</text>
+<rect x="1218" y="554" width="150" height="26" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="1293.0" y="571.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="1293.0" dy="0">ADMIN</tspan>
+</text>
+<text x="272" y="606" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="272" dy="0">Users, roles, audit logs and system health</tspan>
+</text>
+<text x="272" y="660.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="272" dy="0">[n] users</tspan>
+</text>
+<text x="1368" y="659.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1368" dy="0">View users →</tspan>
+</text>
+</svg>
