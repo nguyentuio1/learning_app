@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<title>02 · Statistics and filters</title>
+<rect width="1440" height="900" fill="#FFFFFF"/>
+<rect x="0" y="0" width="220" height="900" rx="0" fill="#F4F4F4" stroke="none" stroke-width="1"/>
+<line x1="220" y1="0" x2="220" y2="900" stroke="#999999" stroke-width="1"/>
+<text x="24" y="48.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">SmartDrone</tspan>
+</text>
+<line x1="24" y1="82" x2="196" y2="82" stroke="#999999" stroke-width="1"/>
+<text x="24" y="114.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">Logistics Manager</tspan>
+</text>
+<text x="28" y="167.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Dashboard</tspan>
+</text>
+<rect x="14" y="190" width="192" height="42" rx="0" fill="#DDDDDD" stroke="#999999" stroke-width="1"/>
+<text x="28" y="215.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="28" dy="0">Statistics</tspan>
+</text>
+<text x="28" y="263.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Reports</tspan>
+</text>
+<text x="28" y="311.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Delivery lookup</tspan>
+</text>
+<line x1="24" y1="748" x2="196" y2="748" stroke="#999999" stroke-width="1"/>
+<text x="24" y="782.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="24" dy="0">Sign out</tspan>
+</text>
+<rect x="220" y="0" width="1220" height="72" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<line x1="220" y1="72" x2="1440" y2="72" stroke="#999999" stroke-width="1"/>
+<text x="1388" y="39.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end">
+<tspan x="1388" dy="0">[User]</tspan>
+</text>
+<text x="252" y="130.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="600" text-anchor="start">
+<tspan x="252" dy="0">Delivery statistics</tspan>
+</text>
+<line x1="252" y1="164" x2="1388" y2="164" stroke="#999999" stroke-width="1"/>
+<rect x="252" y="188" width="1136" height="106" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="270" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="270" dy="0">From</tspan>
+</text>
+<rect x="270" y="228" width="184" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="282" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="282" dy="0">[Date]</tspan>
+</text>
+<text x="470" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="470" dy="0">To</tspan>
+</text>
+<rect x="470" y="228" width="184" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="482" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="482" dy="0">[Date]</tspan>
+</text>
+<text x="670" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="670" dy="0">Station</tspan>
+</text>
+<rect x="670" y="228" width="220" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="682" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="682" dy="0">All stations</tspan>
+</text>
+<text x="906" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="906" dy="0">Status</tspan>
+</text>
+<rect x="906" y="228" width="180" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="918" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="918" dy="0">All statuses</tspan>
+</text>
+<rect x="1208" y="228" width="162" height="38" rx="0" fill="#DDDDDD" stroke="#444444" stroke-width="1"/>
+<text x="1289.0" y="252.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+<tspan x="1289.0" dy="0">Apply filters</tspan>
+</text>
+<rect x="252" y="318" width="700" height="286" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="270" y="349.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">
+<tspan x="270" dy="0">Delivered orders / day</tspan>
+</text>
+<rect x="274" y="372" width="656" height="206" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<line x1="274" y1="372" x2="930" y2="578" stroke="#999999" stroke-width="1"/>
+<line x1="930" y1="372" x2="274" y2="578" stroke="#999999" stroke-width="1"/>
+<rect x="306" y="453.0" width="592" height="44" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<text x="602.0" y="480.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" text-anchor="middle">
+<tspan x="602.0" dy="0">[Delivered orders / day chart]</tspan>
+</text>
+<rect x="972" y="318" width="416" height="286" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="990" y="349.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">
+<tspan x="990" dy="0">Performance summary</tspan>
+</text>
+<text x="994" y="380.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="994" dy="0">Success rate</tspan>
+</text>
+<text x="1364" y="383.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" text-anchor="end">
+<tspan x="1364" dy="0">[%]</tspan>
+</text>
+<line x1="994" y1="424" x2="1366" y2="424" stroke="#999999" stroke-width="1"/>
+<text x="994" y="454.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="994" dy="0">Average duration</tspan>
+</text>
+<text x="1364" y="457.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" text-anchor="end">
+<tspan x="1364" dy="0">[Value]</tspan>
+</text>
+<line x1="994" y1="498" x2="1366" y2="498" stroke="#999999" stroke-width="1"/>
+<text x="994" y="528.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="994" dy="0">Failed</tspan>
+</text>
+<text x="1364" y="531.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" text-anchor="end">
+<tspan x="1364" dy="0">[n]</tspan>
+</text>
+<line x1="994" y1="572" x2="1366" y2="572" stroke="#999999" stroke-width="1"/>
+<rect x="252" y="624" width="1136" height="212" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="270" y="655.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">
+<tspan x="270" dy="0">Station comparison</tspan>
+</text>
+<rect x="270" y="672" width="1098" height="176" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<rect x="270" y="672" width="1098" height="38" rx="0" fill="#EEEEEE" stroke="none" stroke-width="1"/>
+<line x1="270" y1="672" x2="1368" y2="672" stroke="#999999" stroke-width="1"/>
+<line x1="270" y1="848" x2="1368" y2="848" stroke="#999999" stroke-width="1"/>
+<text x="280" y="695.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">Station</tspan>
+</text>
+<text x="590" y="695.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="590" dy="0">Orders</tspan>
+</text>
+<text x="770" y="695.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="770" dy="0">Success rate</tspan>
+</text>
+<text x="990" y="695.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="990" dy="0">Avg. time</tspan>
+</text>
+<text x="1170" y="695.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="1170" dy="0">Usage</tspan>
+</text>
+<line x1="270" y1="710" x2="1368" y2="710" stroke="#999999" stroke-width="1"/>
+<text x="280" y="738.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">[Station]</tspan>
+</text>
+<text x="590" y="738.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="590" dy="0">[n]</tspan>
+</text>
+<text x="770" y="738.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="770" dy="0">[%]</tspan>
+</text>
+<text x="990" y="738.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="990" dy="0">[Value]</tspan>
+</text>
+<text x="1170" y="738.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1170" dy="0">[%]</tspan>
+</text>
+<line x1="270" y1="756" x2="1368" y2="756" stroke="#999999" stroke-width="1"/>
+<text x="280" y="784.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">[Station]</tspan>
+</text>
+<text x="590" y="784.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="590" dy="0">[n]</tspan>
+</text>
+<text x="770" y="784.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="770" dy="0">[%]</tspan>
+</text>
+<text x="990" y="784.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="990" dy="0">[Value]</tspan>
+</text>
+<text x="1170" y="784.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1170" dy="0">[%]</tspan>
+</text>
+<line x1="270" y1="802" x2="1368" y2="802" stroke="#999999" stroke-width="1"/>
+<text x="280" y="830.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">[Station]</tspan>
+</text>
+<text x="590" y="830.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="590" dy="0">[n]</tspan>
+</text>
+<text x="770" y="830.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="770" dy="0">[%]</tspan>
+</text>
+<text x="990" y="830.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="990" dy="0">[Value]</tspan>
+</text>
+<text x="1170" y="830.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1170" dy="0">[%]</tspan>
+</text>
+</svg>

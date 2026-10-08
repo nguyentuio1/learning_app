@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<title>06 · Audit logs</title>
+<rect width="1440" height="900" fill="#FFFFFF"/>
+<rect x="0" y="0" width="220" height="900" rx="0" fill="#F4F4F4" stroke="none" stroke-width="1"/>
+<line x1="220" y1="0" x2="220" y2="900" stroke="#999999" stroke-width="1"/>
+<text x="24" y="48.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">SmartDrone</tspan>
+</text>
+<line x1="24" y1="82" x2="196" y2="82" stroke="#999999" stroke-width="1"/>
+<text x="24" y="114.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">Administrator</tspan>
+</text>
+<text x="28" y="167.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Dashboard</tspan>
+</text>
+<text x="28" y="215.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Users</tspan>
+</text>
+<text x="28" y="263.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Roles</tspan>
+</text>
+<rect x="14" y="286" width="192" height="42" rx="0" fill="#DDDDDD" stroke="#999999" stroke-width="1"/>
+<text x="28" y="311.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="28" dy="0">Audit logs</tspan>
+</text>
+<text x="28" y="359.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">System monitoring</tspan>
+</text>
+<line x1="24" y1="748" x2="196" y2="748" stroke="#999999" stroke-width="1"/>
+<text x="24" y="782.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="24" dy="0">Sign out</tspan>
+</text>
+<rect x="220" y="0" width="1220" height="72" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<line x1="220" y1="72" x2="1440" y2="72" stroke="#999999" stroke-width="1"/>
+<text x="1388" y="39.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end">
+<tspan x="1388" dy="0">[User]</tspan>
+</text>
+<text x="252" y="130.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="600" text-anchor="start">
+<tspan x="252" dy="0">Audit logs</tspan>
+</text>
+<line x1="252" y1="164" x2="1388" y2="164" stroke="#999999" stroke-width="1"/>
+<rect x="252" y="188" width="1136" height="116" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="270" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="270" dy="0">User</tspan>
+</text>
+<rect x="270" y="228" width="250" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="282" y="253.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="282" dy="0">Name or email</tspan>
+</text>
+<text x="540" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="540" dy="0">Action</tspan>
+</text>
+<rect x="540" y="228" width="210" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="552" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="552" dy="0">All actions</tspan>
+</text>
+<text x="770" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="770" dy="0">From</tspan>
+</text>
+<rect x="770" y="228" width="190" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="782" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="782" dy="0">[Date]</tspan>
+</text>
+<text x="980" y="218.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="980" dy="0">To</tspan>
+</text>
+<rect x="980" y="228" width="190" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="992" y="253.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="992" dy="0">[Date]</tspan>
+</text>
+<rect x="1190" y="228" width="180" height="38" rx="0" fill="#DDDDDD" stroke="#444444" stroke-width="1"/>
+<text x="1280.0" y="252.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+<tspan x="1280.0" dy="0">Search logs</tspan>
+</text>
+<text x="252" y="345.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">
+<tspan x="252" dy="0">[n] matching entries</tspan>
+</text>
+<rect x="1228" y="322" width="160" height="38" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="1308.0" y="346.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+<tspan x="1308.0" dy="0">Clear filters</tspan>
+</text>
+<rect x="252" y="366" width="1136" height="360" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<rect x="252" y="366" width="1136" height="38" rx="0" fill="#EEEEEE" stroke="none" stroke-width="1"/>
+<line x1="252" y1="366" x2="1388" y2="366" stroke="#999999" stroke-width="1"/>
+<line x1="252" y1="726" x2="1388" y2="726" stroke="#999999" stroke-width="1"/>
+<text x="262" y="389.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">Timestamp</tspan>
+</text>
+<text x="432" y="389.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="432" dy="0">User</tspan>
+</text>
+<text x="652" y="389.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="652" dy="0">Action</tspan>
+</text>
+<text x="832" y="389.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="832" dy="0">Entity</tspan>
+</text>
+<text x="982" y="389.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="982" dy="0">Entity ID</tspan>
+</text>
+<text x="1192" y="389.5" fill="#333333" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="1192" dy="0">IP address</tspan>
+</text>
+<line x1="252" y1="404" x2="1388" y2="404" stroke="#999999" stroke-width="1"/>
+<text x="262" y="432.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="432.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">[Email]</tspan>
+</text>
+<text x="652" y="432.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">ROLE_CHANGE</tspan>
+</text>
+<text x="832" y="432.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">User</tspan>
+</text>
+<text x="982" y="432.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Entity ID]</tspan>
+</text>
+<text x="1192" y="432.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">[IP address]</tspan>
+</text>
+<line x1="252" y1="450" x2="1388" y2="450" stroke="#999999" stroke-width="1"/>
+<text x="262" y="478.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="478.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">[Email]</tspan>
+</text>
+<text x="652" y="478.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">APPROVE_ORDER</tspan>
+</text>
+<text x="832" y="478.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">DeliveryOrder</tspan>
+</text>
+<text x="982" y="478.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Order ID]</tspan>
+</text>
+<text x="1192" y="478.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">[IP address]</tspan>
+</text>
+<line x1="252" y1="496" x2="1388" y2="496" stroke="#999999" stroke-width="1"/>
+<text x="262" y="524.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="524.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">[Email]</tspan>
+</text>
+<text x="652" y="524.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">PACKAGE_PICKUP</tspan>
+</text>
+<text x="832" y="524.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">DeliveryOrder</tspan>
+</text>
+<text x="982" y="524.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Order ID]</tspan>
+</text>
+<text x="1192" y="524.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">[IP address]</tspan>
+</text>
+<line x1="252" y1="542" x2="1388" y2="542" stroke="#999999" stroke-width="1"/>
+<text x="262" y="570.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="570.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">[Email]</tspan>
+</text>
+<text x="652" y="570.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">USER_DEACTIVATE</tspan>
+</text>
+<text x="832" y="570.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">User</tspan>
+</text>
+<text x="982" y="570.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Entity ID]</tspan>
+</text>
+<text x="1192" y="570.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">[IP address]</tspan>
+</text>
+<line x1="252" y1="588" x2="1388" y2="588" stroke="#999999" stroke-width="1"/>
+<text x="262" y="616.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="616.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">[Email]</tspan>
+</text>
+<text x="652" y="616.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">CANCEL_ORDER</tspan>
+</text>
+<text x="832" y="616.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">DeliveryOrder</tspan>
+</text>
+<text x="982" y="616.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Order ID]</tspan>
+</text>
+<text x="1192" y="616.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">[IP address]</tspan>
+</text>
+<line x1="252" y1="634" x2="1388" y2="634" stroke="#999999" stroke-width="1"/>
+<text x="262" y="662.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="662.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">[Email]</tspan>
+</text>
+<text x="652" y="662.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">CREATE_ORDER</tspan>
+</text>
+<text x="832" y="662.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">DeliveryOrder</tspan>
+</text>
+<text x="982" y="662.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Order ID]</tspan>
+</text>
+<text x="1192" y="662.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">[IP address]</tspan>
+</text>
+<line x1="252" y1="680" x2="1388" y2="680" stroke="#999999" stroke-width="1"/>
+<text x="262" y="708.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="262" dy="0">[Date] [Time]</tspan>
+</text>
+<text x="432" y="708.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="432" dy="0">system</tspan>
+</text>
+<text x="652" y="708.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="652" dy="0">MISSION_ABORTED</tspan>
+</text>
+<text x="832" y="708.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="832" dy="0">FlightMission</tspan>
+</text>
+<text x="982" y="708.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="982" dy="0">[Entity ID]</tspan>
+</text>
+<text x="1192" y="708.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="1192" dy="0">—</tspan>
+</text>
+</svg>
