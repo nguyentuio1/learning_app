@@ -1,7 +1,9 @@
-# LA-214: Authentication & Profile Management Activity Models
+# LA-213: Activity Diagram for Authentication and Profile
 **Sprint:** Sprint 1-2  
-**Ticket:** [LA-214](https://hungndemail.atlassian.net/browse/LA-214)  
-**Task:** Model login, token refresh, logout, and profile update with decision paths for invalid credentials and expired tokens  
+**Parent Ticket:** [LA-194](https://hungndemail.atlassian.net/browse/LA-194)  
+**Ticket:** [LA-213](https://hungndemail.atlassian.net/browse/LA-213) - Activity diagram for authentication and profile  
+**Task Description:** Model login, token refresh, logout and profile update with the decisions for invalid credentials and expired tokens.  
+**Use Cases Covered:** [UC-01, UC-02](../requirements/use-cases.md)  
 **Target Architecture:** ASP.NET Core Web API, PostgreSQL, SignalR, MinIO, ReactJS / Flutter Client  
 
 ---

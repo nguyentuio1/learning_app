@@ -1,6 +1,8 @@
-# Activity Diagrams - Station & Slot Maintenance and Package Pickup Confirmation
+# LA-214: Activity Diagram for Station & Slot Maintenance and Package Pickup Confirmation
 **Sprint:** Sprint 1-2  
-**Ticket Ref:** [LA-214](https://hungndemail.atlassian.net/browse/LA-214) (Complementing [LA-12](https://hungndemail.atlassian.net/browse/LA-12))  
+**Parent Ticket:** [LA-194](https://hungndemail.atlassian.net/browse/LA-194)  
+**Ticket Ref:** [LA-214](https://hungndemail.atlassian.net/browse/LA-214)  
+**Task Description:** Model station and slot maintenance and the package pickup confirmation at the station.  
 **Use Cases Covered:** [UC-16, UC-17, UC-18, UC-08](../requirements/use-cases.md)  
 **Entities:** `landing_stations`, `station_slots`, `delivery_orders`, `drones`, `flight_missions`, `delivery_status_logs`, `audit_logs`  
 
