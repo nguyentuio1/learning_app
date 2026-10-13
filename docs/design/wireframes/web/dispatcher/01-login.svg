@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<title>01 · Login</title>
+<rect width="1440" height="900" fill="#FFFFFF"/>
+<rect x="200" y="190" width="1040" height="520" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<rect x="200" y="190" width="420" height="520" rx="0" fill="#F2F2F2" stroke="#999999" stroke-width="1"/>
+<line x1="620" y1="190" x2="620" y2="710" stroke="#999999" stroke-width="1"/>
+<text x="240" y="265.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" text-anchor="start">
+<tspan x="240" dy="0">SmartDroneDelivery</tspan>
+</text>
+<line x1="282" y1="574" x2="432" y2="454" stroke="#222222" stroke-width="2"/>
+<line x1="432" y1="454" x2="544" y2="366" stroke="#555555" stroke-width="2" stroke-dasharray="6 5"/>
+<circle cx="282.0" cy="574.0" r="9.0" fill="#F2F2F2" stroke="#222222" stroke-width="2"/>
+<circle cx="432.0" cy="454.0" r="9.0" fill="#222222" stroke="#222222" stroke-width="2"/>
+<circle cx="544.0" cy="366.0" r="9.0" fill="#F2F2F2" stroke="#222222" stroke-width="2"/>
+<text x="700" y="291.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" text-anchor="start">
+<tspan x="700" dy="0">Sign in</tspan>
+</text>
+<text x="700" y="352.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="700" dy="0">Email *</tspan>
+</text>
+<rect x="700" y="362" width="460" height="44" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="712" y="389.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="712" dy="0">[Email]</tspan>
+</text>
+<text x="700" y="440.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="700" dy="0">Password *</tspan>
+</text>
+<rect x="700" y="450" width="460" height="44" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="712" y="477.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="712" dy="0">[Password]</tspan>
+</text>
+<rect x="700" y="550" width="460" height="44" rx="0" fill="#222222" stroke="#222222" stroke-width="1"/>
+<text x="930.0" y="577.0" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+<tspan x="930.0" dy="0">Sign in</tspan>
+</text>
+</svg>

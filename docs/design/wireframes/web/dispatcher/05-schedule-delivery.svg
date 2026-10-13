@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<title>05 · Schedule delivery</title>
+<rect width="1440" height="900" fill="#FFFFFF"/>
+<rect x="0" y="0" width="220" height="900" rx="0" fill="#F4F4F4" stroke="none" stroke-width="1"/>
+<line x1="220" y1="0" x2="220" y2="900" stroke="#999999" stroke-width="1"/>
+<text x="24" y="48.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">SmartDrone</tspan>
+</text>
+<line x1="24" y1="82" x2="196" y2="82" stroke="#999999" stroke-width="1"/>
+<text x="24" y="114.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="24" dy="0">Dispatcher</tspan>
+</text>
+<text x="28" y="167.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Dashboard</tspan>
+</text>
+<rect x="14" y="190" width="192" height="42" rx="0" fill="#DDDDDD" stroke="#999999" stroke-width="1"/>
+<text x="28" y="215.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="start">
+<tspan x="28" dy="0">Pending orders</tspan>
+</text>
+<text x="28" y="263.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Active deliveries</tspan>
+</text>
+<text x="28" y="311.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Failed deliveries</tspan>
+</text>
+<text x="28" y="359.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="28" dy="0">Drone fleet</tspan>
+</text>
+<line x1="24" y1="748" x2="196" y2="748" stroke="#999999" stroke-width="1"/>
+<text x="24" y="782.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="24" dy="0">Sign out</tspan>
+</text>
+<rect x="220" y="0" width="1220" height="72" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1"/>
+<line x1="220" y1="72" x2="1440" y2="72" stroke="#999999" stroke-width="1"/>
+<text x="1388" y="39.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end">
+<tspan x="1388" dy="0">[User]</tspan>
+</text>
+<text x="252" y="119.5" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="600" text-anchor="start">
+<tspan x="252" dy="0">Schedule delivery</tspan>
+</text>
+<text x="252" y="146.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="252" dy="0">Order [Order ID] · APPROVED</tspan>
+</text>
+<line x1="252" y1="164" x2="1388" y2="164" stroke="#999999" stroke-width="1"/>
+<circle cx="286.0" cy="212.0" r="16.0" fill="#444444" stroke="#444444" stroke-width="1"/>
+<text x="286.0" y="216.0" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="286.0" dy="0">1</tspan>
+</text>
+<text x="312" y="216.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="312" dy="0">Request approved</tspan>
+</text>
+<line x1="462" y1="212" x2="482" y2="212" stroke="#999999" stroke-width="1"/>
+<circle cx="506.0" cy="212.0" r="16.0" fill="#444444" stroke="#444444" stroke-width="1"/>
+<text x="506.0" y="216.0" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="506.0" dy="0">2</tspan>
+</text>
+<text x="532" y="216.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="532" dy="0">Set departure</tspan>
+</text>
+<line x1="682" y1="212" x2="702" y2="212" stroke="#999999" stroke-width="1"/>
+<circle cx="726.0" cy="212.0" r="16.0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="726.0" y="216.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+<tspan x="726.0" dy="0">3</tspan>
+</text>
+<text x="752" y="216.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">
+<tspan x="752" dy="0">Assign drone</tspan>
+</text>
+<rect x="252" y="260" width="742" height="480" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="270" y="291.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">
+<tspan x="270" dy="0">Departure schedule</tspan>
+</text>
+<text x="280" y="344.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">Departure date *</tspan>
+</text>
+<rect x="280" y="354" width="320" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="292" y="379.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="292" dy="0">[Date]</tspan>
+</text>
+<text x="626" y="344.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="626" dy="0">Departure time (local) *</tspan>
+</text>
+<rect x="626" y="354" width="320" height="40" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="638" y="379.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="638" dy="0">[Time]</tspan>
+</text>
+<text x="280" y="436.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">Origin station</tspan>
+</text>
+<rect x="280" y="446" width="320" height="40" rx="0" fill="#F2F2F2" stroke="#999999" stroke-width="1"/>
+<text x="292" y="471.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="292" dy="0">[Station ID] • [Station]</tspan>
+</text>
+<text x="626" y="436.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="626" dy="0">Destination station</tspan>
+</text>
+<rect x="626" y="446" width="320" height="40" rx="0" fill="#F2F2F2" stroke="#999999" stroke-width="1"/>
+<text x="638" y="471.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="638" dy="0">[Station ID] • [Station]</tspan>
+</text>
+<text x="280" y="528.5" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start">
+<tspan x="280" dy="0">Scheduling note</tspan>
+</text>
+<rect x="280" y="538" width="666" height="70" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="292" y="560" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="292" dy="0">Optional operational note</tspan>
+</text>
+<rect x="280" y="628" width="666" height="72" rx="0" fill="#EEEEEE" stroke="#444444" stroke-width="1"/>
+<text x="298" y="667.0" fill="#444444" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="298" dy="0">Drone availability will be checked. Schedule conflicts prevent assignment.</tspan>
+</text>
+<rect x="1016" y="260" width="372" height="480" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="1034" y="291.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start">
+<tspan x="1034" dy="0">Order summary</tspan>
+</text>
+<text x="1038" y="341.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="1038" dy="0">Tracking</tspan>
+</text>
+<text x="1360" y="341.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1360" dy="0">[Order ID]</tspan>
+</text>
+<line x1="1038" y1="360" x2="1366" y2="360" stroke="#999999" stroke-width="1"/>
+<text x="1038" y="399.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="1038" dy="0">Package</tspan>
+</text>
+<text x="1360" y="399.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1360" dy="0">[Type] · [Weight]</tspan>
+</text>
+<line x1="1038" y1="418" x2="1366" y2="418" stroke="#999999" stroke-width="1"/>
+<text x="1038" y="457.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="1038" dy="0">Route</tspan>
+</text>
+<text x="1360" y="457.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1360" dy="0">[Origin] → [Destination]</tspan>
+</text>
+<line x1="1038" y1="476" x2="1366" y2="476" stroke="#999999" stroke-width="1"/>
+<text x="1038" y="515.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="1038" dy="0">Current status</tspan>
+</text>
+<text x="1360" y="515.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1360" dy="0">APPROVED</tspan>
+</text>
+<line x1="1038" y1="534" x2="1366" y2="534" stroke="#999999" stroke-width="1"/>
+<text x="1038" y="573.0" fill="#555555" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start">
+<tspan x="1038" dy="0">Estimated distance</tspan>
+</text>
+<text x="1360" y="573.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end">
+<tspan x="1360" dy="0">[Value]</tspan>
+</text>
+<line x1="1038" y1="592" x2="1366" y2="592" stroke="#999999" stroke-width="1"/>
+<rect x="1038" y="658" width="152" height="38" rx="0" fill="#FFFFFF" stroke="#999999" stroke-width="1"/>
+<text x="1114.0" y="682.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+<tspan x="1114.0" dy="0">Back</tspan>
+</text>
+<rect x="1204" y="658" width="162" height="38" rx="0" fill="#DDDDDD" stroke="#444444" stroke-width="1"/>
+<text x="1285.0" y="682.0" fill="#222222" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+<tspan x="1285.0" dy="0">Continue</tspan>
+</text>
+</svg>
