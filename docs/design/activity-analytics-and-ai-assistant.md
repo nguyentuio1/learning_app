@@ -207,7 +207,7 @@ flowchart TB
 
         S_FetchOrderDetails --> S_CheckInFlight{"Is Order Status IN_TRANSIT?"}
         S_CheckInFlight -->|Yes| S_GetTelemetry["Fetch Live GPS Position, Battery & AI ETA Prediction"]
-        S_CheckInFlight -->|No (APPROVED / ARRIVED)| S_GetStationContext["Fetch Station Arrival Status & Pickup Code Availability"]
+        S_CheckInFlight -->|"No (APPROVED / ARRIVED)"| S_GetStationContext["Fetch Station Arrival Status & Pickup Code Availability"]
         
         S_GetTelemetry --> S_AssemblePrompt["Assemble Grounded RAG Prompt with Verified Facts"]
         S_GetStationContext --> S_AssemblePrompt

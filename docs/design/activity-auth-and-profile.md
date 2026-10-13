@@ -3,216 +3,176 @@
 **Parent Ticket:** [LA-194](https://hungndemail.atlassian.net/browse/LA-194)  
 **Ticket:** [LA-213](https://hungndemail.atlassian.net/browse/LA-213) - Activity diagram for authentication and profile  
 **Task Description:** Model login, token refresh, logout and profile update with the decisions for invalid credentials and expired tokens.  
-**Use Cases Covered:** [UC-01, UC-02](../requirements/use-cases.md)  
-**Target Architecture:** ASP.NET Core Web API, PostgreSQL, SignalR, MinIO, ReactJS / Flutter Client  
+**Use Cases Covered:** [UC-01, UC-02](../../requirements/use-cases.md)  
+**API Contract:** [auth-api.md](../../api/auth-api.md)  
+**Sequence Diagram:** [sequence-auth.md](../sequence-auth.md)  
+**Entities:** `users`, `roles`, `refresh_tokens`, `audit_logs`  
 
 ---
 
 ## 1. Overview & Architectural Scope
 
-This specification defines the complete identity lifecycle and profile management workflows for the **SmartDroneDelivery** platform. 
+This document specifies the UML Activity Diagrams with dedicated actor swimlanes for authentication and profile management in the **SmartDroneDelivery** platform.
 
-It explicitly models all conditional decision branches, edge cases, and security mitigations:
-- **Login:** Rate-limiting, hash verification, account lockout policies, and role-based claim issuance.
-- **Token Refresh:** Handling expired access tokens, expired refresh tokens, rotated token verification, and refresh token reuse detection (theft mitigation).
-- **Logout:** Server-side refresh token revocation, access token blacklisting, SignalR disconnect, and client cache teardown.
-- **Profile Update:** Avatar handling via MinIO, email uniqueness checks, current password re-verification, and multi-session revocation on credential modification.
+The models strictly follow the merged API contract ([auth-api.md](../../api/auth-api.md)), sequence diagrams ([sequence-auth.md](../sequence-auth.md)), and PostgreSQL entity definitions ([erd.md](../../architecture/erd.md)):
+- Base path prefix is `/api`.
+- Standard endpoints: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/users/me`, `PUT /api/users/me`, `PUT /api/users/me/password`, `POST /api/users/me/avatar`.
+- Error responses follow RFC 7807 problem details (400 validation, 401 unauthorized, 403 forbidden, 409 conflict).
 
 ---
 
 ## 2. Actors & System Swimlanes
 
 | Swimlane | Component / Actor | Responsibilities |
-| :--- | :--- | :--- |
-| **Client Lane** | Mobile App (Flutter) / Web Portal (ReactJS) | Captures user inputs, intercepts 401 HTTP statuses, stores tokens, and renders UI state. |
-| **API Gateway & Auth Controller** | ASP.NET Core Web API (`/api/v1/auth`, `/api/v1/users`) | Request validation, rate-limiting, JWT parsing, and business logic execution. |
-| **Database & Token Store** | PostgreSQL & In-Memory / Distributed Cache | Credential persistence, token family tracking, lockout timestamps, and audit logging. |
-| **Auxiliary Services** | MinIO Object Store / Notification Service | Avatar binary persistence and verification email dispatch. |
+|---|---|---|
+| **Client Lane** | Web Portal (ReactJS) / Mobile App (Flutter) | Collects credentials, traps 401 expired tokens, manages local tokens, calls refresh endpoint, and updates UI state. |
+| **AuthController / UserController** | ASP.NET Core Controllers (`/api/auth/*`, `/api/users/me/*`) | Request body validation, route handling, HTTP status mapping, RFC 7807 problem responses. |
+| **AuthService / UserService** | Business Logic Services (`SmartDroneDelivery.Api`) | Password hashing/verification via BCrypt, JWT generation, token rotation, and profile updates. |
+| **Database & Storage** | PostgreSQL (`AppDbContext`) & MinIO | Entity persistence in `users`, `roles`, `refresh_tokens`, `audit_logs`, and avatar object storage. |
 
 ---
 
-## 3. Detailed Specifications & UML Activity Diagrams
+## 3. Detailed UML Activity Diagrams
 
 ---
 
-### Process 1: User Login (with Invalid Credentials & Lockout Decisions)
+### Process 1: User Login (with Invalid Credentials Decision)
 
 #### Specification
-- **Endpoint:** `POST /api/v1/auth/login`
-- **Primary Actors:** User (Client), Auth API, PostgreSQL Database
-- **Preconditions:** User is registered in the system.
-- **Postconditions:** User authenticated, issued JWT Access Token (15-min TTL) and Refresh Token (7-day TTL), redirect to role-specific dashboard.
+- **Endpoint:** `POST /api/auth/login`
+- **Use Case:** `UC-01`
+- **Preconditions:** User has a registered account.
+- **Postconditions:** User authenticated, issued JWT Access Token (15-min lifetime) and Refresh Token (7-day lifetime), row inserted into `refresh_tokens` and `audit_logs`.
 
-#### Decision Logic & Edge Cases:
-1. **Rate Limit Exceeded:** If IP/Client sends > 10 requests/minute $\rightarrow$ Returns `429 Too Many Requests`.
-2. **Account Not Found:** Query returns null $\rightarrow$ Returns `401 Unauthorized` with generic error ("Invalid email or password" to prevent user enumeration).
-3. **Account Locked:** If `lockout_until > UtcNow` $\rightarrow$ Returns `423 Locked` with remaining lockout minutes.
-4. **Invalid Password:** BCrypt verification fails:
-   - Increment `failed_login_attempts`.
-   - If `failed_login_attempts >= 5` $\rightarrow$ Set `lockout_until = UtcNow + 15 minutes`.
-   - Return `401 Unauthorized` ("Invalid email or password").
-5. **Account Inactive / Suspended:** `status != Active` $\rightarrow$ Returns `403 Forbidden` ("Account suspended or pending approval").
-6. **Success:** Reset `failed_login_attempts = 0`, issue signed JWT Access Token and persistent Refresh Token family.
+#### Decision Logic:
+1. **Request Body Validation:** If email or password is missing $\rightarrow$ Returns `400 Bad Request`.
+2. **User Lookup by Email:** Query `users` by email. If not found $\rightarrow$ Returns `401 Unauthorized` ("Invalid email or password.").
+3. **Password Hash Verification:** Verify with BCrypt. If password does not match $\rightarrow$ Returns `401 Unauthorized` ("Invalid email or password.").
+4. **Account Status Check:**
+   - If `status` is `INACTIVE` or `SUSPENDED` $\rightarrow$ Returns `403 Forbidden` ("This account is not active.").
+   - If `status` is `ACTIVE` $\rightarrow$ Proceeds to token generation.
+5. **Token Generation & Logging:**
+   - Generate access token (JWT, 15 minutes) with claims `sub`, `email`, `role`, `exp`.
+   - Generate random cryptographically secure refresh token (7 days).
+   - Insert row into `refresh_tokens` (`is_revoked = false`).
+   - Insert row into `audit_logs` with action `LOGIN`.
+   - Return `200 OK` with `AuthResponse`.
 
 #### UML Activity Diagram: Login Process
 
 ```mermaid
-flowchart TD
-    subgraph ClientLane["Client (Mobile / Web App)"]
-        L_Start([Start]) --> L_Input["Enter Email & Password"]
-        L_Input --> L_Submit["Send POST /api/v1/auth/login"]
-        L_HandleError["Display Error Message"] --> L_CheckLockout{"Is Account Locked?"}
-        L_CheckLockout -->|Yes| L_WaitLockout["Disable Login Button with Countdown"] --> L_EndFail([End - Failed])
-        L_CheckLockout -->|No| L_Input
-        L_StoreTokens["Store Access Token & Refresh Token"]
-        L_StoreTokens --> L_ConnectSignalR["Initialize SignalR Notification Hub"]
-        L_ConnectSignalR --> L_NavDashboard["Redirect to Role Dashboard"] --> L_EndSuccess([End - Logged In])
+flowchart TB
+    subgraph ClientLane["Client (Web / Mobile App)"]
+        L_Start((Start)) --> L_Input["Enter email and password"]
+        L_Input --> L_Submit["Send POST /api/auth/login {email, password}"]
+        L_ShowErr["Display error message"] --> L_Input
+        L_StoreTokens["Store access token (15m) & refresh token (7d)"]
+        L_StoreTokens --> L_NavDashboard["Navigate to authorized dashboard"] --> L_EndSuccess((End))
     end
 
-    subgraph AuthAPILane["ASP.NET Core Web API (Auth Service)"]
-        L_Submit --> S_RateLimit{"Rate Limit Exceeded?"}
-        S_RateLimit -->|Yes| S_Resp429["Return 429 Too Many Requests"]
-        S_Resp429 --> L_HandleError
-
-        S_RateLimit -->|No| S_FetchUser["Query User by Email in DB"]
-        S_CheckUserExists{"User Record Exists?"}
-        S_FetchUser --> S_CheckUserExists
-
-        S_CheckUserExists -->|No| S_DummyHash["Execute Dummy Hash (Timing-Attack Defense)"]
-        S_DummyHash --> S_Resp401Invalid["Return 401 Invalid Credentials"]
-        S_Resp401Invalid --> L_HandleError
-
-        S_CheckUserExists -->|Yes| S_CheckLockoutState{"Is Account Currently Locked?"}
-        S_CheckLockoutState -->|Yes| S_Resp423["Return 423 Account Locked (Retry in X mins)"]
-        S_Resp423 --> L_HandleError
-
-        S_CheckLockoutState -->|No| S_VerifyHash["Verify Password Hash via BCrypt"]
-        S_VerifyHash --> S_PasswordValid{"Password Hash Matches?"}
-
-        S_PasswordValid -->|No| S_IncFailedAttempts["Increment failed_login_attempts in DB"]
-        S_IncFailedAttempts --> S_CheckMaxAttempts{"Attempts >= 5?"}
-        S_CheckMaxAttempts -->|Yes| S_LockAccount["Set lockout_until = UtcNow + 15m in DB"]
-        S_CheckMaxAttempts -->|No| S_Resp401Password["Return 401 Invalid Credentials"]
-        S_LockAccount --> S_Resp401Password
-        S_Resp401Password --> L_HandleError
-
-        S_PasswordValid -->|Yes| S_CheckStatus{"Account Status == 'Active'?"}
-        S_CheckStatus -->|No| S_Resp403["Return 403 Account Suspended/Inactive"]
-        S_Resp403 --> L_HandleError
-
-        S_CheckStatus -->|Yes| S_ResetAttempts["Reset failed_login_attempts = 0 in DB"]
-        S_ResetAttempts --> S_GenTokens["Generate JWT Access Token & Refresh Token"]
-        S_GenTokens --> S_PersistRefresh["Save Refresh Token Record in DB"]
-        S_PersistRefresh --> S_Resp200["Return 200 OK (Tokens, Expiry & User Profile)"]
-        S_Resp200 --> L_StoreTokens
+    subgraph ControllerLane["AuthController"]
+        L_Submit --> C_ValBody{"Request body valid?<br/>(email and password present)"}
+        C_ValBody -->|No| C_Resp400["Return 400 Bad Request with validation errors"]
+        C_Resp400 --> L_ShowErr
+        C_ValBody -->|Yes| C_CallService["Call AuthService.LoginAsync(email, password)"]
     end
 
-    subgraph DBLane["PostgreSQL Database"]
-        S_FetchUser -.-> DB_Users[(User Table)]
-        S_IncFailedAttempts -.-> DB_Users
-        S_LockAccount -.-> DB_Users
-        S_ResetAttempts -.-> DB_Users
-        S_PersistRefresh -.-> DB_RefreshTokens[(Refresh Tokens Table)]
+    subgraph ServiceLane["AuthService & PasswordHasher"]
+        C_CallService --> S_FindUser["Query user by email in PostgreSQL"]
+        S_FindUser --> S_UserExists{"User found?"}
+        
+        S_UserExists -->|No| S_ErrNotFound["Return invalid credentials"]
+        S_ErrNotFound --> C_Resp401["Return 401 Unauthorized<br/>(Invalid email or password)"]
+        C_Resp401 --> L_ShowErr
+
+        S_UserExists -->|Yes| S_VerifyHash["Verify password with BCrypt"]
+        S_VerifyHash --> S_PwdMatch{"Password matches?"}
+        
+        S_PwdMatch -->|No| S_ErrWrongPwd["Return invalid credentials"]
+        S_ErrWrongPwd --> C_Resp401
+
+        S_PwdMatch -->|Yes| S_CheckStatus{"User status?"}
+        S_CheckStatus -->|"INACTIVE or SUSPENDED"| S_ErrInactive["Return account not active"]
+        S_ErrInactive --> C_Resp403["Return 403 Forbidden<br/>(This account is not active)"]
+        C_Resp403 --> L_ShowErr
+
+        S_CheckStatus -->|ACTIVE| S_CreateTokens["Create JWT Access Token (15 min)<br/>and random Refresh Token (7 days)"]
+        S_CreateTokens --> S_SaveDB["Insert row into refresh_tokens<br/>Insert row into audit_logs (LOGIN)"]
+        S_SaveDB --> S_ReturnOK["Return AuthResponse with tokens and User profile"]
+        S_ReturnOK --> C_Resp200["Return 200 OK"]
+        C_Resp200 --> L_StoreTokens
     end
 ```
 
 ---
 
-### Process 2: Token Refresh & Expired Token Decisions
+### Process 2: Token Refresh (with Expired / Revoked Token Decision)
 
 #### Specification
-- **Endpoint:** `POST /api/v1/auth/refresh`
-- **Primary Actors:** Client HTTP Interceptor, Auth API, Database Token Store
-- **Preconditions:** Client has an expired Access Token and holds an active Refresh Token.
-- **Postconditions:** Old refresh token rotated/invalidated, new Access Token + new Refresh Token returned to client.
+- **Endpoint:** `POST /api/auth/refresh`
+- **Use Case:** `UC-01`
+- **Preconditions:** Client has an expired access token and holds a refresh token.
+- **Postconditions:** Old refresh token marked `is_revoked = true`, new refresh token inserted, new access token issued.
 
-#### Decision Logic & Edge Cases:
-1. **Access Token Expired During API Call:** Client HTTP client intercepts `401 Unauthorized` with `WWW-Authenticate: Bearer error="invalid_token", error_description="The token expired"`.
-2. **Refresh Token Format Invalid:** Request body or cookie missing or malformed $\rightarrow$ Returns `400 Bad Request`.
-3. **Refresh Token Not in Database:** Token string not recognized $\rightarrow$ Returns `401 Unauthorized` (Session terminated, redirect to login).
-4. **Refresh Token Expired (`expires_at < UtcNow`):** 
-   - Token is past its 7-day validity window.
-   - Delete/mark expired in DB.
-   - Return `401 Unauthorized` ("Refresh token expired. Please re-authenticate").
-   - Client clears tokens and redirects to Login.
-5. **Token Reuse Detected (Theft Detection):** 
-   - A refresh token with `is_revoked == true` or `is_used == true` is presented.
-   - **Critical Security Event:** Indicates the token was intercepted and already consumed by an attacker.
-   - **Mitigation:** Revoke the **entire token family** (all active sessions of the user account).
-   - Log security anomaly alarm in audit log.
-   - Return `401 Unauthorized` ("Security Alert: Session revoked due to reuse detection").
-6. **Valid Active Refresh Token:**
-   - Mark current refresh token as `is_used = true`.
-   - Issue new Access Token (15 min) and new Refresh Token (7 days, same family ID).
-   - Persist new refresh token in DB.
-   - Return `200 OK`.
-   - Client replays the original queued request seamlessly.
+#### Decision Logic:
+1. **Access Token Expiration:** Client API request receives `401 Unauthorized`. Client HTTP interceptor traps this and calls `POST /api/auth/refresh`.
+2. **Request Body Validation:** If `refreshToken` is missing $\rightarrow$ Returns `400 Bad Request`.
+3. **Token Lookup in Database:** Query `refresh_tokens` by token string.
+   - If token not found $\rightarrow$ Returns `401 Unauthorized`.
+   - If `is_revoked == true` $\rightarrow$ Returns `401 Unauthorized`.
+   - If `expires_at < UtcNow` (expired) $\rightarrow$ Returns `401 Unauthorized`.
+4. **Valid Token Rotation:**
+   - Mark old refresh token `is_revoked = true`.
+   - Generate new access token (15 min) and new refresh token (7 days).
+   - Insert new row into `refresh_tokens`.
+   - Return `200 OK` with new `AuthResponse`.
+   - Client updates stored tokens and retries the original request.
+5. **Refresh Failure:** If refresh returns `401`, client purges stored tokens and redirects user to login.
 
-#### UML Activity Diagram: Token Refresh & Expiration Process
+#### UML Activity Diagram: Token Refresh Process
 
 ```mermaid
-flowchart TD
+flowchart TB
     subgraph ClientLane["Client (HTTP Client & Interceptor)"]
-        T_Start([Start API Request]) --> T_SendReq["Send API Request with Bearer Access Token"]
-        T_SendReq --> T_ReceiveStatus{"Response Status Code?"}
+        R_Start((Start Request)) --> R_SendReq["Send API request with Bearer access token"]
+        R_SendReq --> R_CheckStatus{"Response status code?"}
+        R_CheckStatus -->|200 OK| R_ProcessData["Process response data"] --> R_EndReq((End))
         
-        T_ReceiveStatus -->|200 OK| T_ConsumeData["Process Data Normal Flow"] --> T_EndSuccess([End - Completed])
+        R_CheckStatus -->|401 Token Expired| R_Intercept["Interceptor traps 401<br/>calls POST /api/auth/refresh"]
+        R_Intercept --> R_SendRefresh["Send POST /api/auth/refresh {refreshToken}"]
         
-        T_ReceiveStatus -->|401 Token Expired| T_Intercept["HTTP Interceptor Traps 401 Expired Token"]
-        T_Intercept --> T_QueueReqs["Queue Pending Outgoing Requests"]
-        T_QueueReqs --> T_SendRefresh["Send POST /api/v1/auth/refresh with Refresh Token"]
+        R_RefreshResult{"Refresh response?"}
+        R_SendRefresh --> R_RefreshResult
         
-        T_ReceiveRefresh{"Refresh Response?"}
-        T_SendRefresh --> T_ReceiveRefresh
+        R_RefreshResult -->|401 Unauthorized| R_Purge["Purge local tokens and user session"]
+        R_Purge --> R_RedirectLogin["Redirect to Login screen"] --> R_EndReAuth((Re-authenticate))
 
-        T_ReceiveRefresh -->|401 Expired / Invalid / Reused| T_PurgeSession["Purge Stored Tokens & Client State"]
-        T_PurgeSession --> T_RedirectLogin["Force Redirect to Login Screen"] --> T_EndReAuth([End - Re-Authenticate])
-
-        T_ReceiveRefresh -->|200 OK| T_UpdateTokens["Update Stored Access & Refresh Tokens"]
-        T_UpdateTokens --> T_ReplayQueue["Replay Queued API Requests with New Token"]
-        T_ReplayQueue --> T_ConsumeData
+        R_RefreshResult -->|200 OK| R_UpdateTokens["Update stored access & refresh tokens"]
+        R_UpdateTokens --> R_RetryReq["Retry original API request with new token"]
+        R_RetryReq --> R_ProcessData
     end
 
-    subgraph AuthAPILane["ASP.NET Core Web API (Token Service)"]
-        T_SendRefresh --> S_ParseToken{"Refresh Token Present & Formatted?"}
-        S_ParseToken -->|No| S_400Bad["Return 400 Bad Request"]
-        S_400Bad --> T_ReceiveRefresh
-
-        S_ParseToken -->|Yes| S_LookupToken["Query Refresh Token Record in DB"]
-        S_LookupToken --> S_TokenFound{"Token Record Found?"}
-        
-        S_TokenFound -->|No| S_401NotFound["Return 401 Invalid Refresh Token"]
-        S_401NotFound --> T_ReceiveRefresh
-
-        S_TokenFound -->|Yes| S_CheckReused{"Is Token Already Used or Revoked?"}
-        
-        S_CheckReused -->|Yes - Breach Suspected!| S_RevokeFamily["Revoke ALL Active Tokens in Token Family"]
-        S_RevokeFamily --> S_LogBreach["Log Security Incident: Token Reuse Detected"]
-        S_LogBreach --> S_401Breach["Return 401 Session Terminated (Security Breach)"]
-        S_401Breach --> T_ReceiveRefresh
-
-        S_CheckReused -->|No| S_CheckExpired{"Token Expiration < UtcNow?"}
-        S_CheckExpired -->|Yes - Expired| S_MarkExpired["Delete / Mark Token Expired in DB"]
-        S_MarkExpired --> S_401Expired["Return 401 Refresh Token Expired"]
-        S_401Expired --> T_ReceiveRefresh
-
-        S_CheckExpired -->|No - Valid| S_CheckUserActive{"Is User Account Still Active?"}
-        S_CheckUserActive -->|No| S_403Inactive["Return 403 User Account Inactive"]
-        S_403Inactive --> T_ReceiveRefresh
-
-        S_CheckUserActive -->|Yes| S_RotateToken["Mark Current Token 'is_used = true'"]
-        S_RotateToken --> S_GenNewPair["Generate New Access Token & New Refresh Token"]
-        S_GenNewPair --> S_SaveNewToken["Insert New Refresh Token into DB (Same Family)"]
-        S_SaveNewToken --> S_200Refresh["Return 200 OK with New Token Pair"]
-        S_200Refresh --> T_ReceiveRefresh
+    subgraph ControllerLane["AuthController"]
+        R_SendRefresh --> C_CheckRefreshBody{"refreshToken provided?"}
+        C_CheckRefreshBody -->|No| C_Ref400["Return 400 Bad Request"]
+        C_Ref400 --> R_RefreshResult
+        C_CheckRefreshBody -->|Yes| C_CallRefreshService["Call AuthService.RefreshAsync(refreshToken)"]
     end
 
-    subgraph DBLane["PostgreSQL Database"]
-        S_LookupToken -.-> DB_Tokens[(Refresh Tokens Table)]
-        S_RevokeFamily -.-> DB_Tokens
-        S_MarkExpired -.-> DB_Tokens
-        S_RotateToken -.-> DB_Tokens
-        S_SaveNewToken -.-> DB_Tokens
+    subgraph ServiceLane["AuthService & TokenService"]
+        C_CallRefreshService --> S_LookupToken["Find row in refresh_tokens table"]
+        S_LookupToken --> S_EvalToken{"Token exists and valid?<br/>(not expired, is_revoked == false)"}
+        
+        S_EvalToken -->|No| S_RefErr["Token unknown, expired or revoked"]
+        S_RefErr --> C_Ref401["Return 401 Unauthorized"]
+        C_Ref401 --> R_RefreshResult
+
+        S_EvalToken -->|Yes| S_Rotate["Set old refresh token is_revoked = true"]
+        S_Rotate --> S_CreateNewPair["Create new access token (15m)<br/>and new refresh token (7d)"]
+        S_CreateNewPair --> S_InsertNewToken["Insert new row into refresh_tokens"]
+        S_InsertNewToken --> S_ReturnAuth["Return new AuthResponse"]
+        S_ReturnAuth --> C_Ref200["Return 200 OK"]
+        C_Ref200 --> R_RefreshResult
     end
 ```
 
@@ -221,206 +181,159 @@ flowchart TD
 ### Process 3: User Logout Process
 
 #### Specification
-- **Endpoint:** `POST /api/v1/auth/logout`
-- **Primary Actors:** User (Client), Auth API, Database / Cache Store, SignalR Hub
-- **Preconditions:** User is authenticated.
-- **Postconditions:** Active refresh token revoked, access token JTI blacklisted until expiration, SignalR connection closed, client tokens deleted.
-
-#### Decision Logic & Edge Cases:
-1. **Invalid or Already Expired Token:** If client presents an expired access token during logout, API extracts JTI without throwing authentication failure, ensuring the refresh token is still revoked from database.
-2. **Scope of Logout:**
-   - *Current Device Logout (Standard):* Revokes only the specific refresh token passed in request.
-   - *All Devices Logout (Global):* Revokes all refresh tokens belonging to the user ID.
-3. **SignalR Disconnect:** Disconnects real-time hub session to stop receiving flight/telemetry notifications.
-4. **Client Teardown:** Client purges in-memory token store, secure storage, and local state cache before redirecting to login.
+- **Endpoint:** `POST /api/auth/logout`
+- **Use Case:** `UC-01`
+- **Preconditions:** User is signed in (`Authorization: Bearer <accessToken>`).
+- **Postconditions:** Refresh token marked `is_revoked = true` in database, audit log entry written with action `LOGOUT`, response `204 No Content`, client clears tokens and session state.
 
 #### UML Activity Diagram: Logout Process
 
 ```mermaid
-flowchart TD
-    subgraph ClientLane["Client (Mobile / Web App)"]
-        LO_Start([Start]) --> LO_ClickLogout["User Clicks 'Log Out'"]
-        LO_ClickLogout --> LO_Option{"Logout Scope?"}
-        LO_Option -->|Current Device| LO_SendCurrent["Send POST /api/v1/auth/logout (Current Refresh Token)"]
-        LO_Option -->|All Devices| LO_SendAll["Send POST /api/v1/auth/logout-all (User Sessions)"]
-        
-        LO_SendCurrent --> LO_AwaitResp
-        LO_SendAll --> LO_AwaitResp
-        
-        LO_AwaitResp["Receive 200 OK Confirmation"] --> LO_ClearStorage["Clear Access Token, Refresh Token & User State"]
-        LO_ClearStorage --> LO_DisconnectWS["Terminate SignalR WebSocket Connection"]
-        LO_DisconnectWS --> LO_Redirect["Navigate to Login Screen"] --> LO_End([End - Logged Out])
+flowchart TB
+    subgraph ClientLane["Client (Web / Mobile App)"]
+        LO_Start((Start)) --> LO_Click["User clicks 'Log Out'"]
+        LO_Click --> LO_SendReq["Send POST /api/auth/logout {refreshToken}<br/>Headers: Authorization: Bearer accessToken"]
+        LO_AwaitResp["Receive response (204 No Content)"]
+        LO_SendReq --> LO_AwaitResp
+        LO_AwaitResp --> LO_Clear["Clear tokens and cached user data from storage"]
+        LO_Clear --> LO_Redirect["Redirect to Login screen"] --> LO_End((End))
     end
 
-    subgraph AuthAPILane["ASP.NET Core Web API"]
-        LO_SendCurrent --> S_ValidateReq["Extract Access Token Claims & Refresh Token"]
-        LO_SendAll --> S_ValidateReq
-        
-        S_ValidateReq --> S_CheckScope{"Scope?"}
-        
-        S_CheckScope -->|Current| S_RevokeSingle["Mark Specified Refresh Token 'is_revoked = true' in DB"]
-        S_CheckScope -->|All Devices| S_RevokeAll["Mark ALL User Refresh Tokens 'is_revoked = true' in DB"]
-
-        S_RevokeSingle --> S_BlacklistJTI["Add Access Token JTI to Distributed Cache Blacklist"]
-        S_RevokeAll --> S_BlacklistJTI
-
-        S_BlacklistJTI --> S_AbortSignalR["Abort Active SignalR Connection Contexts for Session"]
-        S_AbortSignalR --> S_WriteAudit["Write 'LOGOUT' Entry to Audit Log"]
-        S_WriteAudit --> S_Return200["Return 200 OK"]
-        S_Return200 --> LO_AwaitResp
+    subgraph ControllerLane["AuthController"]
+        LO_SendReq --> C_AuthValid{"Bearer token valid?"}
+        C_AuthValid -->|No| C_LO401["Return 401 Unauthorized"]
+        C_LO401 --> LO_Clear
+        C_AuthValid -->|Yes| C_CallLogout["Call AuthService.LogoutAsync(userId, refreshToken)"]
+        C_Return204["Return 204 No Content"]
+        C_Return204 --> LO_AwaitResp
     end
 
-    subgraph StorageLane["Database & Cache Store"]
-        S_RevokeSingle -.-> DB_Refresh[(PostgreSQL Refresh Tokens)]
-        S_RevokeAll -.-> DB_Refresh
-        S_BlacklistJTI -.-> Cache_Blacklist[(Redis / MemoryCache JTI Blacklist)]
+    subgraph ServiceLane["AuthService"]
+        C_CallLogout --> S_Revoke["Find refresh_tokens row and set is_revoked = true<br/>(if unknown or already revoked, proceed gracefully)"]
+        S_Revoke --> S_WriteAudit["Insert row into audit_logs (LOGOUT, userId, timestamp)"]
+        S_WriteAudit --> C_Return204
     end
 ```
 
 ---
 
-### Process 4: Profile Update (with Image Upload & Password Change Decisions)
+### Process 4: Profile Management & Password Change
 
 #### Specification
-- **Endpoints:** 
-  - `GET /api/v1/users/profile` (Retrieve Current Profile)
-  - `PUT /api/v1/users/profile` (Update Profile Details & Avatar)
-  - `PUT /api/v1/users/change-password` (Update Password)
-- **Primary Actors:** User, Users API Controller, PostgreSQL, MinIO Storage, Notification Service
-- **Preconditions:** User is authenticated with a valid access token.
-- **Postconditions:** User profile updated, avatar persisted in MinIO, password re-hashed if changed, other active sessions revoked upon password change.
+- **Endpoints:**
+  - `GET /api/users/me` (View current profile)
+  - `PUT /api/users/me` (Update `fullName`, `phoneNumber`)
+  - `PUT /api/users/me/password` (Change password with current password verification)
+  - `POST /api/users/me/avatar` (Upload avatar image $\le 5\text{MB}$ via MinIO)
+- **Use Case:** `UC-02`
+- **Preconditions:** User is signed in with a valid access token.
+- **Postconditions:** Profile updated; if password changed, all user refresh tokens revoked and audit log entry created.
 
-#### Decision Logic & Edge Cases:
-1. **Avatar Image Validation:**
-   - Allowed formats: `image/jpeg`, `image/png`, `image/webp`. Max size: `2MB`.
-   - If invalid format or size $> 2\text{MB}$ $\rightarrow$ Return `400 Bad Request`.
-   - If valid $\rightarrow$ Upload stream to MinIO bucket `user-avatars`, generate permanent/presigned URL.
-2. **Email Change & Uniqueness:**
-   - If email is updated $\rightarrow$ Check if new email already exists in DB.
-   - If already taken by another user $\rightarrow$ Return `409 Conflict` ("Email is already registered").
-   - If unique $\rightarrow$ Set `email_verified = false`, dispatch email verification link via Notification Service.
-3. **Password Change Verification:**
-   - Verify `current_password` hash via BCrypt.
-   - If incorrect $\rightarrow$ Return `400 Bad Request` ("Current password does not match").
-   - Validate new password against complexity policy (minimum 8 chars, uppercase, lowercase, numeric, special char).
-   - If weak $\rightarrow$ Return `422 Unprocessable Entity` ("Password complexity criteria not met").
-   - If valid $\rightarrow$ Hash new password, update DB, and **revoke all active refresh tokens except the current one** to secure against compromised sessions.
+#### Rules from Contract:
+1. `PUT /api/users/me`: Only `fullName` and `phoneNumber` can be updated. Email and role cannot be changed. If phone number is already used by another account $\rightarrow$ `409 Conflict`.
+2. `PUT /api/users/me/password`:
+   - Checks `currentPassword` against stored hash: if wrong $\rightarrow$ `401 Unauthorized`.
+   - Checks `newPassword` complexity (8–100 chars, letter + digit): if invalid $\rightarrow$ `400 Bad Request`.
+   - Hashes new password with BCrypt and updates database.
+   - **Revokes all refresh tokens** of the user (`is_revoked = true`) so other sessions must re-authenticate.
+   - Writes row in `audit_logs` (action: `CHANGE_PASSWORD`).
+   - Returns `204 No Content`.
+3. `POST /api/users/me/avatar`: Accepts `multipart/form-data` with field `file` (JPEG/PNG, max 5 MB). Uploads to MinIO and returns `200 OK` with `avatarUrl`. If wrong type or $> 5\text{MB}$ $\rightarrow$ `400 Bad Request`.
 
-#### UML Activity Diagram: Profile Update Process
+#### UML Activity Diagram: Profile Update & Password Change
 
 ```mermaid
-flowchart TD
-    subgraph ClientLane["Client (Mobile / Web App)"]
-        P_Start([Start]) --> P_Nav["Open Profile Settings Screen"]
-        P_Nav --> P_Fetch["GET /api/v1/users/profile"]
-        P_Fetch --> P_Display["Render Profile Form (Name, Phone, Email, Avatar)"]
+flowchart TB
+    subgraph ClientLane["Client (Web / Mobile App)"]
+        P_Start((Start)) --> P_Open["Open Profile screen"]
+        P_Open --> P_Get["Send GET /api/users/me"]
+        P_Get --> P_Display["Display profile (fullName, phoneNumber, email, avatarUrl, role)"]
         
-        P_Display --> P_EditChoice{"Select Update Action"}
+        P_Display --> P_ActionChoice{"Choose update action"}
         
-        P_EditChoice -->|Update Details / Avatar| P_InputDetails["Modify Name, Phone, New Email or Pick Avatar File"]
-        P_EditChoice -->|Change Password| P_InputPassword["Enter Current Password & New Password"]
+        %% Update details
+        P_ActionChoice -->|Edit info| P_EditDetails["Edit fullName or phoneNumber"]
+        P_EditDetails --> P_SubmitDetails["Send PUT /api/users/me {fullName, phoneNumber}"]
+        P_SubmitDetails --> P_RespDetails{"Response?"}
+        P_RespDetails -->|400 or 409| P_ShowErr["Display validation or phone conflict error"] --> P_Display
+        P_RespDetails -->|200 OK| P_UpdateUI["Update local user profile state"] --> P_End((End))
 
-        P_InputDetails --> P_SubmitDetails["Send PUT /api/v1/users/profile"]
-        P_InputPassword --> P_SubmitPassword["Send PUT /api/v1/users/change-password"]
+        %% Upload avatar
+        P_ActionChoice -->|Upload avatar| P_PickImg["Pick image file (JPEG/PNG, <= 5MB)"]
+        P_PickImg --> P_UploadAvatar["Send POST /api/users/me/avatar (multipart/form-data)"]
+        P_UploadAvatar --> P_RespAvatar{"Response?"}
+        P_RespAvatar -->|400| P_ShowAvatarErr["Show invalid format or file size error"] --> P_Display
+        P_RespAvatar -->|200 OK| P_ShowNewAvatar["Update avatarUrl on screen"] --> P_End
 
-        P_ViewError["Display Specific Validation Error"]
-        P_SubmitDetails --> P_AwaitProfileResp{"Response?"}
-        P_SubmitPassword --> P_AwaitPwdResp{"Response?"}
-
-        P_AwaitProfileResp -->|Error| P_ViewError
-        P_AwaitPwdResp -->|Error| P_ViewError
-        P_ViewError --> P_Display
-
-        P_AwaitProfileResp -->|200 OK| P_SuccessProfile["Update Local User State & Avatar View"] --> P_End([End - Updated])
-        P_AwaitPwdResp -->|200 OK| P_SuccessPwd["Show 'Password Changed Successfully' Notice"] --> P_End
+        %% Change password
+        P_ActionChoice -->|Change password| P_InputPwd["Enter currentPassword and newPassword"]
+        P_InputPwd --> P_SubmitPwd["Send PUT /api/users/me/password {currentPassword, newPassword}"]
+        P_SubmitPwd --> P_RespPwd{"Response?"}
+        P_RespPwd -->|400 or 401| P_ShowPwdErr["Show wrong password or complexity error"] --> P_InputPwd
+        P_RespPwd -->|204 No Content| P_ShowPwdSuccess["Show 'Password changed successfully' notice"] --> P_End
     end
 
-    subgraph APIControllerLane["ASP.NET Core Web API (User Profile Service)"]
-        P_SubmitDetails --> S_ValFields{"Are Basic Fields Valid?"}
-        S_ValFields -->|No| S_Err400["Return 400 Bad Request"]
-        S_Err400 --> P_AwaitProfileResp
+    subgraph ControllerLane["UsersController"]
+        %% PUT /api/users/me
+        P_SubmitDetails --> C_ValProfile{"fullName and phoneNumber valid?"}
+        C_ValProfile -->|No| C_Prof400["Return 400 Bad Request"] --> P_RespDetails
+        C_ValProfile -->|Yes| C_CallProfService["Call UserService.UpdateProfileAsync(userId, req)"]
 
-        S_ValFields -->|Yes| S_CheckAvatar{"Avatar File Attached?"}
-        
-        S_CheckAvatar -->|Yes| S_ValAvatar{"MIME Valid & Size <= 2MB?"}
-        S_ValAvatar -->|No| S_AvatarErr["Return 400 Invalid Image Format/Size"]
-        S_AvatarErr --> P_AwaitProfileResp
-        S_ValAvatar -->|Yes| S_UploadMinIO["Upload Image Binary to MinIO Bucket"]
-        S_UploadMinIO --> S_CheckEmailChange
-        S_CheckAvatar -->|No| S_CheckEmailChange{"Email Changed?"}
+        %% POST /api/users/me/avatar
+        P_UploadAvatar --> C_ValAvatar{"File valid? (JPEG/PNG, <= 5MB)"}
+        C_ValAvatar -->|No| C_Av400["Return 400 Bad Request"] --> P_RespAvatar
+        C_ValAvatar -->|Yes| C_CallAvService["Upload file stream to MinIO"]
 
-        S_CheckEmailChange -->|Yes| S_CheckEmailUnique{"Is Email Already in DB?"}
-        S_CheckEmailUnique -->|Taken| S_EmailTaken["Return 409 Email Already in Use"]
-        S_EmailTaken --> P_AwaitProfileResp
-        S_CheckEmailUnique -->|Unique| S_PrepVerification["Generate Verification Token & Queue Email"]
-        S_PrepVerification --> S_SaveProfileDB["Save Updated User Entity in DB"]
-        S_CheckEmailChange -->|No| S_SaveProfileDB
-
-        S_SaveProfileDB --> S_ReturnProfile200["Return 200 OK with Updated Profile"]
-        S_ReturnProfile200 --> P_AwaitProfileResp
-
-        %% Password Change Flow
-        P_SubmitPassword --> S_VerifyOldPwd["Verify Current Password Hash via BCrypt"]
-        S_VerifyOldPwd --> S_OldPwdValid{"Current Password Matches?"}
-        S_OldPwdValid -->|No| S_OldPwdErr["Return 400 Current Password Incorrect"]
-        S_OldPwdErr --> P_AwaitPwdResp
-
-        S_OldPwdValid -->|Yes| S_CheckPwdComplexity{"New Password Meets Complexity Rules?"}
-        S_CheckPwdComplexity -->|No| S_PwdComplexityErr["Return 422 Weak Password"]
-        S_PwdComplexityErr --> P_AwaitPwdResp
-
-        S_CheckPwdComplexity -->|Yes| S_HashNewPwd["Hash New Password with BCrypt"]
-        S_HashNewPwd --> S_UpdatePwdDB["Update Password Hash in DB"]
-        S_UpdatePwdDB --> S_RevokeOtherSessions["Revoke All Other User Refresh Tokens in DB"]
-        S_RevokeOtherSessions --> S_ReturnPwd200["Return 200 OK Password Changed"]
-        S_ReturnPwd200 --> P_AwaitPwdResp
+        %% PUT /api/users/me/password
+        P_SubmitPwd --> C_ValNewPwd{"newPassword meets rule?<br/>(8-100 chars, letter + digit)"}
+        C_ValNewPwd -->|No| C_Pwd400["Return 400 Bad Request"] --> P_RespPwd
+        C_ValNewPwd -->|Yes| C_CallPwdService["Call UserService.ChangePasswordAsync(userId, req)"]
     end
 
-    subgraph MinIOLane["MinIO Storage & Email"]
-        S_UploadMinIO -.-> M_Bucket[(MinIO: user-avatars)]
-        M_Bucket -.-> S_CheckEmailChange
-        S_PrepVerification -.-> N_EmailService["Notification Service (Verification Email)"]
-    end
+    subgraph ServiceLane["UserService & AppDbContext"]
+        %% Profile Service
+        C_CallProfService --> S_CheckPhoneUnique{"phoneNumber already used<br/>by another user?"}
+        S_CheckPhoneUnique -->|Yes| S_Prof409["Return 409 Conflict<br/>(Phone number already used)"] --> P_RespDetails
+        S_CheckPhoneUnique -->|No| S_SaveUser["Update fullName, phoneNumber in users table"]
+        S_SaveUser --> S_ReturnUser["Return updated User object (200 OK)"] --> P_RespDetails
 
-    subgraph DBLane2["PostgreSQL Database"]
-        S_CheckEmailUnique -.-> DB_UserQuery[(Users Table)]
-        S_SaveProfileDB -.-> DB_UserQuery
-        S_UpdatePwdDB -.-> DB_UserQuery
-        S_RevokeOtherSessions -.-> DB_TokensQuery[(Refresh Tokens Table)]
+        %% Avatar Service
+        C_CallAvService --> S_MinIO["Save file into MinIO bucket 'avatars'"]
+        S_MinIO --> S_UpdateAvatarUrl["Update users.avatar_url in PostgreSQL"]
+        S_UpdateAvatarUrl --> S_ReturnAvatar["Return 200 OK {avatarUrl}"] --> P_RespAvatar
+
+        %% Password Service
+        C_CallPwdService --> S_VerifyCurrent["Verify currentPassword with BCrypt against password_hash"]
+        S_VerifyCurrent --> S_CurPwdMatch{"Password correct?"}
+        S_CurPwdMatch -->|No| S_Pwd401["Return 401 Unauthorized<br/>(Current password is wrong)"] --> P_RespPwd
+        S_CurPwdMatch -->|Yes| S_HashNew["Hash newPassword with BCrypt"]
+        S_HashNew --> S_UpdatePwdDB["Update users.password_hash"]
+        S_UpdatePwdDB --> S_RevokeAllTokens["Set is_revoked = true for all user refresh_tokens"]
+        S_RevokeAllTokens --> S_AuditPwd["Insert row into audit_logs (CHANGE_PASSWORD)"]
+        S_AuditPwd --> S_Return204["Return 204 No Content"] --> P_RespPwd
     end
 ```
 
 ---
 
-## 4. Error Code & Decision Matrix
+## 4. Contract Status & Error Mapping Matrix
 
-| Action | Condition / Decision | HTTP Status | Code / Response Message | System Action |
-| :--- | :--- | :--- | :--- | :--- |
-| **Login** | Rate limit threshold exceeded | `429 Too Many Requests` | `AUTH_RATE_LIMIT_EXCEEDED` | Client throttled for 60 seconds. |
-| **Login** | Unknown user or incorrect password | `401 Unauthorized` | `INVALID_CREDENTIALS` | Generic message; increments failed counter. |
-| **Login** | Failed attempts $\ge 5$ | `423 Locked` | `ACCOUNT_TEMPORARILY_LOCKED` | Account locked for 15 minutes; timer returned. |
-| **Login** | Account marked inactive/suspended | `403 Forbidden` | `ACCOUNT_INACTIVE` | Login rejected; contact admin notice. |
-| **Refresh** | Token missing or malformed | `400 Bad Request` | `INVALID_TOKEN_FORMAT` | Immediate client redirect to login. |
-| **Refresh** | Refresh token not found in database | `401 Unauthorized` | `REFRESH_TOKEN_NOT_FOUND` | Session invalid; force re-login. |
-| **Refresh** | Token expired (`expires_at < UtcNow`) | `401 Unauthorized` | `REFRESH_TOKEN_EXPIRED` | Expired record purged; force re-login. |
-| **Refresh** | Token already revoked or reused | `401 Unauthorized` | `TOKEN_REUSE_DETECTED` | **All tokens in family revoked**; security alert logged. |
-| **Logout** | Normal single session logout | `200 OK` | `LOGOUT_SUCCESSFUL` | Target token revoked; access JTI blacklisted. |
-| **Logout** | All devices session revocation | `200 OK` | `GLOBAL_LOGOUT_SUCCESSFUL` | All active tokens for user revoked. |
-| **Profile** | Avatar file $> 2\text{MB}$ or non-image MIME | `400 Bad Request` | `INVALID_AVATAR_FORMAT` | Upload aborted. |
-| **Profile** | New email already registered by another | `409 Conflict` | `EMAIL_ALREADY_EXISTS` | Update aborted; current email retained. |
-| **Profile** | Current password incorrect on change | `400 Bad Request` | `CURRENT_PASSWORD_INCORRECT` | Password change rejected. |
-| **Profile** | New password fails complexity regex | `422 Unprocessable` | `PASSWORD_COMPLEXITY_FAILED` | Requires upper, lower, number, special char. |
-| **Profile** | Password successfully changed | `200 OK` | `PASSWORD_CHANGED_SUCCESS` | New hash saved; **all other sessions revoked**. |
-
----
-
-## 5. Implementation Notes for Sprint 1-2
-
-1. **JWT & Refresh Token Architecture:**
-   - Access token lifetime: **15 minutes** (`expires_in: 900`).
-   - Refresh token lifetime: **7 days** with automatic token rotation.
-   - Database table `refresh_tokens`: `id`, `user_id`, `token_hash`, `family_id`, `is_used`, `is_revoked`, `expires_at`, `created_at`, `replaced_by_token_id`.
-2. **Timing-Attack Countermeasure:**
-   - When an email address is not found in database, execute a dummy BCrypt verification before returning `401 Unauthorized` so that response duration is indistinguishable from an invalid password attempt.
-3. **Blacklist for Revoked Access Tokens:**
-   - For immediate logout effect prior to 15-minute access token expiration, store the revoked token's `jti` in a distributed Redis or in-memory sliding cache with TTL equal to the token's remaining lifespan.
+| Endpoint | Condition | Status Code | Response / Detail |
+|---|---|---|---|
+| `POST /api/auth/login` | Missing email or password | `400 Bad Request` | Problem details with field errors |
+| `POST /api/auth/login` | Email not found or wrong password | `401 Unauthorized` | `"Invalid email or password."` |
+| `POST /api/auth/login` | Status is `INACTIVE` or `SUSPENDED` | `403 Forbidden` | `"This account is not active."` |
+| `POST /api/auth/login` | Valid credentials, status `ACTIVE` | `200 OK` | `AuthResponse` (`accessToken`, `refreshToken`, `expiresIn`, `user`) |
+| `POST /api/auth/refresh` | Missing refresh token | `400 Bad Request` | Missing token error |
+| `POST /api/auth/refresh` | Unknown, expired, or revoked token | `401 Unauthorized` | Invalid refresh token |
+| `POST /api/auth/refresh` | Valid refresh token | `200 OK` | New `AuthResponse` with rotated tokens |
+| `POST /api/auth/logout` | Valid access token and refresh token | `204 No Content` | Refresh token revoked in DB, audit log written |
+| `GET /api/users/me` | Valid access token | `200 OK` | `User` profile object |
+| `PUT /api/users/me` | Validation failed | `400 Bad Request` | Field validation errors |
+| `PUT /api/users/me` | Phone number already used | `409 Conflict` | `"Phone number is already registered."` |
+| `PUT /api/users/me` | Valid update | `200 OK` | Updated `User` object |
+| `PUT /api/users/me/password`| New password < 8 chars or no digit | `400 Bad Request` | Password complexity failure |
+| `PUT /api/users/me/password`| Current password incorrect | `401 Unauthorized` | `"The current password is wrong."` |
+| `PUT /api/users/me/password`| Successful change | `204 No Content` | All refresh tokens revoked, audit log written |
+| `POST /api/users/me/avatar` | Invalid file type or size > 5 MB | `400 Bad Request` | Wrong file type or file too large |
+| `POST /api/users/me/avatar` | Valid upload | `200 OK` | `{ "avatarUrl": "..." }` |

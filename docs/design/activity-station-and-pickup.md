@@ -201,28 +201,19 @@ flowchart TB
         S_CheckOrder["Query delivery_orders by Tracking Number"]
         S_CheckState{"Order Status == ARRIVED?"}
         
-        S_CheckState -->|No (e.g. FAILED / RETURNED)| S_StateErr["Return Error: Order Not Ready for Pickup or Expired"]
+        S_CheckState -->|"No (e.g. FAILED / RETURNED)"| S_StateErr["Return Error: Order Not Ready for Pickup or Expired"]
         S_StateErr --> OP_DisplayError
 
-        S_CheckState -->|Yes| S_CheckLockout{"Is Code Verification Locked?"}
-        S_CheckLockout -->|Yes| S_LockedResp["Return 423: Too Many Failed Verification Attempts"]
-        S_LockedResp --> OP_Lockout
-
-        S_CheckLockout -->|No| S_VerifyCode{"Entered Code == order.secure_code?"}
+        S_CheckState -->|Yes| S_VerifyCode{"Entered Code == order.secure_code?"}
         
         %% Wrong Code Branch
-        S_VerifyCode -->|No| S_IncAttempts["Increment failed_code_attempts"]
-        S_IncAttempts --> S_MaxAttempts{"Attempts >= 3?"}
-        S_MaxAttempts -->|Yes| S_LockCode["Set code_lockout_until = UtcNow + 10m<br/>Send Security Alert to Customer"]
-        S_MaxAttempts -->|No| S_PromptRetry["Return 400: Invalid Secure Code"]
-        S_LockCode --> OP_Lockout
-        S_PromptRetry --> OP_DisplayError
+        S_VerifyCode -->|No| S_IncAttempts["System rejects code and counts attempt"]
+        S_IncAttempts --> OP_DisplayError
         OP_DisplayError --> R_Retry
         R_Retry --> R_EnterCode
 
         %% Correct Code Branch
-        S_VerifyCode -->|Yes| S_ResetAttempts["Reset failed_code_attempts = 0"]
-        S_ResetAttempts --> S_SendUnlock["Send Signal to Kiosk / Operator: Validated"]
+        S_VerifyCode -->|Yes| S_SendUnlock["Send Signal to Kiosk / Operator: Validated"]
         S_SendUnlock --> OP_OpenLocker
         OP_Handover --> R_ReceivePackage
 
