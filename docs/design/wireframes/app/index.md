@@ -1,41 +1,22 @@
-# Mobile Wireframe Index
+# Mobile App Wireframes
 
-Low-fidelity mobile wireframe previews and user flow documentation for Customer App and Station Operator App.
+Low-fidelity mobile wireframe previews and user flow documentation for Customer and Station Operator applications.
 
 LA-76 under LA-14 · Mobile only · 43 screens for 2 actors (27 Customer, 16 Station Operator). Built for Flutter mobile platform. This index covers mobile wireframe PNG previews only and does not represent final application implementation.
 
 Design system reference: [Design System](../../design-system.md)
 
+Wireframe conventions: [Mobile Wireframe Conventions](./mobile-wireframe-conventions.md)
+
 ---
 
-## 1. Project Context & Business Rules
+## 1. Overview
 
-### System Overview
-- **Project Name:** SmartDroneDelivery (Nền tảng quản lý giao hàng bằng drone tích hợp AI / AI-powered Drone Delivery Management Platform).
-- **Scope:** Managing drone logistics, delivery orders, station slots, and AI estimations. Does not directly control flight hardware.
-- **Framework:** Flutter Mobile (iOS & Android).
-- **Related Tasks:** 
-  - **LA-76:** Design mobile wireframes (Customer & Station Operator).
-  - **LA-77:** Define design system.
-  - **LA-75:** Web wireframes (Dispatcher/Admin scope — separate from mobile).
-
-### Order State Lifecycle
-`PENDING` $\rightarrow$ `APPROVED` $\rightarrow$ `READY_FOR_TAKEOFF` $\rightarrow$ `IN_TRANSIT` $\rightarrow$ `ARRIVED` $\rightarrow$ `DELIVERED`  
-*(Exception states: `CANCELLED`, `FAILED`)*
-
-### Key Business Constraints
-- **Customer Restrictions:**
-  - Customers can only view and manage their own delivery orders.
-  - Delivery orders start at `PENDING`.
-  - Order modification is permitted only in `PENDING` state.
-  - Order cancellation is permitted in `PENDING` or `APPROVED` states. From `READY_FOR_TAKEOFF` onwards, cancellation cannot be performed directly by the customer.
-  - Package OTP verification (secure code) is required at `ARRIVED` state to open station compartment and confirm delivery.
-- **Station Operator Scope:**
-  - Manage station operational status (`Operational`, `Maintenance`, `Offline`) and landing slot allocation.
-  - Monitor real-time slot sensor states (`Empty`, `Occupied`, `Reserved`).
-  - Perform package physical verification (weight $\le 3\text{ kg}$, dimensions, fragile check) and confirm pickups.
-  - Confirm drone arrival via telemetry data and trigger customer pickup notification.
-  - Report package/hardware exceptions (`Report a problem`) directly to the Dispatcher.
+| Actor | Number of Screens | Directory |
+| :--- | :---: | :--- |
+| Customer | 27 | [`customer/`](./customer/) |
+| Station Operator | 16 | [`station-operator/`](./station-operator/) |
+| **Total** | **43** | |
 
 ---
 
@@ -83,7 +64,7 @@ Design system reference: [Design System](../../design-system.md)
 | **O04** | Tasks (Arrivals) | Inbound drone queue showing incoming flights and reserved landing slots (UC-17, UC-18) | [O04-Tasks-Arrivals.png](./station-operator/O04-Tasks-Arrivals.png) |
 | **O05** | Scan Order | Barcode/QR camera scanner and manual tracking number lookup tool (UC-18) | [O05-Scan.png](./station-operator/O05-Scan.png) |
 | **O06** | Scan Not Found | Validation error screen for orders not assigned to the operator's station (UC-18) | [O06-Scan-NotFound.png](./station-operator/O06-Scan-NotFound.png) |
-| **O07** | Confirm Pickup Checklist | Required 3-point QA safety checklist (matching photo, weight $\le 3\text{ kg}$, damage-free) before loading (UC-18) | [O07-Pickup.png](./station-operator/O07-Pickup.png) |
+| **O07** | Confirm Pickup Checklist | Required 3-point QA safety checklist (matching photo, weight \(\leq 3\text{ kg}\), damage-free) before loading (UC-18) | [O07-Pickup.png](./station-operator/O07-Pickup.png) |
 | **O08** | Pickup Completed | State confirming package received, drone loaded at slot, and status changed to Ready for Takeoff (UC-18) | [O08-Pickup-Done.png](./station-operator/O08-Pickup-Done.png) |
 | **O09** | Confirm Arrival | Inbound telemetry display and station hardware slot sensor validation before landing confirmation (UC-17, UC-18) | [O09-Arrival.png](./station-operator/O09-Arrival.png) |
 | **O10** | Arrival Completed | Final arrival state notifying customer and generating secure OTP for compartment release (UC-08, UC-18) | [O10-Arrival-Done.png](./station-operator/O10-Arrival-Done.png) |
@@ -98,17 +79,8 @@ Design system reference: [Design System](../../design-system.md)
 
 ## 4. Scope Notes & Validation Remarks
 
-1. **Asset Type:** All visual assets are static PNG preview images (`C01`–`C27`, `O01`–`O16`). Source vector files (SVG) and design project files (Draw.io / Figma) are managed in design asset repositories.
+1. **Asset Type:** All 43 visual assets are static PNG preview images (`C01`–`C27`, `O01`–`O16`). Source vector files (SVG) and design project files (Draw.io / Figma) are managed in design asset repositories.
 2. **Asset Format:** All 43 wireframe screens are provided in `.png` format.
 3. **Use Case Mapping:** All screens map directly to Use Cases `UC-01` through `UC-20` specified in system documentation.
 
 ---
-
-## 5. References
-
-- **System Requirements Specification:** `SRS.md`
-- **Use Cases Specification:** `use-cases.md`
-- **Customer User Flow Document:** `customer.md`
-- **Project Master Summary:** `Tong_Hop_Du_An.md`
-- **Parent Task:** LA-14 (SmartDroneDelivery Architecture & System Design)
-- **Sub-task:** LA-76 (Design Mobile Wireframes for Customer and Station Operator Apps)

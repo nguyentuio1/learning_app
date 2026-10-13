@@ -2,7 +2,8 @@
 **Task:** LA-77 — Define design system  
 **Parent task:** LA-14 — Design UI/UX for the web portal and mobile apps  
 **Scope owner:** Shared visual and interaction rules for the Customer App and Station Operator App  
-**Status:** Draft for validation against the source Figma file  
+**Status:** Draft — pending validation against the source Figma file
+
 **Source reviewed:** `SmartDroneDelivery — Customer App.pdf` (12 pages); Operator screen inventory available in project context.
 
 ## 1. Objective and scope
