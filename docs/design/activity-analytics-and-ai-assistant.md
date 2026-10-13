@@ -31,7 +31,7 @@ This specification models the two complementary intelligent workflows defined in
 | **Logistics Manager** | Human Actor | Applies filters, reviews operational KPIs, inspects charts, and requests exports / AI summaries. |
 | **Customer** | Human Actor | Interacts with in-app AI chat, queries active orders, asks about ETAs, delays, or delivery policies. |
 | **Client UI** | System Component | Web Portal (ReactJS) for Manager Dashboard / Mobile App (Flutter) for Customer AI Chat. |
-| **Backend & Analytics API** | System Component | ASP.NET Core API (`/api/v1/analytics`, `/api/v1/ai/chat`), authentication, authorization, caching layer. |
+| **Backend & Analytics API** | System Component | ASP.NET Core API (`/api/analytics`, `/api/ai/chat`), authentication, authorization, caching layer. |
 | **Database & Object Storage** | System Component | PostgreSQL (orders, missions, telemetry, chat logs) and MinIO (exported PDF/CSV reports). |
 | **AI Assistant & Analytics Engine** | System Component | LLM, RAG retriever, ETA prediction model, and telemetry anomaly analyzer. |
 | **Dispatcher / Human Support** | Human Actor | Receives escalated chat sessions when customer requests a human or issue complexity exceeds AI threshold. |
