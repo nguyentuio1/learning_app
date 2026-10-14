@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartDroneDelivery.Api", "SmartDroneDelivery.Api\SmartDroneDelivery.Api.csproj", "{90448770-1027-4312-A36B-D9DA05AD0151}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartDroneDelivery.Tests", "SmartDroneDelivery.Tests\SmartDroneDelivery.Tests.csproj", "{D7123230-5AAC-4B86-8213-B340297FA639}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{90448770-1027-4312-A36B-D9DA05AD0151}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90448770-1027-4312-A36B-D9DA05AD0151}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90448770-1027-4312-A36B-D9DA05AD0151}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7123230-5AAC-4B86-8213-B340297FA639}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7123230-5AAC-4B86-8213-B340297FA639}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7123230-5AAC-4B86-8213-B340297FA639}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7123230-5AAC-4B86-8213-B340297FA639}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
