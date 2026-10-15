@@ -23,11 +23,12 @@ public static class ApiProblemDetails
         return body;
     }
 
-    public static async Task WriteAsync(HttpContext context, int status, string detail)
+    public static async Task WriteAsync(
+        HttpContext context, int status, string detail, IDictionary<string, string[]>? errors = null)
     {
         context.Response.StatusCode = status;
         context.Response.ContentType = "application/problem+json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(Body(status, detail), JsonOptions));
+        await context.Response.WriteAsync(JsonSerializer.Serialize(Body(status, detail, errors), JsonOptions));
     }
 
     public static IActionResult FromModelState(ActionContext context)
@@ -76,7 +77,7 @@ public class ApiExceptionMiddleware
         }
         catch (ApiException ex) when (!context.Response.HasStarted)
         {
-            await ApiProblemDetails.WriteAsync(context, ex.StatusCode, ex.Message);
+            await ApiProblemDetails.WriteAsync(context, ex.StatusCode, ex.Message, ex.Errors);
         }
     }
 }

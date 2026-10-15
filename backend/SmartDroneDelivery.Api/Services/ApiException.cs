@@ -5,8 +5,12 @@ public class ApiException : Exception
 {
     public int StatusCode { get; }
 
-    public ApiException(int statusCode, string detail) : base(detail)
+    /// <summary>Messages per field (camelCase), only used for 400 validation errors.</summary>
+    public IDictionary<string, string[]>? Errors { get; }
+
+    public ApiException(int statusCode, string detail, IDictionary<string, string[]>? errors = null) : base(detail)
     {
         StatusCode = statusCode;
+        Errors = errors;
     }
 }
