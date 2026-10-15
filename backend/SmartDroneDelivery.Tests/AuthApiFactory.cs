@@ -14,6 +14,8 @@ public class AuthApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        // Test-only controller with one endpoint per role rule.
+        builder.ConfigureServices(services => services.AddControllers().AddApplicationPart(typeof(RbacProbeController).Assembly));
         builder.ConfigureServices(services =>
         {
             foreach (var descriptor in services

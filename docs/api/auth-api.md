@@ -163,6 +163,13 @@ No separate endpoint. Every endpoint states the roles that may call it. A call w
 { "type": "https://httpstatuses.com/403", "title": "Forbidden", "status": 403, "detail": "You do not have permission to perform this action." }
 ```
 
+Rules for every endpoint of the API:
+
+- An endpoint is protected by default. Only endpoints marked "anyone" accept a call without a token.
+- The role comes from the `role` claim of the access token. When an administrator changes a role, it applies to the user's next access token (after the next refresh, at most 15 minutes).
+- An endpoint can allow one role or several roles. In the code the roles are the constants of `AppRoles`, used as `[Authorize(Roles = AppRoles.Admin)]`.
+- `401` means the token is missing, invalid, expired or signed with another key. `403` means the token is valid but the role is not allowed.
+
 Access of the endpoints in this document:
 
 | Endpoint | Allowed roles |

@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -55,7 +56,9 @@ builder.Services
                 "You do not have permission to perform this action.")
         };
     });
-builder.Services.AddAuthorization();
+// Secure by default: an endpoint without [Authorize] or [AllowAnonymous] still needs a signed-in user.
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
