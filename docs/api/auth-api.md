@@ -180,13 +180,13 @@ Access of the endpoints in this document:
 
 ## 4. User profile (LA-17)
 
-All endpoints in this section: Auth: yes, roles: any signed-in user.
+All endpoints in this section: Auth: yes, roles: any signed-in user. A user whose account is `INACTIVE` or `SUSPENDED` gets `403` with detail `This account is not active.`
 
 ### GET /api/users/me
 Response `200 OK`: `User`.
 
 ### PUT /api/users/me
-Update the profile. Email and role cannot be changed here.
+Update the profile. Email and role cannot be changed here; if the body contains them they are ignored. The user may keep the own phone number.
 
 Request
 ```json
@@ -203,7 +203,9 @@ Request
 ```
 Response `204 No Content`. All refresh tokens of the user are revoked, so other devices must sign in again.
 
-Errors: `400` new password too weak, `401` the current password is wrong.
+Errors: `400` new password too weak or equal to the current one (`errors.newPassword`), `401` the current password is wrong (detail `Current password is incorrect.`).
+
+The `401` of this endpoint is not an expired token. Clients must show the message and must not refresh the token or sign the user out because of it. The access token used for this call stays valid until it expires (at most 15 minutes); only the refresh tokens are revoked.
 
 ### POST /api/users/me/avatar
 Upload an avatar. Content type `multipart/form-data` with one file field named `file` (JPEG or PNG, at most 5 MB). The file is stored in MinIO.
@@ -213,7 +215,9 @@ Response `200 OK`:
 { "avatarUrl": "http://localhost:9000/avatars/6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11.png" }
 ```
 
-Errors: `400` wrong file type or file too large.
+Errors: `400` with `errors.file` when the file is missing, empty, larger than 5 MB or not a JPEG or PNG. The type is decided from the content of the file, not from its name or content type.
+
+The file is saved as `{userId}.png` or `{userId}.jpg` in the bucket `avatars` (setting `Minio:AvatarBucket`). The bucket is created on the first upload and its files can be read without a login. When the new avatar has another extension than the old one, the old file is deleted. The base URL of the returned link can be set with `Minio:PublicBaseUrl` when MinIO is not reached as `localhost:9000`.
 
 ## 5. Mock data for web and mobile
 

@@ -45,6 +45,30 @@ public class LogoutRequest
     public string RefreshToken { get; set; } = string.Empty;
 }
 
+public class UpdateProfileRequest
+{
+    [Required(ErrorMessage = "Full name is required.")]
+    [MaxLength(150, ErrorMessage = "Full name must be at most 150 characters.")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Phone number is required.")]
+    [RegularExpression(@"^\d{9,11}$", ErrorMessage = "Phone number must be 9 to 11 digits.")]
+    public string PhoneNumber { get; set; } = string.Empty;
+}
+
+public class ChangePasswordRequest
+{
+    [Required(ErrorMessage = "Current password is required.")]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "New password is required.")]
+    [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be 8 to 100 characters.")]
+    [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d).+$", ErrorMessage = "Password must contain at least one letter and one digit.")]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public record AvatarResponse(string AvatarUrl);
+
 public record RoleDto(int Id, string Code, string Name);
 
 public record UserDto(

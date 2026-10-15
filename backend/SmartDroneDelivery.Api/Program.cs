@@ -24,6 +24,9 @@ if (Encoding.UTF8.GetByteCount(jwt.Key) < 32)
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
+builder.Services.AddSingleton<IAvatarStorage, MinioAvatarStorage>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
