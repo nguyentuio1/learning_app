@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { Alert, Button, Form, Input, Spin } from 'antd'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LoginIllustration } from '../components/auth/LoginIllustration'
 import './login.css'
 
 export function LoginPage() {
   const auth = useAuth()
+  const location = useLocation()
   const [form] = Form.useForm<{ email: string; password: string }>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -21,8 +22,9 @@ export function LoginPage() {
   }, [leaving])
   if (auth.status === 'loading') return <main className="page-shell"><Spin aria-label="Restoring session" /></main>
   if (auth.status === 'authenticated' && (!submitting.current || transitionDone)) {
-    // The existing home route is the only implemented post-login destination.
-    return <Navigate to="/" replace />
+    // Accept only implemented internal destinations, never arbitrary redirect URLs.
+    const destination = location.state?.from === '/' ? '/' : '/profile'
+    return <Navigate to={destination} replace />
   }
   async function submit(values: { email: string; password: string }) {
     if (submitting.current) return

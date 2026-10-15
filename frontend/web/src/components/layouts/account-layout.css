@@ -1,0 +1,23 @@
+/* Account shell adapted from the reviewed draft; only implemented destinations are shown. */
+.account-layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100vh; background: #eff4ee; }
+.account-sidebar { background: #e6eedc; border-right: 1px solid #c5d3bc; padding: 32px 18px; display: flex; flex-direction: column; gap: 32px; }
+.account-brand { display: flex; gap: 10px; align-items: center; color: #1e4f3c; font-size: 20px; font-weight: 700; }
+.account-brand small { display: block; font-size: 10px; font-weight: 400; margin-top: 4px; }
+.account-brand svg { width: 36px; height: 36px; background: #1e4f3c; border-radius: 9px; padding: 5px; stroke: #e6eedc; fill: none; stroke-width: 2; }
+.account-nav-label { display: block; color: #52665a; font-size: 10px; letter-spacing: 2px; margin: 12px 14px 20px; }
+.account-current { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 8px; color: white; background: #1e4f3c; font-size: 14px; font-weight: 600; }
+.account-current:hover { color: white; background: #163f2f; }
+.account-current::before { content: ''; width: 3px; height: 18px; border-radius: 2px; background: #d5aa58; }
+.account-sidebar-bottom { margin-top: auto; padding-top: 24px; border-top: 1px solid #c5d3bc; display: grid; gap: 16px; }
+.account-sidebar-bottom span { color: #52665a; font-size: 12px; }
+.account-workspace { min-width: 0; }
+.account-header { min-height: 80px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 20px 36px; background: #fffffc; border-bottom: 1px solid #d3dfd5; color: #52665a; font-size: 13px; }
+.account-user { display: flex; align-items: center; gap: 12px; }
+@media (max-width: 760px) {
+  .account-layout { grid-template-columns: 1fr; }
+  .account-sidebar { padding: 16px; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px; border-right: 0; border-bottom: 1px solid #c5d3bc; }
+  .account-nav-label { display: none; }
+  .account-sidebar-bottom { margin: 0 0 0 auto; padding: 0; border: 0; }
+  .account-sidebar-bottom span { display: none; }
+  .account-header { padding: 16px; min-height: 64px; }
+}
