@@ -10,8 +10,11 @@ public static class SeedData
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // Ensure database is created/migrated
-        await context.Database.MigrateAsync();
+        // Ensure database is created/migrated (non-relational providers are only used by the tests)
+        if (context.Database.IsRelational())
+            await context.Database.MigrateAsync();
+        else
+            await context.Database.EnsureCreatedAsync();
 
         // 1. Seed Roles
         if (!await context.Roles.AnyAsync())
