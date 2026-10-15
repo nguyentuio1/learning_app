@@ -1,0 +1,67 @@
+.profile-page .avatar-picker {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #d8e2cc;
+  border-radius: 12px;
+  background: #f1f5eb;
+}
+.profile-page .avatar-picker-portrait {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex: 0 0 80px;
+  border: 3px solid #fffffc;
+  border-radius: 50%;
+  outline: 1px solid #cfdbc3;
+  background: #e1ebd4;
+}
+.profile-page .avatar-picker-portrait img {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+.profile-page .avatar-picker-content { display: grid; gap: 5px; flex: 1; min-width: 0; }
+.profile-page .avatar-picker-label { color: #203b30; font-size: 13px; font-weight: 650; }
+.profile-page .avatar-picker-file {
+  overflow: hidden;
+  color: #617167;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-page .avatar-picker-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 3px; }
+.profile-page .avatar-picker-choose {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #1e4f3c;
+  border-radius: 7px;
+  color: #fff;
+  background: #1e4f3c;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.profile-page .avatar-picker-choose:hover { background: #163f2f; border-color: #163f2f; }
+.profile-page .avatar-picker-actions button:focus-visible { outline: 2px solid #c0994b; outline-offset: 3px; }
+@media (max-width: 560px) {
+  .profile-page .avatar-picker { align-items: flex-start; gap: 15px; padding: 18px 15px; }
+}
+@media (max-width: 380px) {
+  .profile-page .avatar-picker { flex-direction: column; }
+  .profile-page .avatar-picker-content { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-page .avatar-picker-choose { transition: none; }
+}
