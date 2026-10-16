@@ -44,8 +44,10 @@ All entity properties are mapped to columns unless noted as a navigation. Defaul
 | `Id` | `Guid` / `uuid` | PK, NOT NULL | Generated UUID. |
 | `SenderId` | `Guid` / `uuid` | FK → `User.Id`, NOT NULL | Owning sender; customer-scoped access. |
 | `PackageName` | `string` / `varchar(200)` | NOT NULL | Required; maximum 200 characters. |
-| `WeightGram` | `decimal` / `numeric(8,2)` | NOT NULL | Must be greater than zero; drone maximum remains an open issue. |
-| `LengthCm`, `WidthCm`, `HeightCm` | `decimal` / `numeric(6,2)` | NOT NULL | Each must be greater than zero; cargo-bay maxima remain an open issue. |
+| `WeightGram` | `decimal` / `numeric(8,2)` | NOT NULL | Must be greater than zero and at most 5000 grams (5.0 kg). |
+| `LengthCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 40 cm. |
+| `WidthCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 30 cm. |
+| `HeightCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 30 cm. |
 | `PackageImageUrl` | `string?` / `text` | NULL | Optional image reference (MinIO URL in ERD). |
 | `IsFragile` | `bool` / `boolean` | NOT NULL | Defaults to false. |
 | `CreatedAt` | `DateTime` / `timestamptz` | NOT NULL | UTC creation time, defaults to current time. |
@@ -63,8 +65,8 @@ All entity properties are mapped to columns unless noted as a navigation. Defaul
 | `DispatcherId` | `Guid?` / `uuid` | FK → `User.Id`, NULL | Optional dispatcher who approved/handled the order. |
 | `DeliveryAddressId` | `Guid?` / `uuid` | FK → `CustomerAddress.Id`, NULL | Optional saved address. |
 | `Status` | `OrderStatus` (domain) / `varchar(30)` | NOT NULL | Initial value `PENDING`; persist enum names as strings. Existing EF entity property is `string`. |
-| `CancelReason` | `string?` / `text` | NULL | Required for customer cancellation; bounded at request boundary (proposed maximum 500 characters). |
-| `PickupSecureCode` | `string` / `varchar(10)` | NOT NULL | Generated securely; six-digit requirement/representation is an open issue. Never include in general order responses or logs. |
+| `CancelReason` | `string?` / `text` | NULL | Stores `CancelDeliveryOrderDto.CancellationReason`; required for customer cancellation and bounded to 500 characters by DTO validation. |
+| `PickupSecureCode` | `string` / `varchar(10)` | NOT NULL | Random six-digit decimal code generated with a cryptographically secure random source. Never include in general order responses or logs. |
 | `RecipientPhone` | `string` / `varchar(20)` | NOT NULL | Required; phone format; maximum 20 characters. |
 | `RecipientName` | `string` / `varchar(150)` | NOT NULL | Required; maximum 150 characters. |
 | `ScheduledDepartureTime`, `ActualDepartureTime`, `EstimatedDeliveryTime`, `ActualDeliveryTime` | `DateTime?` / `timestamptz` | NULL | UTC instants; populate at the corresponding workflow event. |
@@ -132,19 +134,17 @@ For non-nullable `Guid` request properties, reject `Guid.Empty` explicitly; `[Re
 | `CreateCustomerAddressDto` | `Label`: `[Required]`, `[MaxLength(50)]`; `ContactName`: `[Required]`, `[MaxLength(150)]`; `ContactPhone`: `[Required]`, `[Phone]`, `[MaxLength(20)]`; `AddressLine`: `[Required]`; `Latitude`, `Longitude`: nullable `[Range]` (-90..90 and -180..180 respectively); `IsDefault`: `bool`. Add cross-field validation requiring coordinates together. |
 | `UpdateCustomerAddressDto` | Same editable fields and rules as create; the customer ID is derived from claims and is not accepted in the body. |
 | `CustomerAddressResponseDto` | `Id`, `Label`, contact name/phone, address line, optional coordinates, `IsDefault`, timestamps. No owner credentials or navigation objects. |
-| `CreatePackageDto` | `PackageName`: `[Required]`, `[MaxLength(200)]`; `WeightGram`, `LengthCm`, `WidthCm`, `HeightCm`: `[Range(typeof(decimal), "0.01", upperBound)]` (positive); `PackageImageUrl`: optional validated URL/reference; `IsFragile`: `bool`. The upper bound is unresolved until drone limits are specified. |
-| `UpdatePackageDto` | Same editable fields and validation as create; sender ID comes from claims. Service rejects updates that violate an existing order's invariants. |
+| `CreatePackageDto` | `PackageName`: `[Required]`, `[MaxLength(200)]`; `WeightGram`: `[Range(typeof(decimal), "0.01", "5000")]`; `LengthCm`: `[Range(typeof(decimal), "0.01", "40")]`; `WidthCm`, `HeightCm`: `[Range(typeof(decimal), "0.01", "30")]`; `PackageImageUrl`: optional validated URL/reference; `IsFragile`: `bool`. |
+| `UpdatePackageDto` | Same editable fields and numeric constraints as create; sender ID comes from claims. Service rejects updates that violate an existing order's invariants. |
 | `PackageResponseDto` | `Id`, name, weight, dimensions, optional image reference, fragile flag, creation time. |
 | `CreateDeliveryOrderDto` | `PackageId`, `OriginStationId`, `DestinationStationId`: `[Required]`; `DeliveryAddressId`: optional; `RecipientName`: `[Required]`, `[MaxLength(150)]`; `RecipientPhone`: `[Required]`, `[Phone]`, `[MaxLength(20)]`. No `CustomerId`, status, tracking number, or secure code supplied by client. |
-| `UpdateDeliveryOrderDto` | Optional mutable package/station/address/recipient fields with the same validation as create; accepted only while status is `PENDING`. Reject identical origin/destination and validate all referenced resources belong/are available as required. Exact editable field set needs product confirmation. |
-| `CancelDeliveryOrderDto` | `Reason`: `[Required]`, `[MaxLength(500)]`; service verifies the current order state permits cancellation. |
-| `ConfirmDeliveryDto` | `SecureCode`: `[Required]`, digits-only and exactly six digits if the six-digit policy is approved; otherwise validation must follow the agreed code policy. |
+| `UpdateDeliveryOrderDto` | The DTO contains exactly four fields: `RecipientName`: `[Required]`, `[MaxLength(150)]`; `RecipientPhone`: `[Required]`, `[Phone]`, `[MaxLength(20)]`; `DestinationStationId`: non-empty `Guid` referencing a valid destination station; `DeliveryAddressId`: optional nullable `Guid` referencing an address owned by the customer. No `PackageId`, `OriginStationId`, or `Status` field is permitted. Accepted only while status is `PENDING`. |
+| `CancelDeliveryOrderDto` | `CancellationReason`: `[Required]`, `[MaxLength(500)]`; maps to `DeliveryOrder.CancelReason` / database `cancel_reason`. Service verifies the current order state permits cancellation. |
+| `ConfirmDeliveryDto` | `SecureCode`: `[Required]`, exactly six decimal digits; compare securely and apply the agreed attempt/lockout policy. |
 | `DeliveryOrderFilterParams` | Optional `Status` (must be one of `OrderStatus`), `TrackingNumber`, `OriginStationId`, `DestinationStationId`, `FromCreatedAt`, `ToCreatedAt`; `Page`: `[Range(1, int.MaxValue)]`; `PageSize`: `[Range(1, 100)]`. Require `FromCreatedAt <= ToCreatedAt`. |
 | `DeliveryOrderDetailResponseDto` | `Id`, tracking number, status, package summary, origin/destination summaries, optional delivery address summary, recipient name/phone, timestamps, status-history list. Never serialize `PickupSecureCode` in the general detail DTO. |
 | `DeliveryStatusLogResponseDto` | `FromStatus`, `ToStatus`, optional remarks/actor display, UTC `CreatedAt`. |
 | `NotificationResponseDto` | `Id`, optional `OrderId`, type, title, message, read flag, created/read timestamps. |
-
-The symbolic `upperBound` above is deliberately not a literal annotation value: the authoritative drone weight and cargo-dimension limits have not been established. Do not invent a production limit to satisfy `[Range]`.
 
 ## 4. Proposed service contracts
 
@@ -166,7 +166,7 @@ Parameters and return types below use C#-style names for clarity; they are desig
 | `IDeliveryOrderService.GetMineAsync` | `Guid customerId`, `DeliveryOrderFilterParams filters` | `Task<PagedResponse<DeliveryOrderDetailResponseDto>>` | Return caller-owned filtered orders and paging metadata. |
 | `IDeliveryOrderService.GetByIdAsync` | `Guid customerId`, `Guid id` | `Task<DeliveryOrder>` | Read only an order belonging to the caller, including history. |
 | `IDeliveryOrderService.UpdateAsync` | `Guid customerId`, `Guid id`, `UpdateDeliveryOrderDto dto` | `Task<DeliveryOrder>` | Update only a permitted pre-approval order. |
-| `IDeliveryOrderService.CancelAsync` | `Guid customerId`, `Guid id`, `CancelDeliveryOrderDto dto` | `Task` | Check cancellable state; persist reason/status/log/notification atomically. |
+| `IDeliveryOrderService.CancelAsync` | `Guid customerId`, `Guid id`, `CancelDeliveryOrderDto dto` | `Task` | Check cancellable state; persist `dto.CancellationReason` to `cancel_reason` with status/log/notification atomically. |
 | `IDeliveryOrderService.ConfirmDeliveryAsync` | `Guid customerId`, `Guid id`, `string secureCode` | `Task` | Verify code, apply allowed completion transition, set actual delivery time, and log. Apply attempt/rate-limit policy when agreed. |
 | `INotificationService.CreateOrderStatusNotificationAsync` | `DeliveryOrder order`, `OrderStatus status` | `Task` | Persist the status-change notification; called as part of a durable transaction/outbox design. |
 | `INotificationService.GetMineAsync` | `Guid userId` | `Task<IReadOnlyList<Notification>>` | List only the caller's notifications. |
@@ -230,5 +230,5 @@ UC-08 identifies the recipient (through the customer or operator app) as actor. 
 ## 7. Open issues before implementation
 
 1. **TrackingNumber format:** the ERD example is `DD-202610-0988`, but prefix, date component, sequence/random strategy, collision retry behavior, and privacy/guessability requirements are not finalized. Keep the unique database constraint regardless of the selected format.
-2. **Six-digit SecureCode:** confirm whether the code is exactly six decimal digits, its CSPRNG generation and storage/verification approach, delivery channel, expiry, retry/lockout threshold, and which actor may submit it. The ERD permits up to ten characters; the UC specifies rejection/counting of wrong attempts but no threshold.
-3. **Drone weight/dimension limits:** authoritative maximum payload and cargo-bay dimensions (and whether order submission needs a currently available compatible drone) are unspecified. Do not hard-code arbitrary limits; use defined fleet/configuration data and return a clear validation conflict once product rules are agreed.
+2. **SecureCode operational policy:** six random decimal digits are fixed. Confirm the delivery channel, expiry, retry/lockout threshold, secure storage/verification approach, and which actor may submit it. The ERD permits up to ten characters; the UC specifies rejection/counting of wrong attempts but no threshold.
+3. **Drone availability at order creation:** confirm whether order submission must also require a currently available compatible drone; package limits are `5000` grams and `40 x 30 x 30` cm.

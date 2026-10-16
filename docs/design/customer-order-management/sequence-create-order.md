@@ -54,35 +54,42 @@ sequenceDiagram
             DbContext -->> PkgSvc: Return Package Entity / null
             PkgSvc -->> OrderSvc: Return Package Entity / null
 
-            OrderSvc ->> DbContext: Check Origin & Destination stations exist & ACTIVE
-            DbContext -->> OrderSvc: Station Entities / null Status
+            OrderSvc ->> DbContext: Check Origin & Destination stations exist and have Status = OPERATIONAL
+            DbContext -->> OrderSvc: Station Entities / null
 
-            alt Business Validation Fails<br/>(Package not found, Package not owned by customer,<br/>Weight/Dimensions exceed drone limit, Origin == Destination, Station inactive)
-                OrderSvc -->> Controller: Throws ValidationException / BusinessRuleException
-                Controller -->> Client: 400 Bad Request / 404 Not Found (RFC 7807 ProblemDetails)
-                Client -->> Customer: Displays specific error (e.g. "Package exceeds max weight limit")
-            else All Business Rules Validated
-                %% Step 5: Entity Generation & Code Generation
-                Note over OrderSvc: 1. Generate Unique TrackingNumber (e.g., "SDD20261015X8K9")<br/>2. Generate 6-digit SecureCode (e.g., "839201")<br/>3. Set Status = PENDING
+            alt Package or Station Not Found
+                OrderSvc -->> Controller: NotFoundException (Package or Station)
+                Controller -->> Client: 404 Not Found (RFC 7807 ProblemDetails)
+                Client -->> Customer: Displays "Package or station not found"
+            else Package and Stations Found
+                alt Business Rule Violated<br/>(Package not owned by customer; WeightGram > 5000,<br/>LengthCm > 40, WidthCm > 30, or HeightCm > 30;<br/>Origin == Destination; or a station is not OPERATIONAL)
+                    OrderSvc -->> Controller: Throws ValidationException / BusinessRuleException
+                    Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails)
+                    Client -->> Customer: Displays specific validation error
+                else All Business Rules Validated
+                    %% Step 5: Entity Generation & Code Generation
+                    Note over OrderSvc: 1. Generate Unique TrackingNumber (e.g., "SDD20261015X8K9")<br/>2. Generate 6-digit SecureCode (e.g., "839201")<br/>3. Set Status = PENDING
 
-                %% Step 6: Database Transaction & Persistence
-                OrderSvc ->> DbContext: Begin Transaction
-                OrderSvc ->> DbContext: AddAsync(DeliveryOrder Entity)
-                OrderSvc ->> DbContext: AddAsync(DeliveryStatusLog Entity: From=null, To=PENDING)
-                OrderSvc ->> DbContext: SaveChangesAsync()
-                DbContext -->> OrderSvc: Transaction Committed Successfully
+                    %% Step 6: Database Transaction & Persistence
+                    OrderSvc ->> DbContext: Begin Transaction
+                    OrderSvc ->> DbContext: AddAsync(DeliveryOrder Entity)
+                    OrderSvc ->> DbContext: AddAsync(DeliveryStatusLog Entity: From=null, To=PENDING)
+                    OrderSvc ->> DbContext: SaveChangesAsync()
+                    OrderSvc ->> DbContext: Commit Transaction
+                    DbContext -->> OrderSvc: Transaction Committed Successfully
 
-                %% Step 7: Notification Service Integration (FR-12)
-                OrderSvc ->> NotifSvc: CreateNotificationAsync(customerId, orderId, "Order Created Successfully", PENDING)
-                NotifSvc ->> DbContext: AddAsync(Notification Entity)
-                NotifSvc ->> DbContext: SaveChangesAsync()
-                DbContext -->> NotifSvc: Saved
-                NotifSvc -->> OrderSvc: Notification Created
+                    %% Step 7: Notification Service Integration (FR-12)
+                    OrderSvc ->> NotifSvc: CreateNotificationAsync(customerId, orderId, "Order Created Successfully", PENDING)
+                    NotifSvc ->> DbContext: AddAsync(Notification Entity)
+                    NotifSvc ->> DbContext: SaveChangesAsync()
+                    DbContext -->> NotifSvc: Saved
+                    NotifSvc -->> OrderSvc: Notification Created
 
-                %% Step 8: Return Response DTO
-                OrderSvc -->> Controller: Return DeliveryOrderDetailResponseDto
-                Controller -->> Client: 201 Created (Location: /api/delivery-orders/{id}, Body: DeliveryOrderDetailResponseDto)
-                Client -->> Customer: Displays Order Created Screen (Tracking Number & Secure Code)
+                    %% Step 8: Return Response DTO
+                    OrderSvc -->> Controller: Return DeliveryOrderDetailResponseDto
+                    Controller -->> Client: 201 Created (Location: /api/delivery-orders/{id}, Body: DeliveryOrderDetailResponseDto)
+                    Client -->> Customer: Displays Order Created Screen (Tracking Number & Secure Code)
+                end
             end
         end
     end
@@ -92,9 +99,9 @@ sequenceDiagram
 
 1. Khách hàng chọn kiện hàng, ga gửi và ga nhận, rồi nhập thông tin người nhận. Ứng dụng kiểm tra các trường bắt buộc và định dạng số điện thoại trước khi gửi yêu cầu.
 2. Khi dữ liệu hợp lệ, ứng dụng gửi `POST /api/delivery-orders` kèm JWT trong header `Authorization` và `CreateDeliveryOrderDto`. Controller xác thực danh tính và quyền `CUSTOMER`, sau đó chuyển tiếp yêu cầu cùng `customerId` tới dịch vụ đơn hàng.
-3. Dịch vụ đơn hàng lấy kiện hàng qua `IPackageService` và kiểm tra các ga. Các quy tắc nghiệp vụ gồm sự tồn tại và quyền sở hữu kiện hàng, giới hạn trọng lượng/kích thước, hai ga khác nhau và trạng thái hoạt động của ga.
-4. Nếu hợp lệ, dịch vụ tạo mã theo dõi duy nhất, mã bảo mật 6 chữ số, đặt trạng thái ban đầu là `PENDING`, rồi lưu đơn hàng và bản ghi lịch sử trạng thái trong transaction.
-5. Sau khi lưu đơn hàng, dịch vụ tạo thông báo cho khách hàng qua `INotificationService`. Cuối cùng, phản hồi thành công chứa `DeliveryOrderDetailResponseDto` được trả về với mã HTTP `201 Created` và URI của đơn hàng mới.
+3. Dịch vụ đơn hàng lấy kiện hàng qua `IPackageService` và kiểm tra sự tồn tại của các ga cũng như trạng thái `OPERATIONAL`. Không tìm thấy kiện hàng hoặc ga dẫn đến `404 Not Found`. Khi các đối tượng tồn tại, vi phạm quy tắc nghiệp vụ (kiện hàng không thuộc khách hàng, `WeightGram > 5000` g (5.0 kg), `LengthCm > 40` cm, `WidthCm > 30` cm, `HeightCm > 30` cm, trạm đi trùng trạm đến hoặc trạm không `OPERATIONAL`) dẫn đến `400 Bad Request`. Các giới hạn hợp lệ tương ứng là `WeightGram <= 5000`, `LengthCm <= 40`, `WidthCm <= 30`, `HeightCm <= 30`.
+4. Nếu hợp lệ, dịch vụ tạo mã theo dõi duy nhất, mã bảo mật 6 chữ số, đặt trạng thái ban đầu là `PENDING`, rồi bắt đầu DB transaction. Cả `DeliveryOrder` và `DeliveryStatusLog` (`From=null`, `To=PENDING`) được thêm và lưu trong transaction; dịch vụ commit thành công transaction trước khi tiếp tục.
+5. Ngay sau khi transaction commit thành công, dịch vụ tạo thông báo cho khách hàng qua `INotificationService` (FR-12). Cuối cùng, phản hồi thành công chứa `DeliveryOrderDetailResponseDto` được trả về với mã HTTP `201 Created` và URI của đơn hàng mới.
 
 ## 4. Kết quả và nhánh ngoại lệ (Responses & Exception Paths)
 
@@ -102,5 +109,6 @@ sequenceDiagram
 |---|---|
 | Kiểm tra phía client không đạt | Ứng dụng hiển thị lỗi biểu mẫu; không gửi yêu cầu tới API. |
 | JWT không hợp lệ/hết hạn hoặc vai trò không phải `CUSTOMER` | API trả `401 Unauthorized` hoặc `403 Forbidden` với `ProblemDetails`; ứng dụng yêu cầu đăng nhập hoặc thông báo lỗi quyền. |
-| Dữ liệu nghiệp vụ không hợp lệ | API trả `400 Bad Request` hoặc `404 Not Found` với `ProblemDetails`; ứng dụng hiển thị lỗi cụ thể. |
+| Vi phạm quy tắc nghiệp vụ (kiện hàng không thuộc khách hàng, `WeightGram > 5000`, `LengthCm > 40`, `WidthCm > 30`, `HeightCm > 30`, trạm đi trùng trạm đến hoặc trạm không `OPERATIONAL`) | API trả `400 Bad Request` với `ProblemDetails`; ứng dụng hiển thị lỗi cụ thể. |
+| Không tìm thấy Package hoặc Station | API trả `404 Not Found` với `ProblemDetails`; ứng dụng thông báo không tìm thấy đối tượng yêu cầu. |
 | Tạo đơn hàng thành công | API trả `201 Created`, `Location` và `DeliveryOrderDetailResponseDto`; màn hình kết quả hiển thị mã theo dõi và mã bảo mật. |

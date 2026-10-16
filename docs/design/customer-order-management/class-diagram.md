@@ -116,7 +116,7 @@ classDiagram
         +Guid DestinationStationId
         +Guid? DeliveryAddressId
         +OrderStatus Status
-        +string PickupSecureCode
+        +string PickupSecureCode [6 digits]
         +string RecipientName
         +string RecipientPhone
     }
@@ -169,8 +169,15 @@ classDiagram
     class UpdatePackageDto
     class PackageResponseDto
     class CreateDeliveryOrderDto
-    class UpdateDeliveryOrderDto
-    class CancelDeliveryOrderDto
+    class UpdateDeliveryOrderDto {
+        +string RecipientName
+        +string RecipientPhone
+        +Guid DestinationStationId
+        +Guid? DeliveryAddressId
+    }
+    class CancelDeliveryOrderDto {
+        +string CancellationReason
+    }
     class ConfirmDeliveryDto
     class DeliveryOrderFilterParams
     class DeliveryOrderDetailResponseDto
@@ -234,6 +241,8 @@ classDiagram
 
 The diagram uses `0..1` for optional relationships and `0..*` for collections. A package can be unassigned or linked to one order; `DeliveryOrder.PackageId` is unique in the ERD. Origin and destination are separate required references to `LandingStation`.
 
+Package measurements are constrained to `0 < WeightGram <= 5000`, `0 < LengthCm <= 40`, `0 < WidthCm <= 30`, and `0 < HeightCm <= 30`.
+
 `NotificationsController` is included to provide the read/mark-as-read operations in UC-10. The three core controllers requested for address, package, and order management remain the primary module endpoints.
 
 ## Main processing flows
@@ -242,19 +251,19 @@ The diagram uses `0..1` for optional relationships and `0..*` for collections. A
 
 1. Require an authenticated `CUSTOMER`; take the customer ID from the authenticated principal, never from a client-supplied owner field.
 2. Validate the request and confirm the selected package belongs to that customer and is not already assigned to an order. Confirm origin and destination are distinct, valid stations; validate an optional delivery address belongs to the same customer.
-3. Check package weight and dimensions against the applicable drone payload/cargo limits. The exact capacity rules and whether a drone must be selected at order-creation time are open issues.
-4. Generate a unique `TrackingNumber`. Enforce uniqueness with the database unique constraint and handle a collision by generating another value. Generate the pickup secure code using a cryptographically secure random source.
+3. Check that package weight is at most `5000` grams and dimensions are at most `40 x 30 x 30` cm.
+4. Generate a unique `TrackingNumber`. Enforce uniqueness with the database unique constraint and handle a collision by generating another value. Generate a random six-digit pickup secure code using a cryptographically secure random source.
 5. In one database transaction, create the order with `PENDING`, add its initial `DeliveryStatusLog` (`FromStatus = null`, `ToStatus = PENDING`), and create the customer's order notification.
 6. Commit and return `201 Created` with the order detail/location. Do not expose the secure code in an ordinary order-detail response; use an explicitly authorized delivery channel/view.
 
 ### Update and cancel an order
 
-- Update only an order owned by the signed-in customer and still before approval (`PENDING`). Reject edits after approval or another disallowed transition with `409 Conflict`. Validate ownership of any replacement package/address and recheck station/package constraints.
-- Cancellation requires a non-empty reason and an order in a cancellable state. Within a transaction, set `CANCELLED`, store the reason, append a status log, and notify the customer. The exact cancellable statuses are not specified by the SRS and must be agreed before implementation.
+- Update only `RecipientName`, `RecipientPhone`, `DestinationStationId`, and `DeliveryAddressId` on an order owned by the signed-in customer and still before approval (`PENDING`). `PackageId`, `OriginStationId`, and `Status` are not updateable through this DTO. Reject edits after approval or another disallowed transition with `409 Conflict`; validate ownership of a replacement address and the destination station.
+- Cancellation requires a non-empty `CancellationReason` and an order in a cancellable state. Within a transaction, set `CANCELLED`, map `CancellationReason` to the `cancel_reason` column, append a status log, and notify the customer. The exact cancellable statuses are not specified by the SRS and must be agreed before implementation.
 - A failure after database commit but before an external push is sent must not silently lose the notification; use a durable notification/outbox strategy if delivery is asynchronous.
 
 ### Manage addresses and packages
 
 - Address list/read/update/delete/default operations are always scoped to the authenticated customer. Setting a default must make the default unique for that customer in a transaction.
 - An address referenced by an existing order must not cause historical order data to be deleted or changed. The optional order-to-address FK and delete behavior should be preserved (for example, detach the FK or reject deletion); choose and test the final policy before implementation.
-- Package create/update is customer-scoped. Validate positive weight and dimensions and optional image metadata; do not allow reassignment or deletion to bypass the one-package/one-order invariant. Package capacity is checked when creating an order and again at physical intake where appropriate.
+- Package create/update is customer-scoped. Enforce `0 < WeightGram <= 5000`, `0 < LengthCm <= 40`, `0 < WidthCm <= 30`, and `0 < HeightCm <= 30`, along with optional image metadata validation. Do not allow reassignment or deletion to bypass the one-package/one-order invariant. Package capacity is checked when creating an order and again at physical intake where appropriate.
