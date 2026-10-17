@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../constants/api_endpoints.dart';
 import '../storage/token_storage.dart';
 
 /// Attaches the bearer token and transparently refreshes it on 401.
@@ -90,14 +91,18 @@ class AuthInterceptor extends Interceptor {
   Future<AuthTokens?> _refresh(String refreshToken) async {
     try {
       final res = await refreshDio.post<Map<String, dynamic>>(
-        '/auth/refresh', // TODO: match your backend contract
-        data: {'refresh_token': refreshToken},
+        ApiEndpoints.refresh,
+        data: {'refreshToken': refreshToken},
         options: Options(extra: {skipAuth: true}),
       );
       final d = res.data!;
+      final access = (d['accessToken'] ?? d['access_token']) as String;
+      final refresh = (d['refreshToken'] ?? d['refresh_token']) as String;
+      final expires = (d['expiresIn'] ?? d['expires_in']) as int?;
       final tokens = AuthTokens(
-        accessToken: d['access_token'] as String,
-        refreshToken: d['refresh_token'] as String,
+        accessToken: access,
+        refreshToken: refresh,
+        expiresIn: expires,
       );
       await storage.write(tokens);
       return tokens;

@@ -31,8 +31,18 @@ class ApiException implements Exception {
         String? msg;
         String? code;
         if (data is Map) {
-          msg = data['message']?.toString();
-          code = data['code']?.toString();
+          msg = data['detail']?.toString() ?? data['message']?.toString();
+          if (msg == null && data['errors'] is Map) {
+            final errs = data['errors'] as Map;
+            for (final v in errs.values) {
+              if (v is List && v.isNotEmpty) {
+                msg = v.first.toString();
+                break;
+              }
+            }
+          }
+          msg ??= data['title']?.toString();
+          code = data['code']?.toString() ?? data['type']?.toString();
         }
         return ApiException(
           message: msg ?? 'Something went wrong. Please try again.',
