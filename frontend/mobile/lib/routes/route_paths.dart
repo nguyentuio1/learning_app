@@ -5,4 +5,7 @@ abstract final class RoutePaths {
   static const login = '/login';
   static const customerHome = '/customer';
   static const operatorHome = '/operator';
+  static const profile = '/profile';
+  static const editProfile = '/profile/edit';
+  static const changePassword = '/profile/change-password';
 }
