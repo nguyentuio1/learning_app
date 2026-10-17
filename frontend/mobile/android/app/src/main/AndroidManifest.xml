@@ -2,6 +2,8 @@
     <!-- Cần để app gọi API. Mặc định Flutter chỉ cấp quyền này cho bản debug,
          thiếu dòng này thì bản release sẽ mất mạng. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
 
     <application
         android:label="@string/app_name"

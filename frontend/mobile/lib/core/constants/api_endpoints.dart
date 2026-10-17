@@ -7,4 +7,5 @@ abstract final class ApiEndpoints {
   static const logout = '/auth/logout';
   static const me = '/users/me';
   static const changePassword = '/users/me/password';
+  static const uploadAvatar = '/users/me/avatar';
 }
