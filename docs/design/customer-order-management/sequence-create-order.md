@@ -1,22 +1,22 @@
 # LA-227: Sequence Diagram - Create Delivery Order
 
-## 1. Tổng quan và phạm vi (Introduction & Scope)
+## 1. Overview and Scope
 
-Tài liệu đặc tả luồng tương tác giữa các lớp trong hệ thống khi khách hàng tạo đơn giao hàng (UC-05). Luồng bao quát việc nhập thông tin đơn hàng, xác thực và kiểm tra quy tắc nghiệp vụ, lưu đơn hàng cùng lịch sử trạng thái, tạo thông báo và trả kết quả cho ứng dụng khách hàng. Phạm vi liên quan đến FR-07, FR-08, FR-09 và FR-12.
+This document specifies the interactions between system components when a customer creates a delivery order (UC-05). The flow covers order entry, authentication and business-rule validation, saving the order and its status history, creating a notification, and returning the result to the customer application. It relates to FR-07, FR-08, FR-09, and FR-12.
 
 ### Participants
 
-| Participant | Vai trò / tầng |
+| Participant | Role / layer |
 |---|---|
-| Customer | Actor — khách hàng khởi tạo yêu cầu |
-| Client | Customer Mobile/Web App — giao diện khách hàng |
+| Customer | Actor — customer initiating the request |
+| Client | Customer Mobile/Web App — customer interface |
 | Controller | `DeliveryOrdersController` — Presentation |
 | OrderSvc | `IDeliveryOrderService` / `DeliveryOrderService` — Application |
 | PkgSvc | `IPackageService` / `PackageService` — Application |
 | NotifSvc | `INotificationService` / `NotificationService` — Application |
 | DbContext | `AppDbContext` / PostgreSQL DB — Domain / Data Access |
 
-## 2. Sơ đồ tuần tự Mermaid (Mermaid Sequence Diagram)
+## 2. Mermaid Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -95,20 +95,22 @@ sequenceDiagram
     end
 ```
 
-## 3. Diễn giải luồng (Interaction Flow)
+## 3. Interaction Flow
 
-1. Khách hàng chọn kiện hàng, ga gửi và ga nhận, rồi nhập thông tin người nhận. Ứng dụng kiểm tra các trường bắt buộc và định dạng số điện thoại trước khi gửi yêu cầu.
-2. Khi dữ liệu hợp lệ, ứng dụng gửi `POST /api/delivery-orders` kèm JWT trong header `Authorization` và `CreateDeliveryOrderDto`. Controller xác thực danh tính và quyền `CUSTOMER`, sau đó chuyển tiếp yêu cầu cùng `customerId` tới dịch vụ đơn hàng.
-3. Dịch vụ đơn hàng lấy kiện hàng qua `IPackageService` và kiểm tra sự tồn tại của các ga cũng như trạng thái `OPERATIONAL`. Không tìm thấy kiện hàng hoặc ga dẫn đến `404 Not Found`. Khi các đối tượng tồn tại, vi phạm quy tắc nghiệp vụ (kiện hàng không thuộc khách hàng, `WeightGram > 5000` g (5.0 kg), `LengthCm > 40` cm, `WidthCm > 30` cm, `HeightCm > 30` cm, trạm đi trùng trạm đến hoặc trạm không `OPERATIONAL`) dẫn đến `400 Bad Request`. Các giới hạn hợp lệ tương ứng là `WeightGram <= 5000`, `LengthCm <= 40`, `WidthCm <= 30`, `HeightCm <= 30`.
-4. Nếu hợp lệ, dịch vụ tạo mã theo dõi duy nhất, mã bảo mật 6 chữ số, đặt trạng thái ban đầu là `PENDING`, rồi bắt đầu DB transaction. Cả `DeliveryOrder` và `DeliveryStatusLog` (`From=null`, `To=PENDING`) được thêm và lưu trong transaction; dịch vụ commit thành công transaction trước khi tiếp tục.
-5. Ngay sau khi transaction commit thành công, dịch vụ tạo thông báo cho khách hàng qua `INotificationService` (FR-12). Cuối cùng, phản hồi thành công chứa `DeliveryOrderDetailResponseDto` được trả về với mã HTTP `201 Created` và URI của đơn hàng mới.
+1. The customer selects a package and origin and destination stations, then enters the recipient's details. Before sending the request, the application validates required fields and the phone number format.
+2. Once the data is valid, the application sends `POST /api/delivery-orders` with the JWT in the `Authorization` header and a `CreateDeliveryOrderDto` body. The controller authenticates the customer and checks the `CUSTOMER` role, then forwards the request and `customerId` to the order service.
+3. The order service retrieves the package through `IPackageService` and checks that the stations exist and have `OPERATIONAL` status. A missing package or station results in `404 Not Found`. If the entities exist but a business rule is violated (the package does not belong to the customer, `WeightGram > 5000` g (5.0 kg), `LengthCm > 40` cm, `WidthCm > 30` cm, `HeightCm > 30` cm, the origin and destination are the same, or a station is not `OPERATIONAL`), the request results in `400 Bad Request`. The corresponding accepted limits are `WeightGram <= 5000`, `LengthCm <= 40`, `WidthCm <= 30`, and `HeightCm <= 30`.
+4. If validation succeeds, the service generates a unique tracking number and a six-digit secure code, sets the initial status to `PENDING`, and begins a database transaction. It adds and saves both the `DeliveryOrder` and the initial `DeliveryStatusLog` (`From=null`, `To=PENDING`) within the transaction, then commits before proceeding.
+5. After the transaction commits successfully, the service creates a customer notification through `INotificationService` (FR-12). Finally, it returns a successful response containing a `DeliveryOrderDetailResponseDto`, with HTTP status `201 Created` and the new order's URI.
 
-## 4. Kết quả và nhánh ngoại lệ (Responses & Exception Paths)
+## 4. Responses and Exception Paths
 
-| Tình huống | Kết quả trong luồng |
+| Scenario | Flow result |
 |---|---|
-| Kiểm tra phía client không đạt | Ứng dụng hiển thị lỗi biểu mẫu; không gửi yêu cầu tới API. |
-| JWT không hợp lệ/hết hạn hoặc vai trò không phải `CUSTOMER` | API trả `401 Unauthorized` hoặc `403 Forbidden` với `ProblemDetails`; ứng dụng yêu cầu đăng nhập hoặc thông báo lỗi quyền. |
-| Vi phạm quy tắc nghiệp vụ (kiện hàng không thuộc khách hàng, `WeightGram > 5000`, `LengthCm > 40`, `WidthCm > 30`, `HeightCm > 30`, trạm đi trùng trạm đến hoặc trạm không `OPERATIONAL`) | API trả `400 Bad Request` với `ProblemDetails`; ứng dụng hiển thị lỗi cụ thể. |
-| Không tìm thấy Package hoặc Station | API trả `404 Not Found` với `ProblemDetails`; ứng dụng thông báo không tìm thấy đối tượng yêu cầu. |
-| Tạo đơn hàng thành công | API trả `201 Created`, `Location` và `DeliveryOrderDetailResponseDto`; màn hình kết quả hiển thị mã theo dõi và mã bảo mật. |
+| Scenario | Flow result |
+|---|---|
+| Client-side validation fails | The application displays form errors and does not send a request to the API. |
+| JWT is invalid or expired, or the role is not `CUSTOMER` | The API returns `401 Unauthorized` or `403 Forbidden` with `ProblemDetails`; the application prompts the customer to sign in or displays a permission error. |
+| A business rule is violated (the package does not belong to the customer, `WeightGram > 5000`, `LengthCm > 40`, `WidthCm > 30`, `HeightCm > 30`, the origin and destination are the same, or a station is not `OPERATIONAL`) | The API returns `400 Bad Request` with `ProblemDetails`; the application displays a specific validation error. |
+| The package or station cannot be found | The API returns `404 Not Found` with `ProblemDetails`; the application reports that the requested resource could not be found. |
+| Order creation succeeds | The API returns `201 Created`, a `Location` header, and a `DeliveryOrderDetailResponseDto`; the result screen displays the tracking number and secure code. |

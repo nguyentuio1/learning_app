@@ -1,23 +1,23 @@
 # LA-228: Sequence Diagram - Update/Cancel Delivery Order
 
-## 1. Tổng quan và phạm vi (Introduction & Scope)
+## 1. Overview and Scope
 
-Tài liệu đặc tả hai luồng tương tác của khách hàng khi cập nhật thông tin đơn hàng (UC-06, FR-10) và khi hủy đơn hàng kèm lý do (UC-06, FR-10, FR-12, FR-14). Luồng cập nhật mô tả việc kiểm tra quyền sở hữu, trạng thái đơn hàng và dữ liệu thay đổi trước khi lưu. Luồng hủy mô tả việc xác thực lý do, kiểm tra trạng thái có thể hủy, ghi lịch sử trạng thái và tạo thông báo cho khách hàng.
+This document specifies the customer interaction flows for updating an order (UC-06, FR-10) and cancelling an order with a reason (UC-06, FR-10, FR-12, FR-14). The update flow checks ownership, order status, and the submitted changes before saving. The cancellation flow validates the reason, checks whether the order can be cancelled, records the status history, and creates a customer notification.
 
 ### Participants
 
-| Participant | Vai trò / tầng |
+| Participant | Role / layer |
 |---|---|
-| Customer | Actor — khách hàng khởi tạo yêu cầu |
-| Client | Customer Mobile/Web App — giao diện khách hàng |
+| Customer | Actor — customer initiating the request |
+| Client | Customer Mobile/Web App — customer interface |
 | Controller | `DeliveryOrdersController` — Presentation |
 | OrderSvc | `IDeliveryOrderService` / `DeliveryOrderService` — Application |
 | NotifSvc | `INotificationService` / `NotificationService` — Application |
 | DbContext | `AppDbContext` / PostgreSQL DB — Domain / Data Access |
 
-## 2. Sơ đồ tuần tự Mermaid (Mermaid Sequence Diagrams)
+## 2. Mermaid Sequence Diagrams
 
-### 2.1. Cập nhật đơn hàng (Update Order Flow)
+### 2.1. Update Order Flow
 
 ```mermaid
 sequenceDiagram
@@ -91,7 +91,7 @@ sequenceDiagram
     end
 ```
 
-### 2.2. Hủy đơn hàng (Cancel Order Flow)
+### 2.2. Cancel Order Flow
 
 ```mermaid
 sequenceDiagram
@@ -152,7 +152,7 @@ sequenceDiagram
                         DbContext -->> OrderSvc: Transaction Committed Successfully
 
                         %% Step 8: Create Customer Notification (FR-12)
-                        OrderSvc ->> NotifSvc: CreateNotificationAsync(customerId, id,<br/>"Đơn hàng " + TrackingNumber + " đã được hủy thành công.", CANCELLED)
+                        OrderSvc ->> NotifSvc: CreateNotificationAsync(customerId, id,<br/>"Order " + TrackingNumber + " was cancelled successfully.", CANCELLED)
                         NotifSvc ->> DbContext: AddAsync(Notification Entity)
                         NotifSvc ->> DbContext: SaveChangesAsync()
                         DbContext -->> NotifSvc: Saved
@@ -169,22 +169,24 @@ sequenceDiagram
     end
 ```
 
-## 3. Diễn giải luồng (Interaction Flow)
+## 3. Interaction Flow
 
-1. **Cập nhật:** Khách hàng chỉnh sửa thông tin người nhận, ga đích hoặc địa chỉ giao hàng. Request chỉ chứa bốn trường `RecipientName`, `RecipientPhone`, `DestinationStationId` và `DeliveryAddressId` trong `UpdateDeliveryOrderDto`; `PackageId` và `Status` không được phép cập nhật. Các giới hạn package (`WeightGram <= 5000` g/5.0 kg, `LengthCm <= 40` cm, `WidthCm <= 30` cm, `HeightCm <= 30` cm) được kiểm tra khi tạo đơn, không phải trong luồng cập nhật này. Request có một trong hai trường bị cấm sẽ bị từ chối với `400 Bad Request`.
-2. Controller xác thực danh tính và quyền `CUSTOMER`, sau đó chuyển `id`, `customerId` và dữ liệu cập nhật tới dịch vụ đơn hàng. Dịch vụ xác nhận đơn hàng tồn tại, thuộc sở hữu khách hàng và vẫn ở trạng thái `PENDING`.
-3. Dịch vụ kiểm tra ga đích mới ở trạng thái `OPERATIONAL` và khác ga gửi (cùng địa chỉ giao hàng nếu có thay đổi). Nếu hợp lệ, dịch vụ cập nhật các thuộc tính đơn hàng và lưu thay đổi; API trả `200 OK` cùng `DeliveryOrderDetailResponseDto`.
-4. **Hủy:** Khách hàng nhập lý do hủy không rỗng. Ứng dụng gửi `POST /api/delivery-orders/{id}/cancel` cùng JWT và `CancelDeliveryOrderDto`; dịch vụ tiếp tục kiểm tra quyền sở hữu, lý do và trạng thái đơn hàng.
-5. Chỉ đơn hàng `PENDING` hoặc `APPROVED` mới được hủy. Dịch vụ cập nhật trạng thái thành `CANCELLED`, lưu `CancellationReason` và bản ghi `DeliveryStatusLog` (`FromStatus` → `CANCELLED`, `ChangedByUserId = customerId`, `Notes = CancellationReason`) trong transaction. Sau đó, `INotificationService` tạo thông báo cho khách hàng; API trả `200 OK` cùng `DeliveryOrderResponseDto`.
+1. **Update:** The customer edits the recipient details, destination station, or delivery address. The `UpdateDeliveryOrderDto` contains only `RecipientName`, `RecipientPhone`, `DestinationStationId`, and `DeliveryAddressId`; `PackageId` and `Status` cannot be updated. Package limits (`WeightGram <= 5000` g (5.0 kg), `LengthCm <= 40` cm, `WidthCm <= 30` cm, and `HeightCm <= 30` cm) are checked when the order is created, not in this update flow. A request that includes either prohibited field is rejected with `400 Bad Request`.
+2. The controller authenticates the customer and checks the `CUSTOMER` role, then passes `id`, `customerId`, and the update data to the order service. The service verifies that the order exists, belongs to the customer, and is still in `PENDING` status.
+3. The service checks that the new destination station is `OPERATIONAL` and differs from the origin station, and validates the delivery address if it has changed. If validation succeeds, the service updates the order properties and saves the changes; the API returns `200 OK` with a `DeliveryOrderDetailResponseDto`.
+4. **Cancel:** The customer enters a non-empty cancellation reason. The application sends `POST /api/delivery-orders/{id}/cancel` with the JWT and a `CancelDeliveryOrderDto`; the service then checks ownership, the reason, and the order status.
+5. Only orders in `PENDING` or `APPROVED` status can be cancelled. The service sets the status to `CANCELLED` and saves `CancellationReason` and a `DeliveryStatusLog` record (`FromStatus` → `CANCELLED`, `ChangedByUserId = customerId`, `Notes = CancellationReason`) in a transaction. `INotificationService` then creates a customer notification; the API returns `200 OK` with a `DeliveryOrderResponseDto`.
 
-## 4. Kết quả và nhánh ngoại lệ (Responses & Exception Paths)
+## 4. Responses and Exception Paths
 
-| Tình huống | Kết quả trong luồng |
+| Scenario | Flow result |
 |---|---|
-| Kiểm tra phía client không đạt | Ứng dụng hiển thị lỗi biểu mẫu; không gửi yêu cầu tới API. |
-| JWT không hợp lệ/hết hạn hoặc vai trò không phải `CUSTOMER` | API trả `401 Unauthorized` hoặc `403 Forbidden` với `ProblemDetails`; ứng dụng yêu cầu đăng nhập hoặc thông báo lỗi quyền. |
-| Không tìm thấy đơn hàng hoặc đơn hàng không thuộc khách hàng | API trả `404 Not Found` với `ProblemDetails`; ứng dụng thông báo không tìm thấy đơn hàng hoặc không có quyền truy cập. |
-| Đơn hàng không ở trạng thái phù hợp để cập nhật/hủy, hoặc dữ liệu/lý do không hợp lệ | API trả `400 Bad Request` với `ProblemDetails`; ứng dụng hiển thị lỗi tương ứng. |
-| Request cập nhật cố truyền `PackageId` hoặc `Status` | API từ chối trường không được phép với `400 Bad Request`; hai trường này không thuộc `UpdateDeliveryOrderDto`. |
-| Cập nhật đơn hàng thành công | API trả `200 OK` cùng `DeliveryOrderDetailResponseDto`; ứng dụng hiển thị thông tin đã cập nhật. |
-| Hủy đơn hàng thành công | API trả `200 OK` cùng `DeliveryOrderResponseDto`; trạng thái và lịch sử hủy được lưu, đồng thời khách hàng nhận thông báo. |
+| Scenario | Flow result |
+|---|---|
+| Client-side validation fails | The application displays form errors and does not send a request to the API. |
+| JWT is invalid or expired, or the role is not `CUSTOMER` | The API returns `401 Unauthorized` or `403 Forbidden` with `ProblemDetails`; the application prompts the customer to sign in or displays a permission error. |
+| The order cannot be found or does not belong to the customer | The API returns `404 Not Found` with `ProblemDetails`; the application reports that the order could not be found or accessed. |
+| The order is in a state that does not permit updating or cancellation, or the submitted data/reason is invalid | The API returns `400 Bad Request` with `ProblemDetails`; the application displays the corresponding error. |
+| An update request attempts to include `PackageId` or `Status` | The API rejects the disallowed field with `400 Bad Request`; neither field is part of `UpdateDeliveryOrderDto`. |
+| The order is updated successfully | The API returns `200 OK` with a `DeliveryOrderDetailResponseDto`; the application displays the updated order details. |
+| The order is cancelled successfully | The API returns `200 OK` with a `DeliveryOrderResponseDto`; the cancellation status and history are saved, and the customer is notified. |
