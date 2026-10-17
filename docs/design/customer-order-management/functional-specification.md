@@ -1,41 +1,41 @@
 # Functional Specification — Customer & Order Management
 
-| Thuộc tính | Giá trị |
+| Attribute | Value |
 |---|---|
 | Task | LA-216 — Functions of Customer and Order module |
-| Phạm vi | Customer & Order Management |
-| Nguồn truy vết | [SRS](../../requirements/SRS.md), [Use Cases](../../requirements/use-cases.md) |
-| Tài liệu thiết kế liên quan | [Class Specification](./class-specification.md), [Create Order Sequence](./sequence-create-order.md), [Update/Cancel Order Sequence](./sequence-update-cancel-order.md) |
+| Scope | Customer & Order Management |
+| Traceability Sources | [SRS](../../requirements/SRS.md), [Use Cases](../../requirements/use-cases.md) |
+| Related Design Documents | [Class Specification](./class-specification.md), [Create Order Sequence](./sequence-create-order.md), [Update/Cancel Order Sequence](./sequence-update-cancel-order.md) |
 
 ## 1. Scope & Boundaries
 
-Tài liệu định nghĩa mục tiêu, actor, điều kiện tiên quyết, dữ liệu vào/ra, quy tắc nghiệp vụ và phản hồi ngoại lệ cho sáu nhóm chức năng:
+This document defines the purpose, actors, preconditions, inputs/outputs, business rules, and exceptional responses for six functional areas:
 
-1. Address Management — quản lý địa chỉ giao hàng.
-2. Package Management — quản lý kiện hàng.
-3. Order Creation — tạo đơn hàng.
-4. Order Update — cập nhật đơn hàng.
-5. Order Cancellation — hủy đơn hàng.
-6. Order Listing & Details — xem danh sách và chi tiết đơn hàng.
+1. Address Management — manage delivery addresses.
+2. Package Management — manage packages.
+3. Order Creation — create orders.
+4. Order Update — update orders.
+5. Order Cancellation — cancel orders.
+6. Order Listing & Details — view order lists and details.
 
-Đối tượng chính của các chức năng này là khách hàng (`CUSTOMER`). Xác thực yêu cầu JWT hợp lệ; quyền sở hữu đơn, địa chỉ và kiện hàng được xác định từ danh tính đã xác thực, không lấy từ dữ liệu do client tự khai báo.
+The primary actor for these functions is the customer (`CUSTOMER`). A valid JWT is required for authentication. Ownership of orders, addresses, and packages is determined from the authenticated identity, not from data supplied by the client.
 
-Đặc tả này mô tả hợp đồng chức năng, không chứa mã nguồn C#, triển khai API/controller, UI components hoặc database migrations. Tên DTO và trường dưới đây là hợp đồng logic; giới hạn được ghi là “đề xuất” cần được xác nhận nếu chưa có trong yêu cầu nguồn. `Guid`, `decimal`, `bool`, `int`, `string` và `DateTime` lần lượt biểu thị mã định danh, số thập phân, logic, số nguyên, chuỗi và thời điểm ISO 8601/UTC.
+This specification describes the functional contract; it does not include C# source code, API/controller implementation, UI components, or database migrations. The DTO and field names below define the logical contract. Any limit labeled as “proposed” must be confirmed if it is not specified in the source requirements. `Guid`, `decimal`, `bool`, `int`, `string`, and `DateTime` represent an identifier, decimal number, Boolean, integer, string, and ISO 8601/UTC timestamp, respectively.
 
-### Điều kiện truy cập chung
+### General Access Requirements
 
-- JWT thiếu, không hợp lệ hoặc hết hạn: `401 Unauthorized`.
-- Người dùng đã xác thực nhưng không có vai trò `CUSTOMER`, hoặc tài khoản không hoạt động: `403 Forbidden`.
-- Không trả dữ liệu của người dùng khác; tài nguyên không tồn tại và tài nguyên không thuộc người gọi đều có thể trả `404 Not Found` để tránh tiết lộ quyền sở hữu.
-- `400 Bad Request` dùng cho dữ liệu/điều kiện nghiệp vụ đầu vào không hợp lệ; `409 Conflict` dùng cho xung đột trạng thái, uniqueness hoặc quan hệ tài nguyên.
+- Missing, invalid, or expired JWT: `401 Unauthorized`.
+- An authenticated user without the `CUSTOMER` role, or an inactive account: `403 Forbidden`.
+- Do not return another user's data. Both nonexistent resources and resources not owned by the caller may return `404 Not Found` to avoid revealing ownership.
+- Use `400 Bad Request` for invalid input data/business conditions and `409 Conflict` for state, uniqueness, or resource-relationship conflicts.
 
 ## 2. Detailed Functional Specs
 
-### 2.1 Address Management — Quản lý địa chỉ
+### 2.1 Address Management
 
 #### Purpose / Actor
 
-CUSTOMER tạo, xem danh sách, cập nhật, xóa địa chỉ giao hàng và chọn một địa chỉ mặc định.
+The CUSTOMER creates, lists, updates, and deletes delivery addresses, and selects a default address.
 
 #### Requirements Traceability
 
@@ -43,50 +43,50 @@ CUSTOMER tạo, xem danh sách, cập nhật, xóa địa chỉ giao hàng và c
 
 #### Preconditions
 
-- Đáp ứng điều kiện truy cập chung.
-- Với thao tác trên địa chỉ có sẵn, địa chỉ phải tồn tại và thuộc khách hàng hiện tại.
+- The general access requirements are satisfied.
+- For operations on an existing address, the address must exist and belong to the current customer.
 
 #### Inputs / Outputs
 
 **Input — `CreateCustomerAddressDto` / `UpdateCustomerAddressDto`:**
 
-| Trường | Kiểu | Yêu cầu |
+| Field | Type | Requirements |
 |---|---|---|
-| `Label` | string | Bắt buộc; tối đa 50 ký tự. |
-| `ContactName` | string | Bắt buộc; tối đa 150 ký tự. |
-| `ContactPhone` | string | Bắt buộc; đúng định dạng số điện thoại; tối đa 20 ký tự. |
-| `AddressLine` | string | Bắt buộc; không rỗng/khoảng trắng. |
-| `Latitude` | decimal? | Tùy chọn; -90 đến 90. |
-| `Longitude` | decimal? | Tùy chọn; -180 đến 180. |
-| `IsDefault` | bool | Tùy chọn; mặc định `false`. |
+| `Label` | string | Required; maximum 50 characters. |
+| `ContactName` | string | Required; maximum 150 characters. |
+| `ContactPhone` | string | Required; valid phone number format; maximum 20 characters. |
+| `AddressLine` | string | Required; must not be empty or whitespace. |
+| `Latitude` | decimal? | Optional; -90 to 90. |
+| `Longitude` | decimal? | Optional; -180 to 180. |
+| `IsDefault` | bool | Optional; defaults to `false`. |
 
-`UserId` lấy từ JWT và không được chỉ định trong body. Tọa độ phải được gửi cùng nhau hoặc cả hai đều để trống.
+`UserId` is obtained from the JWT and must not be specified in the body. Coordinates must either both be provided or both be omitted.
 
-**Output — `CustomerAddressResponseDto`:** `Id`, `Label`, `ContactName`, `ContactPhone`, `AddressLine`, `Latitude?`, `Longitude?`, `IsDefault`, `CreatedAt`, `UpdatedAt`. Danh sách chỉ chứa địa chỉ của CUSTOMER hiện tại.
+**Output — `CustomerAddressResponseDto`:** `Id`, `Label`, `ContactName`, `ContactPhone`, `AddressLine`, `Latitude?`, `Longitude?`, `IsDefault`, `CreatedAt`, `UpdatedAt`. The list contains only addresses belonging to the current CUSTOMER.
 
 #### Business Rules
 
-1. Các trường bắt buộc không được null/rỗng; xác thực giới hạn ký tự, định dạng điện thoại và miền tọa độ.
-2. Mỗi khách hàng có nhiều nhất một địa chỉ `IsDefault = true`. Đặt một địa chỉ làm mặc định phải đồng thời bỏ mặc định địa chỉ trước đó.
-3. Không cho phép đọc/sửa/xóa địa chỉ của khách hàng khác.
-4. Chính sách xóa địa chỉ đang được đơn hàng tham chiếu cần được chốt; không được làm mất lịch sử/thông tin giao hàng.
-5. Giới hạn số lượng địa chỉ được đề xuất là 10 địa chỉ/khách hàng; cần xác nhận tại mục 4.
+1. Required fields must not be null or empty. Validate character limits, phone number format, and coordinate ranges.
+2. Each customer may have at most one address with `IsDefault = true`. Setting an address as the default must unset the previous default address at the same time.
+3. Reading, updating, or deleting another customer's address is prohibited.
+4. The deletion policy for addresses referenced by orders must be confirmed; deletion must not remove delivery history or information.
+5. A limit of 10 addresses per customer is proposed; confirm it as described in Section 4.
 
 #### Exceptional Cases
 
-| HTTP | Trường hợp |
+| HTTP | Case |
 |---|---|
-| `401` | JWT thiếu, hết hạn hoặc không hợp lệ. |
-| `403` | Sai role hoặc tài khoản không hoạt động. |
-| `404` | Địa chỉ không tồn tại/không thuộc người gọi. |
-| `400` | Thiếu trường, vượt giới hạn ký tự, điện thoại sai định dạng, tọa độ ngoài miền hoặc chỉ gửi một trong hai tọa độ. |
-| `409` | Xung đột đặt mặc định, vượt giới hạn địa chỉ đã chốt, hoặc địa chỉ đang được đơn hàng tham chiếu theo chính sách xóa đã chọn. |
+| `401` | JWT is missing, expired, or invalid. |
+| `403` | Incorrect role or inactive account. |
+| `404` | Address does not exist or does not belong to the caller. |
+| `400` | Required field is missing, character limit exceeded, phone number has an invalid format, coordinates are out of range, or only one coordinate is provided. |
+| `409` | Conflict while setting the default, the confirmed address limit is exceeded, or the address is referenced by an order under the selected deletion policy. |
 
-### 2.2 Package Management — Quản lý kiện hàng
+### 2.2 Package Management
 
 #### Purpose / Actor
 
-CUSTOMER tạo, xem và cập nhật kiện hàng để lựa chọn khi tạo đơn giao hàng.
+The CUSTOMER creates, views, and updates packages to select when creating a delivery order.
 
 #### Requirements Traceability
 
@@ -94,50 +94,50 @@ CUSTOMER tạo, xem và cập nhật kiện hàng để lựa chọn khi tạo �
 
 #### Preconditions
 
-- Đáp ứng điều kiện truy cập chung.
-- Với cập nhật, kiện hàng phải tồn tại và thuộc CUSTOMER hiện tại.
+- The general access requirements are satisfied.
+- For updates, the package must exist and belong to the current CUSTOMER.
 
 #### Inputs / Outputs
 
 **Input — `CreatePackageDto` / `UpdatePackageDto`:**
 
-| Trường | Kiểu | Yêu cầu |
+| Field | Type | Requirements |
 |---|---|---|
-| `PackageName` | string | Bắt buộc; tối đa 200 ký tự. |
-| `WeightGram` | decimal | Bắt buộc; lớn hơn 0 và tối đa 5000 gram (5.0 kg). |
-| `LengthCm` | decimal | Bắt buộc; lớn hơn 0 và tối đa 40 cm. |
-| `WidthCm` | decimal | Bắt buộc; lớn hơn 0 và tối đa 30 cm. |
-| `HeightCm` | decimal | Bắt buộc; lớn hơn 0 và tối đa 30 cm. |
-| `PackageImageUrl` | string? | Không bắt buộc; URL/tham chiếu ảnh hợp lệ nếu có. |
-| `IsFragile` | bool | Tùy chọn; mặc định `false`. |
+| `PackageName` | string | Required; maximum 200 characters. |
+| `WeightGram` | decimal | Required; greater than 0 and at most 5000 grams (5.0 kg). |
+| `LengthCm` | decimal | Required; greater than 0 and at most 40 cm. |
+| `WidthCm` | decimal | Required; greater than 0 and at most 30 cm. |
+| `HeightCm` | decimal | Required; greater than 0 and at most 30 cm. |
+| `PackageImageUrl` | string? | Optional; if provided, must be a valid URL/image reference. |
+| `IsFragile` | bool | Optional; defaults to `false`. |
 
-`SenderId` lấy từ JWT; client không được gán chủ sở hữu.
+`SenderId` is obtained from the JWT; the client must not assign ownership.
 
 **Output — `PackageResponseDto`:** `Id`, `PackageName`, `WeightGram`, `LengthCm`, `WidthCm`, `HeightCm`, `PackageImageUrl?`, `IsFragile`, `CreatedAt`.
 
 #### Business Rules
 
-1. Kích thước tối đa là **40 × 30 × 30 cm** theo `LengthCm`, `WidthCm`, `HeightCm`; từng chiều và trọng lượng phải lớn hơn 0.
-2. Tải trọng tối đa là **5.0 kg** (`WeightGram <= 5000`). Kiểm tra lại giới hạn khi tạo đơn.
-3. Quan hệ là **One Package One Order**: một kiện chỉ được gắn với tối đa một đơn hàng.
-4. Không cho xóa kiện hàng đang được đơn hàng tham chiếu (**RESTRICT**).
-5. Chỉ chủ kiện mới được xem/cập nhật; cập nhật không được làm vi phạm giới hạn hoặc tính hợp lệ của đơn hàng đã gắn.
+1. Maximum dimensions are **40 × 30 × 30 cm** for `LengthCm`, `WidthCm`, and `HeightCm`; each dimension and the weight must be greater than 0.
+2. Maximum payload is **5.0 kg** (`WeightGram <= 5000`). Revalidate the limit when creating an order.
+3. The relationship is **One Package One Order**: a package may be linked to at most one order.
+4. Deleting a package referenced by an order is prohibited (**RESTRICT**).
+5. Only the package owner may view or update it. An update must not violate the limits or the validity of an order to which the package is linked.
 
 #### Exceptional Cases
 
-| HTTP | Trường hợp |
+| HTTP | Case |
 |---|---|
-| `401` | JWT thiếu, hết hạn hoặc không hợp lệ. |
-| `403` | Sai role hoặc tài khoản không hoạt động. |
-| `404` | Kiện hàng không tồn tại/không thuộc người gọi. |
-| `400` | Tên thiếu/quá dài, trọng lượng hoặc kích thước không dương/vượt giới hạn, URL ảnh không hợp lệ. |
-| `409` | Kiện đã được gắn với đơn khác; xóa kiện đang được đơn hàng tham chiếu. |
+| `401` | JWT is missing, expired, or invalid. |
+| `403` | Incorrect role or inactive account. |
+| `404` | Package does not exist or does not belong to the caller. |
+| `400` | Name is missing/too long, weight or dimensions are non-positive/exceed limits, or image URL is invalid. |
+| `409` | Package is already linked to another order; attempt to delete a package referenced by an order. |
 
-### 2.3 Order Creation — Tạo đơn hàng
+### 2.3 Order Creation
 
 #### Purpose / Actor
 
-CUSTOMER tạo yêu cầu giao hàng bằng cách chọn kiện hàng, trạm gửi/nhận, người nhận và địa chỉ giao hàng tùy chọn.
+The CUSTOMER creates a delivery request by selecting a package, origin/destination stations, a recipient, and an optional delivery address.
 
 #### Requirements Traceability
 
@@ -145,53 +145,53 @@ CUSTOMER tạo yêu cầu giao hàng bằng cách chọn kiện hàng, trạm g�
 
 #### Preconditions
 
-- Đáp ứng điều kiện truy cập chung.
-- Kiện hàng tồn tại, thuộc khách hàng hiện tại, hợp lệ theo giới hạn drone và chưa được dùng cho đơn khác.
-- Hai trạm tồn tại, đều có trạng thái `OPERATIONAL`, và có ID khác nhau.
-- Nếu cung cấp địa chỉ, địa chỉ phải thuộc khách hàng hiện tại.
+- The general access requirements are satisfied.
+- The package exists, belongs to the current customer, meets drone limits, and has not been used for another order.
+- Both stations exist, have `OPERATIONAL` status, and have different IDs.
+- If an address is provided, it must belong to the current customer.
 
 #### Inputs / Outputs
 
 **Input — `CreateDeliveryOrderDto`:**
 
-| Trường | Kiểu | Yêu cầu |
+| Field | Type | Requirements |
 |---|---|---|
-| `PackageId` | Guid | Bắt buộc; kiện của người gọi, chưa gắn đơn khác. |
-| `OriginStationId` | Guid | Bắt buộc; trạm `OPERATIONAL`. |
-| `DestinationStationId` | Guid | Bắt buộc; trạm `OPERATIONAL`, khác trạm gửi. |
-| `DeliveryAddressId` | Guid? | Tùy chọn; nếu có phải thuộc người gọi. |
-| `RecipientName` | string | Bắt buộc; tối đa 150 ký tự. |
-| `RecipientPhone` | string | Bắt buộc; đúng định dạng số điện thoại, tối đa 20 ký tự. |
+| `PackageId` | Guid | Required; must belong to the caller and not be linked to another order. |
+| `OriginStationId` | Guid | Required; station must be `OPERATIONAL`. |
+| `DestinationStationId` | Guid | Required; station must be `OPERATIONAL` and different from the origin station. |
+| `DeliveryAddressId` | Guid? | Optional; if provided, must belong to the caller. |
+| `RecipientName` | string | Required; maximum 150 characters. |
+| `RecipientPhone` | string | Required; valid phone number format; maximum 20 characters. |
 
-Client không gửi `CustomerId`, trạng thái, tracking number, secure code hoặc timestamp hệ thống.
+The client must not send `CustomerId`, status, tracking number, secure code, or system timestamps.
 
-**Output — `DeliveryOrderDetailResponseDto` (phản hồi tạo đơn):** `Id`, `TrackingNumber`, `Status`, tóm tắt kiện hàng/trạm, địa chỉ giao hàng nếu có, `RecipientName`, `RecipientPhone`, timestamps và lịch sử trạng thái ban đầu. Secure code được hiển thị trong phản hồi tạo đơn theo luồng UC-05; không ghi mã vào log.
+**Output — `DeliveryOrderDetailResponseDto` (order creation response):** `Id`, `TrackingNumber`, `Status`, package/station summaries, delivery address if provided, `RecipientName`, `RecipientPhone`, timestamps, and initial status history. The secure code is included in the order creation response as specified by the UC-05 flow; do not write the code to logs.
 
 #### Business Rules
 
-1. Máy chủ kiểm tra quyền sở hữu kiện/địa chỉ, trạng thái hai trạm và giới hạn drone **5.0 kg, 40 × 30 × 30 cm**.
-2. Trạm gửi và trạm nhận phải khác nhau và cùng `OPERATIONAL` tại thời điểm xử lý.
-3. Sinh `TrackingNumber` duy nhất và secure code ngẫu nhiên gồm đúng 6 chữ số; định dạng tracking number cụ thể vẫn cần xác nhận theo mục 4.
-4. Đơn mới có trạng thái `PENDING`.
-5. Ghi `DeliveryStatusLog` ban đầu (`FromStatus = null`, `ToStatus = PENDING`) cùng với đơn hàng trong transaction.
-6. Sau khi tạo đơn thành công, tạo notification cho khách hàng theo FR-12/UC-10. Không tạo thông báo trạng thái sai nếu thao tác lưu đơn thất bại.
-7. Một kiện hàng không thể được liên kết với đơn thứ hai.
+1. The server validates package/address ownership, both station statuses, and drone limits of **5.0 kg, 40 × 30 × 30 cm**.
+2. The origin and destination stations must be different and both `OPERATIONAL` when the request is processed.
+3. Generate a unique `TrackingNumber` and a random secure code consisting of exactly 6 digits. The specific tracking number format remains to be confirmed as described in Section 4.
+4. A new order has `PENDING` status.
+5. Write the initial `DeliveryStatusLog` (`FromStatus = null`, `ToStatus = PENDING`) in the same transaction as the order.
+6. After successful order creation, create a notification for the customer according to FR-12/UC-10. Do not create an incorrect status notification if saving the order fails.
+7. A package cannot be linked to a second order.
 
 #### Exceptional Cases
 
-| HTTP | Trường hợp |
+| HTTP | Case |
 |---|---|
-| `401` | JWT thiếu, hết hạn hoặc không hợp lệ. |
-| `403` | Sai role hoặc tài khoản không hoạt động. |
-| `404` | Không tìm thấy kiện hàng hoặc một trong các trạm/địa chỉ. |
-| `400` | Thiếu/sai dữ liệu người nhận; kiện không thuộc người gọi hoặc vượt giới hạn; trạm không `OPERATIONAL`; trạm gửi và nhận trùng nhau. |
-| `409` | Kiện đã được gắn với đơn khác hoặc xung đột uniqueness khi cấp tracking number. |
+| `401` | JWT is missing, expired, or invalid. |
+| `403` | Incorrect role or inactive account. |
+| `404` | Package, either station, or address was not found. |
+| `400` | Recipient data is missing/invalid; package does not belong to the caller or exceeds limits; a station is not `OPERATIONAL`; origin and destination stations are the same. |
+| `409` | Package is already linked to another order or a uniqueness conflict occurs while assigning the tracking number. |
 
-### 2.4 Order Update — Cập nhật đơn hàng
+### 2.4 Order Update
 
 #### Purpose / Actor
 
-CUSTOMER cập nhật thông tin người nhận hoặc điểm giao trước khi đơn được duyệt.
+The CUSTOMER updates recipient information or the delivery destination before the order is approved.
 
 #### Requirements Traceability
 
@@ -199,47 +199,47 @@ CUSTOMER cập nhật thông tin người nhận hoặc điểm giao trước kh
 
 #### Preconditions
 
-- Đáp ứng điều kiện truy cập chung.
-- Đơn tồn tại, thuộc CUSTOMER hiện tại và đang ở trạng thái `PENDING`.
+- The general access requirements are satisfied.
+- The order exists, belongs to the current CUSTOMER, and has `PENDING` status.
 
 #### Inputs / Outputs
 
-**Input — `UpdateDeliveryOrderDto`:** chỉ gồm đúng bốn trường sau:
+**Input — `UpdateDeliveryOrderDto`:** contains only the following four fields:
 
-| Trường | Kiểu | Yêu cầu |
+| Field | Type | Requirements |
 |---|---|---|
-| `RecipientName` | string | Bắt buộc; tối đa 150 ký tự. |
-| `RecipientPhone` | string | Bắt buộc; đúng định dạng số điện thoại, tối đa 20 ký tự. |
-| `DestinationStationId` | Guid | Bắt buộc; ID hợp lệ của trạm nhận. |
-| `DeliveryAddressId` | Guid? | Tùy chọn; nếu có phải là địa chỉ của CUSTOMER hiện tại. |
+| `RecipientName` | string | Required; maximum 150 characters. |
+| `RecipientPhone` | string | Required; valid phone number format; maximum 20 characters. |
+| `DestinationStationId` | Guid | Required; valid destination station ID. |
+| `DeliveryAddressId` | Guid? | Optional; if provided, must belong to the current CUSTOMER. |
 
-`PackageId`, `OriginStationId`, `Status`, `CustomerId`, `TrackingNumber` và `PickupSecureCode` không thuộc DTO cập nhật.
+`PackageId`, `OriginStationId`, `Status`, `CustomerId`, `TrackingNumber`, and `PickupSecureCode` are not part of the update DTO.
 
-**Output — `DeliveryOrderDetailResponseDto`:** thông tin đơn sau cập nhật, không bao gồm secure code.
+**Output — `DeliveryOrderDetailResponseDto`:** the updated order information, excluding the secure code.
 
 #### Business Rules
 
-1. Chỉ cho phép sửa khi trạng thái tại thời điểm lưu vẫn là `PENDING` (FR-10).
-2. Chỉ được cập nhật đúng bốn trường trong DTO; cấm thay đổi kiện hàng hoặc trạng thái.
-3. Trạm nhận mới phải tồn tại, `OPERATIONAL` và khác trạm gửi.
-4. Địa chỉ giao hàng nếu có phải thuộc CUSTOMER đang thao tác.
-5. Nếu request chứa trường ngoài phạm vi, từ chối thay vì âm thầm bỏ qua.
+1. Updates are allowed only if the status is still `PENDING` when the update is saved (FR-10).
+2. Only the four fields in the DTO may be updated; changing the package or status is prohibited.
+3. The new destination station must exist, be `OPERATIONAL`, and differ from the origin station.
+4. If provided, the delivery address must belong to the CUSTOMER making the request.
+5. If the request contains fields outside the allowed scope, reject it instead of silently ignoring them.
 
 #### Exceptional Cases
 
-| HTTP | Trường hợp |
+| HTTP | Case |
 |---|---|
-| `401` | JWT thiếu, hết hạn hoặc không hợp lệ. |
-| `403` | Sai role hoặc tài khoản không hoạt động. |
-| `404` | Đơn không tồn tại/không thuộc người gọi; địa chỉ hoặc trạm không tìm thấy. |
-| `400` | Trường bắt buộc thiếu/sai định dạng; gửi `PackageId`/`Status` hoặc trường không được phép; trạm đích không hoạt động hoặc trùng trạm gửi. |
-| `409` | Đơn đã chuyển khỏi `PENDING` trước khi cập nhật được lưu. |
+| `401` | JWT is missing, expired, or invalid. |
+| `403` | Incorrect role or inactive account. |
+| `404` | Order does not exist or does not belong to the caller; address or station not found. |
+| `400` | Required field is missing/invalid; `PackageId`/`Status` or another disallowed field is supplied; destination station is inactive or the same as the origin station. |
+| `409` | The order moved out of `PENDING` before the update was saved. |
 
-### 2.5 Order Cancellation — Hủy đơn hàng
+### 2.5 Order Cancellation
 
 #### Purpose / Actor
 
-CUSTOMER hủy đơn còn trong giai đoạn cho phép và cung cấp lý do hủy.
+The CUSTOMER cancels an order that is still within the permitted cancellation window and provides a cancellation reason.
 
 #### Requirements Traceability
 
@@ -247,102 +247,102 @@ CUSTOMER hủy đơn còn trong giai đoạn cho phép và cung cấp lý do h�
 
 #### Preconditions
 
-- Đáp ứng điều kiện truy cập chung.
-- Đơn tồn tại và thuộc CUSTOMER hiện tại.
-- Chỉ đơn `PENDING` hoặc `APPROVED` được hủy bởi CUSTOMER; `IN_TRANSIT` không được hủy.
+- The general access requirements are satisfied.
+- The order exists and belongs to the current CUSTOMER.
+- A CUSTOMER may cancel only orders with `PENDING` or `APPROVED` status; an `IN_TRANSIT` order cannot be canceled.
 
 #### Inputs / Outputs
 
 **Input — `CancelDeliveryOrderDto`:**
 
-| Trường | Kiểu | Yêu cầu |
+| Field | Type | Requirements |
 |---|---|---|
-| `CancellationReason` | string | Bắt buộc, không rỗng/khoảng trắng; tối đa 500 ký tự. |
+| `CancellationReason` | string | Required; must not be empty or whitespace; maximum 500 characters. |
 
-**Output — `DeliveryOrderResponseDto`:** thông tin đơn đã chuyển sang `CANCELLED`, lý do hủy và thời gian cập nhật.
+**Output — `DeliveryOrderResponseDto`:** order information after transition to `CANCELLED`, cancellation reason, and update time.
 
 #### Business Rules
 
-1. Chỉ cho phép hủy khi trạng thái hiện tại là `PENDING` hoặc `APPROVED`.
-2. Lưu `CancellationReason` trên đơn và ghi `DeliveryStatusLog` từ trạng thái cũ sang `CANCELLED`, bao gồm người thực hiện và thời điểm.
-3. Cập nhật trạng thái và log trong cùng transaction; sau khi thành công, tạo notification cho khách hàng theo FR-12.
-4. Không cho hủy khi `IN_TRANSIT`, đã hoàn tất hoặc đã hủy; yêu cầu lặp không tạo log/thông báo lặp.
+1. Cancellation is allowed only when the current status is `PENDING` or `APPROVED`.
+2. Save `CancellationReason` on the order and write a `DeliveryStatusLog` from the previous status to `CANCELLED`, including the actor and timestamp.
+3. Update the status and write the log in the same transaction. After success, create a notification for the customer according to FR-12.
+4. Cancellation is prohibited for `IN_TRANSIT`, completed, or already-canceled orders. Repeated requests must not create duplicate logs or notifications.
 
 #### Exceptional Cases
 
-| HTTP | Trường hợp |
+| HTTP | Case |
 |---|---|
-| `401` | JWT thiếu, hết hạn hoặc không hợp lệ. |
-| `403` | Sai role hoặc tài khoản không hoạt động. |
-| `404` | Đơn không tồn tại/không thuộc người gọi. |
-| `400` | `CancellationReason` thiếu, rỗng hoặc vượt 500 ký tự. |
-| `409` | Trạng thái hiện tại không cho phép hủy, bao gồm `IN_TRANSIT`, `COMPLETED` hoặc `CANCELLED`. |
+| `401` | JWT is missing, expired, or invalid. |
+| `403` | Incorrect role or inactive account. |
+| `404` | Order does not exist or does not belong to the caller. |
+| `400` | `CancellationReason` is missing, empty, or exceeds 500 characters. |
+| `409` | Current status does not allow cancellation, including `IN_TRANSIT`, `COMPLETED`, or `CANCELLED`. |
 
-### 2.6 Order Listing & Details — Danh sách và chi tiết đơn hàng
+### 2.6 Order Listing & Details
 
 #### Purpose / Actor
 
-CUSTOMER xem các đơn của mình, lọc/phân trang danh sách và mở chi tiết gồm lịch sử trạng thái cùng dữ liệu ETA nếu có.
+The CUSTOMER views their orders, filters and paginates the list, and opens details that include status history and ETA data when available.
 
 #### Requirements Traceability
 
 - **FR-09**, **FR-11**, **FR-12**, **FR-24**, **FR-26**, **FR-29**, **FR-30**.
-- **UC-05**, **UC-07**, **UC-08**, **UC-10**, **UC-20**. UC-08/FR-26 là luồng xác nhận giao tích hợp; actor nhận mã cần được phân quyền riêng theo đặc tả workflow.
+- **UC-05**, **UC-07**, **UC-08**, **UC-10**, **UC-20**. UC-08/FR-26 is an integrated delivery-confirmation flow; authorization for the actor receiving the code must be specified separately in the workflow specification.
 
 #### Preconditions
 
-- Đáp ứng điều kiện truy cập chung.
-- Chi tiết đơn phải thuộc CUSTOMER hiện tại.
+- The general access requirements are satisfied.
+- The order details must belong to the current CUSTOMER.
 
 #### Inputs / Outputs
 
-**Tham số lọc danh sách:**
+**List filter parameters:**
 
-| Trường | Kiểu | Ràng buộc |
+| Field | Type | Constraints |
 |---|---|---|
-| `status` | string hoặc string[] | Tùy chọn; chỉ trạng thái hợp lệ. Hỗ trợ mảng là open issue. |
-| `fromDate` | DateTime? | Tùy chọn; ISO 8601. |
-| `toDate` | DateTime? | Tùy chọn; ISO 8601, không sớm hơn `fromDate`. |
-| `searchKeyword` | string? | Tùy chọn; tìm theo tracking number hoặc từ khóa được hỗ trợ. |
-| `page` | int | Tùy chọn; mặc định 1, tối thiểu 1. |
-| `pageSize` | int | Tùy chọn; mặc định 20, trong khoảng 1–100. |
+| `status` | string or string[] | Optional; valid statuses only. Support for arrays is an open issue. |
+| `fromDate` | DateTime? | Optional; ISO 8601. |
+| `toDate` | DateTime? | Optional; ISO 8601, and not earlier than `fromDate`. |
+| `searchKeyword` | string? | Optional; search by tracking number or a supported keyword. |
+| `page` | int | Optional; defaults to 1; minimum 1. |
+| `pageSize` | int | Optional; defaults to 20; range 1–100. |
 
-**Output danh sách — `PagedResult<DeliveryOrderResponseDto>`:** `Items`, `Page`, `PageSize`, `TotalCount`, `TotalPages`. Mỗi item có `Id`, `TrackingNumber`, `Status`, thông tin kiện/trạm và `CreatedAt`/`UpdatedAt`; không chứa `PickupSecureCode`.
+**List output — `PagedResult<DeliveryOrderResponseDto>`:** `Items`, `Page`, `PageSize`, `TotalCount`, `TotalPages`. Each item contains `Id`, `TrackingNumber`, `Status`, package/station information, and `CreatedAt`/`UpdatedAt`; it does not contain `PickupSecureCode`.
 
-**Output chi tiết — `DeliveryOrderDetailResponseDto`:** thông tin đơn, kiện, trạm, địa chỉ và người nhận phù hợp quyền truy cập; `StatusLogs[]` (mỗi log có trạng thái trước/sau, remarks, actor nếu được phép, thời điểm); `AiEtaPrediction?` theo UC-20/FR-29. Secure code không được đưa vào DTO chi tiết chung hoặc log; luồng trả/kiểm tra mã chỉ dành cho actor đã được xác nhận quyền.
+**Details output — `DeliveryOrderDetailResponseDto`:** order, package, station, address, and recipient information permitted by the caller's access; `StatusLogs[]` (each log has the previous/new status, remarks, actor if permitted, and timestamp); and `AiEtaPrediction?` according to UC-20/FR-29. The secure code must not be included in the general details DTO or logs. Code delivery/verification is restricted to actors whose authorization has been confirmed.
 
 #### Business Rules
 
-1. Luôn giới hạn kết quả theo customer ID từ JWT; không dùng ID khách hàng do client gửi để mở rộng phạm vi.
-2. Hỗ trợ lọc theo trạng thái, ngày tạo, từ khóa; kiểm tra `fromDate <= toDate`. Sắp xếp mặc định theo thời gian tạo mới nhất trước.
-3. Áp dụng phân trang với `page >= 1`, `1 <= pageSize <= 100`.
-4. Trả lịch sử `StatusLogs[]` theo thời gian tăng dần; ETA/dự báo AI có thể không có và khi đó trả null.
-5. Thông tin notification liên quan đơn tuân theo FR-12/UC-10; dữ liệu của khách khác không bao giờ được trả về.
-6. Vị trí drone real-time là khả năng theo dõi FR-24, không đồng nghĩa với snapshot ETA/lịch sử trong response chi tiết.
+1. Always scope results to the customer ID from the JWT; do not use a customer ID supplied by the client to expand the scope.
+2. Support filtering by status, creation date, and keyword; validate `fromDate <= toDate`. By default, sort newest creation time first.
+3. Apply pagination with `page >= 1` and `1 <= pageSize <= 100`.
+4. Return `StatusLogs[]` in ascending chronological order. ETA/AI predictions may be unavailable, in which case return null.
+5. Order-related notification information follows FR-12/UC-10; data belonging to other customers must never be returned.
+6. Real-time drone location is an FR-24 tracking capability and is distinct from the ETA/history snapshot in the details response.
 
 #### Exceptional Cases
 
-| HTTP | Trường hợp |
+| HTTP | Case |
 |---|---|
-| `401` | JWT thiếu, hết hạn hoặc không hợp lệ. |
-| `403` | Sai role hoặc tài khoản không hoạt động. |
-| `404` | Không tìm thấy đơn hoặc đơn không thuộc người gọi. |
-| `400` | Trạng thái không hợp lệ; ngày sai định dạng hoặc `fromDate > toDate`; page/pageSize ngoài giới hạn; từ khóa vượt giới hạn đã cấu hình. |
-| `409` | Chỉ áp dụng nếu hợp đồng API quy định trạng thái lọc xung đột là conflict; mặc định lỗi tham số lọc trả `400`. |
+| `401` | JWT is missing, expired, or invalid. |
+| `403` | Incorrect role or inactive account. |
+| `404` | Order was not found or does not belong to the caller. |
+| `400` | Invalid status; date is malformed or `fromDate > toDate`; page/pageSize is out of range; keyword exceeds the configured limit. |
+| `409` | Applicable only if the API contract defines a conflicting filter status as a conflict; by default, invalid filter parameters return `400`. |
 
 ## 3. Traceability Matrix
 
-| Nhóm Chức Năng | Tên Chức Năng Cụ Thể | Mã FR / UC Liên Quan | Trạng Thái Xác Nhận trong Source |
+| Functional Area | Specific Function | Related FR / UC IDs | Source Confirmation Status |
 |---|---|---|---|
-| 1 | Address Management — tạo, sửa, xóa, liệt kê, đặt mặc định | FR-06 / UC-03 | SRS/use-cases xác nhận thao tác và actor; trường/validation chi tiết theo class specification. Ngưỡng 10 địa chỉ là đề xuất cần chốt. |
-| 2 | Package Management — tạo, cập nhật kiện hàng | FR-07 / UC-04 | SRS/use-cases xác nhận thuộc tính nghiệp vụ; class specification xác nhận giới hạn 5000 g, 40×30×30 cm và quan hệ 1-1. |
-| 3 | Order Creation — tạo đơn, sinh mã, trạng thái ban đầu và notification | FR-08, FR-09, FR-12, FR-14 / UC-05, UC-10 | SRS/use-cases và sequence-create-order xác nhận luồng; `OPERATIONAL`, `PENDING`, log ban đầu và notification được thể hiện trong tài liệu thiết kế. Format TrackingNumber cần chốt. |
-| 4 | Order Update — sửa bốn trường trước duyệt | FR-10 / UC-06 | Class specification và sequence-update-cancel-order quy định DTO chỉ có RecipientName, RecipientPhone, DestinationStationId, DeliveryAddressId; chỉ sửa khi PENDING. |
-| 5 | Order Cancellation — hủy có lý do, ghi log và notification | FR-10, FR-12, FR-14 / UC-06, UC-10 | Sequence-update-cancel-order xác nhận CancellationReason bắt buộc, chỉ PENDING/APPROVED, chuyển CANCELLED, log và notification. |
-| 6 | Order Listing & Details — lọc, phân trang, lịch sử, ETA | FR-09, FR-11, FR-12, FR-24, FR-26, FR-29, FR-30 / UC-05, UC-07, UC-08, UC-10, UC-20 | SRS/use-cases xác nhận đơn của khách, tracking, notification, secure-code confirmation và ETA/summary. Hỗ trợ mảng trạng thái và quyền hiển thị secure code cần chốt. |
+| 1 | Address Management — create, update, delete, list, set default | FR-06 / UC-03 | SRS/use cases confirm the operations and actor; detailed fields/validation follow the class specification. The limit of 10 addresses is proposed and requires confirmation. |
+| 2 | Package Management — create and update packages | FR-07 / UC-04 | SRS/use cases confirm business attributes; the class specification confirms the limits of 5000 g, 40×30×30 cm, and the 1-to-1 relationship. |
+| 3 | Order Creation — create order, generate code, set initial status, and create notification | FR-08, FR-09, FR-12, FR-14 / UC-05, UC-10 | SRS/use cases and sequence-create-order confirm the flow; `OPERATIONAL`, `PENDING`, the initial log, and notification are shown in the design documents. The TrackingNumber format remains to be confirmed. |
+| 4 | Order Update — update four fields before approval | FR-10 / UC-06 | The class specification and sequence-update-cancel-order specify that the DTO contains only RecipientName, RecipientPhone, DestinationStationId, and DeliveryAddressId; updates are allowed only while PENDING. |
+| 5 | Order Cancellation — cancel with a reason, write a log, and create a notification | FR-10, FR-12, FR-14 / UC-06, UC-10 | Sequence-update-cancel-order confirms that CancellationReason is required, cancellation is limited to PENDING/APPROVED, and the order transitions to CANCELLED with a log and notification. |
+| 6 | Order Listing & Details — filtering, pagination, history, and ETA | FR-09, FR-11, FR-12, FR-24, FR-26, FR-29, FR-30 / UC-05, UC-07, UC-08, UC-10, UC-20 | SRS/use cases confirm customer orders, tracking, notifications, secure-code confirmation, and ETA/summary. Support for status arrays and authorization to display the secure code require confirmation. |
 
 ## 4. Open Issues
 
-1. **Giới hạn địa chỉ:** đề xuất tối đa **10 địa chỉ/khách hàng**. Xác nhận xử lý khi vượt giới hạn, xóa địa chỉ mặc định và xóa địa chỉ đang được đơn hàng tham chiếu.
-2. **Tái sử dụng Package:** xác nhận kiện hàng có thể được gắn với đơn mới sau khi đơn trước kết thúc hay không. Mặc định hiện tại là One Package One Order; không tái sử dụng khi chưa có quyết định.
-3. **Mảng trạng thái trong Filter:** xác nhận bộ lọc danh sách chấp nhận một trạng thái hay nhiều trạng thái (ví dụ `status=PENDING,APPROVED`), cách mã hóa và phản hồi khi một trạng thái không hợp lệ.
+1. **Address limit:** a maximum of **10 addresses per customer** is proposed. Confirm how to handle exceeding the limit, deleting the default address, and deleting an address referenced by an order.
+2. **Package reuse:** confirm whether a package may be attached to a new order after its previous order is complete. The current default is One Package One Order; do not reuse packages until a decision is made.
+3. **Status arrays in the filter:** confirm whether the list filter accepts one or multiple statuses (for example, `status=PENDING,APPROVED`), how they are encoded, and the response when a status is invalid.
