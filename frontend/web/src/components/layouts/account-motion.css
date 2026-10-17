@@ -1,0 +1,24 @@
+/* Draft motion: progressive enhancement; content is visible without animation. */
+.account-nav-marker { position:absolute; top:0; left:0; z-index:2; width:3px; height:20px; border-radius:0 3px 3px 0; background:#f5ca60; opacity:0; pointer-events:none; }
+.account-sidebar[data-motion-nav='ready'] > .account-nav-marker { opacity:1; }
+.account-sidebar[data-motion-nav='ready'] .account-current::before { visibility:hidden; }
+.account-nav-link,.account-current { transition:background-color 180ms ease,color 180ms ease; }
+.account-sidebar .account-icon { transition:transform 180ms ease; }
+.account-sidebar a:hover > .account-icon { transform:translateX(2px); }
+.account-sidebar a:active > .account-icon { transform:translateX(2px) scale(.94); }
+.users-page .ant-card { transition:border-color 200ms ease,box-shadow 200ms ease; }
+.users-page .ant-card:hover { border-color:#b3c6a8; box-shadow:0 5px 18px #1e4f3c08; }
+.users-primary-link,.users-page .ant-btn,.users-row-action { transition:background-color 180ms ease,border-color 180ms ease,box-shadow 180ms ease,transform 180ms ease; }
+.users-primary-link:hover { transform:translateY(-1px); box-shadow:0 4px 10px #1e4f3c18; }
+.users-primary-link:active,.users-page .ant-btn:active:not(:disabled),.users-row-action:active { transform:translateY(1px) scale(.98); }
+.users-page .ant-table-tbody > tr > td { transition:background-color 160ms ease; }
+.users-role-card a { transition:color 160ms ease,transform 180ms ease; }
+.users-role-card a:hover { transform:translateX(3px); }
+@media(max-width:760px) {
+  .account-sidebar > .account-nav-marker { display:none; }
+  .account-sidebar[data-motion-nav='ready'] .account-current::before { visibility:visible; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .account-nav-link,.account-current,.account-sidebar .account-icon,.users-page .ant-card,.users-primary-link,.users-page .ant-btn,.users-row-action,.users-page .ant-table-tbody > tr > td,.users-role-card a { transition:none; }
+  .account-sidebar a:hover > .account-icon,.account-sidebar a:active > .account-icon,.users-primary-link:hover,.users-primary-link:active,.users-page .ant-btn:active:not(:disabled),.users-row-action:active,.users-role-card a:hover { transform:none; }
+}
