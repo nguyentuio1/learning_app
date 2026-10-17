@@ -49,7 +49,7 @@ export function ProfileDetails({ profile, onSaved, onAccessError, avatar }: {
       const issue = profileError(cause, 'profile')
       if (issue.accessDenied) onAccessError(issue)
       else {
-        form.setFields(['fullName', 'phoneNumber'].map(name => ({ name, errors: issue.fields[name] || [] })))
+        form.setFields((['fullName', 'phoneNumber'] as const).map(name => ({ name, errors: issue.fields[name] || [] })))
         setError(issue.message)
       }
     } finally {
@@ -108,7 +108,7 @@ export function PasswordSettings({ onAccessError }: { onAccessError: ErrorHandle
       const issue = profileError(cause, 'password')
       if (issue.accessDenied) onAccessError(issue)
       else {
-        form.setFields(['currentPassword', 'newPassword'].map(name => ({ name, errors: issue.fields[name] || [] })))
+        form.setFields((['currentPassword', 'newPassword'] as const).map(name => ({ name, errors: issue.fields[name] || [] })))
         setError(issue.message)
       }
     } finally {

@@ -23,7 +23,11 @@ export function LoginPage() {
   if (auth.status === 'loading') return <main className="page-shell"><Spin aria-label="Restoring session" /></main>
   if (auth.status === 'authenticated' && (!submitting.current || transitionDone)) {
     // Accept only implemented internal destinations, never arbitrary redirect URLs.
-    const destination = location.state?.from === '/' ? '/' : '/profile'
+    const requested = location.state?.from
+    const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles)$/i.test(requested)
+    const destination = auth.user?.role.code === 'ADMIN'
+      ? (adminDestination ? requested : requested === '/profile' ? '/profile' : '/admin/users')
+      : requested === '/' ? '/' : '/profile'
     return <Navigate to={destination} replace />
   }
   async function submit(values: { email: string; password: string }) {
