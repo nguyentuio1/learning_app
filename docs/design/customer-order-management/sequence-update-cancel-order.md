@@ -43,7 +43,7 @@ sequenceDiagram
         Client ->> Controller: PUT /api/delivery-orders/{id}<br/>(Header: Authorization: Bearer access token, Body: UpdateDeliveryOrderDto)
 
         alt Request attempts to include PackageId or Status
-            Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails; field is not allowed)
+            Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails, field is not allowed)
             Client -->> Customer: Displays "Package and order status cannot be changed"
         else Request contains only the four allowed fields
         %% Step 3: Auth & Role Validation

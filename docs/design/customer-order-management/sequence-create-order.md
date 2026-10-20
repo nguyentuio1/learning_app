@@ -62,7 +62,7 @@ sequenceDiagram
                 Controller -->> Client: 404 Not Found (RFC 7807 ProblemDetails)
                 Client -->> Customer: Displays "Package or station not found"
             else Package and Stations Found
-                alt Business Rule Violated<br/>(Package not owned by customer; WeightGram > 5000,<br/>LengthCm > 40, WidthCm > 30, or HeightCm > 30;<br/>Origin == Destination; or a station is not OPERATIONAL)
+                alt Business Rule Violated<br/>(Package not owned by customer, WeightGram > 5000,<br/>LengthCm > 40, WidthCm > 30, or HeightCm > 30,<br/>Origin != Destination, or a station is not OPERATIONAL)
                     OrderSvc -->> Controller: Throws ValidationException / BusinessRuleException
                     Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails)
                     Client -->> Customer: Displays specific validation error
