@@ -62,7 +62,7 @@ sequenceDiagram
                 Controller -->> Client: 404 Not Found (RFC 7807 ProblemDetails)
                 Client -->> Customer: Displays "Package or station not found"
             else Package and Stations Found
-                alt Business Rule Violated<br/>(Package not owned by customer, WeightGram > 5000,<br/>LengthCm > 40, WidthCm > 30, or HeightCm > 30,<br/>Origin != Destination, or a station is not OPERATIONAL)
+                alt Business Rule Violated<br/>(Package not owned by customer, WeightGram > 3000,<br/>LengthCm > 30, WidthCm > 20, or HeightCm > 15,<br/>Origin == Destination, or a station is not OPERATIONAL)
                     OrderSvc -->> Controller: Throws ValidationException / BusinessRuleException
                     Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails)
                     Client -->> Customer: Displays specific validation error
@@ -99,7 +99,7 @@ sequenceDiagram
 
 1. The customer selects a package and origin and destination stations, then enters the recipient's details. Before sending the request, the application validates required fields and the phone number format.
 2. Once the data is valid, the application sends `POST /api/delivery-orders` with the JWT in the `Authorization` header and a `CreateDeliveryOrderDto` body. The controller authenticates the customer and checks the `CUSTOMER` role, then forwards the request and `customerId` to the order service.
-3. The order service retrieves the package through `IPackageService` and checks that the stations exist and have `OPERATIONAL` status. A missing package or station results in `404 Not Found`. If the entities exist but a business rule is violated (the package does not belong to the customer, `WeightGram > 5000` g (5.0 kg), `LengthCm > 40` cm, `WidthCm > 30` cm, `HeightCm > 30` cm, the origin and destination are the same, or a station is not `OPERATIONAL`), the request results in `400 Bad Request`. The corresponding accepted limits are `WeightGram <= 5000`, `LengthCm <= 40`, `WidthCm <= 30`, and `HeightCm <= 30`.
+3. The order service retrieves the package through `IPackageService` and checks that the stations exist and have `OPERATIONAL` status. A missing package or station results in `404 Not Found`. If the entities exist but a business rule is violated (the package does not belong to the customer, `WeightGram > 3000` g (3.0 kg), `LengthCm > 30` cm, `WidthCm > 20` cm, `HeightCm > 15` cm, the origin and destination are the same, or a station is not `OPERATIONAL`), the request results in `400 Bad Request`. The corresponding accepted limits are `WeightGram <= 3000`, `LengthCm <= 30`, `WidthCm <= 20`, and `HeightCm <= 15`.
 4. If validation succeeds, the service generates a unique tracking number and a six-digit secure code, sets the initial status to `PENDING`, and begins a database transaction. It adds and saves both the `DeliveryOrder` and the initial `DeliveryStatusLog` (`From=null`, `To=PENDING`) within the transaction, then commits before proceeding.
 5. After the transaction commits successfully, the service creates a customer notification through `INotificationService` (FR-12). Finally, it returns a successful response containing a `DeliveryOrderDetailResponseDto`, with HTTP status `201 Created` and the new order's URI.
 
@@ -107,10 +107,8 @@ sequenceDiagram
 
 | Scenario | Flow result |
 |---|---|
-| Scenario | Flow result |
-|---|---|
 | Client-side validation fails | The application displays form errors and does not send a request to the API. |
 | JWT is invalid or expired, or the role is not `CUSTOMER` | The API returns `401 Unauthorized` or `403 Forbidden` with `ProblemDetails`; the application prompts the customer to sign in or displays a permission error. |
-| A business rule is violated (the package does not belong to the customer, `WeightGram > 5000`, `LengthCm > 40`, `WidthCm > 30`, `HeightCm > 30`, the origin and destination are the same, or a station is not `OPERATIONAL`) | The API returns `400 Bad Request` with `ProblemDetails`; the application displays a specific validation error. |
+| A business rule is violated (the package does not belong to the customer, `WeightGram > 3000`, `LengthCm > 30`, `WidthCm > 20`, `HeightCm > 15`, the origin and destination are the same, or a station is not `OPERATIONAL`) | The API returns `400 Bad Request` with `ProblemDetails`; the application displays a specific validation error. |
 | The package or station cannot be found | The API returns `404 Not Found` with `ProblemDetails`; the application reports that the requested resource could not be found. |
 | Order creation succeeds | The API returns `201 Created`, a `Location` header, and a `DeliveryOrderDetailResponseDto`; the result screen displays the tracking number and secure code. |

@@ -34,7 +34,7 @@ sequenceDiagram
     Customer ->> Client: Edits order details (RecipientName, RecipientPhone, DestinationStationId, DeliveryAddressId)
     Client ->> Client: Client-side validation (Required fields, phone format)
     Note over Client: UpdateDeliveryOrderDto contains exactly RecipientName, RecipientPhone, DestinationStationId, and DeliveryAddressId.<br/>PackageId and Status are not editable through this request.
-    Note over OrderSvc: Package limits are validated at order creation, not updated here: WeightGram <= 5000 (5.0 kg), LengthCm <= 40 cm, WidthCm <= 30 cm, HeightCm <= 30 cm.
+    Note over OrderSvc: Package limits are validated at order creation, not updated here: WeightGram <= 3000 (3.0 kg), LengthCm <= 30 cm, WidthCm <= 20 cm, HeightCm <= 15 cm.
 
     alt Client-side Validation Fails
         Client -->> Customer: Displays form error messages
@@ -171,7 +171,7 @@ sequenceDiagram
 
 ## 3. Interaction Flow
 
-1. **Update:** The customer edits the recipient details, destination station, or delivery address. The `UpdateDeliveryOrderDto` contains only `RecipientName`, `RecipientPhone`, `DestinationStationId`, and `DeliveryAddressId`; `PackageId` and `Status` cannot be updated. Package limits (`WeightGram <= 5000` g (5.0 kg), `LengthCm <= 40` cm, `WidthCm <= 30` cm, and `HeightCm <= 30` cm) are checked when the order is created, not in this update flow. A request that includes either prohibited field is rejected with `400 Bad Request`.
+1. **Update:** The customer edits the recipient details, destination station, or delivery address. The `UpdateDeliveryOrderDto` contains only `RecipientName`, `RecipientPhone`, `DestinationStationId`, and `DeliveryAddressId`; `PackageId` and `Status` cannot be updated. Package limits (`WeightGram <= 3000` g (3.0 kg), `LengthCm <= 30` cm, `WidthCm <= 20` cm, and `HeightCm <= 15` cm) are checked when the order is created, not in this update flow. A request that includes either prohibited field is rejected with `400 Bad Request`.
 2. The controller authenticates the customer and checks the `CUSTOMER` role, then passes `id`, `customerId`, and the update data to the order service. The service verifies that the order exists, belongs to the customer, and is still in `PENDING` status.
 3. The service checks that the new destination station is `OPERATIONAL` and differs from the origin station, and validates the delivery address if it has changed. If validation succeeds, the service updates the order properties and saves the changes; the API returns `200 OK` with a `DeliveryOrderDetailResponseDto`.
 4. **Cancel:** The customer enters a non-empty cancellation reason. The application sends `POST /api/delivery-orders/{id}/cancel` with the JWT and a `CancelDeliveryOrderDto`; the service then checks ownership, the reason, and the order status.

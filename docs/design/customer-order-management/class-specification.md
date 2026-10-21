@@ -44,10 +44,10 @@ All entity properties are mapped to columns unless noted as a navigation. Defaul
 | `Id` | `Guid` / `uuid` | PK, NOT NULL | Generated UUID. |
 | `SenderId` | `Guid` / `uuid` | FK → `User.Id`, NOT NULL | Owning sender; customer-scoped access. |
 | `PackageName` | `string` / `varchar(200)` | NOT NULL | Required; maximum 200 characters. |
-| `WeightGram` | `decimal` / `numeric(8,2)` | NOT NULL | Must be greater than zero and at most 5000 grams (5.0 kg). |
-| `LengthCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 40 cm. |
-| `WidthCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 30 cm. |
-| `HeightCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 30 cm. |
+| `WeightGram` | `decimal` / `numeric(8,2)` | NOT NULL | Must be greater than zero and at most 3000 grams (3.0 kg). |
+| `LengthCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 30 cm. |
+| `WidthCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 20 cm. |
+| `HeightCm` | `decimal` / `numeric(6,2)` | NOT NULL | Must be greater than zero and at most 15 cm. |
 | `PackageImageUrl` | `string?` / `text` | NULL | Optional image reference (MinIO URL in ERD). |
 | `IsFragile` | `bool` / `boolean` | NOT NULL | Defaults to false. |
 | `CreatedAt` | `DateTime` / `timestamptz` | NOT NULL | UTC creation time, defaults to current time. |
@@ -134,7 +134,7 @@ For non-nullable `Guid` request properties, reject `Guid.Empty` explicitly; `[Re
 | `CreateCustomerAddressDto` | `Label`: `[Required]`, `[MaxLength(50)]`; `ContactName`: `[Required]`, `[MaxLength(150)]`; `ContactPhone`: `[Required]`, `[Phone]`, `[MaxLength(20)]`; `AddressLine`: `[Required]`; `Latitude`, `Longitude`: nullable `[Range]` (-90..90 and -180..180 respectively); `IsDefault`: `bool`. Add cross-field validation requiring coordinates together. |
 | `UpdateCustomerAddressDto` | Same editable fields and rules as create; the customer ID is derived from claims and is not accepted in the body. |
 | `CustomerAddressResponseDto` | `Id`, `Label`, contact name/phone, address line, optional coordinates, `IsDefault`, timestamps. No owner credentials or navigation objects. |
-| `CreatePackageDto` | `PackageName`: `[Required]`, `[MaxLength(200)]`; `WeightGram`: `[Range(typeof(decimal), "0.01", "5000")]`; `LengthCm`: `[Range(typeof(decimal), "0.01", "40")]`; `WidthCm`, `HeightCm`: `[Range(typeof(decimal), "0.01", "30")]`; `PackageImageUrl`: optional validated URL/reference; `IsFragile`: `bool`. |
+| `CreatePackageDto` | `PackageName`: `[Required]`, `[MaxLength(200)]`; `WeightGram`: `[Range(typeof(decimal), "0.01", "3000")]`; `LengthCm`: `[Range(typeof(decimal), "0.01", "30")]`; `WidthCm`: `[Range(typeof(decimal), "0.01", "20")]`; `HeightCm`: `[Range(typeof(decimal), "0.01", "15")]`; `PackageImageUrl`: optional validated URL/reference; `IsFragile`: `bool`. |
 | `UpdatePackageDto` | Same editable fields and numeric constraints as create; sender ID comes from claims. Service rejects updates that violate an existing order's invariants. |
 | `PackageResponseDto` | `Id`, name, weight, dimensions, optional image reference, fragile flag, creation time. |
 | `CreateDeliveryOrderDto` | `PackageId`, `OriginStationId`, `DestinationStationId`: `[Required]`; `DeliveryAddressId`: optional; `RecipientName`: `[Required]`, `[MaxLength(150)]`; `RecipientPhone`: `[Required]`, `[Phone]`, `[MaxLength(20)]`. No `CustomerId`, status, tracking number, or secure code supplied by client. |
@@ -231,4 +231,4 @@ UC-08 identifies the recipient (through the customer or operator app) as actor. 
 
 1. **TrackingNumber format:** the ERD example is `DD-202610-0988`, but prefix, date component, sequence/random strategy, collision retry behavior, and privacy/guessability requirements are not finalized. Keep the unique database constraint regardless of the selected format.
 2. **SecureCode operational policy:** six random decimal digits are fixed. Confirm the delivery channel, expiry, retry/lockout threshold, secure storage/verification approach, and which actor may submit it. The ERD permits up to ten characters; the UC specifies rejection/counting of wrong attempts but no threshold.
-3. **Drone availability at order creation:** confirm whether order submission must also require a currently available compatible drone; package limits are `5000` grams and `40 x 30 x 30` cm.
+3. **Drone availability at order creation:** confirm whether order submission must also require a currently available compatible drone; package limits are `3000` grams (3.0 kg) and `30 x 20 x 15` cm.
