@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AuthResponse, Session } from '../types/auth'
+import type { AuthResponse, AuthUser, Session } from '../types/auth'
 
 export const apiBaseURL = import.meta.env.DEV ? '/' : import.meta.env.VITE_API_BASE_URL
 const transport = axios.create({ baseURL: apiBaseURL, timeout: 20000 })
@@ -46,6 +46,11 @@ export const session = {
     const generation = state.generation
     const { data } = await transport.post<AuthResponse>('/api/auth/login', { email: email.trim(), password })
     accept(data, generation)
+  },
+  updateProfile(user: AuthUser) {
+    if (state.status !== 'authenticated' || state.user?.id !== user.id) return
+    // Profile edits must not change authorization or session credentials.
+    emit({ ...state, user: { ...state.user, fullName: user.fullName, phoneNumber: user.phoneNumber, avatarUrl: user.avatarUrl } })
   },
   refresh(): Promise<string> {
     if (refreshPending && refreshGeneration === state.generation) return refreshPending
