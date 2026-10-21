@@ -241,7 +241,7 @@ classDiagram
 
 The diagram uses `0..1` for optional relationships and `0..*` for collections. A package can be unassigned or linked to one order; `DeliveryOrder.PackageId` is unique in the ERD. Origin and destination are separate required references to `LandingStation`.
 
-Package measurements are constrained to `0 < WeightGram <= 5000`, `0 < LengthCm <= 40`, `0 < WidthCm <= 30`, and `0 < HeightCm <= 30`.
+Package measurements are constrained to `0 < WeightGram <= 3000`, `0 < LengthCm <= 30`, `0 < WidthCm <= 20`, and `0 < HeightCm <= 15`.
 
 `NotificationsController` is included to provide the read/mark-as-read operations in UC-10. The three core controllers requested for address, package, and order management remain the primary module endpoints.
 
@@ -251,7 +251,7 @@ Package measurements are constrained to `0 < WeightGram <= 5000`, `0 < LengthCm 
 
 1. Require an authenticated `CUSTOMER`; take the customer ID from the authenticated principal, never from a client-supplied owner field.
 2. Validate the request and confirm the selected package belongs to that customer and is not already assigned to an order. Confirm origin and destination are distinct, valid stations; validate an optional delivery address belongs to the same customer.
-3. Check that package weight is at most `5000` grams and dimensions are at most `40 x 30 x 30` cm.
+3. Check that package weight is at most `3000` grams (3.0 kg) and dimensions are at most `30 x 20 x 15` cm.
 4. Generate a unique `TrackingNumber`. Enforce uniqueness with the database unique constraint and handle a collision by generating another value. Generate a random six-digit pickup secure code using a cryptographically secure random source.
 5. In one database transaction, create the order with `PENDING`, add its initial `DeliveryStatusLog` (`FromStatus = null`, `ToStatus = PENDING`), and create the customer's order notification.
 6. Commit and return `201 Created` with the order detail/location. Do not expose the secure code in an ordinary order-detail response; use an explicitly authorized delivery channel/view.
@@ -266,4 +266,4 @@ Package measurements are constrained to `0 < WeightGram <= 5000`, `0 < LengthCm 
 
 - Address list/read/update/delete/default operations are always scoped to the authenticated customer. Setting a default must make the default unique for that customer in a transaction.
 - An address referenced by an existing order must not cause historical order data to be deleted or changed. The optional order-to-address FK and delete behavior should be preserved (for example, detach the FK or reject deletion); choose and test the final policy before implementation.
-- Package create/update is customer-scoped. Enforce `0 < WeightGram <= 5000`, `0 < LengthCm <= 40`, `0 < WidthCm <= 30`, and `0 < HeightCm <= 30`, along with optional image metadata validation. Do not allow reassignment or deletion to bypass the one-package/one-order invariant. Package capacity is checked when creating an order and again at physical intake where appropriate.
+- Package create/update is customer-scoped. Enforce `0 < WeightGram <= 3000`, `0 < LengthCm <= 30`, `0 < WidthCm <= 20`, and `0 < HeightCm <= 15`, along with optional image metadata validation. Do not allow reassignment or deletion to bypass the one-package/one-order invariant. Package capacity is checked when creating an order and again at physical intake where appropriate.
