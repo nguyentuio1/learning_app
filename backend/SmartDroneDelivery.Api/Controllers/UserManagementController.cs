@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.Entities;
@@ -100,9 +101,13 @@ public class UserManagementController : ControllerBase
     [HttpPut("{id:guid}/deactivate")]
     public async Task<IActionResult> DeactivateUser(Guid id, CancellationToken cancellationToken)
     {
+        await using var transaction = await LockAdminChangesAsync(cancellationToken);
         var actorId = await RequireActiveUserAsync(cancellationToken);
+        if (actorId == id)
+            throw new ApiException(StatusCodes.Status409Conflict, "You cannot deactivate your own account.");
         var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == id, cancellationToken)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "User not found.");
+        await EnsureAnotherAdminAsync(user, cancellationToken);
         var tokens = await _context.RefreshTokens.Where(t => t.UserId == id && !t.IsRevoked)
             .ToListAsync(cancellationToken);
 
@@ -118,6 +123,8 @@ public class UserManagementController : ControllerBase
 
         // Retrying is safe: a previously deactivated account does not produce a duplicate audit.
         await _context.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
         return NoContent();
     }
 
@@ -156,6 +163,7 @@ public class UserManagementController : ControllerBase
     public async Task<IActionResult> UpdateUserRole(Guid id, [FromBody] UpdateUserRoleRequest request,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await LockAdminChangesAsync(cancellationToken);
         var actorId = await RequireActiveUserAsync(cancellationToken);
         var user = await _context.Users.Include(u => u.Role)
             .SingleOrDefaultAsync(u => u.Id == id, cancellationToken)
@@ -163,13 +171,51 @@ public class UserManagementController : ControllerBase
         var targetRole = await FindRoleAsync(request.Role, cancellationToken);
         if (user.RoleId == targetRole.Id)
             return NoContent();
+        if (actorId == id)
+            throw new ApiException(StatusCodes.Status409Conflict, "You cannot change your own administrator role.");
+        if (targetRole.Code != AppRoles.Admin)
+            await EnsureAnotherAdminAsync(user, cancellationToken);
 
         user.RoleId = targetRole.Id;
         user.Role = targetRole;
         user.UpdatedAt = DateTime.UtcNow;
         AddAudit(actorId, "ROLE_CHANGE", user.Id);
         await _context.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
         return NoContent();
+    }
+
+    private async Task<IDbContextTransaction?> LockAdminChangesAsync(CancellationToken cancellationToken)
+    {
+        // Serialize role/deactivation changes before checking the actor and remaining admins.
+        // Otherwise two admins could deactivate/demote each other concurrently.
+        // The HTTP test factory uses EF InMemory, which has no relational transactions.
+        if (!_context.Database.IsNpgsql())
+            return null;
+        var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                """SELECT "Id" FROM users WHERE "RoleId" = (SELECT "Id" FROM roles WHERE "Code" = 'ADMIN') ORDER BY "Id" FOR UPDATE""",
+                cancellationToken);
+            return transaction;
+        }
+        catch
+        {
+            await transaction.DisposeAsync();
+            throw;
+        }
+    }
+
+    private async Task EnsureAnotherAdminAsync(User user, CancellationToken cancellationToken)
+    {
+        var adminRoleId = await _context.Roles.Where(r => r.Code == AppRoles.Admin)
+            .Select(r => r.Id).SingleAsync(cancellationToken);
+        if (user.Status == "ACTIVE" && user.RoleId == adminRoleId &&
+            !await _context.Users.AnyAsync(u => u.Id != user.Id && u.RoleId == adminRoleId && u.Status == "ACTIVE",
+                cancellationToken))
+            throw new ApiException(StatusCodes.Status409Conflict, "The last active administrator cannot be removed.");
     }
 
     private async Task<Role> FindRoleAsync(string value, CancellationToken cancellationToken)
@@ -189,12 +235,15 @@ public class UserManagementController : ControllerBase
     {
         if (!Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var id))
             throw new ApiException(StatusCodes.Status401Unauthorized, "Invalid user identity.");
-        var status = await _context.Users.Where(u => u.Id == id).Select(u => u.Status)
+        var account = await _context.Users.Where(u => u.Id == id)
+            .Select(u => new { u.Status, RoleCode = u.Role.Code })
             .SingleOrDefaultAsync(cancellationToken);
-        if (status is null)
+        if (account is null)
             throw new ApiException(StatusCodes.Status401Unauthorized, "User no longer exists.");
-        if (status != "ACTIVE")
+        if (account.Status != "ACTIVE")
             throw new ApiException(StatusCodes.Status403Forbidden, "User account is not active.");
+        if (account.RoleCode != AppRoles.Admin)
+            throw new ApiException(StatusCodes.Status403Forbidden, "You do not have permission to perform this action.");
         return id;
     }
 

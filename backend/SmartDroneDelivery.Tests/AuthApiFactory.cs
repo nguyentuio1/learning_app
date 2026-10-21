@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,15 +8,18 @@ using SmartDroneDelivery.Api.Services;
 
 namespace SmartDroneDelivery.Tests;
 
+/// <summary>Runs the real API in memory with an in-memory database instead of PostgreSQL.</summary>
 public class AuthApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbName = $"auth-tests-{Guid.NewGuid()}";
+
+    /// <summary>Replaces MinIO so the tests do not need a running storage server.</summary>
     public FakeAvatarStorage Avatars { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
-
+        // Test-only controller with one endpoint per role rule.
         builder.ConfigureServices(services => services.AddControllers().AddApplicationPart(typeof(RbacProbeController).Assembly));
         builder.ConfigureServices(services =>
         {
@@ -35,8 +34,6 @@ public class AuthApiFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IAvatarStorage>();
             services.AddSingleton<IAvatarStorage>(Avatars);
-
-            services.AddHostedService<TestLifetimeInterceptor>();
         });
     }
 
@@ -46,10 +43,4 @@ public class AuthApiFactory : WebApplicationFactory<Program>
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await action(db);
     }
-}
-
-public class TestLifetimeInterceptor : Microsoft.Extensions.Hosting.IHostedService
-{
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

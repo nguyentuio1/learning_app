@@ -241,3 +241,143 @@ Until the real API is ready, the clients return these fixtures. Use the same val
 - `POST /api/auth/refresh` marks the old row in `refresh_tokens` as revoked (`IsRevoked = true`) and inserts a new one.
 - Password change and logout write an entry in `audit_logs`.
 - The Swagger page at `/swagger` must show the same paths and field names as this document.
+
+## 7. Administrator user and role management (LA-20 / LA-92)
+
+All six endpoints below require a bearer token with role `ADMIN`. They also check
+that the actor still exists, is `ACTIVE` and still has the `ADMIN` role in the
+database. This additional check is specific to these sensitive admin endpoints:
+an old admin token cannot be reused here after deactivation or demotion.
+Other authentication/profile endpoints keep their existing behavior.
+
+No token or an invalid/expired token returns `401`. A different role, inactive
+actor or demoted admin returns `403`. Unknown target user IDs return `404`.
+Errors use the problem-details format from section 1.
+
+### Managed user response
+
+This is distinct from the profile `User` object: `role` is the display name,
+and `roleCode` is the role code. No password hash or tokens are exposed.
+
+```json
+{
+  "id": "6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11",
+  "email": "dispatcher@example.com",
+  "role": "Dispatcher",
+  "createdAt": "2026-10-20T08:30:00Z",
+  "roleCode": "DISPATCHER",
+  "fullName": "Sample Dispatcher",
+  "phoneNumber": "0901234567",
+  "status": "ACTIVE",
+  "avatarUrl": null
+}
+```
+
+### GET /api/users
+
+Response `200 OK`: an array of managed user responses, ordered by `createdAt`
+descending, then `id` ascending. An empty collection is `[]`.
+The endpoint currently has no server-side filtering or pagination parameters;
+the web UI filters and paginates the returned array locally.
+
+### GET /api/users/{id}
+
+`id` is a UUID. Response `200 OK`: one managed user response.
+Errors: `404` with detail `User not found.` when the user does not exist.
+
+### POST /api/users
+
+Request:
+
+```json
+{
+  "email": "dispatcher@example.com",
+  "password": "Passw0rd123",
+  "role": "DISPATCHER",
+  "fullName": "Sample Dispatcher",
+  "phoneNumber": "0901234567"
+}
+```
+
+Validation follows section 1. All five fields are required. `role` must be a
+supported code from the roles table (maximum 50 characters); legacy display
+names are also accepted, but clients should send codes. Email is trimmed and
+lowercased; full name and phone are trimmed. New accounts are always `ACTIVE`.
+Passwords are hashed using the existing `IPasswordHasher`.
+
+Response `201 Created`: the managed user response, with a `Location` header
+pointing to `/api/users/{id}`. Saves the user and a `CREATE_USER` audit entry
+together.
+
+Errors: `400` with field errors for invalid input/role; `409` for duplicate
+email or phone, including the database uniqueness check.
+
+### PUT /api/users/{id}
+
+Request:
+
+```json
+{
+  "email": "dispatcher@example.com",
+  "fullName": "Updated Dispatcher",
+  "phoneNumber": "0907654321"
+}
+```
+
+All three fields are required and validated as above. Keeping the user's own
+email/phone is allowed. Password, role, status and avatar fields are not
+editable through this endpoint; extra properties are ignored.
+
+Response `200 OK`: updated managed user response. Saves a `USER_UPDATE` audit
+entry only when values change. Errors: `400` validation, `404` user missing,
+`409` duplicate email/phone.
+
+### PUT /api/users/{id}/role
+
+Request:
+
+```json
+{ "role": "MANAGER" }
+```
+
+Response `204 No Content`. Saves a `ROLE_CHANGE` audit entry when the role
+changes. Setting the existing role is a no-op and does not create another audit.
+
+Errors: `400` invalid role, `404` user missing, `409` when an administrator tries
+to change their own role or remove the last active administrator.
+For other endpoints the new role applies when the next access token is issued,
+as described in section 3. These admin endpoints additionally enforce the
+current database role on every call.
+
+### PUT /api/users/{id}/deactivate
+
+No request body. Response `204 No Content`.
+Sets status to `INACTIVE`, revokes all non-revoked refresh tokens, and saves one
+`USER_DEACTIVATE` audit entry. Keeps the user, delivery history and existing
+audit records. Repeating the request returns `204` without another deactivation
+audit. Login then returns `403`, and refresh returns `401`.
+
+Errors: `404` user missing; `409` when trying to deactivate oneself or remove
+the last active administrator. An inactive account's existing access tokens
+are rejected by these admin endpoints; this does not introduce global JWT
+revocation behavior for unrelated APIs.
+
+### Conflict messages and audit guarantees
+
+The web client currently matches the two duplicate-field messages exactly.
+Preserve their capitalization and punctuation:
+
+| Conflict | Status | Exact `detail` |
+|---|---|---|
+| Duplicate email | 409 | `Email is already registered.` |
+| Duplicate phone | 409 | `Phone number is already registered.` |
+| Self-deactivation | 409 | `You cannot deactivate your own account.` |
+| Self-demotion | 409 | `You cannot change your own administrator role.` |
+| Last active admin | 409 | `The last active administrator cannot be removed.` |
+
+Each successful mutation saves its audit with the actor's user ID, action,
+`entityName: "User"`, target user ID, request IP/user-agent and UTC timestamp.
+Reads, rejected requests and no-op updates do not create mutation audit entries.
+Role changes and deactivation lock administrator rows in a PostgreSQL transaction
+before checking the actor and remaining admins, so concurrent requests cannot
+deactivate/demote each other and remove every active admin.
