@@ -1,6 +1,9 @@
 import 'package:smart_drone_delivery/app/providers.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
+import 'package:smart_drone_delivery/core/session/auth_controller.dart';
+import 'package:smart_drone_delivery/core/storage/storage_providers.dart';
 import 'package:smart_drone_delivery/core/storage/token_storage.dart';
+import 'package:smart_drone_delivery/domain/entities/user.dart';
 import 'package:smart_drone_delivery/domain/repositories/auth_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,13 +24,29 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> logout() async {}
+
+  @override
+  Future<User> getMe() async {
+    if (error != null) throw error!;
+    return User(
+      id: 'user-001',
+      email: 'customer@example.com',
+      fullName: 'Customer User',
+      phoneNumber: '0901234567',
+      status: 'ACTIVE',
+      roleCode: 'CUSTOMER',
+      createdAt: DateTime(2026, 1, 1),
+    );
+  }
 }
 
 ProviderContainer _container(
-        InMemoryTokenStorage storage, AuthRepository repo) =>
+        InMemoryTokenStorage storage, AuthRepository repo,
+        [InMemoryUserStorage? userStorage]) =>
     createContainer(overrides: [
       appConfigProvider.overrideWithValue(AppConfig.customer()),
       tokenStorageProvider.overrideWithValue(storage),
+      userStorageProvider.overrideWithValue(userStorage ?? InMemoryUserStorage()),
       authRepositoryProvider.overrideWithValue(repo),
     ]);
 
@@ -76,6 +95,19 @@ void main() {
     expect(c.read(authControllerProvider), isNot(AuthStatus.authenticated));
   });
 
+  test('re-opening app restores session and verifies user with getMe()', () async {
+    final storage = InMemoryTokenStorage();
+    await storage.write(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
+    final userStorage = InMemoryUserStorage();
+    final c = _container(storage, _FakeAuthRepository(), userStorage);
+
+    c.read(authControllerProvider);
+    await pumpEventQueue();
+
+    expect(c.read(authControllerProvider), AuthStatus.authenticated);
+    expect(c.read(currentUserProvider)?.fullName, 'Customer User');
+  });
+
   test('refresh bị từ chối -> onSessionExpired đưa app về unauthenticated',
       () async {
     final storage = InMemoryTokenStorage();
@@ -88,6 +120,7 @@ void main() {
 
     c.read(authControllerProvider.notifier).onSessionExpired();
     expect(c.read(authControllerProvider), AuthStatus.unauthenticated);
+    expect(c.read(currentUserProvider), isNull);
   });
 
   test('dioProvider có thể bị thay thế hoàn toàn trong test', () {
