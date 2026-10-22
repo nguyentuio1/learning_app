@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/models/cancel_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_dto.dart';
 import 'package:smart_drone_delivery/data/models/update_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
@@ -13,12 +14,29 @@ import 'package:smart_drone_delivery/presentation/customer/orders/edit_delivery_
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
 
 class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
-  _FakeDeliveryOrderApiService({this.updateError, this.cancelError})
-    : super(Dio());
+  _FakeDeliveryOrderApiService({
+    this.updateError,
+    this.cancelError,
+    this.orderStatus = 'PENDING',
+  }) : super(Dio());
 
   Object? updateError;
   Object? cancelError;
+  String orderStatus;
   String? cancellationReason;
+
+  @override
+  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
+      DeliveryOrderDetailResponseDto(
+        id: id,
+        trackingNumber: 'TRACK-$id',
+        recipientName: _order.recipientName,
+        recipientPhone: _order.recipientPhone,
+        originStationId: _order.originStationId,
+        destinationStationId: _order.destinationStationId,
+        status: orderStatus,
+        statusLogs: const [],
+      );
 
   @override
   Future<void> updateOrder(String id, UpdateDeliveryOrderDto update) async {
@@ -100,7 +118,7 @@ void main() {
       await _pumpOrderPage(
         tester,
         OrderDetailPage(order: order),
-        _FakeDeliveryOrderApiService(),
+        _FakeDeliveryOrderApiService(orderStatus: status),
       );
 
       expect(find.text('Edit Order'), findsNothing);
@@ -155,7 +173,7 @@ void main() {
     await _pumpOrderPage(
       tester,
       OrderDetailPage(order: approved),
-      _FakeDeliveryOrderApiService(),
+      _FakeDeliveryOrderApiService(orderStatus: 'APPROVED'),
     );
     expect(find.text('Cancel order'), findsOneWidget);
 
@@ -179,7 +197,7 @@ void main() {
       await _pumpOrderPage(
         tester,
         OrderDetailPage(order: blockedOrder),
-        _FakeDeliveryOrderApiService(),
+        _FakeDeliveryOrderApiService(orderStatus: status),
       );
       expect(find.text('Cancel order'), findsNothing, reason: status);
     }
@@ -276,16 +294,16 @@ void main() {
   ) async {
     final service = _FakeDeliveryOrderApiService();
     final router = GoRouter(
-      initialLocation: '/customer/orders/detail',
+      initialLocation: '/customer/orders/order-1',
       routes: [
-        GoRoute(
-          path: '/customer/orders/detail',
-          builder: (_, _) => const OrderDetailPage(order: _order),
-        ),
         GoRoute(
           path: '/customer/orders/edit',
           builder: (_, state) =>
               EditDeliveryOrderPage(order: state.extra! as DeliveryOrder),
+        ),
+        GoRoute(
+          path: '/customer/orders/:orderId',
+          builder: (_, _) => const OrderDetailPage(order: _order),
         ),
       ],
     );
