@@ -5,4 +5,5 @@ abstract final class ApiEndpoints {
   static const refresh = '/auth/refresh';
   static const customerAddresses = '/api/customer-addresses';
   static const packages = '/api/packages';
+  static const deliveryOrders = '/api/delivery-orders';
 }
