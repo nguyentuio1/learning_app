@@ -71,21 +71,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const MyOrdersPage(),
         ),
         GoRoute(
-          path: RoutePaths.customerOrderDetails,
-          builder: (_, state) {
-            final order = state.extra;
-            return order is DeliveryOrder
-                ? OrderDetailPage(order: order)
-                : const Scaffold(body: Center(child: Text('Order not found.')));
-          },
-        ),
-        GoRoute(
           path: RoutePaths.customerOrdersEdit,
           builder: (_, state) {
             final order = state.extra;
             return order is DeliveryOrder
                 ? EditDeliveryOrderPage(order: order)
                 : const Scaffold(body: Center(child: Text('Order not found.')));
+          },
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderDetails,
+          builder: (_, state) {
+            final order = state.extra;
+            return OrderDetailPage(
+              orderId: state.pathParameters['orderId'],
+              order: order is DeliveryOrder ? order : null,
+            );
           },
         ),
         GoRoute(
