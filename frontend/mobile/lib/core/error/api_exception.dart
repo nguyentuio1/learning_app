@@ -31,8 +31,11 @@ class ApiException implements Exception {
         String? msg;
         String? code;
         if (data is Map) {
-          msg = data['message']?.toString();
-          code = data['code']?.toString();
+          msg =
+              _nonEmptyString(data['message']) ??
+              _nonEmptyString(data['detail']) ??
+              _nonEmptyString(data['title']);
+          code = _nonEmptyString(data['code']);
         }
         return ApiException(
           message: msg ?? 'Something went wrong. Please try again.',
@@ -40,6 +43,11 @@ class ApiException implements Exception {
           code: code,
         );
     }
+  }
+
+  static String? _nonEmptyString(dynamic value) {
+    if (value is! String || value.trim().isEmpty) return null;
+    return value.trim();
   }
 
   @override

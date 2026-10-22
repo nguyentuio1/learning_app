@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../core/config/app_config.dart';
 import '../core/session/auth_controller.dart';
+import '../data/models/delivery_order.dart';
 import '../presentation/auth/login_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
+import '../presentation/customer/orders/edit_delivery_order_page.dart';
+import '../presentation/customer/orders/my_orders_page.dart';
+import '../presentation/customer/orders/order_detail_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
@@ -62,6 +66,28 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const AddressesListPage(),
         ),
       if (flavor == AppFlavor.customer) ...[
+        GoRoute(
+          path: RoutePaths.customerOrders,
+          builder: (_, _) => const MyOrdersPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderDetails,
+          builder: (_, state) {
+            final order = state.extra;
+            return order is DeliveryOrder
+                ? OrderDetailPage(order: order)
+                : const Scaffold(body: Center(child: Text('Order not found.')));
+          },
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrdersEdit,
+          builder: (_, state) {
+            final order = state.extra;
+            return order is DeliveryOrder
+                ? EditDeliveryOrderPage(order: order)
+                : const Scaffold(body: Center(child: Text('Order not found.')));
+          },
+        ),
         GoRoute(
           path: RoutePaths.customerPackages,
           builder: (_, _) => const PackagesListPage(),
