@@ -36,9 +36,11 @@ abstract final class LogRedactor {
   };
 
   static Map<String, String> headers(Map<String, Object?> headers) => {
-        for (final e in headers.entries)
-          e.key: sensitiveHeaders.contains(e.key.toLowerCase()) ? mask : '${e.value}',
-      };
+    for (final e in headers.entries)
+      e.key: sensitiveHeaders.contains(e.key.toLowerCase())
+          ? mask
+          : '${e.value}',
+  };
 
   /// Duyệt đệ quy Map/List, thay giá trị của các key nhạy cảm bằng [mask].
   static Object? redact(Object? value) {
@@ -91,10 +93,14 @@ class AppLogInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
     final o = response.requestOptions;
     final b = StringBuffer(
-        '<-- ${response.statusCode} ${o.method} ${o.uri} (${_elapsed(o)})');
+      '<-- ${response.statusCode} ${o.method} ${o.uri} (${_elapsed(o)})',
+    );
     if (logHeaders) {
       final h = response.headers.map.map((k, v) => MapEntry(k, v.join(', ')));
       b.write('\n    headers: ${LogRedactor.headers(h)}');
@@ -110,7 +116,8 @@ class AppLogInterceptor extends Interceptor {
     final o = err.requestOptions;
     final status = err.response?.statusCode ?? '-';
     final b = StringBuffer(
-        '<-x $status ${o.method} ${o.uri} (${_elapsed(o)}) [${err.type.name}]');
+      '<-x $status ${o.method} ${o.uri} (${_elapsed(o)}) [${err.type.name}]',
+    );
     final body = _formatBody(err.response?.data);
     if (body != null) b.write('\n    body: $body');
     _logger(b.toString());
@@ -133,8 +140,12 @@ class AppLogInterceptor extends Interceptor {
     var value = data;
     if (value is String) {
       try {
-        value = jsonDecode(value); // body dạng chuỗi JSON -> vẫn che được key nhạy cảm
-      } catch (_) {/* giữ nguyên chuỗi */}
+        value = jsonDecode(
+          value,
+        ); // body dạng chuỗi JSON -> vẫn che được key nhạy cảm
+      } catch (_) {
+        /* giữ nguyên chuỗi */
+      }
     }
     String text;
     try {

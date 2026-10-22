@@ -42,21 +42,24 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline,
-                  size: 40, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 12),
-              Text(message, textAlign: TextAlign.center),
-              if (onRetry != null) ...[
-                const SizedBox(height: 16),
-                OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
-              ],
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 40,
+            color: Theme.of(context).colorScheme.error,
           ),
-        ),
-      );
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center),
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ],
+      ),
+    ),
+  );
 }

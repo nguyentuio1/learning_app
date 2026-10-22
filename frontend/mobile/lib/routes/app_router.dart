@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +8,8 @@ import '../presentation/auth/login_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
+import '../presentation/customer/packages/add_edit_package_page.dart';
+import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
 import 'route_paths.dart';
 
@@ -59,6 +61,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.customerAddresses,
           builder: (_, _) => const AddressesListPage(),
         ),
+      if (flavor == AppFlavor.customer) ...[
+        GoRoute(
+          path: RoutePaths.customerPackages,
+          builder: (_, _) => const PackagesListPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerPackagesAdd,
+          builder: (_, _) => const AddEditPackagePage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerPackagesEdit,
+          builder: (_, state) {
+            return EditPackageRoute(
+              packageId: state.uri.queryParameters['id'] ?? '',
+            );
+          },
+        ),
+      ],
     ],
   );
 

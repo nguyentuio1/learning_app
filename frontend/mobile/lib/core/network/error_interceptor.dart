@@ -12,6 +12,7 @@ class ErrorInterceptor extends Interceptor {
 }
 
 extension DioExceptionX on DioException {
-  ApiException get apiException =>
-      error is ApiException ? error as ApiException : ApiException.fromDio(this);
+  ApiException get apiException => error is ApiException
+      ? error as ApiException
+      : ApiException.fromDio(this);
 }

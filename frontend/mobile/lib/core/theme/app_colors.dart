@@ -7,7 +7,7 @@ abstract final class AppColors {
   static const operatorSeed = Color(0xFF3B5BDB); // indigo
 
   static Color seedFor(AppFlavor flavor) => switch (flavor) {
-        AppFlavor.customer => customerSeed,
-        AppFlavor.operator => operatorSeed,
-      };
+    AppFlavor.customer => customerSeed,
+    AppFlavor.operator => operatorSeed,
+  };
 }
