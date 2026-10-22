@@ -15,7 +15,9 @@ class AuthController extends Notifier<AuthStatus> {
 
   Future<void> _restore() async {
     final tokens = await ref.read(tokenStorageProvider).read();
-    state = tokens == null ? AuthStatus.unauthenticated : AuthStatus.authenticated;
+    state = tokens == null
+        ? AuthStatus.unauthenticated
+        : AuthStatus.authenticated;
   }
 
   Future<void> signedIn(AuthTokens tokens) async {
@@ -32,5 +34,7 @@ class AuthController extends Notifier<AuthStatus> {
   void onSessionExpired() => state = AuthStatus.unauthenticated;
 }
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthStatus>(AuthController.new, name: 'authController');
+final authControllerProvider = NotifierProvider<AuthController, AuthStatus>(
+  AuthController.new,
+  name: 'authController',
+);

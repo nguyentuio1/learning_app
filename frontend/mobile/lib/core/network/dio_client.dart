@@ -9,7 +9,8 @@ import 'network_config.dart';
 
 abstract final class DioClient {
   /// Cấu hình chung cho mọi request: baseUrl, 3 loại timeout, header mặc định.
-  static BaseOptions baseOptions(AppConfig app, NetworkConfig network) => BaseOptions(
+  static BaseOptions baseOptions(AppConfig app, NetworkConfig network) =>
+      BaseOptions(
         baseUrl: network.baseUrl,
         connectTimeout: network.connectTimeout,
         sendTimeout: network.sendTimeout,
@@ -24,10 +25,10 @@ abstract final class DioClient {
       );
 
   static AppLogInterceptor _logger(NetworkConfig n) => AppLogInterceptor(
-        logHeaders: n.logHeaders,
-        logBodies: n.logBodies,
-        maxBodyLength: n.maxLogBodyLength,
-      );
+    logHeaders: n.logHeaders,
+    logBodies: n.logBodies,
+    maxBodyLength: n.maxLogBodyLength,
+  );
 
   static Dio create({
     required AppConfig config,

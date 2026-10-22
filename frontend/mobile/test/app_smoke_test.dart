@@ -9,14 +9,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/test_helpers.dart';
 
-Future<void> _pump(WidgetTester tester, AppConfig config, TokenStorage storage) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      appConfigProvider.overrideWithValue(config),
-      tokenStorageProvider.overrideWithValue(storage),
-    ],
-    child: const App(),
-  ));
+Future<void> _pump(
+  WidgetTester tester,
+  AppConfig config,
+  TokenStorage storage,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appConfigProvider.overrideWithValue(config),
+        tokenStorageProvider.overrideWithValue(storage),
+      ],
+      child: const App(),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 

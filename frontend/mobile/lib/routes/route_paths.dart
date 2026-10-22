@@ -5,5 +5,8 @@ abstract final class RoutePaths {
   static const login = '/login';
   static const customerHome = '/customer';
   static const customerAddresses = '/customer/addresses';
+  static const customerPackages = '/customer/packages';
+  static const customerPackagesAdd = '/customer/packages/add';
+  static const customerPackagesEdit = '/customer/packages/edit';
   static const operatorHome = '/operator';
 }

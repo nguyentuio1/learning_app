@@ -8,16 +8,16 @@ class OperatorHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Station dashboard'),
-          actions: [
-            IconButton(
-              tooltip: 'Sign out',
-              icon: const Icon(Icons.logout),
-              onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-            ),
-          ],
+    appBar: AppBar(
+      title: const Text('Station dashboard'),
+      actions: [
+        IconButton(
+          tooltip: 'Sign out',
+          icon: const Icon(Icons.logout),
+          onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
         ),
-        body: const Center(child: Text('Station Operator app')),
-      );
+      ],
+    ),
+    body: const Center(child: Text('Station Operator app')),
+  );
 }

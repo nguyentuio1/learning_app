@@ -4,4 +4,5 @@ abstract final class ApiEndpoints {
   static const logout = '/auth/logout';
   static const refresh = '/auth/refresh';
   static const customerAddresses = '/api/customer-addresses';
+  static const packages = '/api/packages';
 }

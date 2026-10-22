@@ -13,14 +13,14 @@ class FakeHttpAdapter implements HttpClientAdapter {
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
-  ) async =>
-      handler(options);
+  ) async => handler(options);
 
   @override
   void close({bool force = false}) {}
 }
 
-ResponseBody jsonBody(Object body, [int status = 200]) => ResponseBody.fromString(
+ResponseBody jsonBody(Object body, [int status = 200]) =>
+    ResponseBody.fromString(
       jsonEncode(body),
       status,
       headers: {
