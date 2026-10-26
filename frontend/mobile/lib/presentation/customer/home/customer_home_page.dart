@@ -37,6 +37,12 @@ class CustomerHomePage extends ConsumerWidget {
             icon: const Icon(Icons.inventory_2_outlined),
             label: const Text('Manage packages'),
           ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => context.go(RoutePaths.customerOrders),
+            icon: const Icon(Icons.local_shipping_outlined),
+            label: const Text('My orders'),
+          ),
         ],
       ),
     ),
