@@ -3,9 +3,9 @@
 **Parent Ticket:** [LA-194](https://hungndemail.atlassian.net/browse/LA-194)  
 **Ticket:** [LA-213](https://hungndemail.atlassian.net/browse/LA-213) - Activity diagram for authentication and profile  
 **Task Description:** Model login, token refresh, logout and profile update with the decisions for invalid credentials and expired tokens.  
-**Use Cases Covered:** [UC-01, UC-02](../../requirements/use-cases.md)  
-**API Contract:** [auth-api.md](../../api/auth-api.md)  
-**Sequence Diagram:** [sequence-auth.md](../sequence-auth.md)  
+**Use Cases Covered:** [UC-01, UC-02](../requirements/use-cases.md)  
+**API Contract:** [auth-api.md](../api/auth-api.md)  
+**Sequence Diagram:** [sequence-auth.md](sequence-auth.md)  
 **Entities:** `users`, `roles`, `refresh_tokens`, `audit_logs`  
 
 ---
@@ -14,7 +14,7 @@
 
 This document specifies the UML Activity Diagrams with dedicated actor swimlanes for authentication and profile management in the **SmartDroneDelivery** platform.
 
-The models strictly follow the merged API contract ([auth-api.md](../../api/auth-api.md)), sequence diagrams ([sequence-auth.md](../sequence-auth.md)), and PostgreSQL entity definitions ([erd.md](../../architecture/erd.md)):
+The models strictly follow the merged API contract ([auth-api.md](../api/auth-api.md)), sequence diagrams ([sequence-auth.md](sequence-auth.md)), and PostgreSQL entity definitions ([erd.md](../architecture/erd.md)):
 - Base path prefix is `/api`.
 - Standard endpoints: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/users/me`, `PUT /api/users/me`, `PUT /api/users/me/password`, `POST /api/users/me/avatar`.
 - Error responses follow RFC 7807 problem details (400 validation, 401 unauthorized, 403 forbidden, 409 conflict).

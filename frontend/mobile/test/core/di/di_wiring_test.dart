@@ -16,8 +16,10 @@ class _FakeAuthRepository implements AuthRepository {
   final ApiException? error;
 
   @override
-  Future<AuthTokens> login(
-      {required String email, required String password}) async {
+  Future<AuthTokens> login({
+    required String email,
+    required String password,
+  }) async {
     if (error != null) throw error!;
     return const AuthTokens(accessToken: 'a', refreshToken: 'r');
   }
@@ -64,7 +66,10 @@ void main() {
 
     c.read(authControllerProvider); // khởi tạo + restore phiên
     await pumpEventQueue();
-    c.listen(loginControllerProvider, (_, _) {}); // giữ autoDispose provider sống
+    c.listen(
+      loginControllerProvider,
+      (_, _) {},
+    ); // giữ autoDispose provider sống
 
     await c.read(loginControllerProvider.notifier).login('a@b.c', 'pw');
 
@@ -73,27 +78,30 @@ void main() {
     expect(c.read(authControllerProvider), AuthStatus.authenticated);
   });
 
-  test('login thất bại: state là AsyncError(ApiException), không lưu token',
-      () async {
-    final storage = InMemoryTokenStorage();
-    final c = _container(
-      storage,
-      _FakeAuthRepository(
-          error: const ApiException(message: 'Sai mật khẩu', statusCode: 401)),
-    );
+  test(
+    'login thất bại: state là AsyncError(ApiException), không lưu token',
+    () async {
+      final storage = InMemoryTokenStorage();
+      final c = _container(
+        storage,
+        _FakeAuthRepository(
+          error: const ApiException(message: 'Sai mật khẩu', statusCode: 401),
+        ),
+      );
 
-    c.read(authControllerProvider);
-    await pumpEventQueue();
-    c.listen(loginControllerProvider, (_, _) {});
+      c.read(authControllerProvider);
+      await pumpEventQueue();
+      c.listen(loginControllerProvider, (_, _) {});
 
-    await c.read(loginControllerProvider.notifier).login('a@b.c', 'bad');
+      await c.read(loginControllerProvider.notifier).login('a@b.c', 'bad');
 
-    final state = c.read(loginControllerProvider);
-    expect(state.hasError, isTrue);
-    expect(state.error, isA<ApiException>());
-    expect(await storage.read(), isNull);
-    expect(c.read(authControllerProvider), isNot(AuthStatus.authenticated));
-  });
+      final state = c.read(loginControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, isA<ApiException>());
+      expect(await storage.read(), isNull);
+      expect(c.read(authControllerProvider), isNot(AuthStatus.authenticated));
+    },
+  );
 
   test('re-opening app restores session and verifies user with getMe()', () async {
     final storage = InMemoryTokenStorage();
@@ -114,9 +122,9 @@ void main() {
     await storage.write(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
     final c = _container(storage, _FakeAuthRepository());
 
-    c.read(authControllerProvider);
-    await pumpEventQueue();
-    expect(c.read(authControllerProvider), AuthStatus.authenticated);
+      c.read(authControllerProvider);
+      await pumpEventQueue();
+      expect(c.read(authControllerProvider), AuthStatus.authenticated);
 
     c.read(authControllerProvider.notifier).onSessionExpired();
     expect(c.read(authControllerProvider), AuthStatus.unauthenticated);

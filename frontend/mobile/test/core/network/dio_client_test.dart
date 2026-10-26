@@ -11,11 +11,11 @@ import '../../support/fake_http_adapter.dart';
 import '../../support/test_helpers.dart';
 
 Dio _create(NetworkConfig net) => DioClient.create(
-      config: AppConfig.operator(),
-      network: net,
-      storage: InMemoryTokenStorage(),
-      onSessionExpired: () {},
-    );
+  config: AppConfig.operator(),
+  network: net,
+  storage: InMemoryTokenStorage(),
+  onSessionExpired: () {},
+);
 
 void main() {
   const net = NetworkConfig(
@@ -41,7 +41,9 @@ void main() {
   });
 
   test('enableLogging=true -> log đứng TRƯỚC AuthInterceptor', () {
-    final dio = _create(const NetworkConfig(baseUrl: 'https://api.test/v1', enableLogging: true));
+    final dio = _create(
+      const NetworkConfig(baseUrl: 'https://api.test/v1', enableLogging: true),
+    );
     final list = dio.interceptors.toList();
     final log = list.indexWhere((e) => e is AppLogInterceptor);
     final auth = list.indexWhere((e) => e is AuthInterceptor);
@@ -50,16 +52,24 @@ void main() {
   });
 
   test('baseUrl sai -> ném ArgumentError ngay khi tạo client', () {
-    expect(() => _create(const NetworkConfig(baseUrl: '')), throwsArgumentError);
-    expect(() => _create(const NetworkConfig(baseUrl: 'api.test/v1')), throwsArgumentError);
+    expect(
+      () => _create(const NetworkConfig(baseUrl: '')),
+      throwsArgumentError,
+    );
+    expect(
+      () => _create(const NetworkConfig(baseUrl: 'api.test/v1')),
+      throwsArgumentError,
+    );
   });
 
   test('timeout được đổi thành ApiException.isNetwork', () async {
     final dio = _create(net);
-    dio.httpClientAdapter = FakeHttpAdapter((o) => throw DioException.connectionTimeout(
-          timeout: const Duration(seconds: 5),
-          requestOptions: o,
-        ));
+    dio.httpClientAdapter = FakeHttpAdapter(
+      (o) => throw DioException.connectionTimeout(
+        timeout: const Duration(seconds: 5),
+        requestOptions: o,
+      ),
+    );
 
     try {
       await dio.get<dynamic>('/x');

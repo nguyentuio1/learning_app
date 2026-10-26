@@ -13,12 +13,14 @@ Dio _dio(
 }) {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.test/v1'));
   dio.httpClientAdapter = FakeHttpAdapter(handler);
-  dio.interceptors.add(AppLogInterceptor(
-    logger: logs.add,
-    logHeaders: headers,
-    logBodies: bodies,
-    maxBodyLength: maxBody,
-  ));
+  dio.interceptors.add(
+    AppLogInterceptor(
+      logger: logs.add,
+      logHeaders: headers,
+      logBodies: bodies,
+      maxBodyLength: maxBody,
+    ),
+  );
   return dio;
 }
 
@@ -43,7 +45,12 @@ void main() {
     expect(all, contains('--> POST https://api.test/v1/auth/login'));
     expect(all, contains('<-- 200 POST'));
     expect(all, contains('a@b.c')); // dữ liệu thường vẫn thấy
-    for (final secret in ['hunter2', 'SECRET-BEARER', 'SECRET-ACCESS', 'SECRET-REFRESH']) {
+    for (final secret in [
+      'hunter2',
+      'SECRET-BEARER',
+      'SECRET-ACCESS',
+      'SECRET-REFRESH',
+    ]) {
       expect(all, isNot(contains(secret)), reason: '$secret bị lộ trong log');
     }
     expect(all, contains('***'));

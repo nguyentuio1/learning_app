@@ -1,6 +1,8 @@
 import 'package:smart_drone_delivery/app/app.dart';
 import 'package:smart_drone_delivery/app/providers.dart';
+import 'package:smart_drone_delivery/core/storage/storage_providers.dart';
 import 'package:smart_drone_delivery/core/storage/token_storage.dart';
+import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
 import 'package:smart_drone_delivery/core/theme/app_theme.dart';
 import 'package:smart_drone_delivery/presentation/auth/login_page.dart';
 import 'package:flutter/material.dart';
@@ -9,14 +11,22 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/test_helpers.dart';
 
-Future<void> _pump(WidgetTester tester, AppConfig config, TokenStorage storage) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      appConfigProvider.overrideWithValue(config),
-      tokenStorageProvider.overrideWithValue(storage),
-    ],
-    child: const App(),
-  ));
+Future<void> _pump(
+  WidgetTester tester,
+  AppConfig config,
+  TokenStorage storage,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appConfigProvider.overrideWithValue(config),
+        tokenStorageProvider.overrideWithValue(storage),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        userStorageProvider.overrideWithValue(InMemoryUserStorage()),
+      ],
+      child: const App(),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 

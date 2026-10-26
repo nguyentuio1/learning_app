@@ -78,6 +78,8 @@ void main() {
       final container = createContainer(
         overrides: [
           tokenStorageProvider.overrideWithValue(storage),
+          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+          userStorageProvider.overrideWithValue(InMemoryUserStorage()),
           profileRepositoryProvider.overrideWithValue(mockRepo),
         ],
       );
@@ -93,6 +95,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      container.read(authControllerProvider);
+      await tester.pumpAndSettle();
       expect(container.read(authControllerProvider), AuthStatus.authenticated);
 
       // Enter passwords
@@ -120,6 +124,8 @@ void main() {
       final container = createContainer(
         overrides: [
           tokenStorageProvider.overrideWithValue(storage),
+          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+          userStorageProvider.overrideWithValue(InMemoryUserStorage()),
           profileRepositoryProvider.overrideWithValue(mockRepo),
         ],
       );
@@ -134,6 +140,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      container.read(authControllerProvider);
+      await tester.pumpAndSettle();
       expect(container.read(authControllerProvider), AuthStatus.authenticated);
 
       // Enter wrong current password

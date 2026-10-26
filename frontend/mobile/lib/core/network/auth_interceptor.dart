@@ -55,7 +55,8 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final req = err.requestOptions;
-    final shouldRefresh = err.response?.statusCode == 401 &&
+    final shouldRefresh =
+        err.response?.statusCode == 401 &&
         req.extra[skipAuth] != true &&
         req.extra[skipRefresh] != true &&
         req.extra[_retried] != true;
@@ -69,8 +70,8 @@ class AuthInterceptor extends Interceptor {
 
       // Only refresh if the token we sent is still the live one.
       if (req.headers['Authorization'] == 'Bearer ${current.accessToken}') {
-        final refreshed = await (_refreshing ??=
-            _refresh(current.refreshToken).whenComplete(() => _refreshing = null));
+        final refreshed = await (_refreshing ??= _refresh(current.refreshToken)
+            .whenComplete(() => _refreshing = null));
         if (refreshed == null) {
           await storage.clear();
           onSessionExpired();
