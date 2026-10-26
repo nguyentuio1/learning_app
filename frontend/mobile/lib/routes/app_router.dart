@@ -6,6 +6,7 @@ import '../core/config/app_config.dart';
 import '../core/session/auth_controller.dart';
 import '../presentation/auth/login_page.dart';
 import '../presentation/common/splash_page.dart';
+import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
 import 'route_paths.dart';
@@ -52,6 +53,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: RoutePaths.operatorHome,
           builder: (_, _) => const OperatorHomePage(),
+        ),
+      if (flavor == AppFlavor.customer)
+        GoRoute(
+          path: RoutePaths.customerAddresses,
+          builder: (_, _) => const AddressesListPage(),
         ),
     ],
   );
