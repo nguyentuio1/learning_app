@@ -12,4 +12,7 @@ abstract final class RoutePaths {
   static const customerOrderDetails = '/customer/orders/detail';
   static const customerOrdersEdit = '/customer/orders/edit';
   static const operatorHome = '/operator';
+  static const profile = '/profile';
+  static const editProfile = '/profile/edit';
+  static const changePassword = '/profile/change-password';
 }

@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum AppFlavor { customer, operator }
 
 /// Cấu hình theo từng app. Đổi API lúc build:
-///   --dart-define=API_BASE_URL=https://staging.example.com/v1
+///   --dart-define=API_BASE_URL=https://staging.example.com/api
 class AppConfig {
   const AppConfig._({
     required this.flavor,
@@ -19,25 +20,35 @@ class AppConfig {
   /// Phải khớp applicationId trong android/app/build.gradle.kts (dùng để test/verify).
   final String applicationId;
 
-  static const _apiBase = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue:
-        'https://api.example.com/v1', // TODO: thay bằng URL backend thật
-  );
+  /// Địa chỉ API mặc định khi chạy local:
+  /// - Android emulator dùng 10.0.2.2 để kết nối localhost của máy host
+  /// - iOS simulator / Web / Desktop dùng localhost
+  static String get _defaultApiBase {
+    if (kIsWeb) return 'http://localhost:5055/api';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:5055/api';
+    }
+    return 'http://localhost:5055/api';
+  }
 
-  factory AppConfig.customer() => const AppConfig._(
-    flavor: AppFlavor.customer,
-    appName: 'SmartDrone Delivery',
-    baseUrl: _apiBase,
-    applicationId: 'com.smartdrone.smart_drone_delivery',
-  );
+  static const _envBase = String.fromEnvironment('API_BASE_URL');
 
-  factory AppConfig.operator() => const AppConfig._(
-    flavor: AppFlavor.operator,
-    appName: 'SmartDrone Station',
-    baseUrl: _apiBase,
-    applicationId: 'com.smartdrone.smart_drone_delivery.station',
-  );
+  static String get _apiBase =>
+      _envBase.isNotEmpty ? _envBase : _defaultApiBase;
+
+  factory AppConfig.customer() => AppConfig._(
+        flavor: AppFlavor.customer,
+        appName: 'SmartDrone Delivery',
+        baseUrl: _apiBase,
+        applicationId: 'com.smartdrone.smart_drone_delivery',
+      );
+
+  factory AppConfig.operator() => AppConfig._(
+        flavor: AppFlavor.operator,
+        appName: 'SmartDrone Station',
+        baseUrl: _apiBase,
+        applicationId: 'com.smartdrone.smart_drone_delivery.station',
+      );
 }
 
 /// Luôn được override trong bootstrap; đọc trước đó sẽ ném lỗi.

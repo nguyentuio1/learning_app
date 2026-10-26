@@ -29,7 +29,7 @@ void main() {
       );
 
       expect(captured?.method, 'PUT');
-      expect(captured?.path, '/api/delivery-orders/order-1');
+      expect(captured?.path, '/delivery-orders/order-1');
       expect(captured?.data, {
         'recipientName': 'Sam Recipient',
         'recipientPhone': '123456789',
@@ -67,7 +67,7 @@ void main() {
       );
 
       expect(captured?.method, 'POST');
-      expect(captured?.path, '/api/delivery-orders/order-1/cancel');
+      expect(captured?.path, '/delivery-orders/order-1/cancel');
       expect(captured?.data, {'cancellationReason': 'Changed plans'});
     },
   );

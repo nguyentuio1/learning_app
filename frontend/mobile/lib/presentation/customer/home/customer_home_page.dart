@@ -14,6 +14,11 @@ class CustomerHomePage extends ConsumerWidget {
       title: const Text('Find a station'),
       actions: [
         IconButton(
+          tooltip: 'Profile & Settings',
+          icon: const Icon(Icons.account_circle_outlined),
+          onPressed: () => context.push(RoutePaths.profile),
+        ),
+        IconButton(
           tooltip: 'Sign out',
           icon: const Icon(Icons.logout),
           onPressed: () => ref.read(authControllerProvider.notifier).signOut(),

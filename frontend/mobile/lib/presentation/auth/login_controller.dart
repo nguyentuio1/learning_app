@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/session/auth_controller.dart';
+import '../../core/storage/storage_providers.dart';
 import 'auth_providers.dart';
 
 /// State màn hình đăng nhập: AsyncLoading / AsyncError / AsyncData.
@@ -16,7 +17,8 @@ class LoginController extends AsyncNotifier<void> {
       final tokens = await ref
           .read(loginUseCaseProvider)
           .call(email: email, password: password);
-      await ref.read(authControllerProvider.notifier).signedIn(tokens);
+      final user = await ref.read(userStorageProvider).read();
+      await ref.read(authControllerProvider.notifier).signedIn(tokens, user);
     });
   }
 }

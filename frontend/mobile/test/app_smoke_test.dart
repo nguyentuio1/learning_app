@@ -1,6 +1,8 @@
 import 'package:smart_drone_delivery/app/app.dart';
 import 'package:smart_drone_delivery/app/providers.dart';
+import 'package:smart_drone_delivery/core/storage/storage_providers.dart';
 import 'package:smart_drone_delivery/core/storage/token_storage.dart';
+import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
 import 'package:smart_drone_delivery/core/theme/app_theme.dart';
 import 'package:smart_drone_delivery/presentation/auth/login_page.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,8 @@ Future<void> _pump(
       overrides: [
         appConfigProvider.overrideWithValue(config),
         tokenStorageProvider.overrideWithValue(storage),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        userStorageProvider.overrideWithValue(InMemoryUserStorage()),
       ],
       child: const App(),
     ),

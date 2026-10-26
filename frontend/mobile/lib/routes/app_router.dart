@@ -15,6 +15,9 @@ import '../presentation/customer/orders/order_detail_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/profile/change_password_page.dart';
+import '../presentation/profile/edit_profile_page.dart';
+import '../presentation/profile/profile_page.dart';
 import 'route_paths.dart';
 
 /// Router theo flavor + chặn truy cập theo trạng thái đăng nhập:
@@ -60,6 +63,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.operatorHome,
           builder: (_, _) => const OperatorHomePage(),
         ),
+      GoRoute(
+        path: RoutePaths.profile,
+        builder: (_, _) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.editProfile,
+        builder: (_, _) => const EditProfilePage(),
+      ),
+      GoRoute(
+        path: RoutePaths.changePassword,
+        builder: (_, _) => const ChangePasswordPage(),
+      ),
       if (flavor == AppFlavor.customer)
         GoRoute(
           path: RoutePaths.customerAddresses,

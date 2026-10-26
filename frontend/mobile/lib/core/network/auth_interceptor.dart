@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../constants/api_endpoints.dart';
 import '../storage/token_storage.dart';
 
 /// Attaches the bearer token and transparently refreshes it on 401.
@@ -28,6 +29,8 @@ class AuthInterceptor extends Interceptor {
 
   /// Set `extra: {AuthInterceptor.skipAuth: true}` on login/refresh/public calls.
   static const skipAuth = 'skipAuth';
+  /// Set `extra: {AuthInterceptor.skipRefresh: true}` on requests where 401 should not trigger token refresh.
+  static const skipRefresh = 'skipRefresh';
   static const _retried = 'authRetried';
 
   Future<AuthTokens?>? _refreshing;
@@ -55,6 +58,7 @@ class AuthInterceptor extends Interceptor {
     final shouldRefresh =
         err.response?.statusCode == 401 &&
         req.extra[skipAuth] != true &&
+        req.extra[skipRefresh] != true &&
         req.extra[_retried] != true;
     if (!shouldRefresh) return handler.next(err);
 
@@ -91,14 +95,18 @@ class AuthInterceptor extends Interceptor {
   Future<AuthTokens?> _refresh(String refreshToken) async {
     try {
       final res = await refreshDio.post<Map<String, dynamic>>(
-        '/auth/refresh', // TODO: match your backend contract
-        data: {'refresh_token': refreshToken},
+        ApiEndpoints.refresh,
+        data: {'refreshToken': refreshToken},
         options: Options(extra: {skipAuth: true}),
       );
       final d = res.data!;
+      final access = d['accessToken'] as String;
+      final refresh = d['refreshToken'] as String;
+      final expires = d['expiresIn'] as int?;
       final tokens = AuthTokens(
-        accessToken: d['access_token'] as String,
-        refreshToken: d['refresh_token'] as String,
+        accessToken: access,
+        refreshToken: refresh,
+        expiresIn: expires,
       );
       await storage.write(tokens);
       return tokens;
