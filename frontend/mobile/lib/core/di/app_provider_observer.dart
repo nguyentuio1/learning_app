@@ -26,15 +26,14 @@ final class AppProviderObserver extends ProviderObserver {
     ProviderObserverContext context,
     Object? previousValue,
     Object? newValue,
-  ) =>
-      debugPrint(
-          '[provider~] ${_name(context)}: ${_short(previousValue)} -> ${_short(newValue)}');
+  ) => debugPrint(
+    '[provider~] ${_name(context)}: ${_short(previousValue)} -> ${_short(newValue)}',
+  );
 
   @override
   void providerDidFail(
     ProviderObserverContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      debugPrint('[provider!] ${_name(context)} failed: $error');
+  ) => debugPrint('[provider!] ${_name(context)} failed: $error');
 }
