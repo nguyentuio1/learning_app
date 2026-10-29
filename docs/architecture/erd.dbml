@@ -1,0 +1,238 @@
+// SmartDroneDelivery - database design (DBML, paste into https://dbdiagram.io to render)
+// Source of truth for the EF Core model in backend/SmartDroneDelivery.Api.
+// Tables marked "added by LA-10" were added after the first design.
+
+// ==========================================
+// MODULE 1: AUTHENTICATION & RBAC
+// ==========================================
+
+Table roles {
+  id int [pk, increment]
+  code varchar(50) [unique, not null, note: 'CUSTOMER, DISPATCHER, STATION_OPERATOR, MANAGER, ADMIN']
+  name varchar(100) [not null]
+  description text
+  created_at timestamp [default: `now()`]
+}
+
+Table users {
+  id uuid [pk, default: `gen_random_uuid()`]
+  role_id int [not null, ref: > roles.id]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  full_name varchar(150) [not null]
+  phone_number varchar(20) [unique, not null]
+  avatar_url text
+  status varchar(20) [not null, default: 'ACTIVE', note: 'ACTIVE, INACTIVE, SUSPENDED']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table refresh_tokens {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > users.id]
+  token text [unique, not null]
+  expires_at timestamp [not null]
+  is_revoked boolean [default: false]
+  created_at timestamp [default: `now()`]
+}
+
+// ==========================================
+// MODULE 2: LANDING STATION INFRASTRUCTURE
+// ==========================================
+
+Table landing_stations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  station_code varchar(50) [unique, not null, note: 'e.g. STAT-QTSC-01']
+  name varchar(150) [not null]
+  latitude decimal(9,6) [not null]
+  longitude decimal(9,6) [not null]
+  address text [not null]
+  total_slots int [not null, default: 2]
+  status varchar(30) [not null, default: 'OPERATIONAL', note: 'OPERATIONAL, MAINTENANCE, OFFLINE']
+  operator_id uuid [ref: > users.id, note: 'Station operator in charge']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table station_slots {
+  id uuid [pk, default: `gen_random_uuid()`]
+  station_id uuid [not null, ref: > landing_stations.id]
+  slot_number int [not null]
+  status varchar(30) [not null, default: 'EMPTY', note: 'EMPTY, OCCUPIED, RESERVED, ERROR']
+  last_updated timestamp [default: `now()`]
+
+  indexes {
+    (station_id, slot_number) [unique]
+  }
+}
+
+// ==========================================
+// MODULE 3: PACKAGES & DELIVERY WORKFLOW
+// ==========================================
+
+// added by LA-10
+Table customer_addresses {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > users.id]
+  label varchar(50) [not null, note: 'e.g. Home, Office']
+  contact_name varchar(150) [not null]
+  contact_phone varchar(20) [not null]
+  address_line text [not null]
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+  is_default boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    user_id
+  }
+}
+
+Table packages {
+  id uuid [pk, default: `gen_random_uuid()`]
+  sender_id uuid [not null, ref: > users.id]
+  package_name varchar(200) [not null]
+  weight_gram decimal(8,2) [not null, note: 'Drone payload limit, e.g. 3000g']
+  length_cm decimal(6,2) [not null]
+  width_cm decimal(6,2) [not null]
+  height_cm decimal(6,2) [not null]
+  package_image_url text [note: 'MinIO URL']
+  is_fragile boolean [default: false]
+  created_at timestamp [default: `now()`]
+}
+
+Table delivery_orders {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tracking_number varchar(50) [unique, not null, note: 'e.g. DD-202610-0988']
+  customer_id uuid [not null, ref: > users.id]
+  package_id uuid [unique, not null, ref: > packages.id]
+  origin_station_id uuid [not null, ref: > landing_stations.id]
+  destination_station_id uuid [not null, ref: > landing_stations.id]
+  dispatcher_id uuid [ref: > users.id, note: 'Dispatcher who approved the order']
+  delivery_address_id uuid [ref: > customer_addresses.id, note: 'added by LA-10, optional']
+
+  status varchar(30) [not null, default: 'PENDING', note: 'PENDING, APPROVED, READY_FOR_TAKEOFF, IN_TRANSIT, ARRIVED, DELIVERED, CANCELLED, FAILED']
+  cancel_reason text
+
+  pickup_secure_code varchar(10) [not null, note: 'OTP or hash used to open the pickup locker']
+  recipient_phone varchar(20) [not null]
+  recipient_name varchar(150) [not null]
+
+  scheduled_departure_time timestamp
+  actual_departure_time timestamp
+  estimated_delivery_time timestamp
+  actual_delivery_time timestamp
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table delivery_status_logs {
+  id bigint [pk, increment]
+  order_id uuid [not null, ref: > delivery_orders.id]
+  changed_by uuid [ref: > users.id]
+  from_status varchar(30)
+  to_status varchar(30) [not null]
+  remarks text
+  created_at timestamp [default: `now()`]
+}
+
+// added by LA-10
+Table notifications {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > users.id]
+  order_id uuid [ref: > delivery_orders.id]
+  type varchar(50) [not null, note: 'e.g. ORDER_STATUS_CHANGED']
+  title varchar(200) [not null]
+  message text [not null]
+  is_read boolean [default: false]
+  created_at timestamp [default: `now()`]
+  read_at timestamp
+
+  indexes {
+    (user_id, is_read)
+  }
+}
+
+// ==========================================
+// MODULE 4: REAL-TIME FLIGHT & TELEMETRY
+// ==========================================
+
+Table drones {
+  id uuid [pk, default: `gen_random_uuid()`]
+  serial_number varchar(100) [unique, not null]
+  model_name varchar(100) [not null]
+  max_payload_gram decimal(8,2) [not null]
+  max_flight_range_km decimal(6,2) [not null]
+  battery_capacity_mah int [not null]
+  status varchar(30) [not null, default: 'IDLE', note: 'IDLE, ASSIGNED, FLYING, CHARGING, MAINTENANCE']
+  current_station_id uuid [ref: > landing_stations.id]
+  created_at timestamp [default: `now()`]
+}
+
+Table flight_missions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [unique, not null, ref: > delivery_orders.id]
+  drone_id uuid [not null, ref: > drones.id]
+  start_slot_id uuid [ref: > station_slots.id]
+  destination_slot_id uuid [ref: > station_slots.id]
+  flight_status varchar(30) [not null, default: 'PLANNED', note: 'PLANNED, IN_AIR, COMPLETED, ABORTED']
+  start_time timestamp
+  end_time timestamp
+}
+
+Table flight_telemetry_logs {
+  id bigint [pk, increment]
+  mission_id uuid [not null, ref: > flight_missions.id]
+  latitude decimal(9,6) [not null]
+  longitude decimal(9,6) [not null]
+  altitude_meters decimal(6,2) [not null]
+  speed_mps decimal(5,2) [not null]
+  battery_percentage int [not null]
+  timestamp timestamp [default: `now()`]
+
+  indexes {
+    (mission_id, timestamp)
+  }
+}
+
+// ==========================================
+// MODULE 5: AI SERVICES & SYSTEM AUDIT
+// ==========================================
+
+Table ai_eta_predictions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [not null, ref: > delivery_orders.id]
+  calculated_distance_km decimal(6,2) [not null]
+  predicted_duration_minutes int [not null]
+  weather_condition varchar(50) [note: 'CLEAR, WINDY, RAIN']
+  confidence_score decimal(4,3) [note: '0.000 to 1.000']
+  created_at timestamp [default: `now()`]
+}
+
+Table ai_chat_sessions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > users.id]
+  session_title varchar(200)
+  created_at timestamp [default: `now()`]
+}
+
+Table ai_chat_messages {
+  id bigint [pk, increment]
+  session_id uuid [not null, ref: > ai_chat_sessions.id]
+  sender_type varchar(20) [not null, note: 'USER, BOT']
+  message_text text [not null]
+  created_at timestamp [default: `now()`]
+}
+
+Table audit_logs {
+  id bigint [pk, increment]
+  user_id uuid [ref: > users.id]
+  action varchar(100) [not null, note: 'CREATE_ORDER, APPROVE_ORDER, CANCEL_ORDER, OVERRIDE_FLIGHT']
+  entity_name varchar(50) [not null]
+  entity_id varchar(100) [not null]
+  ip_address varchar(50)
+  user_agent text
+  timestamp timestamp [default: `now()`]
+}

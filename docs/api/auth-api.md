@@ -1,0 +1,383 @@
+# API Contract - Authentication, Roles and Profile
+
+Contract for the first API group of SmartDroneDelivery (Sprint 2: LA-15 authentication, LA-16 role-based access control, LA-17 user profile). Backend, web and mobile all build against this document. The backend implements it exactly; the web and mobile teams use the examples as mock data until the real API is ready.
+
+> **Status: proposed, to be confirmed by the team.** Any change goes through a pull request that edits this file, and the change is announced to the team.
+
+## 1. Conventions
+
+| Item | Rule |
+|---|---|
+| Base URL (local) | `http://localhost:5055` |
+| Path prefix | `/api` |
+| Format | JSON, UTF-8, property names in camelCase |
+| Identifiers | UUID strings, except `role.id` which is an integer |
+| Dates | ISO 8601 in UTC, for example `2026-10-15T08:30:00Z` |
+| Authentication | `Authorization: Bearer <accessToken>` on every endpoint marked "Auth: yes" |
+| Content type | `Content-Type: application/json` (the avatar upload uses `multipart/form-data`) |
+
+### Error format
+
+Every error returns the same body (RFC 7807 problem details):
+
+```json
+{
+  "type": "https://httpstatuses.com/401",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Invalid email or password.",
+  "errors": { "email": ["Email is required."] }
+}
+```
+
+`errors` is only present for validation failures (`400`) and lists the messages per field.
+
+| Status | Meaning |
+|---|---|
+| 400 | Validation failed |
+| 401 | Missing, invalid or expired token, or wrong credentials |
+| 403 | Authenticated but the role or account status is not allowed |
+| 404 | Resource not found |
+| 409 | Conflict, for example email or phone already used |
+
+### Roles
+
+| id | code | Name |
+|---|---|---|
+| 1 | `CUSTOMER` | Customer |
+| 2 | `DISPATCHER` | Dispatcher |
+| 3 | `STATION_OPERATOR` | Station Operator |
+| 4 | `MANAGER` | Logistics Manager |
+| 5 | `ADMIN` | System Administrator |
+
+Public registration always creates a `CUSTOMER`. Staff accounts are created by an administrator (LA-20).
+
+### Tokens
+
+| Token | Lifetime (proposed) | Notes |
+|---|---|---|
+| Access token | 15 minutes | JWT with claims `sub` (user id), `email`, `role` (role code), `exp` |
+| Refresh token | 7 days | Random string stored in `refresh_tokens`, rotated on every refresh, revoked on logout |
+
+When a request returns `401` because the access token expired, the client calls `POST /api/auth/refresh` once, retries the original request, and goes to the login screen if the refresh also fails.
+
+### Shared objects
+
+`User`
+```json
+{
+  "id": "6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11",
+  "email": "an.nguyen@example.com",
+  "fullName": "Nguyen Van An",
+  "phoneNumber": "0901234567",
+  "avatarUrl": null,
+  "status": "ACTIVE",
+  "role": { "id": 1, "code": "CUSTOMER", "name": "Customer" },
+  "createdAt": "2026-10-15T08:30:00Z"
+}
+```
+
+`AuthResponse`
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ZjFj...",
+  "refreshToken": "q3Zk8vV0m1X0uJb2o9n4yQ7gF5tRwLhC",
+  "expiresIn": 900,
+  "user": { "...": "User object as above" }
+}
+```
+`expiresIn` is the access token lifetime in seconds.
+
+Validation rules used below:
+
+| Field | Rule |
+|---|---|
+| `email` | required, valid email, at most 255 characters, unique |
+| `password` | required, 8 to 100 characters, at least one letter and one digit |
+| `fullName` | required, at most 150 characters |
+| `phoneNumber` | required, 9 to 11 digits, unique |
+
+## 2. Authentication (LA-15)
+
+### POST /api/auth/register
+Create a customer account. Auth: no.
+
+Request
+```json
+{
+  "email": "an.nguyen@example.com",
+  "password": "Passw0rd123",
+  "fullName": "Nguyen Van An",
+  "phoneNumber": "0901234567"
+}
+```
+Response `201 Created`: `AuthResponse` (the user is signed in right after registering).
+
+Errors: `400` validation, `409` email or phone already used:
+```json
+{ "type": "https://httpstatuses.com/409", "title": "Conflict", "status": 409, "detail": "Email is already registered." }
+```
+
+### POST /api/auth/login
+Sign in. Auth: no.
+
+Request
+```json
+{ "email": "an.nguyen@example.com", "password": "Passw0rd123" }
+```
+Response `200 OK`: `AuthResponse`.
+
+Errors:
+- `400` email or password missing.
+- `401` wrong email or password (the message does not say which one).
+- `403` account status is `INACTIVE` or `SUSPENDED`:
+```json
+{ "type": "https://httpstatuses.com/403", "title": "Forbidden", "status": 403, "detail": "This account is not active." }
+```
+
+### POST /api/auth/refresh
+Exchange a valid refresh token for a new pair of tokens. The old refresh token is revoked. Auth: no.
+
+Request
+```json
+{ "refreshToken": "q3Zk8vV0m1X0uJb2o9n4yQ7gF5tRwLhC" }
+```
+Response `200 OK`: `AuthResponse`.
+
+Errors: `400` token missing, `401` token unknown, expired or already revoked.
+
+### POST /api/auth/logout
+Revoke the refresh token. Auth: yes.
+
+Request
+```json
+{ "refreshToken": "q3Zk8vV0m1X0uJb2o9n4yQ7gF5tRwLhC" }
+```
+Response `204 No Content`. Calling it with an unknown or already revoked token also returns `204`.
+
+## 3. Role-based access control (LA-16)
+
+No separate endpoint. Every endpoint states the roles that may call it. A call without a valid token returns `401`, and a call with a valid token but a role that is not allowed returns `403`:
+
+```json
+{ "type": "https://httpstatuses.com/403", "title": "Forbidden", "status": 403, "detail": "You do not have permission to perform this action." }
+```
+
+Rules for every endpoint of the API:
+
+- An endpoint is protected by default. Only endpoints marked "anyone" accept a call without a token.
+- The role comes from the `role` claim of the access token. When an administrator changes a role, it applies to the user's next access token (after the next refresh, at most 15 minutes).
+- An endpoint can allow one role or several roles. In the code the roles are the constants of `AppRoles`, used as `[Authorize(Roles = AppRoles.Admin)]`.
+- `401` means the token is missing, invalid, expired or signed with another key. `403` means the token is valid but the role is not allowed.
+
+Access of the endpoints in this document:
+
+| Endpoint | Allowed roles |
+|---|---|
+| `POST /api/auth/register`, `login`, `refresh` | anyone |
+| `POST /api/auth/logout` | any signed-in user |
+| `GET`, `PUT /api/users/me`, `PUT /api/users/me/password`, `POST /api/users/me/avatar` | any signed-in user |
+
+## 4. User profile (LA-17)
+
+All endpoints in this section: Auth: yes, roles: any signed-in user. A user whose account is `INACTIVE` or `SUSPENDED` gets `403` with detail `This account is not active.`
+
+### GET /api/users/me
+Response `200 OK`: `User`.
+
+### PUT /api/users/me
+Update the profile. Email and role cannot be changed here; if the body contains them they are ignored. The user may keep the own phone number.
+
+Request
+```json
+{ "fullName": "Nguyen Van An", "phoneNumber": "0907654321" }
+```
+Response `200 OK`: `User`.
+
+Errors: `400` validation, `409` phone already used.
+
+### PUT /api/users/me/password
+Request
+```json
+{ "currentPassword": "Passw0rd123", "newPassword": "NewPassw0rd456" }
+```
+Response `204 No Content`. All refresh tokens of the user are revoked, so other devices must sign in again.
+
+Errors: `400` new password too weak or equal to the current one (`errors.newPassword`), `401` the current password is wrong (detail `Current password is incorrect.`).
+
+The `401` of this endpoint is not an expired token. Clients must show the message and must not refresh the token or sign the user out because of it. The access token used for this call stays valid until it expires (at most 15 minutes); only the refresh tokens are revoked.
+
+### POST /api/users/me/avatar
+Upload an avatar. Content type `multipart/form-data` with one file field named `file` (JPEG or PNG, at most 5 MB). The file is stored in MinIO.
+
+Response `200 OK`:
+```json
+{ "avatarUrl": "http://localhost:9000/avatars/6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11.png" }
+```
+
+Errors: `400` with `errors.file` when the file is missing, empty, larger than 5 MB or not a JPEG or PNG. The type is decided from the content of the file, not from its name or content type.
+
+The file is saved as `{userId}.png` or `{userId}.jpg` in the bucket `avatars` (setting `Minio:AvatarBucket`). The bucket is created on the first upload and its files can be read without a login. When the new avatar has another extension than the old one, the old file is deleted. The base URL of the returned link can be set with `Minio:PublicBaseUrl` when MinIO is not reached as `localhost:9000`.
+
+## 5. Mock data for web and mobile
+
+Until the real API is ready, the clients return these fixtures. Use the same values so a switch to the real API changes nothing in the screens.
+
+| Case | Request | Mock response |
+|---|---|---|
+| Login success | any email and password `Passw0rd123` | `200` with the `AuthResponse` example |
+| Login wrong password | any other password | `401` with detail `Invalid email or password.` |
+| Login inactive account | email `suspended@example.com` | `403` with detail `This account is not active.` |
+| Register duplicate | email `an.nguyen@example.com` | `409` with detail `Email is already registered.` |
+| Refresh success | any refresh token | `200` with a new `AuthResponse` |
+| Refresh invalid | refresh token `invalid` | `401` |
+| Get profile | valid access token | `200` with the `User` example |
+| Get profile unauthenticated | no token | `401` |
+
+## 6. Backend implementation notes
+
+- Passwords are hashed with BCrypt; plain passwords are never stored or logged.
+- The access token is signed with a secret read from configuration (environment variable), never committed to git.
+- `POST /api/auth/refresh` marks the old row in `refresh_tokens` as revoked (`IsRevoked = true`) and inserts a new one.
+- Password change and logout write an entry in `audit_logs`.
+- The Swagger page at `/swagger` must show the same paths and field names as this document.
+
+## 7. Administrator user and role management (LA-20 / LA-92)
+
+All six endpoints below require a bearer token with role `ADMIN`. They also check
+that the actor still exists, is `ACTIVE` and still has the `ADMIN` role in the
+database. This additional check is specific to these sensitive admin endpoints:
+an old admin token cannot be reused here after deactivation or demotion.
+Other authentication/profile endpoints keep their existing behavior.
+
+No token or an invalid/expired token returns `401`. A different role, inactive
+actor or demoted admin returns `403`. Unknown target user IDs return `404`.
+Errors use the problem-details format from section 1.
+
+### Managed user response
+
+This is distinct from the profile `User` object: `role` is the display name,
+and `roleCode` is the role code. No password hash or tokens are exposed.
+
+```json
+{
+  "id": "6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11",
+  "email": "dispatcher@example.com",
+  "role": "Dispatcher",
+  "createdAt": "2026-10-20T08:30:00Z",
+  "roleCode": "DISPATCHER",
+  "fullName": "Sample Dispatcher",
+  "phoneNumber": "0901234567",
+  "status": "ACTIVE",
+  "avatarUrl": null
+}
+```
+
+### GET /api/users
+
+Response `200 OK`: an array of managed user responses, ordered by `createdAt`
+descending, then `id` ascending. An empty collection is `[]`.
+The endpoint currently has no server-side filtering or pagination parameters;
+the web UI filters and paginates the returned array locally.
+
+### GET /api/users/{id}
+
+`id` is a UUID. Response `200 OK`: one managed user response.
+Errors: `404` with detail `User not found.` when the user does not exist.
+
+### POST /api/users
+
+Request:
+
+```json
+{
+  "email": "dispatcher@example.com",
+  "password": "Passw0rd123",
+  "role": "DISPATCHER",
+  "fullName": "Sample Dispatcher",
+  "phoneNumber": "0901234567"
+}
+```
+
+Validation follows section 1. All five fields are required. `role` must be a
+supported code from the roles table (maximum 50 characters); legacy display
+names are also accepted, but clients should send codes. Email is trimmed and
+lowercased; full name and phone are trimmed. New accounts are always `ACTIVE`.
+Passwords are hashed using the existing `IPasswordHasher`.
+
+Response `201 Created`: the managed user response, with a `Location` header
+pointing to `/api/users/{id}`. Saves the user and a `CREATE_USER` audit entry
+together.
+
+Errors: `400` with field errors for invalid input/role; `409` for duplicate
+email or phone, including the database uniqueness check.
+
+### PUT /api/users/{id}
+
+Request:
+
+```json
+{
+  "email": "dispatcher@example.com",
+  "fullName": "Updated Dispatcher",
+  "phoneNumber": "0907654321"
+}
+```
+
+All three fields are required and validated as above. Keeping the user's own
+email/phone is allowed. Password, role, status and avatar fields are not
+editable through this endpoint; extra properties are ignored.
+
+Response `200 OK`: updated managed user response. Saves a `USER_UPDATE` audit
+entry only when values change. Errors: `400` validation, `404` user missing,
+`409` duplicate email/phone.
+
+### PUT /api/users/{id}/role
+
+Request:
+
+```json
+{ "role": "MANAGER" }
+```
+
+Response `204 No Content`. Saves a `ROLE_CHANGE` audit entry when the role
+changes. Setting the existing role is a no-op and does not create another audit.
+
+Errors: `400` invalid role, `404` user missing, `409` when an administrator tries
+to change their own role or remove the last active administrator.
+For other endpoints the new role applies when the next access token is issued,
+as described in section 3. These admin endpoints additionally enforce the
+current database role on every call.
+
+### PUT /api/users/{id}/deactivate
+
+No request body. Response `204 No Content`.
+Sets status to `INACTIVE`, revokes all non-revoked refresh tokens, and saves one
+`USER_DEACTIVATE` audit entry. Keeps the user, delivery history and existing
+audit records. Repeating the request returns `204` without another deactivation
+audit. Login then returns `403`, and refresh returns `401`.
+
+Errors: `404` user missing; `409` when trying to deactivate oneself or remove
+the last active administrator. An inactive account's existing access tokens
+are rejected by these admin endpoints; this does not introduce global JWT
+revocation behavior for unrelated APIs.
+
+### Conflict messages and audit guarantees
+
+The web client currently matches the two duplicate-field messages exactly.
+Preserve their capitalization and punctuation:
+
+| Conflict | Status | Exact `detail` |
+|---|---|---|
+| Duplicate email | 409 | `Email is already registered.` |
+| Duplicate phone | 409 | `Phone number is already registered.` |
+| Self-deactivation | 409 | `You cannot deactivate your own account.` |
+| Self-demotion | 409 | `You cannot change your own administrator role.` |
+| Last active admin | 409 | `The last active administrator cannot be removed.` |
+
+Each successful mutation saves its audit with the actor's user ID, action,
+`entityName: "User"`, target user ID, request IP/user-agent and UTC timestamp.
+Reads, rejected requests and no-op updates do not create mutation audit entries.
+Role changes and deactivation lock administrator rows in a PostgreSQL transaction
+before checking the actor and remaining admins, so concurrent requests cannot
+deactivate/demote each other and remove every active admin.

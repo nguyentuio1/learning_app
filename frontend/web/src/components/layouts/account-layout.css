@@ -1,0 +1,45 @@
+/* Account shell adapted from the reviewed draft; only implemented destinations are shown. */
+.account-layout a,.account-layout a:hover,.account-layout a:active { text-decoration:none; }
+.account-layout a:focus-visible { outline:2px solid #c0994b; outline-offset:3px; }
+.account-layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100vh; background: #eff4ee; font:400 14px/1.5 'Segoe UI',Arial,sans-serif; color:#203b30; }
+.account-sidebar { background: #e6eedc; border-right: 1px solid #c5d3bc; padding: 32px 18px 22px; display: flex; flex-direction: column; gap: 22px; position:sticky; top:0; height:100dvh; box-sizing:border-box; }
+.account-brand { display: flex; gap: 10px; align-items: center; color: #1e4f3c; font-size: 20px; font-weight: 650; letter-spacing:-.5px; padding:0 6px 22px; border-bottom:1px solid #c5d3bc; }
+.account-brand small { display: block; font-size: 10px; font-weight: 400; margin-top: 4px; color:#526b5a; }
+.account-brand svg { width:36px; height:36px; flex-shrink:0; background:#1e4f3c; border-radius:12px 12px 12px 3px; padding:0; stroke:#e6eedc; fill:#1e4f3c; stroke-width:1.8; }
+.account-brand svg circle:last-child { stroke:#f5ca60; }
+.account-brand small { letter-spacing:.25px; }
+.account-nav-label { display:block; color:#526b5a; font-size:10px; font-weight:650; letter-spacing:1.7px; margin:12px 12px 15px; }
+.account-current { position:relative; display:flex; align-items:center; gap:12px; min-height:46px; padding:13px 12px; border-radius:6px 12px 12px 6px; color:white; background:#1e4f3c; font-size:13px; font-weight:600; }
+.account-current:hover { color: white; background: #163f2f; }
+.account-sidebar nav { display: grid; gap: 8px; }
+.account-nav-link { display:flex; align-items:center; gap:12px; min-height:46px; padding:13px 12px; border-radius:8px; color:#203b30; font-size:13px; }
+.account-nav-link:hover { background: #d6e4c9; color: #203b30; }
+.account-current::before { content: ''; position:absolute; left:0; width: 3px; height: 20px; border-radius: 2px; background: #d5aa58; }
+.account-icon { width:20px; height:20px; flex-shrink:0; }
+.account-current .account-icon { color:#d5aa58; }
+.account-sidebar-bottom { margin-top: auto; padding-top: 24px; border-top: 1px solid #c5d3bc; display: grid; gap: 8px; }
+.account-workspace-role { color:#52665a; font-size:11px; padding:0 8px 8px; display:flex; align-items:center; gap:8px; }
+.account-workspace-role::before { content:''; width:6px; height:6px; border-radius:50%; background:#4c7a56; flex-shrink:0; }
+.account-sign-out.ant-btn { width:100%; height:48px; justify-content:flex-start; padding:14px; gap:12px; color:#36513f; }
+.account-breadcrumb { display:flex; align-items:center; gap:20px; }
+.account-breadcrumb strong { font-weight:500; color:#425b46; }
+.account-role-badge { display:flex; align-items:center; gap:7px; min-width:200px; min-height:40px; padding:6px 8px; border:1px solid #cbd9c4; border-radius:8px; background:#fffffc; color:#203b30; font-size:13px; font-weight:600; }
+.account-role-symbol { display:grid; place-items:center; width:26px; height:26px; border-radius:6px; background:#1e4f3c; color:#f5ca60; }
+.account-role-badge .account-icon { width:18px; height:18px; }
+.account-user .ant-avatar { background:#1e4f3c; color:#fff; border:3px solid #e6eedc; font-size:11px; font-weight:600; transition:border-color 160ms ease; }
+.account-avatar-link { display:flex; border-radius:50%; }
+.account-avatar-link:hover .ant-avatar { border-color:#d5aa58; }
+.account-workspace { min-width: 0; }
+.account-header { min-height:80px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding:16px 36px; background:#fffffb; border-bottom:1px solid #d3dfd5; color:#70806e; font-size:12px; }
+.account-user { display: flex; align-items: center; gap: 12px; }
+@media (max-width: 760px) {
+  .account-layout { grid-template-columns: 1fr; }
+  .account-sidebar { position:static; height:auto; padding: 16px; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px; border-right: 0; border-bottom: 1px solid #c5d3bc; }
+  .account-brand { border:0; padding:0; }
+  .account-sidebar nav { display:flex; }
+  .account-nav-label { display: none; }
+  .account-sidebar-bottom { margin: 0 0 0 auto; padding: 0; border: 0; }
+  .account-sidebar-bottom { display:flex; align-items:center; flex-wrap:wrap; }
+  .account-workspace-role,.account-role-badge,.account-user-name { display:none; }
+  .account-header { padding: 16px; min-height: 64px; }
+}
