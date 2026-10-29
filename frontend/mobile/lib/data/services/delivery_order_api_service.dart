@@ -4,6 +4,7 @@ import '../../core/constants/api_endpoints.dart';
 import '../../core/error/api_exception.dart';
 import '../../core/network/error_interceptor.dart';
 import '../models/cancel_delivery_order_dto.dart';
+import '../models/create_delivery_order_dto.dart';
 import '../models/delivery_order.dart';
 import '../models/delivery_order_detail_response_dto.dart';
 import '../models/delivery_order_filter_params.dart';
@@ -72,6 +73,34 @@ class DeliveryOrderApiService {
       );
     } on DioException catch (error) {
       throw _orderRequestException(error);
+    }
+  }
+
+  Future<DeliveryOrderDetailResponseDto> createDeliveryOrder(
+    CreateDeliveryOrderDto dto,
+  ) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.deliveryOrders,
+        data: dto.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException(
+          'Expected a delivery order object response.',
+        );
+      }
+      final createdOrder = DeliveryOrderDetailResponseDto.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+        includePickupSecureCode: true,
+      );
+      if (!RegExp(r'^\d{6}$').hasMatch(createdOrder.pickupSecureCode ?? '')) {
+        throw const FormatException(
+          'Expected a six-digit pickup secure code in the create response.',
+        );
+      }
+      return createdOrder;
+    } on DioException catch (error) {
+      throw error.apiException;
     }
   }
 

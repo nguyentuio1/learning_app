@@ -30,6 +30,7 @@ class DeliveryOrderDetailResponseDto {
     required this.destinationStationId,
     required this.status,
     required this.statusLogs,
+    this.pickupSecureCode,
     this.packageId,
     this.packageName,
     this.deliveryAddressId,
@@ -49,6 +50,7 @@ class DeliveryOrderDetailResponseDto {
   final String originStationId;
   final String destinationStationId;
   final String status;
+  final String? pickupSecureCode;
   final String? packageId;
   final String? packageName;
   final String? deliveryAddressId;
@@ -61,7 +63,10 @@ class DeliveryOrderDetailResponseDto {
   final DateTime? updatedAt;
   final List<DeliveryOrderStatusLogDto> statusLogs;
 
-  factory DeliveryOrderDetailResponseDto.fromJson(Map<String, dynamic> json) {
+  factory DeliveryOrderDetailResponseDto.fromJson(
+    Map<String, dynamic> json, {
+    bool includePickupSecureCode = false,
+  }) {
     final logs =
         (json['statusLogs'] as List<dynamic>? ?? [])
             .map(
@@ -81,6 +86,9 @@ class DeliveryOrderDetailResponseDto {
       originStationId: json['originStationId'] as String,
       destinationStationId: json['destinationStationId'] as String,
       status: json['status'] as String,
+      pickupSecureCode: includePickupSecureCode
+          ? json['pickupSecureCode'] as String?
+          : null,
       packageId: json['packageId'] as String?,
       packageName:
           json['packageName'] as String? ??

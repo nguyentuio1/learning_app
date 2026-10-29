@@ -67,6 +67,17 @@ void main() {
     expect(all, contains('boom'));
   });
 
+  test('log response redacts pickup secure codes', () async {
+    final logs = <String>[];
+    final dio = _dio(logs, (_) => jsonBody({'pickupSecureCode': '839201'}));
+
+    await dio.get<dynamic>('/api/delivery-orders');
+
+    final all = logs.join('\n');
+    expect(all, isNot(contains('839201')));
+    expect(all, contains('"pickupSecureCode":"***"'));
+  });
+
   test('body dài bị cắt', () async {
     final logs = <String>[];
     final dio = _dio(logs, (_) => jsonBody({'data': 'x' * 200}), maxBody: 30);

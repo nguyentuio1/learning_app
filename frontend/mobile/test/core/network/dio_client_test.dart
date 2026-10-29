@@ -4,6 +4,7 @@ import 'package:smart_drone_delivery/core/network/dio_client.dart';
 import 'package:smart_drone_delivery/core/network/error_interceptor.dart';
 import 'package:smart_drone_delivery/core/network/logging_interceptor.dart';
 import 'package:smart_drone_delivery/core/network/network_config.dart';
+import 'package:smart_drone_delivery/core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -89,5 +90,30 @@ void main() {
     });
     await dio.get<dynamic>('/stations');
     expect(seen, 'https://api.test/v1/stations');
+  });
+
+  test('request includes the stored JWT as a Bearer token', () async {
+    final storage = InMemoryTokenStorage();
+    await storage.write(
+      const AuthTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      ),
+    );
+    final dio = DioClient.create(
+      config: AppConfig.operator(),
+      network: net,
+      storage: storage,
+      onSessionExpired: () {},
+    );
+    String? authorization;
+    dio.httpClientAdapter = FakeHttpAdapter((options) {
+      authorization = options.headers['Authorization'] as String?;
+      return jsonBody({'ok': true});
+    });
+
+    await dio.get<dynamic>('/api/delivery-orders');
+
+    expect(authorization, 'Bearer access-token');
   });
 }

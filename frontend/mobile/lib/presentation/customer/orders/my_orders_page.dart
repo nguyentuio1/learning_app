@@ -40,7 +40,17 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     final filters = ref.watch(deliveryOrderFilterParamsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My orders')),
+      appBar: AppBar(
+        title: const Text('My orders'),
+        actions: [
+          IconButton(
+            key: const Key('create-order-open'),
+            tooltip: 'Create delivery order',
+            onPressed: () => context.push(RoutePaths.customerOrdersCreate),
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           SizedBox(

@@ -33,6 +33,12 @@ class CustomerHomePage extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
+            onPressed: () => context.push(RoutePaths.customerOrdersCreate),
+            icon: const Icon(Icons.add_shopping_cart),
+            label: const Text('Create delivery order'),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
             onPressed: () => context.go(RoutePaths.customerPackages),
             icon: const Icon(Icons.inventory_2_outlined),
             label: const Text('Manage packages'),
