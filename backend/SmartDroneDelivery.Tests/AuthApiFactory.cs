@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +15,7 @@ public class AuthApiFactory : WebApplicationFactory<Program>
 
     /// <summary>Replaces MinIO so the tests do not need a running storage server.</summary>
     public FakeAvatarStorage Avatars { get; } = new();
+    public FakePackageStorage Packages { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -34,6 +35,9 @@ public class AuthApiFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IAvatarStorage>();
             services.AddSingleton<IAvatarStorage>(Avatars);
+
+            services.RemoveAll<IPackageStorage>();
+            services.AddSingleton<IPackageStorage>(Packages);
         });
     }
 
