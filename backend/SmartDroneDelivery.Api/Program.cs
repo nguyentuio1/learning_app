@@ -28,6 +28,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
 builder.Services.AddSingleton<IAvatarStorage, MinioAvatarStorage>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
+builder.Services.AddScoped<IPackageService, PackageService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
