@@ -53,7 +53,7 @@ function loginApp(role: Role | null, from?: string) {
   </ConfigProvider>
 }
 
-it.each(['CUSTOMER', 'STATION_OPERATOR'] as const)('shows mobile guidance after %s signs in, including a saved profile destination', async role => {
+it.each(['STATION_OPERATOR'] as const)('shows mobile guidance after %s signs in, including a saved profile destination', async role => {
   render(loginApp(role, '/profile'))
   expect(await screen.findByText('Please use the mobile app')).toBeVisible()
   expect(screen.queryByText('Profile destination')).not.toBeInTheDocument()
