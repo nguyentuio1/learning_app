@@ -12,6 +12,8 @@ const UsersPage = lazy(() => import('../pages/UsersPage').then(module => ({ defa
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then(module => ({ default: module.CreateUserPage })))
 const UserDetailPage = lazy(() => import('../pages/UserDetailPage').then(module => ({ default: module.UserDetailPage })))
 const RolesPage = lazy(() => import('../pages/RolesPage').then(module => ({ default: module.RolesPage })))
+const CustomerPackagesPage = lazy(() => import('../pages/CustomerPackagesPage').then(module => ({ default: module.CustomerPackagesPage })))
+const CustomerPackageFormPage = lazy(() => import('../pages/CustomerPackageFormPage').then(module => ({ default: module.CustomerPackageFormPage })))
 
 export function AppRouter() {
   return (
@@ -29,6 +31,13 @@ export function AppRouter() {
         <Route element={<RequireAuth roles={allRoles} />}>
           <Route element={<AccountLayout />}>
             <Route path="/profile" element={<ProfilePage />} />
+          </Route>
+        </Route>
+        <Route element={<RequireAuth roles={['CUSTOMER']} />}>
+          <Route element={<AccountLayout />}>
+            <Route path="/packages" element={<CustomerPackagesPage />} />
+            <Route path="/packages/new" element={<CustomerPackageFormPage />} />
+            <Route path="/packages/:id" element={<CustomerPackageFormPage />} />
           </Route>
         </Route>
         <Route element={<RequireAuth roles={managementRoles} />}>
