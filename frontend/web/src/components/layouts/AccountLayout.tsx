@@ -35,6 +35,7 @@ export function AccountLayout() {
       <span className="account-nav-marker" aria-hidden="true" />
       <Link to="/profile" className="account-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m8 24 16-16"/><circle cx="8" cy="24" r="3"/><circle cx="24" cy="8" r="3"/></svg><span>SmartDrone<small>Delivery operations</small></span></Link>
       <nav aria-label="Account navigation"><span className="account-nav-label">WORKSPACE</span>
+        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/orders" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>My orders</NavLink>}
         {auth.user?.role.code === 'CUSTOMER' && managedOrderId && <NavLink to={`/orders/${managedOrderId}/manage`} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>Manage this order</NavLink>}
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/orders/new" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>Create order</NavLink>}
         {isAdmin && <>

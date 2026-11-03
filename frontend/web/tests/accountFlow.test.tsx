@@ -57,7 +57,7 @@ async function signIn(role: Role = 'ADMIN') {
   await session.login('admin@example.com', 'Example123!')
 }
 
-it.each(['/admin/users', '/admin/users/new', `/admin/users/${userId}`, '/admin/roles', '/profile', `/orders/${userId}/manage`, `/orders/${userId}/edit`])(
+it.each(['/admin/users', '/admin/users/new', `/admin/users/${userId}`, '/admin/roles', '/profile', '/orders', `/orders/${userId}`, `/orders/${userId}/manage`, `/orders/${userId}/edit`])(
   'redirects anonymous direct navigation to %s without loading private data', async path => {
     open(path)
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeVisible()
@@ -115,6 +115,13 @@ it('opens order creation and loads the contract lookups', async () => {
   open('/orders/new')
   expect(await screen.findByRole('heading', { name: 'Create delivery order' })).toBeVisible()
   await waitFor(() => expect(mock.history.get).toHaveLength(3))
+})
+it('opens the paginated order list', async () => {
+  mock.onGet('/api/delivery-orders').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
+  await signIn('CUSTOMER')
+  open('/orders')
+  expect(await screen.findByRole('heading', { name: 'My orders' })).toBeVisible()
+  await waitFor(() => expect(mock.history.get).toHaveLength(1))
 })
 it('returns to login when renewal fails while loading a protected page', async () => {
   await signIn()
