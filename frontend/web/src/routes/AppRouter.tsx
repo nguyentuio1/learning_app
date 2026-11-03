@@ -13,6 +13,8 @@ const UsersPage = lazy(() => import('../pages/UsersPage').then(module => ({ defa
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then(module => ({ default: module.CreateUserPage })))
 const UserDetailPage = lazy(() => import('../pages/UserDetailPage').then(module => ({ default: module.UserDetailPage })))
 const RolesPage = lazy(() => import('../pages/RolesPage').then(module => ({ default: module.RolesPage })))
+const ManageCustomerOrderPage = lazy(() => import('../pages/ManageCustomerOrderPage').then(module => ({ default: module.ManageCustomerOrderPage })))
+const EditCustomerOrderPage = lazy(() => import('../pages/EditCustomerOrderPage').then(module => ({ default: module.EditCustomerOrderPage })))
 const CreateDeliveryOrderPage = lazy(() => import('../pages/CreateDeliveryOrderPage').then(module => ({ default: module.CreateDeliveryOrderPage })))
 const CustomerAddressesPage = lazy(() => import('../pages/CustomerAddressesPage').then(module => ({ default: module.CustomerAddressesPage })))
 const CustomerAddressFormPage = lazy(() => import('../pages/CustomerAddressFormPage').then(module => ({ default: module.CustomerAddressFormPage })))
@@ -26,6 +28,8 @@ export function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<RequireAuth roles={['CUSTOMER']} />}>
           <Route element={<OrderUiProvider><AccountLayout /></OrderUiProvider>}>
+            <Route path="/orders/:id/manage" element={<ManageCustomerOrderPage />} />
+            <Route path="/orders/:id/edit" element={<EditCustomerOrderPage />} />
             <Route path="/orders/new" element={<CreateDeliveryOrderPage />} />
           </Route>
         </Route>

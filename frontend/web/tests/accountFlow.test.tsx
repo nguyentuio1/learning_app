@@ -57,7 +57,7 @@ async function signIn(role: Role = 'ADMIN') {
   await session.login('admin@example.com', 'Example123!')
 }
 
-it.each(['/admin/users', '/admin/users/new', `/admin/users/${userId}`, '/admin/roles', '/profile'])(
+it.each(['/admin/users', '/admin/users/new', `/admin/users/${userId}`, '/admin/roles', '/profile', `/orders/${userId}/manage`, `/orders/${userId}/edit`])(
   'redirects anonymous direct navigation to %s without loading private data', async path => {
     open(path)
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeVisible()
@@ -84,6 +84,12 @@ it('signs in through the real provider, loads users with a bearer token, and nav
 it.each(['DISPATCHER', 'MANAGER'] as const)('blocks %s on the actual admin route without fetching users', async role => {
   await signIn(role)
   open('/admin/users')
+  expect(await screen.findByText('Access denied')).toBeVisible()
+  expect(mock.history.get).toHaveLength(0)
+})
+it.each(['ADMIN', 'DISPATCHER', 'MANAGER'] as const)('blocks %s from customer order data', async role => {
+  await signIn(role)
+  open(`/orders/${userId}/manage`)
   expect(await screen.findByText('Access denied')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
 })
