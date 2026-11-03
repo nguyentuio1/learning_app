@@ -16,6 +16,7 @@ function packagePayload(values: PackageValues) {
     widthCm: values.widthCm,
     heightCm: values.heightCm,
     isFragile: values.isFragile,
+    packageImageUrl: values.packageImageUrl ?? null,
   }
 }
 

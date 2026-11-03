@@ -47,16 +47,21 @@ function loginApp(role: Role | null, from?: string) {
           <Route path="/" element={<h1>Management home</h1>} />
         </Route>
         <Route path="/profile" element={<h1>Profile destination</h1>} />
+        <Route path="/packages/*" element={<h1>Customer destination</h1>} />
         <Route path="/admin/users" element={<h1>Admin destination</h1>} />
       </Routes></MemoryRouter>
     </AuthContext.Provider>
   </ConfigProvider>
 }
 
-it.each(['CUSTOMER', 'STATION_OPERATOR'] as const)('shows mobile guidance after %s signs in, including a saved profile destination', async role => {
+it.each(['STATION_OPERATOR'] as const)('shows mobile guidance after %s signs in, including a saved profile destination', async role => {
   render(loginApp(role, '/profile'))
   expect(await screen.findByText('Please use the mobile app')).toBeVisible()
   expect(screen.queryByText('Profile destination')).not.toBeInTheDocument()
+})
+it.each([undefined, '/packages/new', 'https://example.com/elsewhere'])('opens the customer task after sign-in from %s', async from => {
+  render(loginApp('CUSTOMER', from))
+  expect(await screen.findByRole('heading', { name: 'Customer destination' })).toBeVisible()
 })
 it.each(['DISPATCHER', 'MANAGER'] as const)('keeps the profile destination for %s', async role => {
   render(loginApp(role))

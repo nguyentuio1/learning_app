@@ -87,11 +87,19 @@ it.each(['DISPATCHER', 'MANAGER'] as const)('blocks %s on the actual admin route
   expect(await screen.findByText('Access denied')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
 })
-it.each(['CUSTOMER', 'STATION_OPERATOR'] as const)('shows mobile guidance to %s through the actual login route', async role => {
+it.each(['STATION_OPERATOR'] as const)('shows mobile guidance to %s through the actual login route', async role => {
   await signIn(role)
   open('/login')
   expect(await screen.findByText('Please use the mobile app')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
+})
+it('opens the customer task through the real provider and uses the bearer token', async () => {
+  mock.onGet('/api/packages').reply(200, [])
+  await signIn('CUSTOMER')
+  open('/login')
+  expect(await screen.findByRole('heading', { name: 'Packages', exact: true })).toBeVisible()
+  await waitFor(() => expect(mock.history.get.find(request => request.url === '/api/packages')?.headers?.Authorization).toBe('Bearer test-access'))
+  expect(mock.history.get.some(request => request.url === '/api/users')).toBe(false)
 })
 it('returns to login when renewal fails while loading a protected page', async () => {
   await signIn()

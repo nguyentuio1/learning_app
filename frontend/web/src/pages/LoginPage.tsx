@@ -26,7 +26,10 @@ export function LoginPage() {
     const usesMobile = auth.user?.role.code === 'CUSTOMER' || auth.user?.role.code === 'STATION_OPERATOR'
     const requested = location.state?.from
     const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles)$/i.test(requested)
-    const destination = auth.user?.role.code === 'ADMIN'
+    const customerDestination = typeof requested === 'string' && /^\/packages(?:\/new|\/[0-9a-f-]{36})?$/i.test(requested)
+    const destination = auth.user?.role.code === 'CUSTOMER'
+      ? (customerDestination ? requested : '/packages')
+      : auth.user?.role.code === 'ADMIN'
       ? (adminDestination ? requested : requested === '/profile' ? '/profile' : '/admin/users')
       : usesMobile || requested === '/' ? '/' : '/profile'
     return <Navigate to={destination} replace />

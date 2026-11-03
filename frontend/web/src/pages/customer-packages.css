@@ -26,6 +26,20 @@
 .customer-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .customer-number { width: 100%; }
 .customer-alert { margin-bottom: 20px; }
+.customer-fields { border:0; padding:0; margin:0; min-width:0; }
+.customer-current-photo { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-bottom:24px; }
+.customer-current-photo img { border-radius:8px; max-height:120px; object-fit:cover; }
+.customer-heading { animation:customer-reveal 320ms ease-out both; }
+.customer-card { animation:customer-reveal 400ms ease-out both; }
+.customer-card:nth-child(2) { animation-delay:50ms; }
+.customer-card:nth-child(3) { animation-delay:100ms; }
+.customer-card:nth-child(4) { animation-delay:150ms; }
+.customer-card:focus-within { border-color:#9eb995; box-shadow:0 0 0 3px #4c7a5612; }
+.customer-primary-link:focus-visible,.customer-page .ant-btn:focus-visible { outline:2px solid #b99142; outline-offset:3px; }
+.customer-page .ant-btn:disabled,.customer-page .ant-btn:disabled:hover { color:#829080 !important; background:#f1f3ed !important; border-color:#dfe5d9 !important; box-shadow:none; }
+@keyframes customer-reveal { from { opacity:0; translate:0 10px; } to { opacity:1; translate:0 0; } }
+@media(max-width:420px) { .customer-package-grid { grid-template-columns:minmax(0,1fr); } .customer-card-actions { flex-wrap:wrap; } .customer-form-card .ant-card-body { padding:18px; } }
+@media(prefers-reduced-motion:reduce) { .customer-heading,.customer-card { animation:none; } .customer-card:hover,.customer-primary-link:hover { transform:none; } }
 .customer-page .ant-btn { min-height:38px; border-radius:7px; padding:0 14px; border-color:#c5d3bc; background:#fffffc; color:#36513f; font-size:13px; font-weight:600; box-shadow:none; transition:background-color 160ms ease,border-color 160ms ease,transform 160ms ease; }
 .customer-page .ant-btn:hover { color:#1e4f3c !important; border-color:#aebfa9 !important; background:#eff5ea !important; }
 .customer-page .ant-btn-primary { border-color:#1e4f3c; background:#1e4f3c; color:#fff; box-shadow:0 2px 0 #143d2e; }

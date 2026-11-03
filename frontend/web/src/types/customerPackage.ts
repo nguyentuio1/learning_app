@@ -1,6 +1,5 @@
 export interface CustomerPackage {
   id: string
-  senderId: string
   packageName: string
   weightGram: number
   lengthCm: number
@@ -12,6 +11,7 @@ export interface CustomerPackage {
 }
 
 export interface PackageValues {
+  packageImageUrl?: string | null
   packageName: string
   weightGram: number
   lengthCm: number
