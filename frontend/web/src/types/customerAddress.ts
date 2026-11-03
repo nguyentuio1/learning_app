@@ -1,6 +1,5 @@
 export interface CustomerAddress {
   id: string
-  userId: string
   label: string
   contactName: string
   contactPhone: string
