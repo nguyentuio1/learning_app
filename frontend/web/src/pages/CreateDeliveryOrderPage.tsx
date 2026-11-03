@@ -87,7 +87,9 @@ export function CreateDeliveryOrderPage() {
         </OrderReveal></div>
       </Form>}
     <Modal title="Confirm delivery order" open={review !== null} onOk={() => void create()} onCancel={() => { if (!saving) setReview(null) }} confirmLoading={saving} cancelButtonProps={{ disabled: saving }} closable={!saving} mask={{ closable: !saving }} keyboard={!saving} okText="Create order" destroyOnHidden>
-      <p>{packages.find(p => p.id === review?.packageId)?.packageName}</p><p>{stationName(review?.originStationId)} → {stationName(review?.destinationStationId)}</p><p>{review?.recipientName} · {review?.recipientPhone}</p><p>The pickup code will be displayed once after creation.</p>
+      <p>Review these details before submitting your delivery.</p>
+      <dl className="order-confirm-summary"><dt>Package</dt><dd>{packages.find(p => p.id === review?.packageId)?.packageName}</dd><dt>Route</dt><dd>{stationName(review?.originStationId)} → {stationName(review?.destinationStationId)}</dd><dt>Recipient</dt><dd>{review?.recipientName} · {review?.recipientPhone}</dd></dl>
+      <p>The pickup code will be displayed once after creation.</p>
     </Modal>
   </main>
 }

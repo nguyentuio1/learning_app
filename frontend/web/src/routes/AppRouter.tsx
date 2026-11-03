@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import { HomePage } from '../pages/HomePage'
 import { RequireAuth } from './RequireAuth'
 import { allRoles, managementRoles } from '../types/auth'
+import { OrderUiProvider } from '../components/orders/OrderUiProvider'
 
 const LoginPage = lazy(() => import('../pages/LoginPage').then(module => ({ default: module.LoginPage })))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then(module => ({ default: module.NotFoundPage })))
@@ -20,7 +21,7 @@ export function AppRouter() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<RequireAuth roles={['CUSTOMER']} />}>
-          <Route element={<AccountLayout />}>
+          <Route element={<OrderUiProvider><AccountLayout /></OrderUiProvider>}>
             <Route path="/orders/new" element={<CreateDeliveryOrderPage />} />
           </Route>
         </Route>
