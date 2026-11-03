@@ -5,12 +5,13 @@ import { useAccountMotion } from '../../hooks/useAccountMotion'
 import './account-layout.css'
 import './account-motion.css'
 
-function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' | 'packages' }) {
+function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' | 'addresses' | 'packages' }) {
   return <svg className="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {name === 'users' && <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v2"/></>}
     {name === 'roles' && <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></>}
     {name === 'profile' && <><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></>}
     {name === 'logout' && <><path d="M9 4H4v16h5M9 12h12m-4-4 4 4-4 4"/></>}
+    {name === 'addresses' && <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></>}
     {name === 'packages' && <><path d="m4 8 8-4 8 4v9l-8 4-8-4V8Z"/><path d="m4 8 8 4 8-4M12 12v9"/></>}
   </svg>
 }
@@ -21,7 +22,7 @@ export function AccountLayout() {
   const motionRef = useAccountMotion(pathname)
   const isAdmin = auth.user?.role.code === 'ADMIN'
   const initials = auth.user?.fullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SD'
-  const section = pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
+  const section = pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
   return <ConfigProvider theme={{ token: {
     colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
     colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
@@ -36,6 +37,7 @@ export function AccountLayout() {
           <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="users"/>Users</NavLink>
           <NavLink to="/admin/roles" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="roles"/>Roles</NavLink>
         </>}
+        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/addresses" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="addresses"/>Addresses</NavLink>}
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/packages" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="packages"/>Packages</NavLink>}
       </nav>
       <div className="account-sidebar-bottom">
@@ -45,7 +47,7 @@ export function AccountLayout() {
       </div>
     </aside>
     <div className="account-workspace"><header className="account-header">
-      <div className="account-breadcrumb"><span>{pathname.startsWith('/admin/') ? 'Administration' : pathname.startsWith('/packages') ? 'Delivery details' : 'Account'}</span><span aria-hidden="true">/</span><strong>{section}</strong></div>
+      <div className="account-breadcrumb"><span>{pathname.startsWith('/admin/') ? 'Administration' : (pathname.startsWith('/addresses') || pathname.startsWith('/packages')) ? 'Delivery details' : 'Account'}</span><span aria-hidden="true">/</span><strong>{section}</strong></div>
       <div className="account-user"><span className="account-role-badge"><span className="account-role-symbol"><AccountIcon name="roles"/></span>{auth.user?.role.name}</span><Link className="account-avatar-link" to="/profile" aria-label={`My profile: ${auth.user?.fullName}`}><Avatar size={38} src={auth.user?.avatarUrl || undefined} alt="Your profile photo">{initials}</Avatar></Link></div>
     </header><Outlet /></div>
   </div></ConfigProvider>

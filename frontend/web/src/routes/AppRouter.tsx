@@ -12,6 +12,8 @@ const UsersPage = lazy(() => import('../pages/UsersPage').then(module => ({ defa
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then(module => ({ default: module.CreateUserPage })))
 const UserDetailPage = lazy(() => import('../pages/UserDetailPage').then(module => ({ default: module.UserDetailPage })))
 const RolesPage = lazy(() => import('../pages/RolesPage').then(module => ({ default: module.RolesPage })))
+const CustomerAddressesPage = lazy(() => import('../pages/CustomerAddressesPage').then(module => ({ default: module.CustomerAddressesPage })))
+const CustomerAddressFormPage = lazy(() => import('../pages/CustomerAddressFormPage').then(module => ({ default: module.CustomerAddressFormPage })))
 const CustomerPackagesPage = lazy(() => import('../pages/CustomerPackagesPage').then(module => ({ default: module.CustomerPackagesPage })))
 const CustomerPackageFormPage = lazy(() => import('../pages/CustomerPackageFormPage').then(module => ({ default: module.CustomerPackageFormPage })))
 
@@ -35,6 +37,9 @@ export function AppRouter() {
         </Route>
         <Route element={<RequireAuth roles={['CUSTOMER']} />}>
           <Route element={<AccountLayout />}>
+            <Route path="/addresses" element={<CustomerAddressesPage />} />
+            <Route path="/addresses/new" element={<CustomerAddressFormPage />} />
+            <Route path="/addresses/:id" element={<CustomerAddressFormPage />} />
             <Route path="/packages" element={<CustomerPackagesPage />} />
             <Route path="/packages/new" element={<CustomerPackageFormPage />} />
             <Route path="/packages/:id" element={<CustomerPackageFormPage />} />
