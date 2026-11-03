@@ -30,6 +30,7 @@ builder.Services.AddSingleton<IAvatarStorage, MinioAvatarStorage>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
+builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
