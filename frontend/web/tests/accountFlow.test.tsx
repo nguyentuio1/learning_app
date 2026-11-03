@@ -57,7 +57,7 @@ async function signIn(role: Role = 'ADMIN') {
   await session.login('admin@example.com', 'Example123!')
 }
 
-it.each(['/admin/users', '/admin/users/new', `/admin/users/${userId}`, '/admin/roles', '/profile', '/orders', `/orders/${userId}`])(
+it.each(['/admin/users', '/admin/users/new', `/admin/users/${userId}`, '/admin/roles', '/profile', '/orders', `/orders/${userId}`, `/orders/${userId}/manage`, `/orders/${userId}/edit`])(
   'redirects anonymous direct navigation to %s without loading private data', async path => {
     open(path)
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeVisible()
@@ -89,7 +89,7 @@ it.each(['DISPATCHER', 'MANAGER'] as const)('blocks %s on the actual admin route
 })
 it.each(['ADMIN', 'DISPATCHER', 'MANAGER'] as const)('blocks %s from customer order data', async role => {
   await signIn(role)
-  open('/orders')
+  open(`/orders/${userId}/manage`)
   expect(await screen.findByText('Access denied')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
 })
@@ -99,10 +99,27 @@ it.each(['STATION_OPERATOR'] as const)('shows mobile guidance to %s through the 
   expect(await screen.findByText('Please use the mobile app')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
 })
-it('takes customers to their paginated order list', async () => {
-  mock.onGet('/api/delivery-orders').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
+it('opens the customer task through the real provider and uses the bearer token', async () => {
+  mock.onGet('/api/customer-addresses').reply(200, [])
   await signIn('CUSTOMER')
   open('/login')
+  expect(await screen.findByRole('heading', { name: 'Addresses', exact: true })).toBeVisible()
+  await waitFor(() => expect(mock.history.get.find(request => request.url === '/api/customer-addresses')?.headers?.Authorization).toBe('Bearer test-access'))
+  expect(mock.history.get.some(request => request.url === '/api/users')).toBe(false)
+})
+it('opens order creation and loads the contract lookups', async () => {
+  mock.onGet('/api/packages').reply(200, [])
+  mock.onGet('/api/customer-addresses').reply(200, [])
+  mock.onGet('/api/landing-stations').reply(200, [])
+  await signIn('CUSTOMER')
+  open('/orders/new')
+  expect(await screen.findByRole('heading', { name: 'Create delivery order' })).toBeVisible()
+  await waitFor(() => expect(mock.history.get).toHaveLength(3))
+})
+it('opens the paginated order list', async () => {
+  mock.onGet('/api/delivery-orders').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
+  await signIn('CUSTOMER')
+  open('/orders')
   expect(await screen.findByRole('heading', { name: 'My orders' })).toBeVisible()
   await waitFor(() => expect(mock.history.get).toHaveLength(1))
 })
