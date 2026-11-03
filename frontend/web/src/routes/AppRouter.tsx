@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import { HomePage } from '../pages/HomePage'
 import { RequireAuth } from './RequireAuth'
 import { allRoles, managementRoles } from '../types/auth'
+import { OrderUiProvider } from '../components/orders/OrderUiProvider'
 
 const LoginPage = lazy(() => import('../pages/LoginPage').then(module => ({ default: module.LoginPage })))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then(module => ({ default: module.NotFoundPage })))
@@ -12,6 +13,7 @@ const UsersPage = lazy(() => import('../pages/UsersPage').then(module => ({ defa
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then(module => ({ default: module.CreateUserPage })))
 const UserDetailPage = lazy(() => import('../pages/UserDetailPage').then(module => ({ default: module.UserDetailPage })))
 const RolesPage = lazy(() => import('../pages/RolesPage').then(module => ({ default: module.RolesPage })))
+const CreateDeliveryOrderPage = lazy(() => import('../pages/CreateDeliveryOrderPage').then(module => ({ default: module.CreateDeliveryOrderPage })))
 const CustomerAddressesPage = lazy(() => import('../pages/CustomerAddressesPage').then(module => ({ default: module.CustomerAddressesPage })))
 const CustomerAddressFormPage = lazy(() => import('../pages/CustomerAddressFormPage').then(module => ({ default: module.CustomerAddressFormPage })))
 const CustomerPackagesPage = lazy(() => import('../pages/CustomerPackagesPage').then(module => ({ default: module.CustomerPackagesPage })))
@@ -22,6 +24,11 @@ export function AppRouter() {
     <Suspense fallback={<div className="page-shell" role="status" aria-live="polite">Loading page…</div>}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route element={<RequireAuth roles={['CUSTOMER']} />}>
+          <Route element={<OrderUiProvider><AccountLayout /></OrderUiProvider>}>
+            <Route path="/orders/new" element={<CreateDeliveryOrderPage />} />
+          </Route>
+        </Route>
         <Route element={<RequireAuth roles={['ADMIN']} />}>
           <Route element={<AccountLayout />}>
             <Route path="/admin/users" element={<UsersPage />} />

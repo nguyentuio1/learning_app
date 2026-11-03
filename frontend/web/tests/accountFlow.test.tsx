@@ -101,6 +101,15 @@ it('opens the customer task through the real provider and uses the bearer token'
   await waitFor(() => expect(mock.history.get.find(request => request.url === '/api/customer-addresses')?.headers?.Authorization).toBe('Bearer test-access'))
   expect(mock.history.get.some(request => request.url === '/api/users')).toBe(false)
 })
+it('opens order creation and loads the contract lookups', async () => {
+  mock.onGet('/api/packages').reply(200, [])
+  mock.onGet('/api/customer-addresses').reply(200, [])
+  mock.onGet('/api/landing-stations').reply(200, [])
+  await signIn('CUSTOMER')
+  open('/orders/new')
+  expect(await screen.findByRole('heading', { name: 'Create delivery order' })).toBeVisible()
+  await waitFor(() => expect(mock.history.get).toHaveLength(3))
+})
 it('returns to login when renewal fails while loading a protected page', async () => {
   await signIn()
   mock.onGet('/api/users').reply(401)

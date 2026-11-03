@@ -1,0 +1,38 @@
+/* Portals live outside .order-page, so give them explicit, scoped classes. */
+.order-dialog { border:1px solid #c5d3bc; border-radius:14px; box-shadow:0 24px 64px #163f2f26; }
+.order-dialog-header { padding:6px 30px 18px 0; border-bottom:1px solid #e0e8d8; margin-bottom:20px; }
+.order-dialog-header::before { content:''; display:block; width:28px; height:4px; border-radius:2px; background:#d5aa58; margin-bottom:14px; }
+.order-dialog-body { line-height:1.65; color:#36513f; }
+.order-dialog-footer { border-top:1px solid #e0e8d8; padding-top:18px; margin-top:24px; }
+.order-dialog .ant-form-item-label > label { color:#36513f; font-size:13px; font-weight:650; }
+.order-dialog .ant-btn { min-height:42px; border-radius:8px; padding-inline:18px; }
+.order-dialog .ant-input { background:#fffffc; }
+.order-dialog .ant-alert { margin-bottom:18px; }
+.order-dialog .order-actions { justify-content:flex-end; border-top:1px solid #e0e8d8; padding-top:20px; margin-top:28px; }
+.order-dialog .ant-btn-dangerous:not(.ant-btn-primary) { background:#fff8f4; border-color:#dcb9ac; color:#923d30; }
+.order-select-popup,.order-calendar-popup .ant-picker-panel-container { border:1px solid #c5d3bc; border-radius:12px; box-shadow:0 14px 36px #1e4f3c1c; }
+.order-select-popup { padding:6px; }
+.order-select-popup .ant-select-item { border-radius:7px; }
+.order-select-popup .ant-select-item-option-selected { box-shadow:inset 3px 0 #c5a04c; }
+.order-page .ant-btn,.order-primary-link { transition:background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease,transform 160ms ease; }
+.order-page .ant-btn-default:not(:disabled):hover { background:#eef4e8; border-color:#9db493; color:#1e4f3c; }
+.order-page .ant-btn-dangerous:not(.ant-btn-primary) { background:#fff8f4; border-color:#dcb9ac; color:#923d30; }
+.order-page .ant-btn-dangerous:not(:disabled):hover { background:#fae9e2; border-color:#bd8979; color:#7f3025; }
+.order-page .ant-btn:disabled { color:#829080; background:#f1f3ed; border-color:#dfe5d9; box-shadow:none; }
+.order-page .ant-select:focus-within,.order-page .ant-input:focus { box-shadow:0 0 0 3px #4c7a5617; }
+.order-page .ant-picker { width:100%; min-height:42px; }
+.order-page .ant-pagination-item { border-radius:8px; }
+.order-page .ant-pagination-item-active { border-color:#9db493; background:#e4eddb; }
+.order-page .ant-pagination-item-active a { color:#1e4f3c; }
+.order-page .ant-table-thead > tr > th::before { display:none; }
+.order-page .ant-table-tbody > tr > td { border-color:#e7ecdf; }
+.order-page .ant-alert { border-radius:10px; }
+.order-confirm-summary { background:#f0f5e9; border:1px solid #d4dfca; border-radius:10px; padding:16px; margin:16px 0; }
+.order-confirm-summary dt { color:#627365; font-size:12px; }
+.order-confirm-summary dd { margin:4px 0 14px; font-weight:600; overflow-wrap:anywhere; }
+.order-confirm-summary dd:last-child { margin-bottom:0; }
+.order-empty { padding:44px 24px; text-align:center; color:#627365; }
+.order-empty svg { width:64px; height:64px; padding:14px; margin-bottom:14px; border-radius:18px; color:#59764c; background:#eaf1e2; }
+.order-empty h3 { color:#36513f; font-size:16px; margin:0 0 8px; }
+.order-empty p { margin:0; }
+@media(prefers-reduced-motion:reduce) { .order-page .ant-btn,.order-primary-link { transition:none; } }
