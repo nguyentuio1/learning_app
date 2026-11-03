@@ -1,4 +1,4 @@
-﻿namespace SmartDroneDelivery.Api.Options;
+namespace SmartDroneDelivery.Api.Options;
 
 public class MinioOptions
 {
@@ -12,6 +12,9 @@ public class MinioOptions
 
     /// <summary>Bucket that holds the avatars. Objects are readable without a login so the apps can show them.</summary>
     public string AvatarBucket { get; set; } = "avatars";
+
+    /// <summary>Bucket that holds package images. Objects are readable without a login so apps can show them.</summary>
+    public string PackageBucket { get; set; } = "packages";
 
     /// <summary>Base URL of MinIO as the clients see it. Empty means built from <see cref="Endpoint"/>.</summary>
     public string? PublicBaseUrl { get; set; }
