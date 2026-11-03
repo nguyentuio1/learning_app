@@ -87,11 +87,20 @@ it.each(['DISPATCHER', 'MANAGER'] as const)('blocks %s on the actual admin route
   expect(await screen.findByText('Access denied')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
 })
-it.each(['CUSTOMER', 'STATION_OPERATOR'] as const)('shows mobile guidance to %s through the actual login route', async role => {
+it.each(['STATION_OPERATOR'] as const)('shows mobile guidance to %s through the actual login route', async role => {
   await signIn(role)
   open('/login')
   expect(await screen.findByText('Please use the mobile app')).toBeVisible()
   expect(mock.history.get).toHaveLength(0)
+})
+it('takes customers to order creation and loads the contract lookups', async () => {
+  mock.onGet('/api/packages').reply(200, [])
+  mock.onGet('/api/customer-addresses').reply(200, [])
+  mock.onGet('/api/landing-stations').reply(200, [])
+  await signIn('CUSTOMER')
+  open('/login')
+  expect(await screen.findByRole('heading', { name: 'Create delivery order' })).toBeVisible()
+  await waitFor(() => expect(mock.history.get).toHaveLength(3))
 })
 it('returns to login when renewal fails while loading a protected page', async () => {
   await signIn()

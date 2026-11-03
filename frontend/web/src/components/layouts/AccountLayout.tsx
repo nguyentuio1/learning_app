@@ -5,12 +5,13 @@ import { useAccountMotion } from '../../hooks/useAccountMotion'
 import './account-layout.css'
 import './account-motion.css'
 
-function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' }) {
+function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' | 'orders' }) {
   return <svg className="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {name === 'users' && <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v2"/></>}
     {name === 'roles' && <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></>}
     {name === 'profile' && <><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></>}
     {name === 'logout' && <><path d="M9 4H4v16h5M9 12h12m-4-4 4 4-4 4"/></>}
+    {name === 'orders' && <><path d="m12 3 9 5v9l-9 5-9-5V8Zm0 10v9M3 8l9 5 9-5M7 5l9 5"/></>}
   </svg>
 }
 
@@ -20,7 +21,7 @@ export function AccountLayout() {
   const motionRef = useAccountMotion(pathname)
   const isAdmin = auth.user?.role.code === 'ADMIN'
   const initials = auth.user?.fullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SD'
-  const section = pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : 'My profile'
+  const section = pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : 'My profile'
   return <ConfigProvider theme={{ token: {
     colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
     colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
@@ -31,6 +32,7 @@ export function AccountLayout() {
       <span className="account-nav-marker" aria-hidden="true" />
       <Link to="/profile" className="account-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m8 24 16-16"/><circle cx="8" cy="24" r="3"/><circle cx="24" cy="8" r="3"/></svg><span>SmartDrone<small>Delivery operations</small></span></Link>
       <nav aria-label="Account navigation"><span className="account-nav-label">WORKSPACE</span>
+        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/orders/new" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>Create order</NavLink>}
         {isAdmin && <>
           <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="users"/>Users</NavLink>
           <NavLink to="/admin/roles" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="roles"/>Roles</NavLink>
