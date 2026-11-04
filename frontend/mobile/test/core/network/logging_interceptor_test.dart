@@ -56,6 +56,20 @@ void main() {
     expect(all, contains('***'));
   });
 
+  test('che pickupSecureCode và secureCode trong log (BR-LS-22)', () async {
+    final logs = <String>[];
+    final dio = _dio(logs, (_) => jsonBody({'trackingNumber': 'DD-1', 'pickupSecureCode': '483920'}));
+
+    await dio.post<dynamic>('/delivery-orders', data: {'secureCode': '123456', 'recipientName': 'An'});
+
+    final all = logs.join('\n');
+    expect(all, contains('DD-1'));
+    expect(all, contains('An'));
+    for (final secret in ['483920', '123456']) {
+      expect(all, isNot(contains(secret)), reason: '$secret bị lộ trong log');
+    }
+  });
+
   test('log lỗi 500 kèm status và body', () async {
     final logs = <String>[];
     final dio = _dio(logs, (_) => jsonBody({'message': 'boom'}, 500));
