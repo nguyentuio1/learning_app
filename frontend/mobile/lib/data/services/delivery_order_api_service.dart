@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../core/constants/api_endpoints.dart';
+import '../../core/error/api_exception.dart';
 import '../../core/network/error_interceptor.dart';
 import '../models/cancel_delivery_order_dto.dart';
 import '../models/delivery_order.dart';
@@ -35,6 +36,39 @@ class DeliveryOrderApiService {
           .toList(growable: false);
     } on DioException catch (error) {
       throw error.apiException;
+    }
+  }
+
+  Future<CreateDeliveryOrderResponseDto> createOrder(
+    CreateDeliveryOrderDto dto,
+  ) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.deliveryOrders,
+        data: dto.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException(
+          'Expected a delivery order creation response object.',
+        );
+      }
+      final result = CreateDeliveryOrderResponseDto.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+      if (!RegExp(r'^\d{6}$').hasMatch(result.pickupSecureCode)) {
+        throw const FormatException('Expected a six-digit pickup secure code.');
+      }
+      return result;
+    } on DioException catch (error) {
+      final apiError = error.apiException;
+      if (apiError.statusCode == 409) {
+        throw const ApiException(
+          message: 'This package is already linked to an order.',
+          statusCode: 409,
+          code: 'MSG-P-CO-11',
+        );
+      }
+      throw apiError;
     }
   }
 
