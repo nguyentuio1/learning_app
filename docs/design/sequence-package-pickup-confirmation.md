@@ -79,7 +79,7 @@ sequenceDiagram
             Note over Service,DB: Atomic Order and Slot State Transitions
             Service->>DB: Update delivery_orders set status = 'READY_FOR_TAKEOFF', updated_at = UtcNow
             Service->>DB: Update station_slots set status = 'OCCUPIED', last_updated = UtcNow where id = dto.SlotId
-            Service->>DB: Insert into delivery_status_logs (order_id, from_status='APPROVED', to_status='READY_FOR_TAKEOFF', changed_by=operatorId, remarks='Package intake completed; loaded into slot ' + slotNumber)
+            Service->>DB: Insert into delivery_status_logs (order_id, from_status='APPROVED', to_status='READY_FOR_TAKEOFF', changed_by=operatorId, remarks='Package intake completed, loaded into slot ' + slotNumber)
             Service->>DB: Insert into audit_logs (user_id=operatorId, action='PACKAGE_INTAKE_CONFIRMATION', entity_id=order.id)
             Service->>DB: Insert into notifications (user_id=order.customer_id, title='Ready for Takeoff', message='Your parcel has been verified and loaded at origin station.')
             
@@ -90,7 +90,7 @@ sequenceDiagram
             Service->>Hub: Dispatch push notification to Customer Mobile App
             Service-->>API: PackageIntakeResponseDto
             API-->>UI: 200 OK (Intake confirmed)
-            UI-->>Operator: Display success checkmark (O07); station pad lock engaged
+            UI-->>Operator: Display success checkmark (O07), station pad lock engaged
         end
     end
 ```
@@ -113,7 +113,7 @@ sequenceDiagram
     participant DB as AppDbContext / PostgreSQL
     participant Hub as SignalR (station-slots-{stationId})
 
-    Recipient->>Operator: Arrive at destination station; present tracking number and 6-digit OTP
+    Recipient->>Operator: Arrive at destination station, present tracking number and 6-digit OTP
     Operator->>UI: Input tracking number and 6-digit secure code (delivery_orders.pickup_secure_code)
     UI->>API: POST /api/landing-stations/{stationId}/operations/pickup (ConfirmPickupRequestDto)
 
@@ -155,7 +155,7 @@ sequenceDiagram
                 Note over Service,DB: Atomic Order Completion and Slot Release (FR-26, FR-27, BR-DW-20)
                 Service->>DB: Update delivery_orders set status = 'DELIVERED', actual_delivery_time = UtcNow, updated_at = UtcNow
                 Service->>DB: Update station_slots set status = 'EMPTY', last_updated = UtcNow where id = order.destination_slot_id
-                Service->>DB: Insert into delivery_status_logs (order_id=order.id, from_status='ARRIVED', to_status='DELIVERED', changed_by=operatorId, remarks='Secure code verified; parcel handed over to recipient')
+                Service->>DB: Insert into delivery_status_logs (order_id=order.id, from_status='ARRIVED', to_status='DELIVERED', changed_by=operatorId, remarks='Secure code verified, parcel handed over to recipient')
                 Service->>DB: Insert into audit_logs (user_id=operatorId, action='PACKAGE_DELIVERY_CONFIRMATION', entity_id=order.id)
                 Service->>DB: Insert into notifications (user_id=order.customer_id, title='Package Delivered', message='Your delivery has been successfully picked up.')
                 
@@ -166,8 +166,8 @@ sequenceDiagram
                 Note over Hub: Dispatchers immediately see destination pad available for next flight assignment
                 Service-->>API: PickupConfirmationResponseDto
                 API-->>UI: 200 OK (Pickup confirmed, compartment unlocked)
-                UI-->>Operator: Compartment unlocked; display success screen (O09)
-                Operator-->>Recipient: Hand over package; recipient retrieves items
+                UI-->>Operator: Compartment unlocked, display success screen (O09)
+                Operator-->>Recipient: Hand over package, recipient retrieves items
             end
         end
     end
