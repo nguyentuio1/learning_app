@@ -11,15 +11,6 @@ class AddressesListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<AsyncValue<List<CustomerAddress>>>(addressNotifierProvider, (
-      _,
-      next,
-    ) {
-      if (next.hasError && !next.isLoading) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(errorMessage(next.error!))));
-      }
-    });
     final addresses = ref.watch(addressNotifierProvider);
 
     return Scaffold(
@@ -84,7 +75,7 @@ class _AddressCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    address.addressLabel,
+                    address.label,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -96,9 +87,9 @@ class _AddressCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(address.recipientName),
-            Text(address.recipientPhone),
-            Text(address.streetAddress),
+            Text(address.contactName),
+            Text(address.contactPhone),
+            Text(address.addressLine),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,

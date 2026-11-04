@@ -1,5 +1,5 @@
-class Package {
-  const Package({
+class PackageModel {
+  const PackageModel({
     required this.id,
     required this.packageName,
     required this.weightGram,
@@ -19,9 +19,9 @@ class Package {
   final double heightCm;
   final String? packageImageUrl;
   final bool isFragile;
-  final DateTime? createdAt;
+  final String? createdAt;
 
-  factory Package.fromJson(Map<String, dynamic> json) => Package(
+  factory PackageModel.fromJson(Map<String, dynamic> json) => PackageModel(
     id: json['id'] as String,
     packageName: json['packageName'] as String,
     weightGram: (json['weightGram'] as num).toDouble(),
@@ -30,13 +30,10 @@ class Package {
     heightCm: (json['heightCm'] as num).toDouble(),
     packageImageUrl: json['packageImageUrl'] as String?,
     isFragile: json['isFragile'] as bool? ?? false,
-    createdAt: json['createdAt'] == null
-        ? null
-        : DateTime.parse(json['createdAt'] as String).toUtc(),
+    createdAt: json['createdAt'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
     'packageName': packageName,
     'weightGram': weightGram,
     'lengthCm': lengthCm,
@@ -44,7 +41,6 @@ class Package {
     'heightCm': heightCm,
     'packageImageUrl': packageImageUrl,
     'isFragile': isFragile,
-    'createdAt': createdAt?.toUtc().toIso8601String(),
   };
 }
 

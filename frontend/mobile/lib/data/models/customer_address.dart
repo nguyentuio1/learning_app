@@ -1,42 +1,47 @@
 class CustomerAddress {
   const CustomerAddress({
     required this.id,
-    required this.addressLabel,
-    required this.recipientName,
-    required this.recipientPhone,
-    required this.streetAddress,
+    required this.label,
+    required this.contactName,
+    required this.contactPhone,
+    required this.addressLine,
     required this.isDefault,
     this.latitude,
     this.longitude,
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
-  final String addressLabel;
-  final String recipientName;
-  final String recipientPhone;
-  final String streetAddress;
+  final String label;
+  final String contactName;
+  final String contactPhone;
+  final String addressLine;
   final double? latitude;
   final double? longitude;
   final bool isDefault;
+  final String? createdAt;
+  final String? updatedAt;
 
   factory CustomerAddress.fromJson(Map<String, dynamic> json) =>
       CustomerAddress(
         id: json['id'] as String,
-        addressLabel: json['addressLabel'] as String,
-        recipientName: json['recipientName'] as String,
-        recipientPhone: json['recipientPhone'] as String,
-        streetAddress: json['streetAddress'] as String,
+        label: json['label'] as String,
+        contactName: json['contactName'] as String,
+        contactPhone: json['contactPhone'] as String,
+        addressLine: json['addressLine'] as String,
         latitude: (json['latitude'] as num?)?.toDouble(),
         longitude: (json['longitude'] as num?)?.toDouble(),
         isDefault: json['isDefault'] as bool,
+        createdAt: json['createdAt'] as String?,
+        updatedAt: json['updatedAt'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'addressLabel': addressLabel,
-    'recipientName': recipientName,
-    'recipientPhone': recipientPhone,
-    'streetAddress': streetAddress,
+    'label': label,
+    'contactName': contactName,
+    'contactPhone': contactPhone,
+    'addressLine': addressLine,
     'latitude': latitude,
     'longitude': longitude,
     'isDefault': isDefault,
@@ -45,28 +50,28 @@ class CustomerAddress {
 
 class CustomerAddressRequest {
   const CustomerAddressRequest({
-    required this.addressLabel,
-    required this.recipientName,
-    required this.recipientPhone,
-    required this.streetAddress,
+    required this.label,
+    required this.contactName,
+    required this.contactPhone,
+    required this.addressLine,
     required this.isDefault,
     this.latitude,
     this.longitude,
   });
 
-  final String addressLabel;
-  final String recipientName;
-  final String recipientPhone;
-  final String streetAddress;
+  final String label;
+  final String contactName;
+  final String contactPhone;
+  final String addressLine;
   final double? latitude;
   final double? longitude;
   final bool isDefault;
 
   Map<String, dynamic> toJson() => {
-    'addressLabel': addressLabel,
-    'recipientName': recipientName,
-    'recipientPhone': recipientPhone,
-    'streetAddress': streetAddress,
+    'label': label,
+    'contactName': contactName,
+    'contactPhone': contactPhone,
+    'addressLine': addressLine,
     'latitude': latitude,
     'longitude': longitude,
     'isDefault': isDefault,

@@ -1,4 +1,6 @@
-﻿namespace SmartDroneDelivery.Api.Entities;
+using System.ComponentModel.DataAnnotations;
+
+namespace SmartDroneDelivery.Api.Entities;
 
 public class DeliveryOrder
 {
@@ -11,6 +13,7 @@ public class DeliveryOrder
     public Guid? DispatcherId { get; set; }
     public Guid? DeliveryAddressId { get; set; }
     
+    [ConcurrencyCheck]
     public string Status { get; set; } = "PENDING";
     public string? CancelReason { get; set; }
     
@@ -24,6 +27,8 @@ public class DeliveryOrder
     public DateTime? ActualDeliveryTime { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [ConcurrencyCheck]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public User Customer { get; set; } = null!;

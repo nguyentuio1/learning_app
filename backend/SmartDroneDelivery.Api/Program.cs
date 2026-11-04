@@ -31,6 +31,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
+builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -66,6 +67,8 @@ builder.Services
 // Secure by default: an endpoint without [Authorize] or [AllowAnonymous] still needs a signed-in user.
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
+builder.Services.AddScoped<IDeliveryOrderMutationService, DeliveryOrderMutationService>();
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
