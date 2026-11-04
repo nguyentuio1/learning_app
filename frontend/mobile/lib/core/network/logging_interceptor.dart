@@ -26,6 +26,8 @@ abstract final class LogRedactor {
     'access_token',
     'refresh_token',
     'id_token',
+    'pickupsecurecode',
+    'securecode',
     'authorization',
     'secret',
     'client_secret',
