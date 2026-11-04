@@ -32,7 +32,7 @@ const _stations = [
     status: 'OPERATIONAL',
   ),
 ];
-const _package = Package(
+const _package = PackageModel(
   id: '33333333-3333-3333-3333-333333333333',
   packageName: 'Parcel',
   weightGram: 2000,

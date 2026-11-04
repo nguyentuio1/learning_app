@@ -19,7 +19,7 @@ class ReviewOrderPage extends ConsumerWidget {
           _row('Package', order.package?.packageName ?? ''),
           _row('Origin station', order.originStationId),
           _row('Destination station', order.destinationStationId),
-          _row('Delivery address', order.address?.streetAddress ?? 'None'),
+          _row('Delivery address', order.address?.addressLine ?? 'None'),
           _row('Recipient name', order.recipientName),
           _row('Recipient phone', order.recipientPhone),
           if (order.error != null)

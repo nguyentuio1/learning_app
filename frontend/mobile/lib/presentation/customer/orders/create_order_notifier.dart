@@ -22,7 +22,7 @@ class CreateOrderState {
     this.error,
   });
 
-  final Package? package;
+  final PackageModel? package;
   final String originStationId;
   final String destinationStationId;
   final CustomerAddress? address;
@@ -32,7 +32,7 @@ class CreateOrderState {
   final ApiException? error;
 
   CreateOrderState copyWith({
-    Package? package,
+    PackageModel? package,
     String? originStationId,
     String? destinationStationId,
     CustomerAddress? address,
@@ -58,7 +58,7 @@ class CreateOrderNotifier extends Notifier<CreateOrderState> {
   @override
   CreateOrderState build() => const CreateOrderState();
 
-  void selectPackage(Package? package) =>
+  void selectPackage(PackageModel? package) =>
       state = state.copyWith(package: package, clearError: true);
 
   void setOriginStationId(String value) =>

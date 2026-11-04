@@ -282,7 +282,7 @@ class _AddressPicker extends StatelessWidget {
       for (final address in items)
         DropdownMenuItem<String?>(
           value: address.id,
-          child: Text('${address.addressLabel} · ${address.streetAddress}'),
+          child: Text('${address.label} · ${address.addressLine}'),
         ),
     ],
     onChanged: (id) => onChanged(

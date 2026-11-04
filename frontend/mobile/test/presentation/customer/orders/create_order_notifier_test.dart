@@ -10,7 +10,7 @@ import 'package:smart_drone_delivery/presentation/customer/orders/create_order_n
 
 const _originId = '11111111-1111-1111-1111-111111111111';
 const _destinationId = '22222222-2222-2222-2222-222222222222';
-const _package = Package(
+const _package = PackageModel(
   id: '33333333-3333-3333-3333-333333333333',
   packageName: 'Parcel',
   weightGram: 2000,
