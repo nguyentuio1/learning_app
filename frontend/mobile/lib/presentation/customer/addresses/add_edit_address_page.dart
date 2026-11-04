@@ -29,14 +29,10 @@ class _AddEditAddressPageState extends ConsumerState<AddEditAddressPage> {
   void initState() {
     super.initState();
     final address = widget.address;
-    _labelController = TextEditingController(text: address?.addressLabel ?? '');
-    _nameController = TextEditingController(text: address?.recipientName ?? '');
-    _phoneController = TextEditingController(
-      text: address?.recipientPhone ?? '',
-    );
-    _streetController = TextEditingController(
-      text: address?.streetAddress ?? '',
-    );
+    _labelController = TextEditingController(text: address?.label ?? '');
+    _nameController = TextEditingController(text: address?.contactName ?? '');
+    _phoneController = TextEditingController(text: address?.contactPhone ?? '');
+    _streetController = TextEditingController(text: address?.addressLine ?? '');
     _latitudeController = TextEditingController(
       text: address?.latitude?.toString() ?? '',
     );
@@ -229,10 +225,10 @@ class _AddEditAddressPageState extends ConsumerState<AddEditAddressPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final request = CustomerAddressRequest(
-      addressLabel: _labelController.text.trim(),
-      recipientName: _nameController.text.trim(),
-      recipientPhone: _phoneController.text.trim(),
-      streetAddress: _streetController.text.trim(),
+      label: _labelController.text.trim(),
+      contactName: _nameController.text.trim(),
+      contactPhone: _phoneController.text.trim(),
+      addressLine: _streetController.text.trim(),
       latitude: _coordinateOrNull(_latitudeController.text),
       longitude: _coordinateOrNull(_longitudeController.text),
       isDefault: _isDefault,
