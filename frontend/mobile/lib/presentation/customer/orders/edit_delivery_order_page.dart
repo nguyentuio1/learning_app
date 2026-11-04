@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../data/models/delivery_order.dart';
+import '../../../data/models/order_station.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
+import '../../../data/providers/delivery_order_providers.dart';
 import 'order_messages.dart';
 import 'order_notifier.dart';
 
@@ -25,8 +27,8 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _destinationController;
   late final TextEditingController _addressController;
+  String? _destinationStationId;
   bool _submitting = false;
   UpdateDeliveryOrderDto? _submittedUpdate;
 
@@ -35,9 +37,7 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
     super.initState();
     _nameController = TextEditingController(text: widget.order.recipientName);
     _phoneController = TextEditingController(text: widget.order.recipientPhone);
-    _destinationController = TextEditingController(
-      text: widget.order.destinationStationId,
-    );
+    _destinationStationId = widget.order.destinationStationId;
     _addressController = TextEditingController(
       text: widget.order.deliveryAddressId ?? '',
     );
@@ -47,7 +47,6 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _destinationController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -83,57 +82,99 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
       }
     });
 
+    final stations = ref.watch(operationalStationsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Order')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            TextFormField(
-              controller: _nameController,
-              maxLength: 150,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Recipient name'),
-              validator: _validateName,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(labelText: 'Recipient phone'),
-              validator: _validatePhone,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _destinationController,
-              decoration: const InputDecoration(
-                labelText: 'Destination station ID',
+      body: stations.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(orderOperationErrorMessage(error, cancelling: false)),
+              TextButton(
+                onPressed: () => ref.invalidate(operationalStationsProvider),
+                child: const Text('Retry'),
               ),
-              validator: _validateDestination,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Delivery address ID (optional)',
-              ),
-              validator: _validateAddress,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save changes'),
-            ),
-          ],
+            ],
+          ),
         ),
+        data: (items) => _buildForm(items),
+      ),
+    );
+  }
+
+  Widget _buildForm(List<OrderStation> stations) {
+    final destinations = stations
+        .where(
+          (station) =>
+              station.id.toLowerCase() !=
+              widget.order.originStationId.toLowerCase(),
+        )
+        .toList(growable: false);
+    final selectedStation =
+        destinations.any(
+          (station) =>
+              station.id.toLowerCase() == _destinationStationId?.toLowerCase(),
+        )
+        ? _destinationStationId
+        : null;
+
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          TextFormField(
+            controller: _nameController,
+            maxLength: 150,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Recipient name'),
+            validator: _validateName,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(labelText: 'Recipient phone'),
+            validator: _validatePhone,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: selectedStation,
+            decoration: const InputDecoration(labelText: 'Destination station'),
+            items: destinations
+                .map(
+                  (station) => DropdownMenuItem(
+                    value: station.id,
+                    child: Text('${station.stationCode} - ${station.name}'),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) => setState(() => _destinationStationId = value),
+            validator: _validateDestination,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _addressController,
+            decoration: const InputDecoration(
+              labelText: 'Delivery address ID (optional)',
+            ),
+            validator: _validateAddress,
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _submitting ? null : _submit,
+            child: _submitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save changes'),
+          ),
+        ],
       ),
     );
   }
@@ -156,13 +197,8 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
   }
 
   String? _validateDestination(String? value) {
-    final destination = value?.trim() ?? '';
-    if (!_guidPattern.hasMatch(destination)) {
-      return 'Enter a valid destination station ID.';
-    }
-    if (destination.toLowerCase() ==
-        widget.order.originStationId.toLowerCase()) {
-      return 'Destination station must differ from origin station.';
+    if (value == null || !_guidPattern.hasMatch(value)) {
+      return 'Select an operational destination station.';
     }
     return null;
   }
@@ -180,7 +216,7 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
     final update = UpdateDeliveryOrderDto(
       recipientName: _nameController.text.trim(),
       recipientPhone: _phoneController.text.trim(),
-      destinationStationId: _destinationController.text.trim(),
+      destinationStationId: _destinationStationId ?? '',
       deliveryAddressId: _addressController.text.trim().isEmpty
           ? null
           : _addressController.text.trim(),
