@@ -29,6 +29,7 @@ class LandingStationApiService {
             }
             return LandingStation.fromJson(Map<String, dynamic>.from(item));
           })
+          .where((station) => station.status == 'OPERATIONAL')
           .toList(growable: false);
     } on DioException catch (error) {
       throw error.apiException;

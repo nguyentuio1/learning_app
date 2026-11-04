@@ -89,6 +89,13 @@ void main() {
             'longitude': 106.0,
             'status': 'OPERATIONAL',
           },
+          {
+            'id': '33333333-3333-3333-3333-333333333333',
+            'stationCode': 'CL-01',
+            'name': 'Closed Hub',
+            'address': 'Closed address',
+            'status': 'MAINTENANCE',
+          },
         ]);
       });
 
@@ -221,4 +228,52 @@ void main() {
       expect(captured?.data, {'cancellationReason': 'Changed plans'});
     },
   );
+
+  for (final status in [400, 404, 409]) {
+    test('maps update HTTP $status to ApiException', () async {
+      final dio = Dio()
+        ..httpClientAdapter = FakeHttpAdapter(
+          (_) =>
+              jsonBody({'title': 'Problem', 'detail': 'Update failed'}, status),
+        );
+      final service = DeliveryOrderApiService(dio);
+
+      await expectLater(
+        service.updateOrder(
+          'order-1',
+          const UpdateDeliveryOrderDto(
+            recipientName: 'Sam Recipient',
+            recipientPhone: '123456789',
+            destinationStationId: '22222222-2222-2222-2222-222222222222',
+          ),
+        ),
+        throwsA(
+          isA<ApiException>()
+              .having((error) => error.statusCode, 'statusCode', status)
+              .having((error) => error.message, 'message', 'Update failed'),
+        ),
+      );
+    });
+
+    test('maps cancellation HTTP $status to ApiException', () async {
+      final dio = Dio()
+        ..httpClientAdapter = FakeHttpAdapter(
+          (_) =>
+              jsonBody({'title': 'Problem', 'detail': 'Cancel failed'}, status),
+        );
+      final service = DeliveryOrderApiService(dio);
+
+      await expectLater(
+        service.cancelOrder(
+          'order-1',
+          const CancelDeliveryOrderDto(cancellationReason: 'Changed plans'),
+        ),
+        throwsA(
+          isA<ApiException>()
+              .having((error) => error.statusCode, 'statusCode', status)
+              .having((error) => error.message, 'message', 'Cancel failed'),
+        ),
+      );
+    });
+  }
 }
