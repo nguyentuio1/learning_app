@@ -9,7 +9,8 @@ final packageApiServiceProvider = Provider<PackageApiService>(
   name: 'packageApiService',
 );
 
-final packageByIdProvider = FutureProvider.autoDispose.family<Package, String>(
-  (ref, id) => ref.watch(packageApiServiceProvider).getPackage(id),
-  name: 'packageById',
-);
+final packageByIdProvider = FutureProvider.autoDispose
+    .family<PackageModel, String>(
+      (ref, id) => ref.watch(packageApiServiceProvider).getPackage(id),
+      name: 'packageById',
+    );

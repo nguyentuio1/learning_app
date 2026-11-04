@@ -9,9 +9,12 @@ class PackageApiService {
 
   final Dio _dio;
 
-  Future<List<Package>> getPackages() async {
+  Future<List<PackageModel>> getPackages({bool? available}) async {
     try {
-      final response = await _dio.get<dynamic>(ApiEndpoints.packages);
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.packages,
+        queryParameters: available == null ? null : {'available': available},
+      );
       final data = response.data;
       if (data is! List) {
         throw const FormatException('Expected a package list response.');
@@ -22,7 +25,7 @@ class PackageApiService {
     }
   }
 
-  Future<Package> getPackage(String id) async {
+  Future<PackageModel> getPackage(String id) async {
     try {
       final response = await _dio.get<dynamic>('${ApiEndpoints.packages}/$id');
       return _packageFromData(response.data);
@@ -58,10 +61,10 @@ class PackageApiService {
     }
   }
 
-  Package _packageFromData(dynamic data) {
+  PackageModel _packageFromData(dynamic data) {
     if (data is! Map) {
       throw const FormatException('Expected a package object response.');
     }
-    return Package.fromJson(Map<String, dynamic>.from(data));
+    return PackageModel.fromJson(Map<String, dynamic>.from(data));
   }
 }

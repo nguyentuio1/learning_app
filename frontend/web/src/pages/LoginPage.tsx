@@ -23,10 +23,13 @@ export function LoginPage() {
   if (auth.status === 'loading') return <main className="page-shell"><Spin aria-label="Restoring session" /></main>
   if (auth.status === 'authenticated' && (!busy || transitionDone)) {
     // Accept only implemented internal destinations, never arbitrary redirect URLs.
-    const usesMobile = auth.user?.role.code === 'CUSTOMER' || auth.user?.role.code === 'STATION_OPERATOR'
+    const usesMobile = auth.user?.role.code === 'STATION_OPERATOR'
     const requested = location.state?.from
     const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles)$/i.test(requested)
-    const destination = auth.user?.role.code === 'ADMIN'
+    const customerDestination = typeof requested === 'string' && /^\/(?:(?:addresses|packages)(?:\/new|\/[0-9a-f-]{36})?|orders(?:\/new|\/[0-9a-f-]{36}(?:\/(?:edit|manage))?)?)$/i.test(requested)
+    const destination = auth.user?.role.code === 'CUSTOMER'
+      ? (customerDestination ? requested : '/addresses')
+      : auth.user?.role.code === 'ADMIN'
       ? (adminDestination ? requested : requested === '/profile' ? '/profile' : '/admin/users')
       : usesMobile || requested === '/' ? '/' : '/profile'
     return <Navigate to={destination} replace />

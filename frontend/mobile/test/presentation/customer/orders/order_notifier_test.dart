@@ -4,10 +4,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/models/cancel_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
+import 'package:smart_drone_delivery/data/models/paged_result.dart';
+import 'package:smart_drone_delivery/data/models/landing_station.dart';
 import 'package:smart_drone_delivery/data/models/update_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_provider.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_notifier.dart';
+
+const _stations = [
+  LandingStation(
+    id: '22222222-2222-2222-2222-222222222222',
+    stationCode: 'DST-01',
+    name: 'Destination Hub',
+    address: 'Test address',
+    status: 'OPERATIONAL',
+  ),
+  LandingStation(
+    id: '33333333-3333-3333-3333-333333333333',
+    stationCode: 'DST-02',
+    name: 'Alternate Hub',
+    address: 'Test address',
+    status: 'OPERATIONAL',
+  ),
+];
 
 class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
   _FakeDeliveryOrderApiService() : super(Dio());
@@ -29,8 +50,21 @@ class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
 
   @override
   Future<List<DeliveryOrder>> getMyOrders() async {
+    return (await getOrders(const DeliveryOrderFilterParams())).items;
+  }
+
+  @override
+  Future<PagedResult<DeliveryOrder>> getOrders(
+    DeliveryOrderFilterParams params,
+  ) async {
     listCalls++;
-    return [order];
+    return PagedResult(
+      items: [order],
+      page: params.page,
+      pageSize: params.pageSize,
+      totalCount: 1,
+      totalPages: 1,
+    );
   }
 
   @override
@@ -58,7 +92,10 @@ void main() {
   setUp(() {
     service = _FakeDeliveryOrderApiService();
     container = ProviderContainer(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        orderStationsProvider.overrideWith((ref) async => _stations),
+      ],
       retry: (_, _) => null,
     );
   });
@@ -158,6 +195,25 @@ void main() {
       (state.error! as ApiException).message,
       'Phone number must be 9 to 11 digits.',
     );
+    expect(service.calls, isEmpty);
+  });
+
+  test('rejects a destination that is not an operational station', () async {
+    await container
+        .read(orderNotifierProvider.notifier)
+        .updateOrder(
+          service.order.id,
+          const UpdateDeliveryOrderDto(
+            recipientName: 'New Recipient',
+            recipientPhone: '987654321',
+            destinationStationId: '44444444-4444-4444-4444-444444444444',
+          ),
+          originStationId: service.order.originStationId,
+          currentStatus: service.order.status,
+        );
+
+    final state = container.read(orderNotifierProvider);
+    expect((state.error! as ApiException).code, 'MSG-P-CO-18');
     expect(service.calls, isEmpty);
   });
 
