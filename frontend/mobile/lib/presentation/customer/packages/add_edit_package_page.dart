@@ -49,7 +49,7 @@ class EditPackageRoute extends ConsumerWidget {
 class AddEditPackagePage extends ConsumerStatefulWidget {
   const AddEditPackagePage({super.key, this.package});
 
-  final Package? package;
+  final PackageModel? package;
 
   @override
   ConsumerState<AddEditPackagePage> createState() => _AddEditPackagePageState();
@@ -215,13 +215,6 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     final measurement = double.tryParse(text);
     if (measurement == null || !measurement.isFinite || measurement <= 0) {
       return _positiveMessage;
-    }
-    if (measurement < 0.01) {
-      return 'Weight and dimensions must be at least 0.01.';
-    }
-    final decimals = text.split('.');
-    if (decimals.length > 1 && decimals.last.length > 2) {
-      return 'Use at most 2 decimal places.';
     }
     if (measurement > maximum) return _capacityMessage;
     return null;

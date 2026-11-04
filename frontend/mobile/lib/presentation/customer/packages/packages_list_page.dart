@@ -55,7 +55,7 @@ class PackagesListPage extends ConsumerWidget {
 class _PackageCard extends ConsumerWidget {
   const _PackageCard({required this.package});
 
-  final Package package;
+  final PackageModel package;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
