@@ -21,11 +21,11 @@ class DeliveryOrder {
 
   factory DeliveryOrder.fromJson(Map<String, dynamic> json) => DeliveryOrder(
     id: json['id'] as String,
-    recipientName: json['recipientName'] as String,
-    recipientPhone: json['recipientPhone'] as String,
-    originStationId: json['originStationId'] as String,
-    destinationStationId: json['destinationStationId'] as String,
-    status: json['status'] as String,
+    recipientName: json['recipientName'] as String? ?? '',
+    recipientPhone: json['recipientPhone'] as String? ?? '',
+    originStationId: json['originStationId'] as String? ?? '',
+    destinationStationId: json['destinationStationId'] as String? ?? '',
+    status: json['status'] as String? ?? '',
     deliveryAddressId: json['deliveryAddressId'] as String?,
     trackingNumber: json['trackingNumber'] as String?,
   );

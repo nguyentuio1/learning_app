@@ -5,6 +5,7 @@ import '../../../data/models/customer_address.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/package_model.dart';
 import '../../../data/providers/delivery_order_providers.dart';
+import 'my_orders_provider.dart';
 
 final _guidPattern = RegExp(
   r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
