@@ -67,6 +67,8 @@ builder.Services
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
+builder.Services.AddScoped<IDeliveryOrderMutationService, DeliveryOrderMutationService>();
+
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
         options.InvalidModelStateResponseFactory = ApiProblemDetails.FromModelState);
