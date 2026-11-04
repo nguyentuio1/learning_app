@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/models/cancel_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
+import 'package:smart_drone_delivery/data/models/paged_result.dart';
 import 'package:smart_drone_delivery/data/models/update_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_provider.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_notifier.dart';
 
 class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
@@ -31,6 +34,20 @@ class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
   Future<List<DeliveryOrder>> getMyOrders() async {
     listCalls++;
     return [order];
+  }
+
+  @override
+  Future<PagedResult<DeliveryOrder>> getOrders(
+    DeliveryOrderFilterParams params,
+  ) async {
+    listCalls++;
+    return PagedResult(
+      items: [order],
+      page: params.page,
+      pageSize: params.pageSize,
+      totalCount: 1,
+      totalPages: 1,
+    );
   }
 
   @override
