@@ -13,7 +13,17 @@ class MyOrdersPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(myOrdersProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('My orders')),
+      appBar: AppBar(
+        title: const Text('My orders'),
+        actions: [
+          IconButton(
+            key: const Key('create-order'),
+            tooltip: 'Create delivery order',
+            onPressed: () => context.push(RoutePaths.customerOrdersCreate),
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
       body: orders.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(

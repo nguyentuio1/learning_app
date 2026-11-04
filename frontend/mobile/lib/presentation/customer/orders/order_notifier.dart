@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
 import '../../../data/models/cancel_delivery_order_dto.dart';
-import '../../../data/models/order_station.dart';
+import '../../../data/models/landing_station.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 
@@ -32,7 +32,7 @@ class OrderNotifier extends AsyncNotifier<void> {
         );
       }
       final operationalStations = await ref.read(
-        operationalStationsProvider.future,
+        orderStationsProvider.future,
       );
       _validateUpdate(update, originStationId, operationalStations);
       await ref.read(deliveryOrderApiServiceProvider).updateOrder(id, update);
@@ -75,7 +75,7 @@ class OrderNotifier extends AsyncNotifier<void> {
   void _validateUpdate(
     UpdateDeliveryOrderDto update,
     String originStationId,
-    List<OrderStation> operationalStations,
+    List<LandingStation> operationalStations,
   ) {
     if (!RegExp(r'^\d{9,11}$').hasMatch(update.recipientPhone)) {
       throw const ApiException(

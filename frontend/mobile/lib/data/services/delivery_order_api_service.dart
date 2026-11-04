@@ -1,42 +1,16 @@
 import 'package:dio/dio.dart';
 
 import '../../core/constants/api_endpoints.dart';
+import '../../core/error/api_exception.dart';
 import '../../core/network/error_interceptor.dart';
 import '../models/cancel_delivery_order_dto.dart';
 import '../models/delivery_order.dart';
-import '../models/order_station.dart';
 import '../models/update_delivery_order_dto.dart';
 
 class DeliveryOrderApiService {
   DeliveryOrderApiService(this._dio);
 
   final Dio _dio;
-
-  Future<List<OrderStation>> getOperationalStations() async {
-    try {
-      final response = await _dio.get<dynamic>(
-        '/landing-stations',
-        queryParameters: const {'status': 'OPERATIONAL'},
-      );
-      final data = response.data;
-      if (data is! List) {
-        throw const FormatException('Expected a station list response.');
-      }
-      return data
-          .map((item) {
-            if (item is! Map) {
-              throw const FormatException(
-                'Expected a station object response.',
-              );
-            }
-            return OrderStation.fromJson(Map<String, dynamic>.from(item));
-          })
-          .where((station) => station.status == 'OPERATIONAL')
-          .toList(growable: false);
-    } on DioException catch (error) {
-      throw error.apiException;
-    }
-  }
 
   Future<List<DeliveryOrder>> getMyOrders() async {
     try {
@@ -62,6 +36,39 @@ class DeliveryOrderApiService {
           .toList(growable: false);
     } on DioException catch (error) {
       throw error.apiException;
+    }
+  }
+
+  Future<CreateDeliveryOrderResponseDto> createOrder(
+    CreateDeliveryOrderDto dto,
+  ) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.deliveryOrders,
+        data: dto.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException(
+          'Expected a delivery order creation response object.',
+        );
+      }
+      final result = CreateDeliveryOrderResponseDto.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+      if (!RegExp(r'^\d{6}$').hasMatch(result.pickupSecureCode)) {
+        throw const FormatException('Expected a six-digit pickup secure code.');
+      }
+      return result;
+    } on DioException catch (error) {
+      final apiError = error.apiException;
+      if (apiError.statusCode == 409) {
+        throw const ApiException(
+          message: 'This package is already linked to an order.',
+          statusCode: 409,
+          code: 'MSG-P-CO-11',
+        );
+      }
+      throw apiError;
     }
   }
 

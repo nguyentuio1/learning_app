@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../data/models/delivery_order.dart';
-import '../../../data/models/order_station.dart';
+import '../../../data/models/landing_station.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 import 'order_messages.dart';
@@ -82,7 +82,7 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
       }
     });
 
-    final stations = ref.watch(operationalStationsProvider);
+    final stations = ref.watch(orderStationsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Order')),
       body: stations.when(
@@ -93,7 +93,7 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
             children: [
               Text(orderOperationErrorMessage(error, cancelling: false)),
               TextButton(
-                onPressed: () => ref.invalidate(operationalStationsProvider),
+                onPressed: () => ref.invalidate(orderStationsProvider),
                 child: const Text('Retry'),
               ),
             ],
@@ -104,7 +104,7 @@ class _EditDeliveryOrderPageState extends ConsumerState<EditDeliveryOrderPage> {
     );
   }
 
-  Widget _buildForm(List<OrderStation> stations) {
+  Widget _buildForm(List<LandingStation> stations) {
     final destinations = stations
         .where(
           (station) =>

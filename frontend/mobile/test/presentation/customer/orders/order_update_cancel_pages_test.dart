@@ -6,12 +6,29 @@ import 'package:go_router/go_router.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/models/cancel_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
-import 'package:smart_drone_delivery/data/models/order_station.dart';
+import 'package:smart_drone_delivery/data/models/landing_station.dart';
 import 'package:smart_drone_delivery/data/models/update_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/edit_delivery_order_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
+
+const _stations = [
+  LandingStation(
+    id: '22222222-2222-2222-2222-222222222222',
+    stationCode: 'DST-01',
+    name: 'Destination Hub',
+    address: 'Test address',
+    status: 'OPERATIONAL',
+  ),
+  LandingStation(
+    id: '11111111-1111-1111-1111-111111111111',
+    stationCode: 'ORG-01',
+    name: 'Origin Hub',
+    address: 'Test address',
+    status: 'OPERATIONAL',
+  ),
+];
 
 class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
   _FakeDeliveryOrderApiService({this.updateError, this.cancelError})
@@ -20,22 +37,6 @@ class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
   Object? updateError;
   Object? cancelError;
   String? cancellationReason;
-
-  @override
-  Future<List<OrderStation>> getOperationalStations() async => const [
-    OrderStation(
-      id: '22222222-2222-2222-2222-222222222222',
-      stationCode: 'DST-01',
-      name: 'Destination Hub',
-      status: 'OPERATIONAL',
-    ),
-    OrderStation(
-      id: '11111111-1111-1111-1111-111111111111',
-      stationCode: 'ORG-01',
-      name: 'Origin Hub',
-      status: 'OPERATIONAL',
-    ),
-  ];
 
   @override
   Future<void> updateOrder(String id, UpdateDeliveryOrderDto update) async {
@@ -72,7 +73,10 @@ Future<void> _pumpOrderPage(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        orderStationsProvider.overrideWith((ref) async => _stations),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: Navigator(
@@ -314,7 +318,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+        overrides: [
+          deliveryOrderApiServiceProvider.overrideWithValue(service),
+          orderStationsProvider.overrideWith((ref) async => _stations),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
