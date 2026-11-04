@@ -13,3 +13,8 @@ final myOrdersProvider = FutureProvider.autoDispose<List<DeliveryOrder>>(
   (ref) => ref.watch(deliveryOrderApiServiceProvider).getMyOrders(),
   name: 'myOrders',
 );
+
+final operationalStationsProvider = FutureProvider.autoDispose(
+  (ref) => ref.watch(deliveryOrderApiServiceProvider).getOperationalStations(),
+  name: 'operationalStations',
+);

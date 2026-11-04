@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/models/cancel_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
+import 'package:smart_drone_delivery/data/models/order_station.dart';
 import 'package:smart_drone_delivery/data/models/update_delivery_order_dto.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
@@ -19,6 +20,22 @@ class _FakeDeliveryOrderApiService extends DeliveryOrderApiService {
   Object? updateError;
   Object? cancelError;
   String? cancellationReason;
+
+  @override
+  Future<List<OrderStation>> getOperationalStations() async => const [
+    OrderStation(
+      id: '22222222-2222-2222-2222-222222222222',
+      stationCode: 'DST-01',
+      name: 'Destination Hub',
+      status: 'OPERATIONAL',
+    ),
+    OrderStation(
+      id: '11111111-1111-1111-1111-111111111111',
+      stationCode: 'ORG-01',
+      name: 'Origin Hub',
+      status: 'OPERATIONAL',
+    ),
+  ];
 
   @override
   Future<void> updateOrder(String id, UpdateDeliveryOrderDto update) async {
@@ -304,6 +321,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit Order'));
     await tester.pumpAndSettle();
+    expect(find.text('Destination station'), findsOneWidget);
+    expect(find.text('DST-01 - Destination Hub'), findsOneWidget);
+    expect(find.text('ORG-01 - Origin Hub'), findsNothing);
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'Updated Recipient',
