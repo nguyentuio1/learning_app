@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
 import '../../../data/models/cancel_delivery_order_dto.dart';
+import '../../../data/models/landing_station.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 import 'my_orders_provider.dart';
@@ -31,7 +32,10 @@ class OrderNotifier extends AsyncNotifier<void> {
           code: 'MSG-P-CO-17',
         );
       }
-      _validateUpdate(update, originStationId);
+      final operationalStations = await ref.read(
+        orderStationsProvider.future,
+      );
+      _validateUpdate(update, originStationId, operationalStations);
       await ref.read(deliveryOrderApiServiceProvider).updateOrder(id, update);
       ref.invalidate(myOrdersProvider);
     });
@@ -69,7 +73,11 @@ class OrderNotifier extends AsyncNotifier<void> {
     });
   }
 
-  void _validateUpdate(UpdateDeliveryOrderDto update, String originStationId) {
+  void _validateUpdate(
+    UpdateDeliveryOrderDto update,
+    String originStationId,
+    List<LandingStation> operationalStations,
+  ) {
     if (!RegExp(r'^\d{9,11}$').hasMatch(update.recipientPhone)) {
       throw const ApiException(
         message: 'Phone number must be 9 to 11 digits.',
@@ -81,6 +89,11 @@ class OrderNotifier extends AsyncNotifier<void> {
         !_guidPattern.hasMatch(update.destinationStationId) ||
         update.destinationStationId.toLowerCase() ==
             originStationId.toLowerCase() ||
+        !operationalStations.any(
+          (station) =>
+              station.id.toLowerCase() ==
+              update.destinationStationId.toLowerCase(),
+        ) ||
         (update.deliveryAddressId != null &&
             !_guidPattern.hasMatch(update.deliveryAddressId!))) {
       throw const ApiException(

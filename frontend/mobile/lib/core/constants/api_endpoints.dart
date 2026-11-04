@@ -9,6 +9,7 @@ abstract final class ApiEndpoints {
   static const changePassword = '/users/me/password';
   static const uploadAvatar = '/users/me/avatar';
   static const customerAddresses = '/customer-addresses';
+  static const landingStations = '/landing-stations';
   static const packages = '/packages';
   static const deliveryOrders = '/delivery-orders';
 }

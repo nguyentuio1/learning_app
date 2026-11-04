@@ -14,22 +14,26 @@ import 'package:smart_drone_delivery/presentation/customer/packages/packages_lis
 
 class _FakePackageApiService extends PackageApiService {
   _FakePackageApiService({
-    List<Package>? initialPackages,
+    List<PackageModel>? initialPackages,
     this.getPackagesError,
+    this.getPackageError,
     this.pendingPackages,
     this.deletePackageError,
+    this.createPackageError,
   }) : packages = initialPackages ?? [],
        super(Dio());
 
-  final List<Package> packages;
+  final List<PackageModel> packages;
   Object? getPackagesError;
-  Completer<List<Package>>? pendingPackages;
+  Object? getPackageError;
+  Completer<List<PackageModel>>? pendingPackages;
   Object? deletePackageError;
+  Object? createPackageError;
   PackageRequest? lastRequest;
   String? lastMutation;
 
   @override
-  Future<List<Package>> getPackages() {
+  Future<List<PackageModel>> getPackages({bool? available}) {
     if (getPackagesError case final error?) {
       return Future.error(error);
     }
@@ -38,13 +42,16 @@ class _FakePackageApiService extends PackageApiService {
   }
 
   @override
-  Future<Package> getPackage(String id) async =>
-      packages.firstWhere((package) => package.id == id);
+  Future<PackageModel> getPackage(String id) async {
+    if (getPackageError case final error?) throw error;
+    return packages.firstWhere((package) => package.id == id);
+  }
 
   @override
   Future<void> createPackage(PackageRequest package) async {
     lastMutation = 'create';
     lastRequest = package;
+    if (createPackageError case final error?) throw error;
     packages.add(_package(id: 'new-package', request: package));
   }
 
@@ -62,12 +69,12 @@ class _FakePackageApiService extends PackageApiService {
   }
 }
 
-Package _package({
+PackageModel _package({
   String id = 'package-1',
   String name = 'Parcel',
   bool fragile = false,
   PackageRequest? request,
-}) => Package(
+}) => PackageModel(
   id: id,
   packageName: request?.packageName ?? name,
   weightGram: request?.weightGram ?? 500,
@@ -112,7 +119,7 @@ void main() {
   testWidgets('C18 shows loading indicator while packages load', (
     tester,
   ) async {
-    final pending = Completer<List<Package>>();
+    final pending = Completer<List<PackageModel>>();
     final service = _FakePackageApiService(pendingPackages: pending);
 
     await _pumpPage(tester, const PackagesListPage(), service, settle: false);
@@ -208,6 +215,26 @@ void main() {
     expect(find.text('Parcel'), findsNothing);
   });
 
+  testWidgets('C18 displays owner-isolation 404 from package details', (
+    tester,
+  ) async {
+    final service = _FakePackageApiService(
+      getPackageError: const ApiException(
+        message: 'Package not found.',
+        statusCode: 404,
+      ),
+    );
+
+    await _pumpPage(
+      tester,
+      const EditPackageRoute(packageId: 'not-owned'),
+      service,
+    );
+
+    expect(find.text('Package not found.'), findsOneWidget);
+    expect(find.text('Edit package'), findsOneWidget);
+  });
+
   testWidgets('C19 validates name, required measurements, and capacity', (
     tester,
   ) async {
@@ -280,6 +307,52 @@ void main() {
       hasLength(200),
     );
     expect(service.lastMutation, isNull);
+  });
+
+  testWidgets('C19 rejects malformed image URL before calling the API', (
+    tester,
+  ) async {
+    final service = _FakePackageApiService();
+
+    await _pumpPage(tester, const AddEditPackagePage(), service);
+    await tester.enterText(_field(0), 'Parcel');
+    await tester.enterText(_field(1), '500');
+    await tester.enterText(_field(2), '20');
+    await tester.enterText(_field(3), '10');
+    await tester.enterText(_field(4), '8');
+    await tester.enterText(_field(5), 'not a URL');
+    await tester.ensureVisible(find.text('Save package'));
+    await tester.tap(find.text('Save package'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid public image URL.'), findsOneWidget);
+    expect(service.lastMutation, isNull);
+  });
+
+  testWidgets('C19 displays the backend 400 Bad Request message', (
+    tester,
+  ) async {
+    final service = _FakePackageApiService(
+      createPackageError: const ApiException(
+        message: 'Bad Request: Weight must be greater than 0.',
+        statusCode: 400,
+      ),
+    );
+
+    await _pumpPage(tester, const AddEditPackagePage(), service);
+    await tester.enterText(_field(0), 'Parcel');
+    await tester.enterText(_field(1), '500');
+    await tester.enterText(_field(2), '20');
+    await tester.enterText(_field(3), '10');
+    await tester.enterText(_field(4), '8');
+    await tester.ensureVisible(find.text('Save package'));
+    await tester.tap(find.text('Save package'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Bad Request: Weight must be greater than 0.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('C19 creates package with measurements and fragile flag', (

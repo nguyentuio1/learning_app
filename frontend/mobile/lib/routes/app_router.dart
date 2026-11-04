@@ -10,8 +10,11 @@ import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/orders/edit_delivery_order_page.dart';
+import '../presentation/customer/orders/create_order_page.dart';
 import '../presentation/customer/orders/my_orders_page.dart';
 import '../presentation/customer/orders/order_detail_page.dart';
+import '../presentation/customer/orders/order_submitted_page.dart';
+import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
@@ -81,6 +84,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: RoutePaths.customerOrders,
           builder: (_, _) => const MyOrdersPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrdersCreate,
+          builder: (_, _) => const CreateOrderPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrdersReview,
+          builder: (_, _) => const ReviewOrderPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderSubmitted,
+          builder: (_, state) {
+            final order = state.extra;
+            return order is CreateDeliveryOrderResponseDto
+                ? OrderSubmittedPage(order: order)
+                : const Scaffold(
+                    body: Center(
+                      child: Text('Order confirmation unavailable.'),
+                    ),
+                  );
+          },
         ),
         GoRoute(
           path: RoutePaths.customerOrdersEdit,
