@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/error/error_message.dart';
+import '../../routes/route_paths.dart';
 import 'login_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -42,6 +44,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
     final isLoading = ref.watch(loginControllerProvider).isLoading;
     final appName = ref.watch(appConfigProvider).appName;
+    final isCustomerApp =
+        ref.watch(appConfigProvider).flavor == AppFlavor.customer;
 
     return Scaffold(
       appBar: AppBar(title: Text(appName)),
@@ -93,6 +97,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             )
                           : const Text('Continue'),
                     ),
+                    if (isCustomerApp) ...[
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => context.go(RoutePaths.register),
+                        child: const Text('Create a customer account'),
+                      ),
+                    ],
                   ],
                 ),
               ),

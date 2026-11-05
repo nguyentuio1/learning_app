@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { Alert, Button, Form, Input, Spin } from 'antd'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LoginIllustration } from '../components/auth/LoginIllustration'
 import './login.css'
@@ -69,6 +69,7 @@ export function LoginPage() {
         </Form.Item>
         <div className="login-feedback" aria-live="polite">{(error || auth.message) && <Alert showIcon type={error ? 'error' : 'info'} title={error || auth.message} />}</div>
         <Button className="sign-in" htmlType="submit" type="primary" size="large" block loading={busy}>Sign in</Button>
+        <p className="account-switch">New to SmartDrone? <Link to="/register">Register</Link></p>
       </Form>
     </section>
   </main>

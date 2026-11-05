@@ -35,7 +35,7 @@ function authValue(role: Role | null): NonNullable<ContextType<typeof AuthContex
       role: { id: 5, code: role, name: role }, createdAt: '2026-10-20T00:00:00Z',
     } : null,
     accessToken: role ? 'token' : null, refreshToken: role ? 'refresh' : null,
-    generation: 0, message: '', login, logout, updateProfile: vi.fn(),
+    generation: 0, message: '', login, register: vi.fn(), logout, updateProfile: vi.fn(),
   }
 }
 function loginApp(role: Role | null, from?: string) {

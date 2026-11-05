@@ -24,6 +24,11 @@
 .sign-in:hover { background: #163f2f; }
 .login-leaving { animation: login-screen-out 200ms ease-in forwards; pointer-events: none; }
 .sign-in:disabled { cursor: default; }
+.register-form h1 { font-size: 34px; line-height: 1.25; margin-bottom: 24px; }
+.register-form .ant-form-item { margin-bottom: 14px; }
+.register-form .ant-input-lg, .register-form .ant-input-affix-wrapper-lg { min-height: 48px; }
+.account-switch { margin: 20px 0 0; text-align: center; color: #53665b; }
+.account-switch a { color: #1e4f3c; font-weight: 600; }
 @keyframes login-screen-out {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-6px); }

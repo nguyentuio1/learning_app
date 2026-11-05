@@ -12,6 +12,18 @@ const signedIn: AuthResponse = {
   },
 }
 const renewed: AuthResponse = { ...signedIn, accessToken: 'new-token', refreshToken: 'new-refresh' }
+const registered: AuthResponse = {
+  ...signedIn,
+  accessToken: 'customer-access',
+  refreshToken: 'customer-refresh',
+  user: {
+    ...signedIn.user,
+    id: '22222222-2222-2222-2222-222222222222',
+    email: 'new@example.com',
+    fullName: 'New Customer',
+    role: { id: 1, code: 'CUSTOMER', name: 'Customer' },
+  },
+}
 let mock: MockAdapter
 let session: typeof import('../src/services/authSession').session
 let apiClient: typeof import('../src/services/apiClient').apiClient
@@ -86,4 +98,44 @@ it('does not refresh or clear an authenticated session when an admin API returns
   expect(session.getSnapshot()).toBe(before)
   expect(mock.history.get).toHaveLength(1)
   expect(mock.history.post.map(request => request.url)).toEqual(['/api/auth/login'])
+})
+
+it('registers a customer, sends the DTO and starts an authenticated session', async () => {
+  mock.onPost('/api/auth/register').reply(201, registered)
+
+  await session.register({
+    email: ' new@example.com ',
+    password: 'Passw0rd12',
+    fullName: ' New Customer ',
+    phoneNumber: '0901234567',
+  })
+
+  expect(JSON.parse(mock.history.post.find(request => request.url === '/api/auth/register')!.data)).toEqual({
+    email: 'new@example.com',
+    password: 'Passw0rd12',
+    fullName: 'New Customer',
+    phoneNumber: '0901234567',
+  })
+  expect(session.getSnapshot()).toMatchObject({
+    status: 'authenticated',
+    user: { email: 'new@example.com', role: { code: 'CUSTOMER' } },
+    accessToken: 'customer-access',
+    refreshToken: 'customer-refresh',
+  })
+  expect(sessionStorage.getItem('smartdrone.refreshToken')).toBe('customer-refresh')
+})
+
+it.each([
+  'Email is already registered.',
+  'Phone number is already registered.',
+])('preserves the server conflict detail: %s', async detail => {
+  mock.onPost('/api/auth/register').reply(409, { status: 409, detail })
+
+  await expect(session.register({
+    email: 'new@example.com',
+    password: 'Passw0rd12',
+    fullName: 'New Customer',
+    phoneNumber: '0901234567',
+  })).rejects.toMatchObject({ response: { status: 409, data: { detail } } })
+  expect(session.getSnapshot().status).toBe('anonymous')
 })
