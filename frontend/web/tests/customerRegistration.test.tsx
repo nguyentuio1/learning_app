@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ContextType } from 'react'
+import { useState, type ContextType } from 'react'
 import { ConfigProvider } from 'antd'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthContext } from '../src/contexts/authContext'
@@ -35,11 +35,42 @@ function renderRegistration(path = '/register') {
           <Routes>
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/orders" element={<h1>Customer orders</h1>} />
           </Routes>
         </MemoryRouter>
       </AuthContext.Provider>
     </ConfigProvider>,
   )
+}
+
+function AuthenticatedRegistrationHarness() {
+  const [authenticated, setAuthenticated] = useState(false)
+  const value = authValue()
+  value.status = authenticated ? 'authenticated' : 'anonymous'
+  value.user = authenticated ? {
+    id: '22222222-2222-2222-2222-222222222222',
+    email: 'new@example.com',
+    fullName: 'New Customer',
+    phoneNumber: '0901234567',
+    avatarUrl: null,
+    status: 'ACTIVE',
+    role: { id: 1, code: 'CUSTOMER', name: 'Customer' },
+    createdAt: '2026-11-06T00:00:00Z',
+  } : null
+  value.register = async request => {
+    await register(request)
+    setAuthenticated(true)
+  }
+  return <ConfigProvider theme={{ token: { motion: false } }}>
+    <AuthContext.Provider value={value}>
+      <MemoryRouter initialEntries={['/register']}>
+        <Routes>
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/orders" element={<h1>Customer orders</h1>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>
+  </ConfigProvider>
 }
 
 beforeEach(() => {
@@ -96,4 +127,16 @@ it('shows duplicate-email conflict detail in an alert', async () => {
   await user.click(screen.getByRole('button', { name: 'Register' }))
 
   expect(await screen.findByText('Email is already registered.')).toBeVisible()
+})
+
+it('navigates to orders after registration establishes the authenticated session', async () => {
+  const user = userEvent.setup()
+  render(<AuthenticatedRegistrationHarness />)
+  await user.type(screen.getByLabelText('Full name'), 'New Customer')
+  await user.type(screen.getByLabelText('Email'), 'new@example.com')
+  await user.type(screen.getByLabelText('Phone number'), '0901234567')
+  await user.type(screen.getByLabelText('Password'), 'Passw0rd12')
+  await user.click(screen.getByRole('button', { name: 'Register' }))
+
+  expect(await screen.findByRole('heading', { name: 'Customer orders' })).toBeVisible()
 })
