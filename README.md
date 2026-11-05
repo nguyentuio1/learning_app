@@ -29,7 +29,7 @@ frontend/
   web/                         React 19 + TypeScript + Vite + Ant Design
   mobile/                      Flutter + Riverpod (Customer app and Station Operator app)
 docs/
-  api/                         API contracts (auth-api.md, customer-order-api.md)
+  api/                         API contracts (auth-api.md, customer-order-api.md, station-api.md, drone-api.md)
   architecture/                architecture, ERD (erd.md, erd.dbml)
   design/                      sequence, class and activity diagrams, user flows, wireframes
   requirements/                SRS, use cases, business rules, functions, messages
@@ -144,7 +144,7 @@ cd frontend/mobile && flutter test && flutter analyze
 
 ## Documentation
 
-- API contracts: [`docs/api/auth-api.md`](docs/api/auth-api.md), [`docs/api/customer-order-api.md`](docs/api/customer-order-api.md) (the order contract is still marked proposed)
+- API contracts: [`docs/api/auth-api.md`](docs/api/auth-api.md), [`docs/api/customer-order-api.md`](docs/api/customer-order-api.md), [`docs/api/station-api.md`](docs/api/station-api.md), [`docs/api/drone-api.md`](docs/api/drone-api.md) (the order, station and drone contracts are still marked proposed)
 - Architecture and database: [`docs/architecture/`](docs/architecture/)
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
 - Design diagrams: [`docs/design/`](docs/design/)
