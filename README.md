@@ -140,7 +140,17 @@ cd frontend/web && npm test && npm run lint && npm run build
 cd frontend/mobile && flutter test && flutter analyze
 ```
 
-`frontend/web/tests/accountFlow.test.tsx` can time out when the whole web suite runs under load; it passes when run alone.
+### Continuous integration
+
+Every pull request into `develop` or `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It shows three checks, one for each command block above:
+
+| Check | Runs |
+|---|---|
+| `Backend tests` | `dotnet test` |
+| `Web lint, test and build` | `npm ci`, `npm run lint`, `npm test`, `npm run build` |
+| `Mobile analyze and test` | `flutter pub get`, `flutter analyze --no-fatal-infos`, `flutter test` |
+
+A new push to the pull request cancels the run that is still going. A failing check only blocks the merge once the three names are required in the branch ruleset of `develop` (Settings, Rules); until then, look at the checks before you merge.
 
 ## Documentation
 

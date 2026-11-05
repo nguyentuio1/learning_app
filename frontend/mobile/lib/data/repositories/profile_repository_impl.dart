@@ -95,7 +95,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       final file = File(filePath);
       final filename = filePath.split(Platform.pathSeparator).last;
       final bytes = await file.readAsBytes();
-      return uploadAvatar(bytes: bytes, filename: filename);
+      return await uploadAvatar(bytes: bytes, filename: filename);
     } on DioException catch (e) {
       throw e.apiException;
     }
