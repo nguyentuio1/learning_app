@@ -19,6 +19,22 @@ jobs:
     name: Backend tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Most tests use the EF Core in-memory provider. The concurrency tests of LA-322 need a real PostgreSQL;
+    # they create and drop their own database on this server and are skipped when the variable is not set.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_POSTGRES_CONNECTION: Host=localhost;Port=5432;Username=postgres;Password=postgres
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +49,6 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      # The tests use the EF Core in-memory provider, so no PostgreSQL or MinIO is needed.
       - name: dotnet test
         run: dotnet test backend/SmartDroneDelivery.sln --configuration Release --verbosity minimal
 
