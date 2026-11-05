@@ -107,6 +107,10 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await SeedData.InitializeAsync(services);
+
+        // Demo stations and accounts: Development only, and only when Seed:DevelopmentData is on (LA-325).
+        if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Seed:DevelopmentData"))
+            await SeedData.SeedDevelopmentDataAsync(services);
     }
     catch (Exception ex)
     {
