@@ -90,30 +90,30 @@ The API address defaults to `http://10.0.2.2:5055/api` on the Android emulator a
 
 ## Accounts and test data
 
-| Role | Email | Password | How |
+When the backend runs in the **Development** environment (`dotnet run` does this by default), it creates the accounts and stations below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. Nothing is created in any other environment, and `Seed:DevelopmentData` in `appsettings.Development.json` switches it off.
+
+| Role | Email | Password |
+|---|---|---|
+| System administrator | `admin@smartdronedelivery.com` | `Admin@123456` (also created outside Development: change it for any shared environment) |
+| Customer | `customer@smartdronedelivery.com` | `Customer@123456` |
+| Dispatcher | `dispatcher@smartdronedelivery.com` | `Dispatcher@123456` |
+| Station operator | `operator@smartdronedelivery.com` | `Operator@123456` (assigned to `HCM-01`) |
+
+| Station | Name | Status | Slots |
 |---|---|---|---|
-| System administrator | `admin@smartdronedelivery.com` | `Admin@123456` | created by the seed on first start (development only: change it for any shared environment) |
-| Customer | any | any | register through the API (below) |
-| Dispatcher, Logistics Manager, Administrator | any | any | created by the administrator in the web portal (Users, New user) |
+| `HCM-01` | District 1 Hub | `OPERATIONAL` | 4 |
+| `HCM-02` | Thu Duc Hub | `OPERATIONAL` | 4 |
+| `HCM-03` | Binh Thanh Hub | `MAINTENANCE` | 2 |
 
-There is **no sign-up screen** in the web portal or in the mobile apps yet, and the administrator's "New user" form only creates staff roles. A customer account is created through the API, for example in Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
+So a customer can sign in and create an order right after `docker compose up` and `dotnet run`, with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
 
-```bash
-curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: application/json" \
-  -d '{"email":"customer@example.com","password":"Passw0rd123","fullName":"Demo Customer","phoneNumber":"0900000001"}'
-```
-
-Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md). Then sign in with that email and password.
-
-**Stations.** A fresh database has no landing station, and there is no API to create one yet (planned in Sprint 4), so a customer cannot create an order until stations exist. For local testing insert two operational stations:
+There is **no sign-up screen** in the web portal or in the mobile apps yet. Another customer account is created through the API, for example in Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
 
 ```bash
-docker exec -i drone_postgres psql -U postgres -d drone_delivery_db <<'SQL'
-INSERT INTO landing_stations ("Id","StationCode","Name","Latitude","Longitude","Address","TotalSlots","Status") VALUES
-  (gen_random_uuid(),'HCM-01','District 1 Hub',10.7769,106.7009,'1 Le Loi, District 1',2,'OPERATIONAL'),
-  (gen_random_uuid(),'HCM-02','Thu Duc Hub',10.8506,106.7719,'2 Vo Van Ngan, Thu Duc',2,'OPERATIONAL');
-SQL
+curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: application/json"   -d '{"email":"customer2@example.com","password":"Passw0rd123","fullName":"Second Customer","phoneNumber":"0900000010"}'
 ```
+
+Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md). Other staff accounts (Dispatcher, Logistics Manager, Administrator) are created by the administrator in the web portal (Users, New user).
 
 ## Using the application today
 
