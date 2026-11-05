@@ -133,6 +133,10 @@ Sign in as the **administrator** (web) to manage users and roles. Approval by a 
 # Backend (xUnit, EF Core InMemory; no database needed)
 cd backend && dotnet test
 
+# Backend, including the concurrency tests that need a real PostgreSQL (LA-322).
+# Start `docker compose up -d postgres` first. Each run creates its own database on the server and drops it again.
+TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=Password123!" dotnet test
+
 # Web
 cd frontend/web && npm test && npm run lint && npm run build
 
