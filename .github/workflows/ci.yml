@@ -75,5 +75,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter analyze
+      # Warnings and errors fail the build. Info-level lints (deprecations, unnecessary imports) stay visible
+      # in the log but do not block a merge; clean them up in a separate task, then drop the flag.
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test

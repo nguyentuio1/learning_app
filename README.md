@@ -148,7 +148,7 @@ Every pull request into `develop` or `main` runs [`.github/workflows/ci.yml`](.g
 |---|---|
 | `Backend tests` | `dotnet test` |
 | `Web lint, test and build` | `npm ci`, `npm run lint`, `npm test`, `npm run build` |
-| `Mobile analyze and test` | `flutter pub get`, `flutter analyze`, `flutter test` |
+| `Mobile analyze and test` | `flutter pub get`, `flutter analyze --no-fatal-infos`, `flutter test` |
 
 A new push to the pull request cancels the run that is still going. A failing check only blocks the merge once the three names are required in the branch ruleset of `develop` (Settings, Rules); until then, look at the checks before you merge.
 
