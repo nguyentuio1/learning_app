@@ -4,6 +4,7 @@ import { Alert, Button, Form, Input, Spin } from 'antd'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LoginIllustration } from '../components/auth/LoginIllustration'
+import { operationDestination } from '../features/operations/navigation'
 import './login.css'
 
 export function LoginPage() {
@@ -25,6 +26,8 @@ export function LoginPage() {
     // Accept only implemented internal destinations, never arbitrary redirect URLs.
     const usesMobile = auth.user?.role.code === 'STATION_OPERATOR'
     const requested = location.state?.from
+    const operation = operationDestination(requested, auth.user?.role.code)
+    if (operation) return <Navigate to={operation} replace />
     const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles)$/i.test(requested)
     const customerDestination = typeof requested === 'string' && /^\/(?:(?:addresses|packages)(?:\/new|\/[0-9a-f-]{36})?|orders(?:\/new|\/[0-9a-f-]{36}(?:\/(?:edit|manage))?)?)$/i.test(requested)
     const destination = auth.user?.role.code === 'CUSTOMER'
