@@ -5,7 +5,7 @@ import { AuthContext } from './authContext'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   useEffect(() => { void session.initialize() }, [])
-  return <AuthContext.Provider value={{ ...snapshot, login: session.login, logout: session.logout, updateProfile: session.updateProfile }}>
+  return <AuthContext.Provider value={{ ...snapshot, login: session.login, register: session.register, logout: session.logout, updateProfile: session.updateProfile }}>
     {children}
   </AuthContext.Provider>
 }

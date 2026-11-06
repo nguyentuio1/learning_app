@@ -27,84 +27,175 @@ void main() {
   }
 
   group('AuthRepositoryImpl.login', () {
-    test('sends email and password to ApiEndpoints.login with skipAuth', () async {
-      RequestOptions? recordedOptions;
-      Map<String, dynamic>? recordedBody;
+    test(
+      'sends email and password to ApiEndpoints.login with skipAuth',
+      () async {
+        RequestOptions? recordedOptions;
+        Map<String, dynamic>? recordedBody;
 
-      final dio = createDio((options) {
-        recordedOptions = options;
-        recordedBody = options.data as Map<String, dynamic>;
-        return jsonBody({
-          'accessToken': 'jwt-access-token',
-          'refreshToken': 'random-refresh-token',
-          'expiresIn': 900,
-          'user': {
-            'id': '6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11',
-            'email': 'customer@example.com',
-            'fullName': 'Nguyen Van An',
-            'phoneNumber': '0901234567',
-            'status': 'ACTIVE',
-            'role': {'id': 1, 'code': 'CUSTOMER', 'name': 'Customer'},
-            'createdAt': '2026-10-15T08:30:00Z',
-          },
+        final dio = createDio((options) {
+          recordedOptions = options;
+          recordedBody = options.data as Map<String, dynamic>;
+          return jsonBody({
+            'accessToken': 'jwt-access-token',
+            'refreshToken': 'random-refresh-token',
+            'expiresIn': 900,
+            'user': {
+              'id': '6f1c8c1e-3a3e-4a52-9b47-0c3f4a8d9e11',
+              'email': 'customer@example.com',
+              'fullName': 'Nguyen Van An',
+              'phoneNumber': '0901234567',
+              'status': 'ACTIVE',
+              'role': {'id': 1, 'code': 'CUSTOMER', 'name': 'Customer'},
+              'createdAt': '2026-10-15T08:30:00Z',
+            },
+          });
         });
-      });
 
-      final repo = AuthRepositoryImpl(dio, storage, userStorage);
-      final tokens = await repo.login(
-        email: 'customer@example.com',
-        password: 'Passw0rd123',
-      );
+        final repo = AuthRepositoryImpl(dio, storage, userStorage);
+        final tokens = await repo.login(
+          email: 'customer@example.com',
+          password: 'Passw0rd123',
+        );
 
-      expect(recordedOptions?.path, ApiEndpoints.login);
-      expect(recordedOptions?.extra[AuthInterceptor.skipAuth], isTrue);
-      expect(recordedBody?['email'], 'customer@example.com');
-      expect(recordedBody?['password'], 'Passw0rd123');
-      expect(tokens.accessToken, 'jwt-access-token');
-      expect(tokens.refreshToken, 'random-refresh-token');
-      expect(tokens.expiresIn, 900);
+        expect(recordedOptions?.path, ApiEndpoints.login);
+        expect(recordedOptions?.extra[AuthInterceptor.skipAuth], isTrue);
+        expect(recordedBody?['email'], 'customer@example.com');
+        expect(recordedBody?['password'], 'Passw0rd123');
+        expect(tokens.accessToken, 'jwt-access-token');
+        expect(tokens.refreshToken, 'random-refresh-token');
+        expect(tokens.expiresIn, 900);
 
-      final savedUser = await userStorage.read();
-      expect(savedUser, isNotNull);
-      expect(savedUser?.email, 'customer@example.com');
-      expect(savedUser?.fullName, 'Nguyen Van An');
-      expect(savedUser?.roleCode, 'CUSTOMER');
-    });
+        final savedUser = await userStorage.read();
+        expect(savedUser, isNotNull);
+        expect(savedUser?.email, 'customer@example.com');
+        expect(savedUser?.fullName, 'Nguyen Van An');
+        expect(savedUser?.roleCode, 'CUSTOMER');
+      },
+    );
 
     test('maps 401 unauthorized to ApiException with detail message', () async {
-      final dio = createDio((_) => jsonBody({
-            'type': 'https://httpstatuses.com/401',
-            'title': 'Unauthorized',
-            'status': 401,
-            'detail': 'Invalid email or password.',
-          }, 401));
+      final dio = createDio(
+        (_) => jsonBody({
+          'type': 'https://httpstatuses.com/401',
+          'title': 'Unauthorized',
+          'status': 401,
+          'detail': 'Invalid email or password.',
+        }, 401),
+      );
 
       final repo = AuthRepositoryImpl(dio, storage, userStorage);
 
       expect(
         () => repo.login(email: 'wrong@example.com', password: 'bad'),
-        throwsA(isA<ApiException>()
-            .having((e) => e.statusCode, 'statusCode', 401)
-            .having((e) => e.message, 'message', 'Invalid email or password.')),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.statusCode, 'statusCode', 401)
+              .having(
+                (e) => e.message,
+                'message',
+                'Invalid email or password.',
+              ),
+        ),
       );
     });
 
     test('maps 403 forbidden to ApiException for inactive account', () async {
-      final dio = createDio((_) => jsonBody({
-            'type': 'https://httpstatuses.com/403',
-            'title': 'Forbidden',
-            'status': 403,
-            'detail': 'This account is not active.',
-          }, 403));
+      final dio = createDio(
+        (_) => jsonBody({
+          'type': 'https://httpstatuses.com/403',
+          'title': 'Forbidden',
+          'status': 403,
+          'detail': 'This account is not active.',
+        }, 403),
+      );
 
       final repo = AuthRepositoryImpl(dio, storage, userStorage);
 
       expect(
         () => repo.login(email: 'inactive@example.com', password: 'pw'),
-        throwsA(isA<ApiException>()
-            .having((e) => e.statusCode, 'statusCode', 403)
-            .having((e) => e.message, 'message', 'This account is not active.')),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.statusCode, 'statusCode', 403)
+              .having(
+                (e) => e.message,
+                'message',
+                'This account is not active.',
+              ),
+        ),
       );
+    });
+  });
+
+  group('AuthRepositoryImpl.register', () {
+    test('sends registration fields publicly and maps AuthResponse', () async {
+      RequestOptions? recordedOptions;
+      Map<String, dynamic>? recordedBody;
+      final dio = createDio((options) {
+        recordedOptions = options;
+        recordedBody = options.data as Map<String, dynamic>;
+        return jsonBody({
+          'accessToken': 'registered-access',
+          'refreshToken': 'registered-refresh',
+          'expiresIn': 900,
+          'user': {
+            'id': 'registered-user',
+            'email': 'new@example.com',
+            'fullName': 'New Customer',
+            'phoneNumber': '0901234567',
+            'status': 'ACTIVE',
+            'role': {'id': 1, 'code': 'CUSTOMER', 'name': 'Customer'},
+            'createdAt': '2026-10-15T08:30:00Z',
+          },
+        }, 201);
+      });
+
+      final result = await AuthRepositoryImpl(dio, storage, userStorage)
+          .register(
+            email: 'new@example.com',
+            password: 'Passw0rd12',
+            fullName: 'New Customer',
+            phoneNumber: '0901234567',
+          );
+
+      expect(recordedOptions?.path, ApiEndpoints.register);
+      expect(recordedOptions?.extra[AuthInterceptor.skipAuth], isTrue);
+      expect(recordedBody, {
+        'email': 'new@example.com',
+        'password': 'Passw0rd12',
+        'fullName': 'New Customer',
+        'phoneNumber': '0901234567',
+      });
+      expect(result.tokens.accessToken, 'registered-access');
+      expect(result.tokens.refreshToken, 'registered-refresh');
+      expect(result.user.roleCode, 'CUSTOMER');
+      expect((await userStorage.read())?.email, 'new@example.com');
+    });
+
+    test('maps duplicate email and phone 409 details', () async {
+      for (final detail in [
+        'Email is already registered.',
+        'Phone number is already registered.',
+      ]) {
+        final dio = createDio(
+          (_) => jsonBody({'status': 409, 'detail': detail}, 409),
+        );
+        final repo = AuthRepositoryImpl(dio, storage, userStorage);
+
+        await expectLater(
+          repo.register(
+            email: 'duplicate@example.com',
+            password: 'Passw0rd12',
+            fullName: 'Customer',
+            phoneNumber: '0901234567',
+          ),
+          throwsA(
+            isA<ApiException>()
+                .having((error) => error.statusCode, 'statusCode', 409)
+                .having((error) => error.message, 'message', detail),
+          ),
+        );
+      }
     });
   });
 
@@ -148,26 +239,32 @@ void main() {
   });
 
   group('AuthRepositoryImpl.logout', () {
-    test('sends refreshToken to ApiEndpoints.logout and clears userStorage', () async {
-      await storage.write(
-        const AuthTokens(accessToken: 'live-access', refreshToken: 'live-refresh'),
-      );
-      RequestOptions? recordedOptions;
-      Map<String, dynamic>? recordedBody;
+    test(
+      'sends refreshToken to ApiEndpoints.logout and clears userStorage',
+      () async {
+        await storage.write(
+          const AuthTokens(
+            accessToken: 'live-access',
+            refreshToken: 'live-refresh',
+          ),
+        );
+        RequestOptions? recordedOptions;
+        Map<String, dynamic>? recordedBody;
 
-      final dio = createDio((options) {
-        recordedOptions = options;
-        recordedBody = options.data as Map<String, dynamic>?;
-        return jsonBody({}, 204);
-      });
+        final dio = createDio((options) {
+          recordedOptions = options;
+          recordedBody = options.data as Map<String, dynamic>?;
+          return jsonBody({}, 204);
+        });
 
-      final repo = AuthRepositoryImpl(dio, storage, userStorage);
-      await repo.logout();
+        final repo = AuthRepositoryImpl(dio, storage, userStorage);
+        await repo.logout();
 
-      expect(recordedOptions?.path, ApiEndpoints.logout);
-      expect(recordedBody?['refreshToken'], 'live-refresh');
-      expect(await userStorage.read(), isNull);
-    });
+        expect(recordedOptions?.path, ApiEndpoints.logout);
+        expect(recordedBody?['refreshToken'], 'live-refresh');
+        expect(await userStorage.read(), isNull);
+      },
+    );
 
     test('best-effort: suppresses server error on logout', () async {
       final dio = createDio((_) => jsonBody({'detail': 'Server error'}, 500));

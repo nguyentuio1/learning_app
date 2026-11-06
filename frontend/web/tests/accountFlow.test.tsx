@@ -105,6 +105,7 @@ it('opens the customer task through the real provider and uses the bearer token'
   open('/login')
   expect(await screen.findByRole('heading', { name: 'Addresses', exact: true })).toBeVisible()
   await waitFor(() => expect(mock.history.get.find(request => request.url === '/api/customer-addresses')?.headers?.Authorization).toBe('Bearer test-access'))
+  expect(await screen.findByText('You have not added a delivery address yet.')).toBeVisible()
   expect(mock.history.get.some(request => request.url === '/api/users')).toBe(false)
 })
 it('opens order creation and loads the contract lookups', async () => {

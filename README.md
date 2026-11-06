@@ -107,7 +107,7 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 
 So a customer can sign in and create an order right after `docker compose up` and `dotnet run`, with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
 
-There is **no sign-up screen** in the web portal or in the mobile apps yet. Another customer account is created through the API, for example in Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
+Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
 
 ```bash
 curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: application/json"   -d '{"email":"customer2@example.com","password":"Passw0rd123","fullName":"Second Customer","phoneNumber":"0900000010"}'

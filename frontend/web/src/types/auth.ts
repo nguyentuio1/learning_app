@@ -10,6 +10,12 @@ export interface AuthUser {
 }
 
 export interface AuthResponse { accessToken: string; refreshToken: string; user: AuthUser; expiresIn: number }
+export interface RegisterRequest {
+  email: string
+  password: string
+  fullName: string
+  phoneNumber: string
+}
 export interface Session {
   status: 'loading' | 'anonymous' | 'authenticated'
   user: AuthUser | null

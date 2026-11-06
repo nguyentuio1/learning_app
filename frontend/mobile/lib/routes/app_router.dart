@@ -6,6 +6,7 @@ import '../core/config/app_config.dart';
 import '../core/session/auth_controller.dart';
 import '../data/models/delivery_order.dart';
 import '../presentation/auth/login_page.dart';
+import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
@@ -47,15 +48,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         case AuthStatus.unknown:
           return loc == RoutePaths.splash ? null : RoutePaths.splash;
         case AuthStatus.unauthenticated:
-          return loc == RoutePaths.login ? null : RoutePaths.login;
+          final isPublicEntry =
+              loc == RoutePaths.login ||
+              (flavor == AppFlavor.customer && loc == RoutePaths.register);
+          return isPublicEntry ? null : RoutePaths.login;
         case AuthStatus.authenticated:
-          final onEntry = loc == RoutePaths.splash || loc == RoutePaths.login;
+          if (flavor == AppFlavor.customer && loc == RoutePaths.register) {
+            return RoutePaths.customerOrders;
+          }
+          final onEntry =
+              loc == RoutePaths.splash ||
+              loc == RoutePaths.login ||
+              loc == RoutePaths.register;
           return onEntry ? home : null;
       }
     },
     routes: [
       GoRoute(path: RoutePaths.splash, builder: (_, _) => const SplashPage()),
       GoRoute(path: RoutePaths.login, builder: (_, _) => const LoginPage()),
+      if (flavor == AppFlavor.customer)
+        GoRoute(
+          path: RoutePaths.register,
+          builder: (_, _) => const RegisterPage(),
+        ),
       if (flavor == AppFlavor.customer)
         GoRoute(
           path: RoutePaths.customerHome,

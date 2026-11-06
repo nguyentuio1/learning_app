@@ -24,7 +24,7 @@ function show(path = '/admin/users', role: string | null = 'ADMIN') {
   const auth = { status: role ? 'authenticated' as const : 'anonymous' as const,
     user: role ? { ...account, id: 'admin-id', role: { id: 5, code: role, name: role } } : null,
     accessToken: 'test', refreshToken: 'test-refresh', generation: 0, message: '',
-    login: vi.fn(), logout, updateProfile: vi.fn() }
+    login: vi.fn(), register: vi.fn(), logout, updateProfile: vi.fn() }
   return render(<ConfigProvider theme={{ token: { motion: false } }}><AuthContext.Provider value={auth}>
     <MemoryRouter initialEntries={[path]}><Routes>
       <Route path="/login" element={<h1>Login required</h1>} />

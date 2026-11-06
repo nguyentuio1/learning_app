@@ -34,7 +34,7 @@ function app(role: Role | null) {
       role: { id: 5, code: role, name: role }, createdAt: '2026-10-20T00:00:00Z',
     } : null,
     accessToken: null, refreshToken: null, generation: 0, message: '',
-    login: vi.fn(), logout: vi.fn(), updateProfile: vi.fn(),
+    login: vi.fn(), register: vi.fn(), logout: vi.fn(), updateProfile: vi.fn(),
   }
   return <AuthContext.Provider value={value}>
     <MemoryRouter initialEntries={['/admin/users']}><AppRouter /></MemoryRouter>

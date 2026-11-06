@@ -7,8 +7,10 @@ import '../../core/storage/auth_tokens.dart';
 import '../../core/storage/token_storage.dart';
 import '../../core/storage/user_storage.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/entities/registered_session.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../models/auth_response_model.dart';
+import '../models/register_request_dto.dart';
 import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -43,11 +45,42 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<RegisteredSession> register({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phoneNumber,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.register,
+        data: RegisterRequestDto(
+          email: email,
+          password: password,
+          fullName: fullName,
+          phoneNumber: phoneNumber,
+        ).toJson(),
+        options: _public,
+      );
+      final authResponse = AuthResponseModel.fromJson(response.data!);
+      final userModel = authResponse.user;
+      if (userModel == null) {
+        throw const FormatException(
+          'Registration response did not include a user.',
+        );
+      }
+      final user = userModel.toEntity();
+      await _userStorage?.write(user);
+      return RegisteredSession(tokens: authResponse.toTokens(), user: user);
+    } on DioException catch (e) {
+      throw e.apiException;
+    }
+  }
+
+  @override
   Future<User> getMe() async {
     try {
-      final res = await _dio.get<Map<String, dynamic>>(
-        ApiEndpoints.me,
-      );
+      final res = await _dio.get<Map<String, dynamic>>(ApiEndpoints.me);
       final user = UserModel.fromJson(res.data!).toEntity();
       await _userStorage?.write(user);
       return user;
@@ -62,9 +95,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final tokens = await _storage?.read();
       await _dio.post<void>(
         ApiEndpoints.logout,
-        data: {
-          if (tokens != null) 'refreshToken': tokens.refreshToken,
-        },
+        data: {if (tokens != null) 'refreshToken': tokens.refreshToken},
       );
     } on DioException {
       // Best-effort: dù server lỗi, app vẫn xoá token cục bộ.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers/repository_providers.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
+import '../../domain/usecases/register_usecase.dart';
 
 final loginUseCaseProvider = Provider<LoginUseCase>(
   (ref) => LoginUseCase(ref.watch(authRepositoryProvider)),
@@ -12,4 +13,9 @@ final loginUseCaseProvider = Provider<LoginUseCase>(
 final logoutUseCaseProvider = Provider<LogoutUseCase>(
   (ref) => LogoutUseCase(ref.watch(authRepositoryProvider)),
   name: 'logoutUseCase',
+);
+
+final registerUseCaseProvider = Provider<RegisterUseCase>(
+  (ref) => RegisterUseCase(ref.watch(authRepositoryProvider)),
+  name: 'registerUseCase',
 );

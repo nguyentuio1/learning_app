@@ -3,7 +3,9 @@ import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/core/session/auth_controller.dart';
 import 'package:smart_drone_delivery/core/storage/storage_providers.dart';
 import 'package:smart_drone_delivery/core/storage/token_storage.dart';
+import 'package:smart_drone_delivery/core/storage/auth_tokens.dart';
 import 'package:smart_drone_delivery/domain/entities/user.dart';
+import 'package:smart_drone_delivery/domain/entities/registered_session.dart';
 import 'package:smart_drone_delivery/domain/repositories/auth_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +30,33 @@ class _FakeAuthRepository implements AuthRepository {
   Future<void> logout() async {}
 
   @override
+  Future<RegisteredSession> register({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phoneNumber,
+  }) async {
+    if (error != null) throw error!;
+    return RegisteredSession(
+      tokens: const AuthTokens(
+        accessToken: 'registered-a',
+        refreshToken: 'registered-r',
+      ),
+      user: getMeSync(),
+    );
+  }
+
+  User getMeSync() => User(
+    id: 'user-001',
+    email: 'customer@example.com',
+    fullName: 'Customer User',
+    phoneNumber: '0901234567',
+    status: 'ACTIVE',
+    roleCode: 'CUSTOMER',
+    createdAt: DateTime(2026, 1, 1),
+  );
+
+  @override
   Future<User> getMe() async {
     if (error != null) throw error!;
     return User(
@@ -43,14 +72,17 @@ class _FakeAuthRepository implements AuthRepository {
 }
 
 ProviderContainer _container(
-        InMemoryTokenStorage storage, AuthRepository repo,
-        [InMemoryUserStorage? userStorage]) =>
-    createContainer(overrides: [
-      appConfigProvider.overrideWithValue(AppConfig.customer()),
-      tokenStorageProvider.overrideWithValue(storage),
-      userStorageProvider.overrideWithValue(userStorage ?? InMemoryUserStorage()),
-      authRepositoryProvider.overrideWithValue(repo),
-    ]);
+  InMemoryTokenStorage storage,
+  AuthRepository repo, [
+  InMemoryUserStorage? userStorage,
+]) => createContainer(
+  overrides: [
+    appConfigProvider.overrideWithValue(AppConfig.customer()),
+    tokenStorageProvider.overrideWithValue(storage),
+    userStorageProvider.overrideWithValue(userStorage ?? InMemoryUserStorage()),
+    authRepositoryProvider.overrideWithValue(repo),
+  ],
+);
 
 void main() {
   test('Dio được dựng từ AppConfig của flavor', () {
@@ -103,33 +135,72 @@ void main() {
     },
   );
 
-  test('re-opening app restores session and verifies user with getMe()', () async {
-    final storage = InMemoryTokenStorage();
-    await storage.write(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
-    final userStorage = InMemoryUserStorage();
-    final c = _container(storage, _FakeAuthRepository(), userStorage);
+  test(
+    'registration thành công: lưu token, user và chuyển authenticated',
+    () async {
+      final storage = InMemoryTokenStorage();
+      final userStorage = InMemoryUserStorage();
+      final c = _container(storage, _FakeAuthRepository(), userStorage);
 
-    c.read(authControllerProvider);
-    await pumpEventQueue();
+      c.read(authControllerProvider);
+      await pumpEventQueue();
+      c.listen(registerControllerProvider, (_, _) {});
 
-    expect(c.read(authControllerProvider), AuthStatus.authenticated);
-    expect(c.read(currentUserProvider)?.fullName, 'Customer User');
-  });
+      final pending = c
+          .read(registerControllerProvider.notifier)
+          .register(
+            email: 'new@example.com',
+            password: 'Passw0rd12',
+            fullName: 'New Customer',
+            phoneNumber: '0901234567',
+          );
+      expect(c.read(registerControllerProvider).isLoading, isTrue);
+      await pending;
 
-  test('refresh bị từ chối -> onSessionExpired đưa app về unauthenticated',
-      () async {
-    final storage = InMemoryTokenStorage();
-    await storage.write(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
-    final c = _container(storage, _FakeAuthRepository());
+      expect(c.read(registerControllerProvider).hasError, isFalse);
+      expect(c.read(registerControllerProvider).hasValue, isTrue);
+      expect((await storage.read())?.accessToken, 'registered-a');
+      expect((await userStorage.read())?.roleCode, 'CUSTOMER');
+      expect(c.read(authControllerProvider), AuthStatus.authenticated);
+    },
+  );
+
+  test(
+    're-opening app restores session and verifies user with getMe()',
+    () async {
+      final storage = InMemoryTokenStorage();
+      await storage.write(
+        const AuthTokens(accessToken: 'a', refreshToken: 'r'),
+      );
+      final userStorage = InMemoryUserStorage();
+      final c = _container(storage, _FakeAuthRepository(), userStorage);
+
+      c.read(authControllerProvider);
+      await pumpEventQueue();
+
+      expect(c.read(authControllerProvider), AuthStatus.authenticated);
+      expect(c.read(currentUserProvider)?.fullName, 'Customer User');
+    },
+  );
+
+  test(
+    'refresh bị từ chối -> onSessionExpired đưa app về unauthenticated',
+    () async {
+      final storage = InMemoryTokenStorage();
+      await storage.write(
+        const AuthTokens(accessToken: 'a', refreshToken: 'r'),
+      );
+      final c = _container(storage, _FakeAuthRepository());
 
       c.read(authControllerProvider);
       await pumpEventQueue();
       expect(c.read(authControllerProvider), AuthStatus.authenticated);
 
-    c.read(authControllerProvider.notifier).onSessionExpired();
-    expect(c.read(authControllerProvider), AuthStatus.unauthenticated);
-    expect(c.read(currentUserProvider), isNull);
-  });
+      c.read(authControllerProvider.notifier).onSessionExpired();
+      expect(c.read(authControllerProvider), AuthStatus.unauthenticated);
+      expect(c.read(currentUserProvider), isNull);
+    },
+  );
 
   test('dioProvider có thể bị thay thế hoàn toàn trong test', () {
     final fake = Dio(BaseOptions(baseUrl: 'http://fake'));
