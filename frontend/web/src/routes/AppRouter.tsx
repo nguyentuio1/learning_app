@@ -5,6 +5,8 @@ import { RequireAuth } from './RequireAuth'
 import { allRoles, managementRoles } from '../types/auth'
 import { OrderUiProvider } from '../components/orders/OrderUiProvider'
 
+import { operationFeatures } from '../features/operations/navigation'
+
 const LoginPage = lazy(() => import('../pages/LoginPage').then(module => ({ default: module.LoginPage })))
 const RegisterPage = lazy(() => import('../pages/RegisterPage').then(module => ({ default: module.RegisterPage })))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then(module => ({ default: module.NotFoundPage })))
@@ -65,6 +67,13 @@ export function AppRouter() {
         <Route element={<RequireAuth roles={managementRoles} />}>
           <Route path="/" element={<HomePage />} />
         </Route>
+        {operationFeatures.flatMap(feature => feature.routes.map(({ path, Page, roles }) => (
+          <Route key={path} element={<RequireAuth roles={roles ?? feature.roles} />}>
+            <Route element={<AccountLayout />}>
+              <Route path={path} element={<Page />} />
+            </Route>
+          </Route>
+        )))}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
