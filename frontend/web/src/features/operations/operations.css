@@ -1,0 +1,40 @@
+/* Layout, sage/gold palette and card treatments adapted from the reviewed StationPages and DispatcherPages draft. */
+.operations-page { padding:36px; max-width:1500px; margin:0 auto; color:#203b30; }
+.operations-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:28px; }
+.operations-heading h1 { margin:0 0 8px; font-size:30px; letter-spacing:-.7px; line-height:1.25; }
+.operations-heading h1::before { content:''; display:block; width:28px; height:4px; background:#d5aa58; border-radius:3px; margin-bottom:16px; }
+.operations-heading p { margin:0; color:#617167; line-height:1.7; }
+.operations-panel { background:#fffffc; border:1px solid #cbd9c4; border-radius:12px; padding:24px; margin-bottom:22px; box-shadow:0 3px 12px #203b3005; }
+.operations-panel h2 { margin:0 0 20px; font-size:18px; }
+.operations-filters { display:flex; align-items:end; flex-wrap:wrap; gap:16px; padding:22px; background:#f4f6ee; border:1px solid #d4decd; border-radius:12px 12px 0 0; }
+.operations-filters .ant-form-item { margin-bottom:0; min-width:180px; flex:1; }
+.operations-table { border:1px solid #cbd9c4; border-radius:12px; overflow:hidden; background:#fff; }
+.operations-page .ant-btn { font-weight:600; box-shadow:0 2px 2px #203b3006; transition:background .18s,box-shadow .18s,transform .18s; }
+.operations-page .ant-btn:hover { transform:translateY(-1px); box-shadow:0 4px 10px #203b3010; }
+.operations-page .ant-btn:active { transform:translateY(0); }
+.operations-page .ant-btn-primary { border-radius:8px 8px 8px 3px; }
+.operations-page .ant-table-cell a { color:#1e4f3c; font-weight:600; }
+.operations-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; border:1px solid #cbd9c4; border-radius:12px; background:#cbd9c4; overflow:hidden; margin:0 0 24px; }
+.operations-metrics>div { padding:22px; background:#f8faf3; }
+.operations-metrics dt { font-size:12px; color:#617167; }
+.operations-metrics dd { margin:8px 0 0; font-size:28px; font-weight:650; color:#1e4f3c; }
+.operations-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:24px; }
+.operations-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 20px; }
+.operations-fields .ant-input-number { width:100%; }
+.operations-facts { margin:0; }
+.operations-facts>div { display:grid; grid-template-columns:140px minmax(0,1fr); padding:13px 0; border-bottom:1px solid #e2eadb; gap:14px; }
+.operations-facts dt { color:#617167; }.operations-facts dd { margin:0; overflow-wrap:anywhere; }
+.operations-actions { display:flex; flex-wrap:wrap; gap:12px; margin:18px 0; align-items:center; }
+.operations-loading { min-height:180px; display:flex; align-items:center; justify-content:center; gap:12px; color:#617167; }
+.operations-page .ant-alert { margin-bottom:18px; }
+.operations-small { display:block; color:#617167; font-size:12px; margin-top:5px; }
+.operations-slot-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+.operations-slot { border:1px solid #cbd9c4; border-radius:10px; padding:20px; background:#fffffc; }
+.operations-slot h3 { margin:0 0 12px; }
+.operations-slot p { overflow-wrap:anywhere; color:#617167; font-size:12px; }
+.operations-slot .ant-btn { margin:10px 8px 0 0; }
+.operations-page>section,.operations-page>.operations-table,.operations-metrics { animation:operations-enter .35s ease both; }
+@keyframes operations-enter { from {opacity:0;transform:translateY(7px)} to {opacity:1;transform:translateY(0)} }
+@media(prefers-reduced-motion:reduce) { .operations-page * { animation:none!important; transition:none!important; transform:none!important; } }
+@media(max-width:850px) { .operations-page {padding:24px 16px;} .operations-grid {grid-template-columns:1fr;} .operations-heading {align-items:start; flex-wrap:wrap;} }
+@media(max-width:560px) { .operations-fields {grid-template-columns:1fr;} .operations-panel {padding:18px;} .operations-metrics>div {padding:16px;} .operations-filters {padding:16px;} .operations-heading h1 {font-size:26px;} }

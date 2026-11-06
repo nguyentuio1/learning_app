@@ -1,7 +1,8 @@
 import { Button, Result, Spin } from 'antd'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
+import { operationFeatures } from '../features/operations/navigation'
 import type { Role } from '../types/auth'
 
 export function RequireAuth({ roles }: { roles: readonly Role[] }) {
@@ -15,7 +16,12 @@ export function RequireAuth({ roles }: { roles: readonly Role[] }) {
     if (auth.user.role.code === 'CUSTOMER' || auth.user.role.code === 'STATION_OPERATOR') {
       return <Result status="info" title="Please use the mobile app"
         subTitle="Use the SmartDroneDelivery mobile app to access Customer and Station Operator features."
-        extra={<Button onClick={() => void auth.logout()}>Sign out</Button>} />
+        extra={<>
+          {auth.user.role.code === 'STATION_OPERATOR' && operationFeatures.filter(feature => feature.roles.includes('STATION_OPERATOR')).map(feature =>
+            <Link key={feature.path} to={feature.path} style={{ marginInlineEnd: 16 }}>{feature.label}</Link>
+          )}
+          <Button onClick={() => void auth.logout()}>Sign out</Button>
+        </>} />
     }
     return <Result status="403" title="Access denied" subTitle="Your role cannot access this page."
       extra={<Button onClick={() => void auth.logout()}>Sign out</Button>} />
