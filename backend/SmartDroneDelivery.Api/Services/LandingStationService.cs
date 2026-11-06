@@ -305,8 +305,24 @@ public partial class LandingStationService : ILandingStationService
         }
 
         var now = DateTime.UtcNow;
+        var initialStatus = station.Status;
         station.Status = targetStatus;
         station.UpdatedAt = now;
+
+        if (_db.Database.IsRelational())
+        {
+            var updatedRows = await _db.LandingStations
+                .Where(s => s.Id == id && s.Status == initialStatus)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, targetStatus)
+                    .SetProperty(x => x.UpdatedAt, now));
+
+            if (updatedRows == 0)
+            {
+                throw new ApiException(StatusCodes.Status409Conflict,
+                    "The station status was updated concurrently. Refresh and try again.");
+            }
+        }
 
         _db.AuditLogs.Add(new AuditLog
         {
