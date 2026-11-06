@@ -319,4 +319,77 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
         Assert.Equal(HttpStatusCode.OK, toChargeRes.StatusCode);
         Assert.Equal("CHARGING", (await JsonAsync(toChargeRes)).GetProperty("status").GetString());
     }
+
+    [Fact]
+    public async Task Maintenance_and_Update_are_refused_with_409_when_flight_mission_is_active()
+    {
+        var dispatcher = await NewUserAsync(AppRoles.Dispatcher);
+        var station = await CreateStationAsync();
+        var serial = $"DRN-ACT-{Interlocked.Increment(ref _counter):D4}";
+
+        var drone = new Drone
+        {
+            SerialNumber = serial,
+            ModelName = "Air Carrier",
+            MaxPayloadGram = 2500,
+            MaxFlightRangeKm = 20,
+            BatteryCapacityMah = 18000,
+            Status = "IDLE",
+            CurrentStationId = station.Id
+        };
+
+        await _factory.WithDbAsync(async db =>
+        {
+            db.Drones.Add(drone);
+            var custRole = await db.Roles.SingleAsync(r => r.Code == AppRoles.Customer);
+            var cust = new User
+            {
+                RoleId = custRole.Id,
+                Email = $"cust-act-{_counter}@example.com",
+                PasswordHash = new PasswordHasher().Hash(Password),
+                FullName = "Customer Act",
+                PhoneNumber = $"089{_counter:D7}",
+                Status = "ACTIVE"
+            };
+            var pkg = new Package { Sender = cust, PackageName = "Package", WeightGram = 500, LengthCm = 5, WidthCm = 5, HeightCm = 5 };
+            var order = new DeliveryOrder
+            {
+                TrackingNumber = $"DD-ACT-{_counter:D4}",
+                Customer = cust,
+                Package = pkg,
+                OriginStationId = station.Id,
+                DestinationStationId = station.Id,
+                RecipientName = "Recipient",
+                RecipientPhone = "0900000001",
+                PickupSecureCode = "123123"
+            };
+            var mission = new FlightMission
+            {
+                Drone = drone,
+                Order = order,
+                FlightStatus = "PLANNED"
+            };
+            db.FlightMissions.Add(mission);
+            await db.SaveChangesAsync();
+        });
+
+        // Maintenance START while drone has PLANNED mission -> 409
+        var maintRes = await SendAsync(HttpMethod.Put, $"/api/drones/{drone.Id}/maintenance", dispatcher.Access, new
+        {
+            action = "START",
+            expectedStatus = "IDLE",
+            reason = "Routine check."
+        });
+        Assert.Equal(HttpStatusCode.Conflict, maintRes.StatusCode);
+
+        // PUT update specifications while drone has PLANNED mission -> 409
+        var updateRes = await SendAsync(HttpMethod.Put, $"/api/drones/{drone.Id}", dispatcher.Access, new
+        {
+            modelName = "Air Carrier V2",
+            maxPayloadGram = 2600m,
+            maxFlightRangeKm = 22m,
+            batteryCapacityMah = 19000
+        });
+        Assert.Equal(HttpStatusCode.Conflict, updateRes.StatusCode);
+    }
 }
