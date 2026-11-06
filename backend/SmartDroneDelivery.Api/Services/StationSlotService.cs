@@ -227,20 +227,45 @@ public class StationSlotService : IStationSlotService
                 });
         }
 
+        var currentStatus = slot.Status;
         var now = DateTime.UtcNow;
-        slot.Status = targetStatus;
-        slot.LastUpdated = now;
 
-        _db.AuditLogs.Add(new AuditLog
+        var audit = new AuditLog
         {
             UserId = userId,
             Action = "SLOT_STATUS_CHANGE",
             EntityName = "StationSlot",
             EntityId = slot.Id.ToString(),
             Timestamp = now
-        });
+        };
 
-        await _db.SaveChangesAsync();
+        if (_db.Database.IsRelational())
+        {
+            var updatedRows = await _db.StationSlots
+                .Where(s => s.Id == id && s.Status == currentStatus)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, targetStatus)
+                    .SetProperty(x => x.LastUpdated, now));
+
+            if (updatedRows == 0)
+            {
+                throw new ApiException(StatusCodes.Status409Conflict,
+                    "The slot status was updated concurrently. Refresh and try again.");
+            }
+
+            _db.AuditLogs.Add(audit);
+            await _db.SaveChangesAsync();
+            slot.Status = targetStatus;
+            slot.LastUpdated = now;
+        }
+        else
+        {
+            slot.Status = targetStatus;
+            slot.LastUpdated = now;
+            _db.AuditLogs.Add(audit);
+            await _db.SaveChangesAsync();
+        }
+
         return MapSlot(slot, Array.Empty<FlightMission>());
     }
 
