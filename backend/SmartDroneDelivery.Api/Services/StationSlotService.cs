@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.DTOs;
@@ -17,6 +18,7 @@ public interface IStationSlotService
 
 public class StationSlotService : IStationSlotService
 {
+    private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> StationLocks = new();
     private readonly AppDbContext _db;
 
     public StationSlotService(AppDbContext db)
@@ -73,11 +75,6 @@ public class StationSlotService : IStationSlotService
     {
         await LoadActiveUserAsync(userId);
 
-        var station = await _db.LandingStations
-            .Include(s => s.Slots)
-            .FirstOrDefaultAsync(s => s.Id == stationId)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Landing station not found.");
-
         if (request?.SlotNumber is < 1)
         {
             throw new ApiException(
@@ -89,104 +86,219 @@ public class StationSlotService : IStationSlotService
                 });
         }
 
-        if (station.Slots.Count >= 20)
-            throw new ApiException(StatusCodes.Status409Conflict, "Station already has the maximum of 20 slots.");
-
-        var nextSlotNumber = request?.SlotNumber
-            ?? (station.Slots.Count == 0 ? 1 : station.Slots.Max(s => s.SlotNumber) + 1);
-
-        if (station.Slots.Any(s => s.SlotNumber == nextSlotNumber))
-            throw new ApiException(StatusCodes.Status409Conflict, "Slot number is already used in this station.");
-
-        var now = DateTime.UtcNow;
-        var slot = new StationSlot
+        var sem = StationLocks.GetOrAdd(stationId, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync();
+        try
         {
-            Id = Guid.NewGuid(),
-            StationId = stationId,
-            SlotNumber = nextSlotNumber,
-            Status = "EMPTY",
-            LastUpdated = now
-        };
+            if (_db.Database.IsRelational())
+            {
+                await using var tx = await _db.Database.BeginTransactionAsync();
 
-        station.TotalSlots = station.Slots.Count + 1;
-        station.UpdatedAt = now;
+                // Exclusive row lock on landing_stations in PostgreSQL
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT id FROM landing_stations WHERE id = {stationId} FOR UPDATE");
 
-        var audit = new AuditLog
-        {
-            UserId = userId,
-            Action = "SLOT_CREATE",
-            EntityName = "StationSlot",
-            EntityId = slot.Id.ToString(),
-            Timestamp = now
-        };
+                var station = await _db.LandingStations
+                    .Include(s => s.Slots)
+                    .FirstOrDefaultAsync(s => s.Id == stationId)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Landing station not found.");
 
-        if (_db.Database.IsRelational())
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            _db.StationSlots.Add(slot);
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+                var existingCount = station.Slots.Count;
+                if (existingCount >= 20)
+                    throw new ApiException(StatusCodes.Status409Conflict, "Station already has the maximum of 20 slots.");
+
+                var nextSlotNumber = request?.SlotNumber
+                    ?? (existingCount == 0 ? 1 : station.Slots.Max(s => s.SlotNumber) + 1);
+
+                if (station.Slots.Any(s => s.SlotNumber == nextSlotNumber))
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot number is already used in this station.");
+
+                var now = DateTime.UtcNow;
+                var slot = new StationSlot
+                {
+                    Id = Guid.NewGuid(),
+                    StationId = stationId,
+                    SlotNumber = nextSlotNumber,
+                    Status = "EMPTY",
+                    LastUpdated = now
+                };
+
+                _db.StationSlots.Add(slot);
+                station.TotalSlots = existingCount + 1;
+                station.UpdatedAt = now;
+
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "SLOT_CREATE",
+                    EntityName = "StationSlot",
+                    EntityId = slot.Id.ToString(),
+                    Timestamp = now
+                });
+
+                try
+                {
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    await tx.RollbackAsync();
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot number is already used in this station.");
+                }
+
+                return MapSlot(slot, Array.Empty<FlightMission>());
+            }
+            else
+            {
+                var station = await _db.LandingStations
+                    .Include(s => s.Slots)
+                    .FirstOrDefaultAsync(s => s.Id == stationId)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Landing station not found.");
+
+                var existingCount = station.Slots.Count;
+                if (existingCount >= 20)
+                    throw new ApiException(StatusCodes.Status409Conflict, "Station already has the maximum of 20 slots.");
+
+                var nextSlotNumber = request?.SlotNumber
+                    ?? (existingCount == 0 ? 1 : station.Slots.Max(s => s.SlotNumber) + 1);
+
+                if (station.Slots.Any(s => s.SlotNumber == nextSlotNumber))
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot number is already used in this station.");
+
+                var now = DateTime.UtcNow;
+                var slot = new StationSlot
+                {
+                    Id = Guid.NewGuid(),
+                    StationId = stationId,
+                    SlotNumber = nextSlotNumber,
+                    Status = "EMPTY",
+                    LastUpdated = now
+                };
+
+                _db.StationSlots.Add(slot);
+                station.TotalSlots = existingCount + 1;
+                station.UpdatedAt = now;
+
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "SLOT_CREATE",
+                    EntityName = "StationSlot",
+                    EntityId = slot.Id.ToString(),
+                    Timestamp = now
+                });
+
+                await _db.SaveChangesAsync();
+                return MapSlot(slot, Array.Empty<FlightMission>());
+            }
         }
-        else
+        finally
         {
-            _db.StationSlots.Add(slot);
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
+            sem.Release();
         }
-
-        return MapSlot(slot, Array.Empty<FlightMission>());
     }
 
     public async Task RemoveSlotAsync(Guid userId, Guid id)
     {
         await LoadActiveUserAsync(userId);
 
-        var slot = await _db.StationSlots
-            .Include(s => s.Station)
-            .ThenInclude(st => st.Slots)
+        var initialSlot = await _db.StationSlots
+            .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Station slot not found.");
 
-        if (slot.Status is "OCCUPIED" or "RESERVED")
-            throw new ApiException(StatusCodes.Status409Conflict, "Slot is occupied or reserved and cannot be removed.");
-
-        var hasActiveMission = await _db.FlightMissions
-            .AsNoTracking()
-            .AnyAsync(m => (m.StartSlotId == id || m.DestinationSlotId == id) &&
-                           (m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR"));
-        if (hasActiveMission)
-            throw new ApiException(StatusCodes.Status409Conflict, "Slot is linked to a planned or in-air mission and cannot be removed.");
-
-        if (slot.Station.Slots.Count <= 1)
-            throw new ApiException(StatusCodes.Status409Conflict, "Cannot remove the last slot of a station.");
-
-        var now = DateTime.UtcNow;
-        slot.Station.TotalSlots = slot.Station.Slots.Count - 1;
-        slot.Station.UpdatedAt = now;
-
-        var audit = new AuditLog
+        var sem = StationLocks.GetOrAdd(initialSlot.StationId, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync();
+        try
         {
-            UserId = userId,
-            Action = "SLOT_DELETE",
-            EntityName = "StationSlot",
-            EntityId = slot.Id.ToString(),
-            Timestamp = now
-        };
+            if (_db.Database.IsRelational())
+            {
+                await using var tx = await _db.Database.BeginTransactionAsync();
 
-        if (_db.Database.IsRelational())
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            _db.StationSlots.Remove(slot);
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+                // Exclusive row lock on landing_stations in PostgreSQL
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT id FROM landing_stations WHERE id = {initialSlot.StationId} FOR UPDATE");
+
+                var slot = await _db.StationSlots
+                    .Include(s => s.Station)
+                    .ThenInclude(st => st.Slots)
+                    .FirstOrDefaultAsync(s => s.Id == id)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Station slot not found.");
+
+                if (slot.Status is "OCCUPIED" or "RESERVED")
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot is occupied or reserved and cannot be removed.");
+
+                var hasActiveMission = await _db.FlightMissions
+                    .AsNoTracking()
+                    .AnyAsync(m => (m.StartSlotId == id || m.DestinationSlotId == id) &&
+                                   (m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR"));
+                if (hasActiveMission)
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot is linked to a planned or in-air mission and cannot be removed.");
+
+                var existingCount = slot.Station.Slots.Count;
+                if (existingCount <= 1)
+                    throw new ApiException(StatusCodes.Status409Conflict, "Cannot remove the last slot of a station.");
+
+                var now = DateTime.UtcNow;
+                _db.StationSlots.Remove(slot);
+                slot.Station.TotalSlots = existingCount - 1;
+                slot.Station.UpdatedAt = now;
+
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "SLOT_DELETE",
+                    EntityName = "StationSlot",
+                    EntityId = slot.Id.ToString(),
+                    Timestamp = now
+                });
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            else
+            {
+                var slot = await _db.StationSlots
+                    .Include(s => s.Station)
+                    .ThenInclude(st => st.Slots)
+                    .FirstOrDefaultAsync(s => s.Id == id)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Station slot not found.");
+
+                if (slot.Status is "OCCUPIED" or "RESERVED")
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot is occupied or reserved and cannot be removed.");
+
+                var hasActiveMission = await _db.FlightMissions
+                    .AsNoTracking()
+                    .AnyAsync(m => (m.StartSlotId == id || m.DestinationSlotId == id) &&
+                                   (m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR"));
+                if (hasActiveMission)
+                    throw new ApiException(StatusCodes.Status409Conflict, "Slot is linked to a planned or in-air mission and cannot be removed.");
+
+                var existingCount = slot.Station.Slots.Count;
+                if (existingCount <= 1)
+                    throw new ApiException(StatusCodes.Status409Conflict, "Cannot remove the last slot of a station.");
+
+                var now = DateTime.UtcNow;
+                _db.StationSlots.Remove(slot);
+                slot.Station.TotalSlots = existingCount - 1;
+                slot.Station.UpdatedAt = now;
+
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "SLOT_DELETE",
+                    EntityName = "StationSlot",
+                    EntityId = slot.Id.ToString(),
+                    Timestamp = now
+                });
+
+                await _db.SaveChangesAsync();
+            }
         }
-        else
+        finally
         {
-            _db.StationSlots.Remove(slot);
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
+            sem.Release();
         }
     }
 

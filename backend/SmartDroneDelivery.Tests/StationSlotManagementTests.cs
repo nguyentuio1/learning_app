@@ -138,6 +138,30 @@ public class StationSlotManagementTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
+    public async Task Concurrent_AddSlot_requests_assign_unique_slots_and_maintain_accurate_totalSlots()
+    {
+        var admin = await NewUserAsync(AppRoles.Admin);
+        var (station, _) = await SeedStationAsync(slotCount: 2);
+
+        // Run 3 AddSlot requests concurrently
+        var tasks = Enumerable.Range(0, 3).Select(_ =>
+            SendAsync(HttpMethod.Post, $"/api/landing-stations/{station.Id}/slots", admin.Access, new { })
+        ).ToList();
+
+        var responses = await Task.WhenAll(tasks);
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.Created, r.StatusCode));
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var st = await db.LandingStations.Include(s => s.Slots).SingleAsync(s => s.Id == station.Id);
+            Assert.Equal(5, st.TotalSlots);
+            Assert.Equal(5, st.Slots.Count);
+            var numbers = st.Slots.Select(s => s.SlotNumber).OrderBy(n => n).ToList();
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, numbers);
+        });
+    }
+
+    [Fact]
     public async Task RemoveSlot_rejects_occupied_reserved_or_mission_linked_slots_with_409()
     {
         var admin = await NewUserAsync(AppRoles.Admin);
