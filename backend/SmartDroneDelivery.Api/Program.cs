@@ -70,6 +70,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddScoped<IDeliveryOrderMutationService, DeliveryOrderMutationService>();
 builder.Services.AddScoped<IStationOperationService, StationOperationService>();
+builder.Services.AddScoped<IStationAvailabilityService, StationAvailabilityService>();
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
