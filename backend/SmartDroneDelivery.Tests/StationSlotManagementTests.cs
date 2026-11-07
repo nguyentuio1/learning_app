@@ -267,4 +267,41 @@ public class StationSlotManagementTests : IClassFixture<AuthApiFactory>
         });
         Assert.Equal(HttpStatusCode.Conflict, occToError.StatusCode);
     }
+
+    [Fact]
+    public async Task List_and_GetById_enforce_operator_station_ownership()
+    {
+        var admin = await NewUserAsync(AppRoles.Admin);
+        var dispatcher = await NewUserAsync(AppRoles.Dispatcher);
+        var assignedOp = await NewUserAsync(AppRoles.StationOperator);
+        var otherOp = await NewUserAsync(AppRoles.StationOperator);
+        var (station, slots) = await SeedStationAsync(slotCount: 2, operatorId: assignedOp.Id);
+
+        // 1. Assigned operator can read slots list and detail -> 200 OK
+        var ownList = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{station.Id}/slots", assignedOp.Access);
+        Assert.Equal(HttpStatusCode.OK, ownList.StatusCode);
+
+        var ownDetail = await SendAsync(HttpMethod.Get, $"/api/station-slots/{slots[0].Id}", assignedOp.Access);
+        Assert.Equal(HttpStatusCode.OK, ownDetail.StatusCode);
+
+        // 2. Unassigned operator cannot read slots list or detail -> 403 Forbidden
+        var otherList = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{station.Id}/slots", otherOp.Access);
+        Assert.Equal(HttpStatusCode.Forbidden, otherList.StatusCode);
+
+        var otherDetail = await SendAsync(HttpMethod.Get, $"/api/station-slots/{slots[0].Id}", otherOp.Access);
+        Assert.Equal(HttpStatusCode.Forbidden, otherDetail.StatusCode);
+
+        // 3. Admin and Dispatcher can read slots list and detail -> 200 OK
+        var adminList = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{station.Id}/slots", admin.Access);
+        Assert.Equal(HttpStatusCode.OK, adminList.StatusCode);
+
+        var adminDetail = await SendAsync(HttpMethod.Get, $"/api/station-slots/{slots[0].Id}", admin.Access);
+        Assert.Equal(HttpStatusCode.OK, adminDetail.StatusCode);
+
+        var dispList = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{station.Id}/slots", dispatcher.Access);
+        Assert.Equal(HttpStatusCode.OK, dispList.StatusCode);
+
+        var dispDetail = await SendAsync(HttpMethod.Get, $"/api/station-slots/{slots[0].Id}", dispatcher.Access);
+        Assert.Equal(HttpStatusCode.OK, dispDetail.StatusCode);
+    }
 }

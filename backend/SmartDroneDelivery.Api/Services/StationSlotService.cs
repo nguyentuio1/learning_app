@@ -28,11 +28,15 @@ public class StationSlotService : IStationSlotService
 
     public async Task<IReadOnlyList<StationSlotDto>> ListByStationAsync(Guid userId, Guid stationId)
     {
-        await LoadActiveUserAsync(userId);
+        var caller = await LoadActiveUserAsync(userId);
 
-        var stationExists = await _db.LandingStations.AsNoTracking().AnyAsync(s => s.Id == stationId);
-        if (!stationExists)
-            throw new ApiException(StatusCodes.Status404NotFound, "Landing station not found.");
+        var station = await _db.LandingStations.AsNoTracking().FirstOrDefaultAsync(s => s.Id == stationId)
+            ?? throw new ApiException(StatusCodes.Status404NotFound, "Landing station not found.");
+
+        if (caller.Role?.Code == AppRoles.StationOperator && station.OperatorId != userId)
+        {
+            throw new ApiException(StatusCodes.Status403Forbidden, "You can only view slots for your assigned station.");
+        }
 
         var slots = await _db.StationSlots
             .AsNoTracking()
@@ -55,12 +59,18 @@ public class StationSlotService : IStationSlotService
 
     public async Task<StationSlotDto> GetByIdAsync(Guid userId, Guid id)
     {
-        await LoadActiveUserAsync(userId);
+        var caller = await LoadActiveUserAsync(userId);
 
         var slot = await _db.StationSlots
             .AsNoTracking()
+            .Include(s => s.Station)
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Station slot not found.");
+
+        if (caller.Role?.Code == AppRoles.StationOperator && slot.Station?.OperatorId != userId)
+        {
+            throw new ApiException(StatusCodes.Status403Forbidden, "You can only view slots for your assigned station.");
+        }
 
         var activeMissions = await _db.FlightMissions
             .AsNoTracking()
@@ -351,6 +361,8 @@ public class StationSlotService : IStationSlotService
             Timestamp = now
         };
 
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+
         if (_db.Database.IsRelational())
         {
             var updatedRows = await _db.StationSlots
@@ -365,13 +377,21 @@ public class StationSlotService : IStationSlotService
                     "The slot status was updated concurrently. Refresh and try again.");
             }
 
+            _db.Entry(slot).State = EntityState.Unchanged;
             _db.AuditLogs.Add(audit);
             await _db.SaveChangesAsync();
+            await tx!.CommitAsync();
+
             slot.Status = targetStatus;
             slot.LastUpdated = now;
         }
         else
         {
+            if (slot.Status != currentStatus)
+            {
+                throw new ApiException(StatusCodes.Status409Conflict,
+                    "The slot status was updated concurrently. Refresh and try again.");
+            }
             slot.Status = targetStatus;
             slot.LastUpdated = now;
             _db.AuditLogs.Add(audit);
