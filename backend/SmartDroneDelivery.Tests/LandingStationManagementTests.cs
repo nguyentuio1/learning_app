@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.DTOs;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -524,9 +527,9 @@ public class LandingStationPostgresTests : IClassFixture<PostgresApiFactory>, ID
     }
 
     [PostgresFact]
-    public async Task Postgres_ChangeStatus_concurrent_requests_detect_conflict()
+    public async Task Postgres_ChangeStatus_concurrent_requests_detect_conflict_and_do_not_overwrite_newer_status()
     {
-        var (_, adminToken) = await NewUserAsync(AppRoles.Admin);
+        var (adminId, adminToken) = await NewUserAsync(AppRoles.Admin);
         var code = $"PG-STN-{Interlocked.Increment(ref _counter):D4}";
         var stationId = Guid.Empty;
 
@@ -547,6 +550,7 @@ public class LandingStationPostgresTests : IClassFixture<PostgresApiFactory>, ID
             stationId = station.Id;
         });
 
+        // 1. Two concurrent HTTP requests attempting to transition from OPERATIONAL
         var t1 = SendAsync(HttpMethod.Put, $"/api/landing-stations/{stationId}/status", adminToken, new
         {
             newStatus = "MAINTENANCE",
@@ -563,12 +567,195 @@ public class LandingStationPostgresTests : IClassFixture<PostgresApiFactory>, ID
         var codes = responses.Select(r => r.StatusCode).ToList();
 
         Assert.Contains(HttpStatusCode.OK, codes);
-        Assert.Contains(HttpStatusCode.Conflict, codes);
+
+        // Verify that the database status matches the winning request and was never overwritten by a stale tracked entity
+        var code2 = $"PG-STN-OVW-{Interlocked.Increment(ref _counter):D4}";
+        var stationId2 = Guid.Empty;
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code2,
+                Name = $"Pg Overwrite Hub {code2}",
+                Address = "Pg Address",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 2,
+                Status = "OPERATIONAL"
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+            stationId2 = station.Id;
+        });
+
+        // Simulate a concurrent update to OFFLINE happening right after Request 1 executes ExecuteUpdateAsync(MAINTENANCE)
+        // but before Request 1 calls SaveChangesAsync() for audit/notifications:
+        // Because Request 1 marks station as EntityState.Unchanged, Request 1's SaveChangesAsync() must NOT overwrite OFFLINE back to OPERATIONAL.
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(_factory.DatabaseConnectionString)
+            .AddInterceptors(new ConcurrentStatusUpdateBeforeAuditSaveInterceptor(stationId2, "OFFLINE"))
+            .Options;
+
+        await using (var db1 = new AppDbContext(options))
+        {
+            var svc1 = new LandingStationService(db1);
+            await svc1.ChangeStatusAsync(adminId, stationId2, new ChangeLandingStationStatusRequest
+            {
+                NewStatus = "MAINTENANCE",
+                Reason = "Request 1 sets maintenance."
+            });
+        }
 
         await _factory.WithDbAsync(async db =>
         {
-            var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == stationId.ToString() && a.Action == "STATION_STATUS_CHANGE");
-            Assert.Equal(1, auditCount);
+            var finalStation = await db.LandingStations.AsNoTracking().SingleAsync(s => s.Id == stationId2);
+            // Newer status "OFFLINE" must be preserved, not overwritten by Request 1's tracked entity!
+            Assert.Equal("OFFLINE", finalStation.Status);
         });
+    }
+
+    [PostgresFact]
+    public async Task Postgres_ChangeStatus_rolls_back_station_status_and_notifications_when_audit_save_fails()
+    {
+        var (adminId, _) = await NewUserAsync(AppRoles.Admin);
+        var (dispatcherId, _) = await NewUserAsync(AppRoles.Dispatcher);
+        var (customerId, _) = await NewUserAsync(AppRoles.Customer);
+        var n = Interlocked.Increment(ref _counter);
+        var code = $"PG-RBK-{n:D4}";
+        var stationId = Guid.NewGuid();
+        var orderId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                Id = stationId,
+                StationCode = code,
+                Name = $"Pg Rollback Hub {code}",
+                Address = "Pg Rollback Address",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 2,
+                Status = "OPERATIONAL"
+            };
+            var slot = new StationSlot
+            {
+                Id = Guid.NewGuid(),
+                StationId = stationId,
+                SlotNumber = 1,
+                Status = "RESERVED"
+            };
+            var pkg = new Package
+            {
+                SenderId = customerId,
+                PackageName = "Rollback Package",
+                WeightGram = 400,
+                LengthCm = 10,
+                WidthCm = 10,
+                HeightCm = 10
+            };
+            var order = new DeliveryOrder
+            {
+                TrackingNumber = $"PG-RBK-ORD-{n:D4}",
+                CustomerId = customerId,
+                Package = pkg,
+                OriginStationId = stationId,
+                DestinationStationId = stationId,
+                RecipientName = "Recipient",
+                RecipientPhone = "0900000000",
+                PickupSecureCode = "123456",
+                Status = "IN_TRANSIT"
+            };
+            var drone = new Drone
+            {
+                SerialNumber = $"PG-RBK-DRN-{n:D4}",
+                ModelName = "Rollback Drone",
+                MaxPayloadGram = 2000,
+                MaxFlightRangeKm = 20,
+                BatteryCapacityMah = 15000,
+                Status = "FLYING"
+            };
+            var mission = new FlightMission
+            {
+                Order = order,
+                Drone = drone,
+                StartSlot = slot,
+                DestinationSlot = slot,
+                FlightStatus = "IN_AIR"
+            };
+
+            db.LandingStations.Add(station);
+            db.StationSlots.Add(slot);
+            db.Packages.Add(pkg);
+            db.DeliveryOrders.Add(order);
+            db.Drones.Add(drone);
+            db.FlightMissions.Add(mission);
+            await db.SaveChangesAsync();
+            orderId = order.Id;
+        });
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(_factory.DatabaseConnectionString)
+            .AddInterceptors(new ThrowOnAuditSaveInterceptor())
+            .Options;
+
+        await using (var failingDb = new AppDbContext(options))
+        {
+            var service = new LandingStationService(failingDb);
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.ChangeStatusAsync(adminId, stationId, new ChangeLandingStationStatusRequest
+                {
+                    NewStatus = "MAINTENANCE",
+                    Reason = "Triggering audit save failure after ExecuteUpdateAsync."
+                }));
+        }
+
+        // Verify PostgreSQL rolled back ExecuteUpdateAsync on landing_stations AND saved no partial audit or notification
+        await _factory.WithDbAsync(async db =>
+        {
+            var dbStation = await db.LandingStations.AsNoTracking().SingleAsync(s => s.Id == stationId);
+            Assert.Equal("OPERATIONAL", dbStation.Status);
+
+            var auditCount = await db.AuditLogs.CountAsync(
+                a => a.EntityId == stationId.ToString() && a.Action == "STATION_STATUS_CHANGE");
+            Assert.Equal(0, auditCount);
+
+            var notifCount = await db.Notifications.CountAsync(
+                n => n.UserId == dispatcherId && n.OrderId == orderId && n.Type == "STATION_REROUTE_ALERT");
+            Assert.Equal(0, notifCount);
+        });
+    }
+
+    private sealed class ThrowOnAuditSaveInterceptor : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("Simulated failure while saving audit log and notifications.");
+        }
+    }
+
+    private sealed class ConcurrentStatusUpdateBeforeAuditSaveInterceptor(
+        Guid stationId, string concurrentNewStatus) : SaveChangesInterceptor
+    {
+        private bool _ran;
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_ran && eventData.Context is not null)
+            {
+                _ran = true;
+                // Simulate an update to the station status inside the database right before SaveChangesAsync flushes tracked entities
+                await eventData.Context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE landing_stations SET \"Status\" = {concurrentNewStatus} WHERE \"Id\" = {stationId}",
+                    cancellationToken);
+            }
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
     }
 }
