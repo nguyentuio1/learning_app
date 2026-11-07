@@ -18,6 +18,8 @@ public interface IDroneService
 public class DroneService : IDroneService
 {
     private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> DroneLocks = new();
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> SerialLocks = new(StringComparer.OrdinalIgnoreCase);
+    public const string SerialNumberUniqueConstraint = "IX_drones_SerialNumber";
 
     private static readonly HashSet<string> ValidStatuses = new(StringComparer.Ordinal)
     {
@@ -175,8 +177,13 @@ public class DroneService : IDroneService
         }
         else
         {
+            var sem = SerialLocks.GetOrAdd(serial, _ => new SemaphoreSlim(1, 1));
+            await sem.WaitAsync();
             try
             {
+                if (await _db.Drones.AnyAsync(d => d.SerialNumber == serial))
+                    throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+
                 _db.Drones.Add(drone);
                 _db.AuditLogs.Add(audit);
                 await _db.SaveChangesAsync();
@@ -188,6 +195,10 @@ public class DroneService : IDroneService
                     throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
                 }
                 throw;
+            }
+            finally
+            {
+                sem.Release();
             }
         }
 
@@ -371,19 +382,13 @@ public class DroneService : IDroneService
         }
     }
 
-    private static bool IsDuplicateSerialException(DbUpdateException ex)
+    public static bool IsDuplicateSerialException(DbUpdateException ex)
     {
-        if (ex.InnerException is Npgsql.PostgresException pgEx)
+        return ex.InnerException is Npgsql.PostgresException
         {
-            return pgEx.SqlState == "23505" &&
-                   (pgEx.ConstraintName?.Contains("serial", StringComparison.OrdinalIgnoreCase) == true ||
-                    pgEx.MessageText.Contains("serial_number", StringComparison.OrdinalIgnoreCase));
-        }
-
-        var message = ex.InnerException?.Message ?? ex.Message;
-        return message.Contains("serial", StringComparison.OrdinalIgnoreCase) ||
-               message.Contains("duplicate", StringComparison.OrdinalIgnoreCase) ||
-               message.Contains("key", StringComparison.OrdinalIgnoreCase);
+            SqlState: Npgsql.PostgresErrorCodes.UniqueViolation,
+            ConstraintName: SerialNumberUniqueConstraint
+        };
     }
 
     private static void ValidateSpecs(

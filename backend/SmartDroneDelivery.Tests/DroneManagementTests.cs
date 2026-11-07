@@ -1,3 +1,8 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
+using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.DTOs;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -394,12 +399,12 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
-    public async Task Create_duplicate_serial_number_returns_409_Conflict()
+    public async Task Create_duplicate_serial_number_concurrent_and_sequential_returns_409_Conflict()
     {
         var admin = await NewUserAsync(AppRoles.Admin);
         var serial = $"DRN-DUP-{Interlocked.Increment(ref _counter):D4}";
 
-        var firstRes = await SendAsync(HttpMethod.Post, "/api/drones", admin.Access, new
+        var t1 = SendAsync(HttpMethod.Post, "/api/drones", admin.Access, new
         {
             serialNumber = serial,
             modelName = "Falcon 1",
@@ -407,9 +412,8 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
             maxFlightRangeKm = 15m,
             batteryCapacityMah = 10000
         });
-        Assert.Equal(HttpStatusCode.Created, firstRes.StatusCode);
 
-        var secondRes = await SendAsync(HttpMethod.Post, "/api/drones", admin.Access, new
+        var t2 = SendAsync(HttpMethod.Post, "/api/drones", admin.Access, new
         {
             serialNumber = serial,
             modelName = "Falcon 2",
@@ -417,7 +421,80 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
             maxFlightRangeKm = 16m,
             batteryCapacityMah = 12000
         });
-        Assert.Equal(HttpStatusCode.Conflict, secondRes.StatusCode);
+
+        var responses = await Task.WhenAll(t1, t2);
+        var codes = responses.Select(r => r.StatusCode).ToList();
+        Assert.Contains(HttpStatusCode.Created, codes);
+        Assert.Contains(HttpStatusCode.Conflict, codes);
+    }
+
+    [Fact]
+    public async Task Non_serial_DbUpdateException_with_key_in_message_is_rethrown_and_not_masked_as_409()
+    {
+        var admin = await NewUserAsync(AppRoles.Admin);
+
+        // 1. Verify IsDuplicateSerialException strictly checks Postgres 23505 + IX_drones_SerialNumber
+        var genericKeyError = new DbUpdateException(
+            "An error occurred while saving the entity changes.",
+            new Exception("violates foreign key constraint or duplicate key on another table"));
+        Assert.False(DroneService.IsDuplicateSerialException(genericKeyError));
+
+        var otherUniquePgError = new DbUpdateException(
+            "Unique violation on non-serial constraint",
+            new PostgresException("duplicate key value", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation, constraintName: "PK_drones"));
+        Assert.False(DroneService.IsDuplicateSerialException(otherUniquePgError));
+
+        var fkPgError = new DbUpdateException(
+            "FK violation",
+            new PostgresException("violates foreign key constraint", "ERROR", "ERROR", PostgresErrorCodes.ForeignKeyViolation, constraintName: "FK_drones_landing_stations_CurrentStationId"));
+        Assert.False(DroneService.IsDuplicateSerialException(fkPgError));
+
+        var serialUniquePgError = new DbUpdateException(
+            "Serial unique violation",
+            new PostgresException("duplicate key value", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation, constraintName: DroneService.SerialNumberUniqueConstraint));
+        Assert.True(DroneService.IsDuplicateSerialException(serialUniquePgError));
+
+        // 2. Verify CreateAsync rethrows non-serial DbUpdateException instead of converting to 409 Conflict
+        var dbName = $"drone-err-test-{Guid.NewGuid()}";
+        var baseOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        await using (var seedDb = new AppDbContext(baseOptions))
+        {
+            var role = new Role { Id = 1, Code = AppRoles.Admin, Name = "Admin" };
+            seedDb.Roles.Add(role);
+            seedDb.Users.Add(new User
+            {
+                Id = admin.Id,
+                RoleId = role.Id,
+                Email = "admin-err@example.com",
+                PasswordHash = "hash",
+                FullName = "Admin",
+                PhoneNumber = "0900000000",
+                Status = "ACTIVE"
+            });
+            await seedDb.SaveChangesAsync();
+        }
+
+        var throwingOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .AddInterceptors(new FailingSaveChangesInterceptor(genericKeyError))
+            .Options;
+
+        await using var failingDb = new AppDbContext(throwingOptions);
+        var service = new DroneService(failingDb);
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() =>
+            service.CreateAsync(admin.Id, new CreateDroneRequest
+            {
+                SerialNumber = "DRN-ERR-0001",
+                ModelName = "Falcon",
+                MaxPayloadGram = 1500m,
+                MaxFlightRangeKm = 15m,
+                BatteryCapacityMah = 10000
+            }));
+        Assert.Same(genericKeyError, ex);
     }
 
     [Fact]
@@ -463,6 +540,17 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
         // Exactly one must succeed, the concurrent second must conflict
         Assert.Contains(HttpStatusCode.OK, statusCodes);
         Assert.Contains(HttpStatusCode.Conflict, statusCodes);
+    }
+
+    private sealed class FailingSaveChangesInterceptor(Exception exceptionToThrow) : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            throw exceptionToThrow;
+        }
     }
 }
 
@@ -522,12 +610,12 @@ public class DronePostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
     }
 
     [PostgresFact]
-    public async Task Postgres_Create_duplicate_serial_number_violates_unique_constraint_and_returns_409()
+    public async Task Postgres_Create_duplicate_serial_number_concurrent_and_unique_constraint_returns_409()
     {
         var (_, adminToken) = await NewUserAsync(AppRoles.Admin);
         var serial = $"PG-DRN-{Interlocked.Increment(ref _counter):D4}";
 
-        var first = await SendAsync(HttpMethod.Post, "/api/drones", adminToken, new
+        var t1 = SendAsync(HttpMethod.Post, "/api/drones", adminToken, new
         {
             serialNumber = serial,
             modelName = "Pg Carrier 1",
@@ -535,9 +623,8 @@ public class DronePostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
             maxFlightRangeKm = 25m,
             batteryCapacityMah = 16000
         });
-        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
 
-        var second = await SendAsync(HttpMethod.Post, "/api/drones", adminToken, new
+        var t2 = SendAsync(HttpMethod.Post, "/api/drones", adminToken, new
         {
             serialNumber = serial,
             modelName = "Pg Carrier 2",
@@ -545,7 +632,67 @@ public class DronePostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
             maxFlightRangeKm = 25m,
             batteryCapacityMah = 16000
         });
-        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+
+        var responses = await Task.WhenAll(t1, t2);
+        var codes = responses.Select(r => r.StatusCode).ToList();
+
+        Assert.Contains(HttpStatusCode.Created, codes);
+        Assert.Contains(HttpStatusCode.Conflict, codes);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var count = await db.Drones.CountAsync(d => d.SerialNumber == serial);
+            Assert.Equal(1, count);
+        });
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Other_database_constraint_error_is_rethrown_and_not_masked_as_duplicate_serial()
+    {
+        var (adminId, _) = await NewUserAsync(AppRoles.Admin);
+        var n = Interlocked.Increment(ref _counter);
+        var station = new LandingStation
+        {
+            Id = Guid.NewGuid(),
+            StationCode = $"PG-FK-STN-{n:D4}",
+            Name = $"FK Station {n}",
+            Address = "Addr",
+            Latitude = 10.7m,
+            Longitude = 106.7m,
+            TotalSlots = 1,
+            Status = "OPERATIONAL"
+        };
+
+        await _factory.WithDbAsync(async db =>
+        {
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+        });
+
+        // Interceptor deletes the station right before DroneService saves the new drone,
+        // causing PostgreSQL to raise a real 23503 foreign_key_violation ("violates foreign key constraint FK_drones_landing_stations_CurrentStationId").
+        // Even though the Postgres error message contains "key", DroneService MUST NOT mask it as 409 duplicate serial!
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(_factory.DatabaseConnectionString)
+            .AddInterceptors(new DeleteStationBeforeSaveInterceptor(_factory.DatabaseConnectionString, station.Id))
+            .Options;
+
+        await using var dbWithInterceptor = new AppDbContext(options);
+        var droneService = new DroneService(dbWithInterceptor);
+
+        var dbEx = await Assert.ThrowsAsync<DbUpdateException>(() =>
+            droneService.CreateAsync(adminId, new CreateDroneRequest
+            {
+                SerialNumber = $"PG-FK-DRN-{n:D4}",
+                ModelName = "Carrier FK",
+                MaxPayloadGram = 2000m,
+                MaxFlightRangeKm = 25m,
+                BatteryCapacityMah = 16000,
+                CurrentStationId = station.Id
+            }));
+
+        var pgEx = Assert.IsType<PostgresException>(dbEx.InnerException);
+        Assert.Equal(PostgresErrorCodes.ForeignKeyViolation, pgEx.SqlState);
     }
 
     [PostgresFact]
@@ -596,5 +743,28 @@ public class DronePostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
             var drone = await db.Drones.SingleAsync(d => d.Id == droneId);
             Assert.Equal("MAINTENANCE", drone.Status);
         });
+    }
+
+    private sealed class DeleteStationBeforeSaveInterceptor(string connectionString, Guid stationId) : SaveChangesInterceptor
+    {
+        private bool _deleted;
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_deleted)
+            {
+                _deleted = true;
+                await using var conn = new NpgsqlConnection(connectionString);
+                await conn.OpenAsync(cancellationToken);
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = "DELETE FROM landing_stations WHERE \"Id\" = @id";
+                cmd.Parameters.AddWithValue("id", stationId);
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
     }
 }
