@@ -21,87 +21,109 @@ public class PickupVerificationResult
 
 public static class OtpLockoutManager
 {
-    private class TrackingLockState
-    {
-        public int Attempts { get; set; }
-        public DateTime? LockedUntil { get; set; }
-    }
+    private const string ActionFailed = "PICKUP_OTP_FAILED";
+    private const string ActionReset = "PICKUP_OTP_RESET";
 
-    private static readonly ConcurrentDictionary<string, TrackingLockState> State = new();
-
-    public static (bool IsLocked, int AttemptsRemaining, DateTime? LockoutExpiresAt, int? RetryAfterSeconds) RecordAttempt(
-        string trackingNumber, bool isCorrect, DateTime now)
+    public static async Task<(bool IsLocked, int AttemptsRemaining, DateTime? LockoutExpiresAt, int? RetryAfterSeconds)> CheckLockAsync(
+        AppDbContext db, Guid orderId, DateTime now)
     {
-        var item = State.GetOrAdd(trackingNumber, _ => new TrackingLockState());
-        lock (item)
+        var entityId = orderId.ToString();
+
+        // 1. Find latest reset event
+        var latestReset = await db.AuditLogs
+            .Where(a => a.EntityName == "DeliveryOrder" && a.EntityId == entityId && a.Action == ActionReset)
+            .OrderByDescending(a => a.Id)
+            .FirstOrDefaultAsync();
+
+        var baseId = latestReset?.Id ?? 0;
+
+        // 2. Count failed attempts since baseId
+        var failedLogs = await db.AuditLogs
+            .Where(a => a.EntityName == "DeliveryOrder" && a.EntityId == entityId && a.Action == ActionFailed && a.Id > baseId)
+            .OrderByDescending(a => a.Id)
+            .ToListAsync();
+
+        if (failedLogs.Count >= 3)
         {
-            if (item.LockedUntil.HasValue)
+            var lockTime = failedLogs[0].Timestamp;
+            var lockoutExpiresAt = lockTime.AddMinutes(10);
+            if (lockoutExpiresAt > now)
             {
-                if (item.LockedUntil.Value > now)
-                {
-                    var seconds = (int)Math.Ceiling((item.LockedUntil.Value - now).TotalSeconds);
-                    return (true, 0, item.LockedUntil.Value, seconds);
-                }
-
-                // Lockout expired: reset attempts!
-                item.Attempts = 0;
-                item.LockedUntil = null;
+                var retryAfter = (int)Math.Ceiling((lockoutExpiresAt - now).TotalSeconds);
+                return (true, 0, lockoutExpiresAt, retryAfter);
             }
 
-            if (isCorrect)
+            // Lockout has expired: reset!
+            db.AuditLogs.Add(new AuditLog
             {
-                item.Attempts = 0;
-                item.LockedUntil = null;
-                return (false, 3, null, null);
-            }
-
-            item.Attempts++;
-            if (item.Attempts >= 3)
-            {
-                item.LockedUntil = now.AddMinutes(10);
-                return (true, 0, item.LockedUntil.Value, 600);
-            }
-
-            return (false, 3 - item.Attempts, null, null);
+                Action = ActionReset,
+                EntityName = "DeliveryOrder",
+                EntityId = entityId,
+                Timestamp = now
+            });
+            await db.SaveChangesAsync();
+            return (false, 3, null, null);
         }
+
+        return (false, 3 - failedLogs.Count, null, null);
     }
 
-    public static (bool IsLocked, int AttemptsRemaining, DateTime? LockoutExpiresAt, int? RetryAfterSeconds) CheckLock(
-        string trackingNumber, DateTime now)
+    public static async Task<(bool IsLocked, int AttemptsRemaining, DateTime? LockoutExpiresAt, int? RetryAfterSeconds)> RecordAttemptAsync(
+        AppDbContext db, Guid orderId, bool isCorrect, DateTime now)
     {
-        var item = State.GetOrAdd(trackingNumber, _ => new TrackingLockState());
-        lock (item)
+        var entityId = orderId.ToString();
+
+        if (isCorrect)
         {
-            if (item.LockedUntil.HasValue)
+            db.AuditLogs.Add(new AuditLog
             {
-                if (item.LockedUntil.Value > now)
-                {
-                    var seconds = (int)Math.Ceiling((item.LockedUntil.Value - now).TotalSeconds);
-                    return (true, 0, item.LockedUntil.Value, seconds);
-                }
-
-                // Lockout expired: reset attempts!
-                item.Attempts = 0;
-                item.LockedUntil = null;
-            }
-
-            return (false, 3 - item.Attempts, null, null);
+                Action = ActionReset,
+                EntityName = "DeliveryOrder",
+                EntityId = entityId,
+                Timestamp = now
+            });
+            await db.SaveChangesAsync();
+            return (false, 3, null, null);
         }
-    }
 
-    public static void Reset(string trackingNumber)
-    {
-        State.TryRemove(trackingNumber, out _);
-    }
-
-    public static void SimulateLockoutForTesting(string trackingNumber, DateTime lockoutTime)
-    {
-        var item = State.GetOrAdd(trackingNumber, _ => new TrackingLockState());
-        lock (item)
+        db.AuditLogs.Add(new AuditLog
         {
-            item.Attempts = 3;
-            item.LockedUntil = lockoutTime;
+            Action = ActionFailed,
+            EntityName = "DeliveryOrder",
+            EntityId = entityId,
+            Timestamp = now
+        });
+        await db.SaveChangesAsync();
+
+        return await CheckLockAsync(db, orderId, now);
+    }
+
+    public static async Task ResetAsync(AppDbContext db, Guid orderId, DateTime now)
+    {
+        db.AuditLogs.Add(new AuditLog
+        {
+            Action = ActionReset,
+            EntityName = "DeliveryOrder",
+            EntityId = orderId.ToString(),
+            Timestamp = now
+        });
+        await db.SaveChangesAsync();
+    }
+
+    public static async Task SimulateLockoutForTestingAsync(AppDbContext db, Guid orderId, DateTime lockoutTime)
+    {
+        var entityId = orderId.ToString();
+        for (int i = 0; i < 3; i++)
+        {
+            db.AuditLogs.Add(new AuditLog
+            {
+                Action = ActionFailed,
+                EntityName = "DeliveryOrder",
+                EntityId = entityId,
+                Timestamp = lockoutTime.AddSeconds(-3 + i)
+            });
         }
+        await db.SaveChangesAsync();
     }
 }
 
@@ -191,6 +213,7 @@ public partial class StationOperationService : IStationOperationService
         await sem.WaitAsync();
         try
         {
+            DeliveryOrder order;
             if (_db.Database.IsRelational())
             {
                 await using var tx = await _db.Database.BeginTransactionAsync();
@@ -201,7 +224,7 @@ public partial class StationOperationService : IStationOperationService
                 await _db.Database.ExecuteSqlInterpolatedAsync(
                     $"SELECT id FROM station_slots WHERE id = {request.SlotId!.Value} FOR UPDATE");
 
-                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                     ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
 
                 if (order.OriginStationId != stationId)
@@ -264,7 +287,7 @@ public partial class StationOperationService : IStationOperationService
             }
             else
             {
-                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                     ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
 
                 if (order.OriginStationId != stationId)
@@ -433,8 +456,17 @@ public partial class StationOperationService : IStationOperationService
         {
             var now = DateTime.UtcNow;
 
-            // Check if currently locked
-            var lockCheck = OtpLockoutManager.CheckLock(tracking, now);
+            var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
+
+            if (order.DestinationStationId != stationId)
+                throw new ApiException(StatusCodes.Status404NotFound, "Order destination is not this station.");
+
+            if (order.Status != "ARRIVED")
+                throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
+
+            // Check if currently locked in persistent database
+            var lockCheck = await OtpLockoutManager.CheckLockAsync(_db, order.Id, now);
             if (lockCheck.IsLocked)
             {
                 return new PickupVerificationResult
@@ -455,7 +487,7 @@ public partial class StationOperationService : IStationOperationService
                 await _db.Database.ExecuteSqlInterpolatedAsync(
                     $"SELECT id FROM delivery_orders WHERE tracking_number = {tracking} FOR UPDATE");
 
-                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                     ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
 
                 if (order.DestinationStationId != stationId)
@@ -465,7 +497,7 @@ public partial class StationOperationService : IStationOperationService
                     throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
 
                 var isCodeMatch = order.PickupSecureCode == code;
-                var attemptResult = OtpLockoutManager.RecordAttempt(tracking, isCodeMatch, now);
+                var attemptResult = await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, isCodeMatch, now);
 
                 if (!isCodeMatch)
                 {
@@ -558,7 +590,7 @@ public partial class StationOperationService : IStationOperationService
             }
             else
             {
-                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                     ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
 
                 if (order.DestinationStationId != stationId)
@@ -568,7 +600,7 @@ public partial class StationOperationService : IStationOperationService
                     throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
 
                 var isCodeMatch = order.PickupSecureCode == code;
-                var attemptResult = OtpLockoutManager.RecordAttempt(tracking, isCodeMatch, now);
+                var attemptResult = await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, isCodeMatch, now);
 
                 if (!isCodeMatch)
                 {
@@ -679,8 +711,18 @@ public partial class StationOperationService : IStationOperationService
             throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
 
         var now = DateTime.UtcNow;
+        var lockCheck = await OtpLockoutManager.CheckLockAsync(_db, order.Id, now);
+        if (lockCheck.IsLocked)
+        {
+            return new ValidateSecureCodeResponseDto(
+                false,
+                0,
+                true,
+                lockCheck.LockoutExpiresAt);
+        }
+
         var isCodeMatch = order.PickupSecureCode == code;
-        var attemptResult = OtpLockoutManager.RecordAttempt(tracking, isCodeMatch, now);
+        var attemptResult = await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, isCodeMatch, now);
 
         return new ValidateSecureCodeResponseDto(
             isCodeMatch,

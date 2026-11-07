@@ -414,8 +414,11 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
         var destOp = await NewUserAsync(AppRoles.StationOperator);
         var (_, dest, order, _) = await SetupTestScenarioAsync(customer.Id, originOp.Id, destOp.Id, initialStatus: "ARRIVED");
 
-        // Simulate that the 10-minute lockout expired 1 minute ago
-        OtpLockoutManager.SimulateLockoutForTesting(order.TrackingNumber, DateTime.UtcNow.AddMinutes(-1));
+        // Simulate that the 10-minute lockout expired 1 minute ago in persistent database
+        await _factory.WithDbAsync(async db =>
+        {
+            await OtpLockoutManager.SimulateLockoutForTestingAsync(db, order.Id, DateTime.UtcNow.AddMinutes(-11));
+        });
 
         // Submitting an incorrect code now should NOT immediately return 423 Locked!
         // Instead, attempts should reset to 0, count this as attempt 1, and return 400 Bad Request with attemptsRemaining = 2.
@@ -464,6 +467,159 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             var dbOrder = await db.DeliveryOrders.SingleAsync(o => o.Id == order.Id);
             Assert.Equal("DELIVERED", dbOrder.Status);
 
+            var dbSlot = await db.StationSlots.SingleAsync(s => s.Id == destSlot.Id);
+            Assert.Equal("EMPTY", dbSlot.Status);
+        });
+    }
+    [Fact]
+    public async Task Pickup_lockout_counter_persists_across_database_contexts()
+    {
+        var customer = await NewUserAsync(AppRoles.Customer);
+        var originOp = await NewUserAsync(AppRoles.StationOperator);
+        var destOp = await NewUserAsync(AppRoles.StationOperator);
+        var (_, dest, order, _) = await SetupTestScenarioAsync(customer.Id, originOp.Id, destOp.Id, initialStatus: "ARRIVED");
+
+        // Attempt 1: wrong code -> 400 with attemptsRemaining = 2
+        var wrong1 = await SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = "111111"
+            });
+        Assert.Equal(HttpStatusCode.BadRequest, wrong1.StatusCode);
+
+        // Verify failure was persisted in AuditLogs
+        await _factory.WithDbAsync(async db =>
+        {
+            var count = await db.AuditLogs.CountAsync(a => a.EntityId == order.Id.ToString() && a.Action == "PICKUP_OTP_FAILED");
+            Assert.Equal(1, count);
+        });
+
+        // Attempt 2: wrong code -> 400 with attemptsRemaining = 1
+        var wrong2 = await SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = "222222"
+            });
+        Assert.Equal(HttpStatusCode.BadRequest, wrong2.StatusCode);
+        var j2 = await JsonAsync(wrong2);
+        Assert.Equal(1, j2.GetProperty("attemptsRemaining").GetInt32());
+
+        // Attempt 3: wrong code -> 423 Locked!
+        var wrong3 = await SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = "333333"
+            });
+        Assert.Equal((HttpStatusCode)423, wrong3.StatusCode);
+
+        // Verify across an independent DbContext scope that the lockout persists
+        await _factory.WithDbAsync(async db =>
+        {
+            var check = await OtpLockoutManager.CheckLockAsync(db, order.Id, DateTime.UtcNow);
+            Assert.True(check.IsLocked);
+            Assert.Equal(0, check.AttemptsRemaining);
+        });
+    }
+}
+
+/// <summary>LA-127: Real PostgreSQL verification for package pickup confirmation and row locking.</summary>
+public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
+{
+    private const string Password = "Passw0rd123";
+    private static int _counter;
+    private readonly PostgresApiFactory _factory;
+    private readonly HttpClient _client;
+
+    public PackagePickupPostgresTests(PostgresApiFactory factory)
+    {
+        _factory = factory;
+        _client = PostgresApiFactory.ServerConnectionString is null ? new HttpClient() : factory.CreateClient();
+    }
+
+    public void Dispose() => _client.Dispose();
+
+    private async Task<(Guid Id, string Access)> NewUserAsync(string roleCode)
+    {
+        var n = Interlocked.Increment(ref _counter);
+        var email = $"pg-ops-{n}@example.com";
+        var userId = Guid.NewGuid();
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var role = await db.Roles.SingleAsync(r => r.Code == roleCode);
+            db.Users.Add(new User
+            {
+                Id = userId,
+                RoleId = role.Id,
+                Email = email,
+                PasswordHash = new PasswordHasher().Hash(Password),
+                FullName = $"Pg Ops User {n}",
+                PhoneNumber = $"087{n:D7}",
+                Status = "ACTIVE"
+            });
+            await db.SaveChangesAsync();
+        });
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email, password = Password });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var auth = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return (userId, auth.GetProperty("accessToken").GetString()!);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, string? bearer, object? body = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (bearer is not null)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        if (body is not null)
+            request.Content = JsonContent.Create(body);
+        return await _client.SendAsync(request);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Concurrent_pickup_requests_serialize_and_only_one_succeeds()
+    {
+        var (customerId, _) = await NewUserAsync(AppRoles.Customer);
+        var (originOpId, _) = await NewUserAsync(AppRoles.StationOperator);
+        var (destOpId, destOpToken) = await NewUserAsync(AppRoles.StationOperator);
+
+        var n = Interlocked.Increment(ref _counter);
+        var origin = new LandingStation { Id = Guid.NewGuid(), StationCode = $"PG-ORG-{n}", Name = "Org", Address = "Org Addr", Latitude = 10.7m, Longitude = 106.7m, TotalSlots = 2, Status = "OPERATIONAL", OperatorId = originOpId };
+        var dest = new LandingStation { Id = Guid.NewGuid(), StationCode = $"PG-DST-{n}", Name = "Dst", Address = "Dst Addr", Latitude = 10.8m, Longitude = 106.8m, TotalSlots = 2, Status = "OPERATIONAL", OperatorId = destOpId };
+        var originSlot = new StationSlot { Id = Guid.NewGuid(), StationId = origin.Id, SlotNumber = 1, Status = "EMPTY" };
+        var destSlot = new StationSlot { Id = Guid.NewGuid(), StationId = dest.Id, SlotNumber = 1, Status = "OCCUPIED" };
+        var pkg = new Package { SenderId = customerId, PackageName = "Package", WeightGram = 500, LengthCm = 10, WidthCm = 10, HeightCm = 10 };
+        var order = new DeliveryOrder { TrackingNumber = $"PG-TRK-{n}", CustomerId = customerId, Package = pkg, OriginStationId = origin.Id, DestinationStationId = dest.Id, RecipientName = "Recipient", RecipientPhone = "0900000000", PickupSecureCode = "123456", Status = "ARRIVED" };
+        var drone = new Drone { SerialNumber = $"PG-DRN-OPS-{n}", ModelName = "Carrier", MaxPayloadGram = 2500, MaxFlightRangeKm = 30, BatteryCapacityMah = 18000 };
+        var mission = new FlightMission { Order = order, Drone = drone, StartSlot = originSlot, DestinationSlot = destSlot, FlightStatus = "COMPLETED" };
+
+        await _factory.WithDbAsync(async db =>
+        {
+            db.LandingStations.AddRange(origin, dest);
+            db.StationSlots.AddRange(originSlot, destSlot);
+            db.Packages.Add(pkg);
+            db.DeliveryOrders.Add(order);
+            db.Drones.Add(drone);
+            db.FlightMissions.Add(mission);
+            await db.SaveChangesAsync();
+        });
+
+        var t1 = SendAsync(HttpMethod.Post, $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken, new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
+        var t2 = SendAsync(HttpMethod.Post, $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken, new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
+
+        var responses = await Task.WhenAll(t1, t2);
+        var codes = responses.Select(r => r.StatusCode).ToList();
+
+        Assert.Contains(HttpStatusCode.OK, codes);
+        Assert.Contains(HttpStatusCode.Conflict, codes);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var dbOrder = await db.DeliveryOrders.SingleAsync(o => o.Id == order.Id);
+            Assert.Equal("DELIVERED", dbOrder.Status);
             var dbSlot = await db.StationSlots.SingleAsync(s => s.Id == destSlot.Id);
             Assert.Equal("EMPTY", dbSlot.Status);
         });
