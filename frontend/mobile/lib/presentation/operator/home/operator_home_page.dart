@@ -25,6 +25,20 @@ class OperatorHomePage extends ConsumerWidget {
         ),
       ],
     ),
-    body: const Center(child: Text('Station Operator app')),
+    body: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Station Operator app'),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            key: const Key('operator-pickup-button'),
+            onPressed: () => context.push(RoutePaths.operatorPickup),
+            icon: const Icon(Icons.mark_email_read_outlined),
+            label: const Text('Confirm Package Pickup'),
+          ),
+        ],
+      ),
+    ),
   );
 }
