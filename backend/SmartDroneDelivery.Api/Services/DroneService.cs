@@ -163,10 +163,14 @@ public class DroneService : IDroneService
                 await _db.SaveChangesAsync();
                 await tx.CommitAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
                 await tx.RollbackAsync();
-                throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+                if (IsDuplicateSerialException(ex))
+                {
+                    throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+                }
+                throw;
             }
         }
         else
@@ -177,9 +181,13 @@ public class DroneService : IDroneService
                 _db.AuditLogs.Add(audit);
                 await _db.SaveChangesAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
-                throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+                if (IsDuplicateSerialException(ex))
+                {
+                    throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+                }
+                throw;
             }
         }
 
@@ -361,6 +369,21 @@ public class DroneService : IDroneService
         {
             sem.Release();
         }
+    }
+
+    private static bool IsDuplicateSerialException(DbUpdateException ex)
+    {
+        if (ex.InnerException is Npgsql.PostgresException pgEx)
+        {
+            return pgEx.SqlState == "23505" &&
+                   (pgEx.ConstraintName?.Contains("serial", StringComparison.OrdinalIgnoreCase) == true ||
+                    pgEx.MessageText.Contains("serial_number", StringComparison.OrdinalIgnoreCase));
+        }
+
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("serial", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("duplicate", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("key", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void ValidateSpecs(

@@ -465,3 +465,136 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
         Assert.Contains(HttpStatusCode.Conflict, statusCodes);
     }
 }
+
+
+/// <summary>LA-128: Real PostgreSQL verification for unique constraint violation and maintenance transaction.</summary>
+public class DronePostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
+{
+    private const string Password = "Passw0rd123";
+    private static int _counter;
+    private readonly PostgresApiFactory _factory;
+    private readonly HttpClient _client;
+
+    public DronePostgresTests(PostgresApiFactory factory)
+    {
+        _factory = factory;
+        _client = PostgresApiFactory.ServerConnectionString is null ? new HttpClient() : factory.CreateClient();
+    }
+
+    public void Dispose() => _client.Dispose();
+
+    private async Task<(Guid Id, string Access)> NewUserAsync(string roleCode)
+    {
+        var n = Interlocked.Increment(ref _counter);
+        var email = $"pg-drone-{n}@example.com";
+        var userId = Guid.NewGuid();
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var role = await db.Roles.SingleAsync(r => r.Code == roleCode);
+            db.Users.Add(new User
+            {
+                Id = userId,
+                RoleId = role.Id,
+                Email = email,
+                PasswordHash = new PasswordHasher().Hash(Password),
+                FullName = $"Pg Drone User {n}",
+                PhoneNumber = $"086{n:D7}",
+                Status = "ACTIVE"
+            });
+            await db.SaveChangesAsync();
+        });
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email, password = Password });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var auth = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return (userId, auth.GetProperty("accessToken").GetString()!);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, string? bearer, object? body = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (bearer is not null)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        if (body is not null)
+            request.Content = JsonContent.Create(body);
+        return await _client.SendAsync(request);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Create_duplicate_serial_number_violates_unique_constraint_and_returns_409()
+    {
+        var (_, adminToken) = await NewUserAsync(AppRoles.Admin);
+        var serial = $"PG-DRN-{Interlocked.Increment(ref _counter):D4}";
+
+        var first = await SendAsync(HttpMethod.Post, "/api/drones", adminToken, new
+        {
+            serialNumber = serial,
+            modelName = "Pg Carrier 1",
+            maxPayloadGram = 2000m,
+            maxFlightRangeKm = 25m,
+            batteryCapacityMah = 16000
+        });
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+        var second = await SendAsync(HttpMethod.Post, "/api/drones", adminToken, new
+        {
+            serialNumber = serial,
+            modelName = "Pg Carrier 2",
+            maxPayloadGram = 2000m,
+            maxFlightRangeKm = 25m,
+            batteryCapacityMah = 16000
+        });
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Concurrent_maintenance_start_serializes_and_rejects_second_with_409()
+    {
+        var (_, dispToken) = await NewUserAsync(AppRoles.Dispatcher);
+        var serial = $"PG-DRN-CONC-{Interlocked.Increment(ref _counter):D4}";
+        var droneId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var drone = new Drone
+            {
+                SerialNumber = serial,
+                ModelName = "Pg Carrier Concurrent",
+                MaxPayloadGram = 2000,
+                MaxFlightRangeKm = 25,
+                BatteryCapacityMah = 16000,
+                Status = "IDLE"
+            };
+            db.Drones.Add(drone);
+            await db.SaveChangesAsync();
+            droneId = drone.Id;
+        });
+
+        var t1 = SendAsync(HttpMethod.Put, $"/api/drones/{droneId}/maintenance", dispToken, new
+        {
+            action = "START",
+            expectedStatus = "IDLE",
+            reason = "Routine inspection 1"
+        });
+
+        var t2 = SendAsync(HttpMethod.Put, $"/api/drones/{droneId}/maintenance", dispToken, new
+        {
+            action = "START",
+            expectedStatus = "IDLE",
+            reason = "Routine inspection 2"
+        });
+
+        var responses = await Task.WhenAll(t1, t2);
+        var codes = responses.Select(r => r.StatusCode).ToList();
+
+        Assert.Contains(HttpStatusCode.OK, codes);
+        Assert.Contains(HttpStatusCode.Conflict, codes);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var drone = await db.Drones.SingleAsync(d => d.Id == droneId);
+            Assert.Equal("MAINTENANCE", drone.Status);
+        });
+    }
+}
