@@ -467,3 +467,108 @@ public class LandingStationManagementTests : IClassFixture<AuthApiFactory>
         Assert.Contains(HttpStatusCode.OK, statusCodes);
     }
 }
+
+
+/// <summary>LA-115: Real PostgreSQL verification for landing station status update concurrency and transaction.</summary>
+public class LandingStationPostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
+{
+    private const string Password = "Passw0rd123";
+    private static int _counter;
+    private readonly PostgresApiFactory _factory;
+    private readonly HttpClient _client;
+
+    public LandingStationPostgresTests(PostgresApiFactory factory)
+    {
+        _factory = factory;
+        _client = PostgresApiFactory.ServerConnectionString is null ? new HttpClient() : factory.CreateClient();
+    }
+
+    public void Dispose() => _client.Dispose();
+
+    private async Task<(Guid Id, string Access)> NewUserAsync(string roleCode)
+    {
+        var n = Interlocked.Increment(ref _counter);
+        var email = $"pg-station-{n}@example.com";
+        var userId = Guid.NewGuid();
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var role = await db.Roles.SingleAsync(r => r.Code == roleCode);
+            db.Users.Add(new User
+            {
+                Id = userId,
+                RoleId = role.Id,
+                Email = email,
+                PasswordHash = new PasswordHasher().Hash(Password),
+                FullName = $"Pg Station User {n}",
+                PhoneNumber = $"088{n:D7}",
+                Status = "ACTIVE"
+            });
+            await db.SaveChangesAsync();
+        });
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email, password = Password });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var auth = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return (userId, auth.GetProperty("accessToken").GetString()!);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, string? bearer, object? body = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (bearer is not null)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        if (body is not null)
+            request.Content = JsonContent.Create(body);
+        return await _client.SendAsync(request);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_ChangeStatus_concurrent_requests_detect_conflict()
+    {
+        var (_, adminToken) = await NewUserAsync(AppRoles.Admin);
+        var code = $"PG-STN-{Interlocked.Increment(ref _counter):D4}";
+        var stationId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code,
+                Name = $"Pg Concurrent Hub {code}",
+                Address = "Pg Address",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 2,
+                Status = "OPERATIONAL"
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+            stationId = station.Id;
+        });
+
+        var t1 = SendAsync(HttpMethod.Put, $"/api/landing-stations/{stationId}/status", adminToken, new
+        {
+            newStatus = "MAINTENANCE",
+            reason = "Sensor calibration 1."
+        });
+
+        var t2 = SendAsync(HttpMethod.Put, $"/api/landing-stations/{stationId}/status", adminToken, new
+        {
+            newStatus = "OFFLINE",
+            reason = "Electrical repair 2."
+        });
+
+        var responses = await Task.WhenAll(t1, t2);
+        var codes = responses.Select(r => r.StatusCode).ToList();
+
+        Assert.Contains(HttpStatusCode.OK, codes);
+        Assert.Contains(HttpStatusCode.Conflict, codes);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == stationId.ToString() && a.Action == "STATION_STATUS_CHANGE");
+            Assert.Equal(1, auditCount);
+        });
+    }
+}
