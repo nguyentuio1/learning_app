@@ -305,3 +305,166 @@ public class StationSlotManagementTests : IClassFixture<AuthApiFactory>
         Assert.Equal(HttpStatusCode.OK, dispDetail.StatusCode);
     }
 }
+
+
+/// <summary>LA-118: Real PostgreSQL verification for station slot update concurrency and transaction.</summary>
+public class StationSlotPostgresTests : IClassFixture<PostgresApiFactory>, IDisposable
+{
+    private const string Password = "Passw0rd123";
+    private static int _counter;
+    private readonly PostgresApiFactory _factory;
+    private readonly HttpClient _client;
+
+    public StationSlotPostgresTests(PostgresApiFactory factory)
+    {
+        _factory = factory;
+        _client = PostgresApiFactory.ServerConnectionString is null ? new HttpClient() : factory.CreateClient();
+    }
+
+    public void Dispose() => _client.Dispose();
+
+    private async Task<(Guid Id, string Access)> NewUserAsync(string roleCode)
+    {
+        var n = Interlocked.Increment(ref _counter);
+        var email = $"pg-slot-{n}@example.com";
+        var userId = Guid.NewGuid();
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var role = await db.Roles.SingleAsync(r => r.Code == roleCode);
+            db.Users.Add(new User
+            {
+                Id = userId,
+                RoleId = role.Id,
+                Email = email,
+                PasswordHash = new PasswordHasher().Hash(Password),
+                FullName = $"Pg Slot User {n}",
+                PhoneNumber = $"081{n:D7}",
+                Status = "ACTIVE"
+            });
+            await db.SaveChangesAsync();
+        });
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email, password = Password });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var auth = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return (userId, auth.GetProperty("accessToken").GetString()!);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, string? bearer, object? body = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (bearer is not null)
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        if (body is not null)
+            request.Content = JsonContent.Create(body);
+        return await _client.SendAsync(request);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_UpdateStatus_concurrent_requests_detect_conflict()
+    {
+        var (_, adminToken) = await NewUserAsync(AppRoles.Admin);
+        var code = $"PG-SLOT-{Interlocked.Increment(ref _counter):D4}";
+        var slotId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code,
+                Name = $"Pg Slot Station {code}",
+                Address = "Pg Address",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 1,
+                Status = "OPERATIONAL"
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+
+            var slot = new StationSlot
+            {
+                StationId = station.Id,
+                SlotNumber = 1,
+                Status = "EMPTY"
+            };
+            db.StationSlots.Add(slot);
+            await db.SaveChangesAsync();
+            slotId = slot.Id;
+        });
+
+        var t1 = SendAsync(HttpMethod.Put, $"/api/station-slots/{slotId}/status", adminToken, new
+        {
+            targetStatus = "MAINTENANCE",
+            reason = "Pin repair."
+        });
+
+        var t2 = SendAsync(HttpMethod.Put, $"/api/station-slots/{slotId}/status", adminToken, new
+        {
+            targetStatus = "RESERVED",
+            reason = "Incoming drone."
+        });
+
+        var responses = await Task.WhenAll(t1, t2);
+        var codes = responses.Select(r => r.StatusCode).ToList();
+
+        Assert.Contains(HttpStatusCode.OK, codes);
+        Assert.Contains(HttpStatusCode.Conflict, codes);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == slotId.ToString() && a.Action == "STATION_SLOT_STATUS_UPDATE");
+            Assert.Equal(1, auditCount);
+        });
+    }
+
+    [PostgresFact]
+    public async Task Postgres_AddSlot_concurrent_requests_serialize_and_increment_correctly()
+    {
+        var (_, adminToken) = await NewUserAsync(AppRoles.Admin);
+        var code = $"PG-SLOT-ADD-{Interlocked.Increment(ref _counter):D4}";
+        var stationId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code,
+                Name = $"Pg Slot Add Station {code}",
+                Address = "Pg Address",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 1,
+                Status = "OPERATIONAL"
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+
+            var slot = new StationSlot
+            {
+                StationId = station.Id,
+                SlotNumber = 1,
+                Status = "EMPTY"
+            };
+            db.StationSlots.Add(slot);
+            await db.SaveChangesAsync();
+            stationId = station.Id;
+        });
+
+        var t1 = SendAsync(HttpMethod.Post, $"/api/landing-stations/{stationId}/slots", adminToken, new { });
+        var t2 = SendAsync(HttpMethod.Post, $"/api/landing-stations/{stationId}/slots", adminToken, new { });
+
+        var responses = await Task.WhenAll(t1, t2);
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.Created, r.StatusCode));
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = await db.LandingStations.Include(s => s.Slots).SingleAsync(s => s.Id == stationId);
+            Assert.Equal(3, station.TotalSlots);
+            Assert.Equal(3, station.Slots.Count);
+            var slotNumbers = station.Slots.Select(s => s.SlotNumber).OrderBy(n => n).ToList();
+            Assert.Equal(new[] { 1, 2, 3 }, slotNumbers);
+        });
+    }
+}
