@@ -369,4 +369,103 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             Assert.DoesNotContain(order2.PickupSecureCode, audit.Action);
         });
     }
+
+    [Fact]
+    public async Task Pickup_refuses_409_when_order_has_no_mission_or_destination_slot()
+    {
+        var customer = await NewUserAsync(AppRoles.Customer);
+        var originOp = await NewUserAsync(AppRoles.StationOperator);
+        var destOp = await NewUserAsync(AppRoles.StationOperator);
+        var (origin, dest, order, destSlot) = await SetupTestScenarioAsync(customer.Id, originOp.Id, destOp.Id, initialStatus: "ARRIVED");
+
+        // Remove the flight mission to simulate an order with no linked destination slot
+        await _factory.WithDbAsync(async db =>
+        {
+            var missions = await db.FlightMissions.Where(m => m.OrderId == order.Id).ToListAsync();
+            db.FlightMissions.RemoveRange(missions);
+            await db.SaveChangesAsync();
+        });
+
+        var res = await SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = order.PickupSecureCode
+            });
+
+        // Must reject with 409 Conflict per Contract 7.3 and MUST NOT touch any slots
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var dbOrder = await db.DeliveryOrders.SingleAsync(o => o.Id == order.Id);
+            Assert.Equal("ARRIVED", dbOrder.Status);
+
+            var dbSlot = await db.StationSlots.SingleAsync(s => s.Id == destSlot.Id);
+            Assert.Equal("OCCUPIED", dbSlot.Status);
+        });
+    }
+
+    [Fact]
+    public async Task Pickup_resets_attempts_after_lockout_expires_on_same_order()
+    {
+        var customer = await NewUserAsync(AppRoles.Customer);
+        var originOp = await NewUserAsync(AppRoles.StationOperator);
+        var destOp = await NewUserAsync(AppRoles.StationOperator);
+        var (_, dest, order, _) = await SetupTestScenarioAsync(customer.Id, originOp.Id, destOp.Id, initialStatus: "ARRIVED");
+
+        // Simulate that the 10-minute lockout expired 1 minute ago
+        OtpLockoutManager.SimulateLockoutForTesting(order.TrackingNumber, DateTime.UtcNow.AddMinutes(-1));
+
+        // Submitting an incorrect code now should NOT immediately return 423 Locked!
+        // Instead, attempts should reset to 0, count this as attempt 1, and return 400 Bad Request with attemptsRemaining = 2.
+        var wrongRes = await SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = "999999"
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, wrongRes.StatusCode);
+        var wrongJson = await JsonAsync(wrongRes);
+        Assert.Equal(2, wrongJson.GetProperty("attemptsRemaining").GetInt32());
+    }
+
+    [Fact]
+    public async Task Concurrent_pickup_requests_only_one_succeeds_and_second_returns_409()
+    {
+        var customer = await NewUserAsync(AppRoles.Customer);
+        var originOp = await NewUserAsync(AppRoles.StationOperator);
+        var destOp = await NewUserAsync(AppRoles.StationOperator);
+        var (_, dest, order, destSlot) = await SetupTestScenarioAsync(customer.Id, originOp.Id, destOp.Id, initialStatus: "ARRIVED");
+
+        var task1 = SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = order.PickupSecureCode
+            });
+
+        var task2 = SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = order.PickupSecureCode
+            });
+
+        var responses = await Task.WhenAll(task1, task2);
+        var statusCodes = responses.Select(r => r.StatusCode).ToList();
+
+        Assert.Contains(HttpStatusCode.OK, statusCodes);
+        Assert.Contains(HttpStatusCode.Conflict, statusCodes);
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var dbOrder = await db.DeliveryOrders.SingleAsync(o => o.Id == order.Id);
+            Assert.Equal("DELIVERED", dbOrder.Status);
+
+            var dbSlot = await db.StationSlots.SingleAsync(s => s.Id == destSlot.Id);
+            Assert.Equal("EMPTY", dbSlot.Status);
+        });
+    }
 }

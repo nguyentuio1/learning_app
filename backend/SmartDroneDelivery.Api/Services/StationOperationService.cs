@@ -19,6 +19,92 @@ public class PickupVerificationResult
     public int? RetryAfterSeconds { get; set; }
 }
 
+public static class OtpLockoutManager
+{
+    private class TrackingLockState
+    {
+        public int Attempts { get; set; }
+        public DateTime? LockedUntil { get; set; }
+    }
+
+    private static readonly ConcurrentDictionary<string, TrackingLockState> State = new();
+
+    public static (bool IsLocked, int AttemptsRemaining, DateTime? LockoutExpiresAt, int? RetryAfterSeconds) RecordAttempt(
+        string trackingNumber, bool isCorrect, DateTime now)
+    {
+        var item = State.GetOrAdd(trackingNumber, _ => new TrackingLockState());
+        lock (item)
+        {
+            if (item.LockedUntil.HasValue)
+            {
+                if (item.LockedUntil.Value > now)
+                {
+                    var seconds = (int)Math.Ceiling((item.LockedUntil.Value - now).TotalSeconds);
+                    return (true, 0, item.LockedUntil.Value, seconds);
+                }
+
+                // Lockout expired: reset attempts!
+                item.Attempts = 0;
+                item.LockedUntil = null;
+            }
+
+            if (isCorrect)
+            {
+                item.Attempts = 0;
+                item.LockedUntil = null;
+                return (false, 3, null, null);
+            }
+
+            item.Attempts++;
+            if (item.Attempts >= 3)
+            {
+                item.LockedUntil = now.AddMinutes(10);
+                return (true, 0, item.LockedUntil.Value, 600);
+            }
+
+            return (false, 3 - item.Attempts, null, null);
+        }
+    }
+
+    public static (bool IsLocked, int AttemptsRemaining, DateTime? LockoutExpiresAt, int? RetryAfterSeconds) CheckLock(
+        string trackingNumber, DateTime now)
+    {
+        var item = State.GetOrAdd(trackingNumber, _ => new TrackingLockState());
+        lock (item)
+        {
+            if (item.LockedUntil.HasValue)
+            {
+                if (item.LockedUntil.Value > now)
+                {
+                    var seconds = (int)Math.Ceiling((item.LockedUntil.Value - now).TotalSeconds);
+                    return (true, 0, item.LockedUntil.Value, seconds);
+                }
+
+                // Lockout expired: reset attempts!
+                item.Attempts = 0;
+                item.LockedUntil = null;
+            }
+
+            return (false, 3 - item.Attempts, null, null);
+        }
+    }
+
+    public static void Reset(string trackingNumber)
+    {
+        State.TryRemove(trackingNumber, out _);
+    }
+
+    public static void SimulateLockoutForTesting(string trackingNumber, DateTime lockoutTime)
+    {
+        var item = State.GetOrAdd(trackingNumber, _ => new TrackingLockState());
+        lock (item)
+        {
+            item.Attempts = 3;
+            item.LockedUntil = lockoutTime;
+        }
+    }
+}
+
 public interface IStationOperationService
 {
     Task<StationOrderInfoDto> GetOrderInfoAsync(Guid userId, Guid stationId, string trackingNumber);
@@ -30,7 +116,7 @@ public interface IStationOperationService
 
 public partial class StationOperationService : IStationOperationService
 {
-    private static readonly ConcurrentDictionary<string, (int Attempts, DateTime? LockedUntil)> Lockouts = new();
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> OrderLocks = new();
 
     [GeneratedRegex(@"^\d{6}$")]
     private static partial Regex SecureCodeRegex();
@@ -101,74 +187,148 @@ public partial class StationOperationService : IStationOperationService
 
         ThrowIfInvalid(errors);
 
-        var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
-
-        if (order.OriginStationId != stationId)
-            throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
-
-        if (order.Status != "APPROVED")
-            throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
-
-        var slot = await _db.StationSlots.FirstOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
-
-        if (slot.Status != "EMPTY")
-            throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
-
-        var now = DateTime.UtcNow;
-        order.Status = "READY_FOR_TAKEOFF";
-        order.UpdatedAt = now;
-        slot.Status = "OCCUPIED";
-        slot.LastUpdated = now;
-
-        _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+        var sem = OrderLocks.GetOrAdd(tracking, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync();
+        try
         {
-            OrderId = order.Id,
-            FromStatus = "APPROVED",
-            ToStatus = "READY_FOR_TAKEOFF",
-            ChangedBy = userId,
-            Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
-            CreatedAt = now
-        });
+            if (_db.Database.IsRelational())
+            {
+                await using var tx = await _db.Database.BeginTransactionAsync();
 
-        _db.AuditLogs.Add(new AuditLog
-        {
-            UserId = userId,
-            Action = "PACKAGE_INTAKE_CONFIRMATION",
-            EntityName = "DeliveryOrder",
-            EntityId = order.Id.ToString(),
-            Timestamp = now
-        });
+                // Lock order and slot in PostgreSQL
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT id FROM delivery_orders WHERE tracking_number = {tracking} FOR UPDATE");
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT id FROM station_slots WHERE id = {request.SlotId!.Value} FOR UPDATE");
 
-        _db.Notifications.Add(new Notification
-        {
-            UserId = order.CustomerId,
-            OrderId = order.Id,
-            Type = "ORDER_STATUS",
-            Title = "Ready for takeoff",
-            Message = "Your parcel has been verified and loaded at origin station.",
-            CreatedAt = now
-        });
+                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
 
-        if (_db.Database.IsRelational())
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+                if (order.OriginStationId != stationId)
+                    throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
+
+                if (order.Status != "APPROVED")
+                    throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
+
+                var slot = await _db.StationSlots.FirstOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
+
+                if (slot.Status != "EMPTY")
+                    throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
+
+                var now = DateTime.UtcNow;
+                order.Status = "READY_FOR_TAKEOFF";
+                order.UpdatedAt = now;
+                slot.Status = "OCCUPIED";
+                slot.LastUpdated = now;
+
+                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+                {
+                    OrderId = order.Id,
+                    FromStatus = "APPROVED",
+                    ToStatus = "READY_FOR_TAKEOFF",
+                    ChangedBy = userId,
+                    Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
+                    CreatedAt = now
+                });
+
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "PACKAGE_INTAKE_CONFIRMATION",
+                    EntityName = "DeliveryOrder",
+                    EntityId = order.Id.ToString(),
+                    Timestamp = now
+                });
+
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = order.CustomerId,
+                    OrderId = order.Id,
+                    Type = "ORDER_STATUS",
+                    Title = "Ready for takeoff",
+                    Message = "Your parcel has been verified and loaded at origin station.",
+                    CreatedAt = now
+                });
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return new PackageIntakeResponseDto(
+                    order.Id,
+                    order.TrackingNumber,
+                    order.Status,
+                    slot.Id,
+                    slot.SlotNumber,
+                    now);
+            }
+            else
+            {
+                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
+
+                if (order.OriginStationId != stationId)
+                    throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
+
+                if (order.Status != "APPROVED")
+                    throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
+
+                var slot = await _db.StationSlots.FirstOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
+
+                if (slot.Status != "EMPTY")
+                    throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
+
+                var now = DateTime.UtcNow;
+                order.Status = "READY_FOR_TAKEOFF";
+                order.UpdatedAt = now;
+                slot.Status = "OCCUPIED";
+                slot.LastUpdated = now;
+
+                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+                {
+                    OrderId = order.Id,
+                    FromStatus = "APPROVED",
+                    ToStatus = "READY_FOR_TAKEOFF",
+                    ChangedBy = userId,
+                    Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
+                    CreatedAt = now
+                });
+
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "PACKAGE_INTAKE_CONFIRMATION",
+                    EntityName = "DeliveryOrder",
+                    EntityId = order.Id.ToString(),
+                    Timestamp = now
+                });
+
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = order.CustomerId,
+                    OrderId = order.Id,
+                    Type = "ORDER_STATUS",
+                    Title = "Ready for takeoff",
+                    Message = "Your parcel has been verified and loaded at origin station.",
+                    CreatedAt = now
+                });
+
+                await _db.SaveChangesAsync();
+
+                return new PackageIntakeResponseDto(
+                    order.Id,
+                    order.TrackingNumber,
+                    order.Status,
+                    slot.Id,
+                    slot.SlotNumber,
+                    now);
+            }
         }
-        else
+        finally
         {
-            await _db.SaveChangesAsync();
+            sem.Release();
         }
-
-        return new PackageIntakeResponseDto(
-            order.Id,
-            order.TrackingNumber,
-            order.Status,
-            slot.Id,
-            slot.SlotNumber,
-            now);
     }
 
     public async Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request)
@@ -186,61 +346,70 @@ public partial class StationOperationService : IStationOperationService
 
         ThrowIfInvalid(errors);
 
-        var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
-
-        if (order.OriginStationId != stationId)
-            throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
-
-        if (order.Status != "APPROVED")
-            throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
-
-        var now = DateTime.UtcNow;
-        order.Status = "FAILED";
-        order.CancelReason = reason;
-        order.UpdatedAt = now;
-
-        _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+        var sem = OrderLocks.GetOrAdd(tracking, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync();
+        try
         {
-            OrderId = order.Id,
-            FromStatus = "APPROVED",
-            ToStatus = "FAILED",
-            ChangedBy = userId,
-            Remarks = reason,
-            CreatedAt = now
-        });
+            var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
 
-        _db.AuditLogs.Add(new AuditLog
-        {
-            UserId = userId,
-            Action = "PACKAGE_INTAKE_REJECT",
-            EntityName = "DeliveryOrder",
-            EntityId = order.Id.ToString(),
-            Timestamp = now
-        });
+            if (order.OriginStationId != stationId)
+                throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
 
-        _db.Notifications.Add(new Notification
-        {
-            UserId = order.CustomerId,
-            OrderId = order.Id,
-            Type = "ORDER_STATUS",
-            Title = "Package Intake Failed",
-            Message = reason,
-            CreatedAt = now
-        });
+            if (order.Status != "APPROVED")
+                throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
 
-        if (_db.Database.IsRelational())
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+            var now = DateTime.UtcNow;
+            order.Status = "FAILED";
+            order.CancelReason = reason;
+            order.UpdatedAt = now;
+
+            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+            {
+                OrderId = order.Id,
+                FromStatus = "APPROVED",
+                ToStatus = "FAILED",
+                ChangedBy = userId,
+                Remarks = reason,
+                CreatedAt = now
+            });
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                UserId = userId,
+                Action = "PACKAGE_INTAKE_REJECT",
+                EntityName = "DeliveryOrder",
+                EntityId = order.Id.ToString(),
+                Timestamp = now
+            });
+
+            _db.Notifications.Add(new Notification
+            {
+                UserId = order.CustomerId,
+                OrderId = order.Id,
+                Type = "ORDER_STATUS",
+                Title = "Package Intake Failed",
+                Message = reason,
+                CreatedAt = now
+            });
+
+            if (_db.Database.IsRelational())
+            {
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            else
+            {
+                await _db.SaveChangesAsync();
+            }
+
+            return new RejectIntakeResponseDto(order.Id, order.TrackingNumber, order.Status);
         }
-        else
+        finally
         {
-            await _db.SaveChangesAsync();
+            sem.Release();
         }
-
-        return new RejectIntakeResponseDto(order.Id, order.TrackingNumber, order.Status);
     }
 
     public async Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request)
@@ -258,127 +427,239 @@ public partial class StationOperationService : IStationOperationService
 
         ThrowIfInvalid(errors);
 
-        var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
-
-        if (order.DestinationStationId != stationId)
-            throw new ApiException(StatusCodes.Status404NotFound, "Order destination is not this station.");
-
-        if (order.Status != "ARRIVED")
-            throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
-
-        var now = DateTime.UtcNow;
-        var lockInfo = Lockouts.GetOrAdd(tracking, _ => (0, null));
-
-        if (lockInfo.LockedUntil.HasValue && lockInfo.LockedUntil.Value > now)
+        var sem = OrderLocks.GetOrAdd(tracking, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync();
+        try
         {
-            var seconds = (int)Math.Ceiling((lockInfo.LockedUntil.Value - now).TotalSeconds);
-            return new PickupVerificationResult
-            {
-                Success = false,
-                StatusCode = StatusCodes.Status423Locked,
-                Detail = "Too many wrong codes. Try again later.",
-                LockoutExpiresAt = lockInfo.LockedUntil.Value,
-                RetryAfterSeconds = seconds
-            };
-        }
+            var now = DateTime.UtcNow;
 
-        if (order.PickupSecureCode != code)
-        {
-            var newAttempts = lockInfo.Attempts + 1;
-            if (newAttempts >= 3)
+            // Check if currently locked
+            var lockCheck = OtpLockoutManager.CheckLock(tracking, now);
+            if (lockCheck.IsLocked)
             {
-                var lockExpires = now.AddMinutes(10);
-                Lockouts[tracking] = (3, lockExpires);
                 return new PickupVerificationResult
                 {
                     Success = false,
                     StatusCode = StatusCodes.Status423Locked,
                     Detail = "Too many wrong codes. Try again later.",
-                    LockoutExpiresAt = lockExpires,
-                    RetryAfterSeconds = 600
+                    LockoutExpiresAt = lockCheck.LockoutExpiresAt,
+                    RetryAfterSeconds = lockCheck.RetryAfterSeconds
                 };
             }
 
-            Lockouts[tracking] = (newAttempts, null);
-            return new PickupVerificationResult
+            if (_db.Database.IsRelational())
             {
-                Success = false,
-                StatusCode = StatusCodes.Status400BadRequest,
-                Detail = "Invalid pickup code.",
-                AttemptsRemaining = 3 - newAttempts
-            };
+                await using var tx = await _db.Database.BeginTransactionAsync();
+
+                // Exclusive lock on order in PostgreSQL
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT id FROM delivery_orders WHERE tracking_number = {tracking} FOR UPDATE");
+
+                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
+
+                if (order.DestinationStationId != stationId)
+                    throw new ApiException(StatusCodes.Status404NotFound, "Order destination is not this station.");
+
+                if (order.Status != "ARRIVED")
+                    throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
+
+                var isCodeMatch = order.PickupSecureCode == code;
+                var attemptResult = OtpLockoutManager.RecordAttempt(tracking, isCodeMatch, now);
+
+                if (!isCodeMatch)
+                {
+                    if (attemptResult.IsLocked)
+                    {
+                        return new PickupVerificationResult
+                        {
+                            Success = false,
+                            StatusCode = StatusCodes.Status423Locked,
+                            Detail = "Too many wrong codes. Try again later.",
+                            LockoutExpiresAt = attemptResult.LockoutExpiresAt,
+                            RetryAfterSeconds = attemptResult.RetryAfterSeconds
+                        };
+                    }
+
+                    return new PickupVerificationResult
+                    {
+                        Success = false,
+                        StatusCode = StatusCodes.Status400BadRequest,
+                        Detail = "Invalid pickup code.",
+                        AttemptsRemaining = attemptResult.AttemptsRemaining
+                    };
+                }
+
+                // Contract 7.3: Destination slot must be explicitly linked from FlightMission
+                var mission = await _db.FlightMissions
+                    .Include(m => m.DestinationSlot)
+                    .FirstOrDefaultAsync(m => m.OrderId == order.Id);
+
+                if (mission?.DestinationSlot == null || mission.DestinationSlot.StationId != stationId)
+                {
+                    throw new ApiException(StatusCodes.Status409Conflict,
+                        "Order has no destination slot linked to an active or completed flight mission.");
+                }
+
+                var slot = mission.DestinationSlot;
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT id FROM station_slots WHERE id = {slot.Id} FOR UPDATE");
+
+                order.Status = "DELIVERED";
+                order.ActualDeliveryTime = now;
+                order.UpdatedAt = now;
+                slot.Status = "EMPTY";
+                slot.LastUpdated = now;
+
+                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+                {
+                    OrderId = order.Id,
+                    FromStatus = "ARRIVED",
+                    ToStatus = "DELIVERED",
+                    ChangedBy = userId,
+                    Remarks = "Secure code verified, parcel handed over to recipient",
+                    CreatedAt = now
+                });
+
+                // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "PACKAGE_DELIVERY_CONFIRMATION",
+                    EntityName = "DeliveryOrder",
+                    EntityId = order.Id.ToString(),
+                    Timestamp = now
+                });
+
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = order.CustomerId,
+                    OrderId = order.Id,
+                    Type = "ORDER_STATUS",
+                    Title = "Package Delivered",
+                    Message = "Your delivery has been successfully picked up.",
+                    CreatedAt = now
+                });
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return new PickupVerificationResult
+                {
+                    Success = true,
+                    Response = new ConfirmPickupResponseDto(
+                        order.Id,
+                        order.TrackingNumber,
+                        order.Status,
+                        now,
+                        slot.Id,
+                        true)
+                };
+            }
+            else
+            {
+                var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
+                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
+
+                if (order.DestinationStationId != stationId)
+                    throw new ApiException(StatusCodes.Status404NotFound, "Order destination is not this station.");
+
+                if (order.Status != "ARRIVED")
+                    throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
+
+                var isCodeMatch = order.PickupSecureCode == code;
+                var attemptResult = OtpLockoutManager.RecordAttempt(tracking, isCodeMatch, now);
+
+                if (!isCodeMatch)
+                {
+                    if (attemptResult.IsLocked)
+                    {
+                        return new PickupVerificationResult
+                        {
+                            Success = false,
+                            StatusCode = StatusCodes.Status423Locked,
+                            Detail = "Too many wrong codes. Try again later.",
+                            LockoutExpiresAt = attemptResult.LockoutExpiresAt,
+                            RetryAfterSeconds = attemptResult.RetryAfterSeconds
+                        };
+                    }
+
+                    return new PickupVerificationResult
+                    {
+                        Success = false,
+                        StatusCode = StatusCodes.Status400BadRequest,
+                        Detail = "Invalid pickup code.",
+                        AttemptsRemaining = attemptResult.AttemptsRemaining
+                    };
+                }
+
+                // Contract 7.3: Destination slot must be explicitly linked from FlightMission
+                var mission = await _db.FlightMissions
+                    .Include(m => m.DestinationSlot)
+                    .FirstOrDefaultAsync(m => m.OrderId == order.Id);
+
+                if (mission?.DestinationSlot == null || mission.DestinationSlot.StationId != stationId)
+                {
+                    throw new ApiException(StatusCodes.Status409Conflict,
+                        "Order has no destination slot linked to an active or completed flight mission.");
+                }
+
+                var slot = mission.DestinationSlot;
+                order.Status = "DELIVERED";
+                order.ActualDeliveryTime = now;
+                order.UpdatedAt = now;
+                slot.Status = "EMPTY";
+                slot.LastUpdated = now;
+
+                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+                {
+                    OrderId = order.Id,
+                    FromStatus = "ARRIVED",
+                    ToStatus = "DELIVERED",
+                    ChangedBy = userId,
+                    Remarks = "Secure code verified, parcel handed over to recipient",
+                    CreatedAt = now
+                });
+
+                // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "PACKAGE_DELIVERY_CONFIRMATION",
+                    EntityName = "DeliveryOrder",
+                    EntityId = order.Id.ToString(),
+                    Timestamp = now
+                });
+
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = order.CustomerId,
+                    OrderId = order.Id,
+                    Type = "ORDER_STATUS",
+                    Title = "Package Delivered",
+                    Message = "Your delivery has been successfully picked up.",
+                    CreatedAt = now
+                });
+
+                await _db.SaveChangesAsync();
+
+                return new PickupVerificationResult
+                {
+                    Success = true,
+                    Response = new ConfirmPickupResponseDto(
+                        order.Id,
+                        order.TrackingNumber,
+                        order.Status,
+                        now,
+                        slot.Id,
+                        true)
+                };
+            }
         }
-
-        // Code correct -> reset lockout
-        Lockouts.TryRemove(tracking, out _);
-
-        var mission = await _db.FlightMissions
-            .Include(m => m.DestinationSlot)
-            .FirstOrDefaultAsync(m => m.OrderId == order.Id);
-
-        var slot = mission?.DestinationSlot
-            ?? await _db.StationSlots.FirstOrDefaultAsync(s => s.StationId == stationId && s.Status == "OCCUPIED")
-            ?? await _db.StationSlots.FirstAsync(s => s.StationId == stationId);
-
-        order.Status = "DELIVERED";
-        order.ActualDeliveryTime = now;
-        order.UpdatedAt = now;
-        slot.Status = "EMPTY";
-        slot.LastUpdated = now;
-
-        _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+        finally
         {
-            OrderId = order.Id,
-            FromStatus = "ARRIVED",
-            ToStatus = "DELIVERED",
-            ChangedBy = userId,
-            Remarks = "Secure code verified, parcel handed over to recipient",
-            CreatedAt = now
-        });
-
-        // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
-        _db.AuditLogs.Add(new AuditLog
-        {
-            UserId = userId,
-            Action = "PACKAGE_DELIVERY_CONFIRMATION",
-            EntityName = "DeliveryOrder",
-            EntityId = order.Id.ToString(),
-            Timestamp = now
-        });
-
-        _db.Notifications.Add(new Notification
-        {
-            UserId = order.CustomerId,
-            OrderId = order.Id,
-            Type = "ORDER_STATUS",
-            Title = "Package Delivered",
-            Message = "Your delivery has been successfully picked up.",
-            CreatedAt = now
-        });
-
-        if (_db.Database.IsRelational())
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+            sem.Release();
         }
-        else
-        {
-            await _db.SaveChangesAsync();
-        }
-
-        return new PickupVerificationResult
-        {
-            Success = true,
-            Response = new ConfirmPickupResponseDto(
-                order.Id,
-                order.TrackingNumber,
-                order.Status,
-                now,
-                slot.Id,
-                true)
-        };
     }
 
     public async Task<ValidateSecureCodeResponseDto> ValidateCodeAsync(Guid userId, Guid stationId, ConfirmPickupRequest request)
@@ -398,45 +679,14 @@ public partial class StationOperationService : IStationOperationService
             throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be ARRIVED.");
 
         var now = DateTime.UtcNow;
-        var lockInfo = Lockouts.GetOrAdd(tracking, _ => (0, null));
+        var isCodeMatch = order.PickupSecureCode == code;
+        var attemptResult = OtpLockoutManager.RecordAttempt(tracking, isCodeMatch, now);
 
-        if (lockInfo.LockedUntil.HasValue && lockInfo.LockedUntil.Value > now)
-        {
-            return new ValidateSecureCodeResponseDto(
-                false,
-                0,
-                true,
-                lockInfo.LockedUntil.Value);
-        }
-
-        if (order.PickupSecureCode != code)
-        {
-            var newAttempts = lockInfo.Attempts + 1;
-            if (newAttempts >= 3)
-            {
-                var lockExpires = now.AddMinutes(10);
-                Lockouts[tracking] = (3, lockExpires);
-                return new ValidateSecureCodeResponseDto(
-                    false,
-                    0,
-                    true,
-                    lockExpires);
-            }
-
-            Lockouts[tracking] = (newAttempts, null);
-            return new ValidateSecureCodeResponseDto(
-                false,
-                3 - newAttempts,
-                false,
-                null);
-        }
-
-        Lockouts.TryRemove(tracking, out _);
         return new ValidateSecureCodeResponseDto(
-            true,
-            3,
-            false,
-            null);
+            isCodeMatch,
+            attemptResult.AttemptsRemaining,
+            attemptResult.IsLocked,
+            attemptResult.LockoutExpiresAt);
     }
 
     private async Task AuthorizeStationOperatorAsync(Guid userId, Guid stationId)
