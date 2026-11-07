@@ -1,35 +1,64 @@
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.DTOs;
+using SmartDroneDelivery.Api.Security;
+using SmartDroneDelivery.Api.Services;
 
 namespace SmartDroneDelivery.Api.Controllers;
 
-/// <summary>Read-only station list for the order screens (contract section 4). Full station management is Sprint 4.</summary>
+/// <summary>LA-115: Landing station management (docs/api/station-api.md sections 2.1 to 2.5).</summary>
 [ApiController]
 [Route("api/landing-stations")]
 [Authorize]
 public class LandingStationsController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly ILandingStationService _stations;
 
-    public LandingStationsController(AppDbContext db)
+    public LandingStationsController(ILandingStationService stations)
     {
-        _db = db;
+        _stations = stations;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<StationSummaryDto>>> List([FromQuery] string? status)
+    public async Task<ActionResult<IReadOnlyList<LandingStationDto>>> List(
+        [FromQuery] string? status, [FromQuery] string? search)
     {
-        var query = _db.LandingStations.AsNoTracking();
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var wanted = status.Trim().ToUpperInvariant();
-            query = query.Where(s => s.Status == wanted);
-        }
-
-        var stations = await query.OrderBy(s => s.Name).ToListAsync();
-        return stations.Select(StationSummaryDto.From).ToList();
+        return Ok(await _stations.ListAsync(CurrentUserId(), status, search));
     }
+
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Dispatcher + "," + AppRoles.StationOperator)]
+    public async Task<ActionResult<LandingStationDetailDto>> GetById(Guid id)
+    {
+        return Ok(await _stations.GetByIdAsync(CurrentUserId(), id));
+    }
+
+    [HttpPost]
+    [Authorize(Roles = AppRoles.Admin)]
+    public async Task<ActionResult<LandingStationDto>> Create(CreateLandingStationRequest request)
+    {
+        var created = await _stations.CreateAsync(CurrentUserId(), request);
+        return Created($"/api/landing-stations/{created.Id}", created);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = AppRoles.Admin)]
+    public async Task<ActionResult<LandingStationDto>> Update(Guid id, UpdateLandingStationRequest request)
+    {
+        return Ok(await _stations.UpdateAsync(CurrentUserId(), id, request));
+    }
+
+    [HttpPut("{id:guid}/status")]
+    [Authorize(Roles = AppRoles.Admin + "," + AppRoles.StationOperator)]
+    public async Task<ActionResult<LandingStationStatusChangeResponseDto>> ChangeStatus(
+        Guid id, ChangeLandingStationStatusRequest request)
+    {
+        return Ok(await _stations.ChangeStatusAsync(CurrentUserId(), id, request));
+    }
+
+    private Guid CurrentUserId() =>
+        Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var id)
+            ? id
+            : throw new ApiException(StatusCodes.Status401Unauthorized, "Missing, invalid or expired token.");
 }
