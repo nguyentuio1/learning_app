@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.DTOs;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -466,5 +469,98 @@ public class StationSlotPostgresTests : IClassFixture<PostgresApiFactory>, IDisp
             var slotNumbers = station.Slots.Select(s => s.SlotNumber).OrderBy(n => n).ToList();
             Assert.Equal(new[] { 1, 2, 3 }, slotNumbers);
         });
+    }
+
+    [PostgresFact]
+    public async Task Postgres_UpdateStatus_rolls_back_slot_status_when_audit_save_fails_and_enforces_rbac()
+    {
+        var (adminId, adminToken) = await NewUserAsync(AppRoles.Admin);
+        var (_, dispatcherToken) = await NewUserAsync(AppRoles.Dispatcher);
+        var (assignedOpId, assignedOpToken) = await NewUserAsync(AppRoles.StationOperator);
+        var (_, otherOpToken) = await NewUserAsync(AppRoles.StationOperator);
+
+        var code = $"PG-SLOT-RBK-{Interlocked.Increment(ref _counter):D4}";
+        var stationId = Guid.Empty;
+        var slotId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code,
+                Name = $"Pg Rollback Slot Station {code}",
+                Address = "Pg Address",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 1,
+                Status = "OPERATIONAL",
+                OperatorId = assignedOpId
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+
+            var slot = new StationSlot
+            {
+                StationId = station.Id,
+                SlotNumber = 1,
+                Status = "EMPTY"
+            };
+            db.StationSlots.Add(slot);
+            await db.SaveChangesAsync();
+            stationId = station.Id;
+            slotId = slot.Id;
+        });
+
+        // 1. Verify RBAC on PostgreSQL: assigned operator, ADMIN, and DISPATCHER can read; unassigned operator gets 403
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}/slots", assignedOpToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"/api/station-slots/{slotId}", assignedOpToken)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}/slots", otherOpToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(HttpMethod.Get, $"/api/station-slots/{slotId}", otherOpToken)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}/slots", adminToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"/api/station-slots/{slotId}", adminToken)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}/slots", dispatcherToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"/api/station-slots/{slotId}", dispatcherToken)).StatusCode);
+
+        // 2. Verify transaction rollback when audit log save fails after ExecuteUpdateAsync
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(_factory.DatabaseConnectionString)
+            .AddInterceptors(new ThrowOnSlotAuditSaveInterceptor())
+            .Options;
+
+        await using (var failingDb = new AppDbContext(options))
+        {
+            var service = new StationSlotService(failingDb);
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.UpdateStatusAsync(adminId, slotId, new UpdateStationSlotStatusRequest
+                {
+                    TargetStatus = "ERROR",
+                    Reason = "Charging pin sensor fault rollback test."
+                }));
+        }
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var dbSlot = await db.StationSlots.AsNoTracking().SingleAsync(s => s.Id == slotId);
+            // Status must have rolled back to EMPTY in PostgreSQL
+            Assert.Equal("EMPTY", dbSlot.Status);
+
+            var auditCount = await db.AuditLogs.CountAsync(
+                a => a.EntityId == slotId.ToString() && a.Action == "SLOT_STATUS_CHANGE");
+            Assert.Equal(0, auditCount);
+        });
+    }
+
+    private sealed class ThrowOnSlotAuditSaveInterceptor : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("Simulated failure while saving slot audit log.");
+        }
     }
 }
