@@ -220,9 +220,9 @@ public partial class StationOperationService : IStationOperationService
 
                 // Lock order and slot in PostgreSQL
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT id FROM delivery_orders WHERE tracking_number = {tracking} FOR UPDATE");
+                    $"SELECT \"Id\" FROM delivery_orders WHERE \"TrackingNumber\" = {tracking} FOR UPDATE");
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT id FROM station_slots WHERE id = {request.SlotId!.Value} FOR UPDATE");
+                    $"SELECT \"Id\" FROM station_slots WHERE \"Id\" = {request.SlotId!.Value} FOR UPDATE");
 
                 order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                     ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
@@ -485,7 +485,7 @@ public partial class StationOperationService : IStationOperationService
 
                 // Exclusive lock on order in PostgreSQL
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT id FROM delivery_orders WHERE tracking_number = {tracking} FOR UPDATE");
+                    $"SELECT \"Id\" FROM delivery_orders WHERE \"TrackingNumber\" = {tracking} FOR UPDATE");
 
                 order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                     ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
@@ -535,7 +535,7 @@ public partial class StationOperationService : IStationOperationService
 
                 var slot = mission.DestinationSlot;
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT id FROM station_slots WHERE id = {slot.Id} FOR UPDATE");
+                    $"SELECT \"Id\" FROM station_slots WHERE \"Id\" = {slot.Id} FOR UPDATE");
 
                 order.Status = "DELIVERED";
                 order.ActualDeliveryTime = now;
