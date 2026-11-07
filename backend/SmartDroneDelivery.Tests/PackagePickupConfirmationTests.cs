@@ -1,3 +1,10 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.DTOs;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -469,8 +476,14 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
 
             var dbSlot = await db.StationSlots.SingleAsync(s => s.Id == destSlot.Id);
             Assert.Equal("EMPTY", dbSlot.Status);
+
+            // Audit log must not be duplicated when two pickup requests race on the same order
+            var pickupAuditCount = await db.AuditLogs.CountAsync(
+                a => a.EntityId == order.Id.ToString() && a.Action == "PACKAGE_DELIVERY_CONFIRMATION");
+            Assert.Equal(1, pickupAuditCount);
         });
     }
+
     [Fact]
     public async Task Pickup_lockout_counter_persists_across_database_contexts()
     {
@@ -479,48 +492,57 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
         var destOp = await NewUserAsync(AppRoles.StationOperator);
         var (_, dest, order, _) = await SetupTestScenarioAsync(customer.Id, originOp.Id, destOp.Id, initialStatus: "ARRIVED");
 
-        // Attempt 1: wrong code -> 400 with attemptsRemaining = 2
-        var wrong1 = await SendAsync(HttpMethod.Post,
-            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
-            {
-                trackingNumber = order.TrackingNumber,
-                pickupSecureCode = "111111"
-            });
-        Assert.Equal(HttpStatusCode.BadRequest, wrong1.StatusCode);
+        // Two concurrent wrong OTP requests on two separate database contexts
+        using (var scope1 = _factory.Services.CreateScope())
+        using (var scope2 = _factory.Services.CreateScope())
+        {
+            var svc1 = scope1.ServiceProvider.GetRequiredService<IStationOperationService>();
+            var svc2 = scope2.ServiceProvider.GetRequiredService<IStationOperationService>();
 
-        // Verify failure was persisted in AuditLogs
+            var r1Task = svc1.PickupAsync(destOp.Id, dest.Id, new ConfirmPickupRequest { TrackingNumber = order.TrackingNumber, PickupSecureCode = "111111" });
+            var r2Task = svc2.PickupAsync(destOp.Id, dest.Id, new ConfirmPickupRequest { TrackingNumber = order.TrackingNumber, PickupSecureCode = "222222" });
+
+            var results = await Task.WhenAll(r1Task, r2Task);
+            var remaining = results.Select(r => r.AttemptsRemaining).OrderBy(x => x).ToList();
+            Assert.Equal(new int?[] { 1, 2 }, remaining);
+        }
+
+        // Verify 2 failures persisted in AuditLogs
         await _factory.WithDbAsync(async db =>
         {
             var count = await db.AuditLogs.CountAsync(a => a.EntityId == order.Id.ToString() && a.Action == "PICKUP_OTP_FAILED");
-            Assert.Equal(1, count);
+            Assert.Equal(2, count);
         });
 
-        // Attempt 2: wrong code -> 400 with attemptsRemaining = 1
-        var wrong2 = await SendAsync(HttpMethod.Post,
-            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
-            {
-                trackingNumber = order.TrackingNumber,
-                pickupSecureCode = "222222"
-            });
-        Assert.Equal(HttpStatusCode.BadRequest, wrong2.StatusCode);
-        var j2 = await JsonAsync(wrong2);
-        Assert.Equal(1, j2.GetProperty("attemptsRemaining").GetInt32());
-
-        // Attempt 3: wrong code -> 423 Locked!
-        var wrong3 = await SendAsync(HttpMethod.Post,
-            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+        // Attempt 3 via validate-code and Attempt 4 via pickup concurrently -> cannot exceed 3 guesses
+        var valTask = SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/validate-code", destOp.Access, new
             {
                 trackingNumber = order.TrackingNumber,
                 pickupSecureCode = "333333"
             });
-        Assert.Equal((HttpStatusCode)423, wrong3.StatusCode);
+        var pickupTask = SendAsync(HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOp.Access, new
+            {
+                trackingNumber = order.TrackingNumber,
+                pickupSecureCode = "444444"
+            });
 
-        // Verify across an independent DbContext scope that the lockout persists
+        await Task.WhenAll(valTask, pickupTask);
+        var valJson = await JsonAsync(await valTask);
+        Assert.True(valJson.GetProperty("isLocked").GetBoolean());
+        Assert.Equal(0, valJson.GetProperty("attemptsRemaining").GetInt32());
+        Assert.Equal((HttpStatusCode)423, (await pickupTask).StatusCode);
+
+        // Verify across an independent DbContext scope that the lockout persists and only 3 failed logs were recorded
         await _factory.WithDbAsync(async db =>
         {
             var check = await OtpLockoutManager.CheckLockAsync(db, order.Id, DateTime.UtcNow);
             Assert.True(check.IsLocked);
             Assert.Equal(0, check.AttemptsRemaining);
+
+            var failedCount = await db.AuditLogs.CountAsync(a => a.EntityId == order.Id.ToString() && a.Action == "PICKUP_OTP_FAILED");
+            Assert.Equal(3, failedCount);
         });
     }
 }
@@ -540,6 +562,32 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
     }
 
     public void Dispose() => _client.Dispose();
+
+    private WebApplicationFactory<Program> CreateAdditionalBackendInstance()
+    {
+        var connStr = _factory.DatabaseConnectionString;
+        return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Development");
+            builder.ConfigureAppConfiguration((_, config) =>
+                config.AddInMemoryCollection(new Dictionary<string, string?> { ["Seed:DevelopmentData"] = "false" }));
+            builder.ConfigureServices(services =>
+            {
+                foreach (var descriptor in services
+                             .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+                                         || d.ServiceType == typeof(DbContextOptions)).ToList())
+                {
+                    services.Remove(descriptor);
+                }
+
+                services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connStr));
+                services.RemoveAll<IAvatarStorage>();
+                services.AddSingleton<IAvatarStorage>(_factory.Avatars);
+                services.RemoveAll<IPackageStorage>();
+                services.AddSingleton<IPackageStorage>(_factory.Packages);
+            });
+        });
+    }
 
     private async Task<(Guid Id, string Access)> NewUserAsync(string roleCode)
     {
@@ -569,23 +617,23 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
         return (userId, auth.GetProperty("accessToken").GetString()!);
     }
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, string? bearer, object? body = null)
+    private static async Task<HttpResponseMessage> SendWithClientAsync(
+        HttpClient client, HttpMethod method, string url, string? bearer, object? body = null)
     {
         var request = new HttpRequestMessage(method, url);
         if (bearer is not null)
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
         if (body is not null)
             request.Content = JsonContent.Create(body);
-        return await _client.SendAsync(request);
+        return await client.SendAsync(request);
     }
 
-    [PostgresFact]
-    public async Task Postgres_Concurrent_pickup_requests_serialize_and_only_one_succeeds()
-    {
-        var (customerId, _) = await NewUserAsync(AppRoles.Customer);
-        var (originOpId, _) = await NewUserAsync(AppRoles.StationOperator);
-        var (destOpId, destOpToken) = await NewUserAsync(AppRoles.StationOperator);
+    private Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, string? bearer, object? body = null) =>
+        SendWithClientAsync(_client, method, url, bearer, body);
 
+    private async Task<(LandingStation Origin, LandingStation Dest, DeliveryOrder Order, StationSlot DestSlot)> SeedArrivedOrderAsync(
+        Guid customerId, Guid originOpId, Guid destOpId)
+    {
         var n = Interlocked.Increment(ref _counter);
         var origin = new LandingStation { Id = Guid.NewGuid(), StationCode = $"PG-ORG-{n}", Name = "Org", Address = "Org Addr", Latitude = 10.7m, Longitude = 106.7m, TotalSlots = 2, Status = "OPERATIONAL", OperatorId = originOpId };
         var dest = new LandingStation { Id = Guid.NewGuid(), StationCode = $"PG-DST-{n}", Name = "Dst", Address = "Dst Addr", Latitude = 10.8m, Longitude = 106.8m, TotalSlots = 2, Status = "OPERATIONAL", OperatorId = destOpId };
@@ -607,8 +655,25 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
             await db.SaveChangesAsync();
         });
 
-        var t1 = SendAsync(HttpMethod.Post, $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken, new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
-        var t2 = SendAsync(HttpMethod.Post, $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken, new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
+        return (origin, dest, order, destSlot);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Concurrent_pickup_requests_serialize_and_only_one_succeeds_without_duplicate_audit()
+    {
+        var (customerId, _) = await NewUserAsync(AppRoles.Customer);
+        var (originOpId, _) = await NewUserAsync(AppRoles.StationOperator);
+        var (destOpId, destOpToken) = await NewUserAsync(AppRoles.StationOperator);
+
+        var (_, dest, order, destSlot) = await SeedArrivedOrderAsync(customerId, originOpId, destOpId);
+
+        using var secondBackend = CreateAdditionalBackendInstance();
+        using var secondClient = secondBackend.CreateClient();
+
+        var t1 = SendWithClientAsync(_client, HttpMethod.Post, $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken,
+            new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
+        var t2 = SendWithClientAsync(secondClient, HttpMethod.Post, $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken,
+            new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
 
         var responses = await Task.WhenAll(t1, t2);
         var codes = responses.Select(r => r.StatusCode).ToList();
@@ -622,6 +687,151 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
             Assert.Equal("DELIVERED", dbOrder.Status);
             var dbSlot = await db.StationSlots.SingleAsync(s => s.Id == destSlot.Id);
             Assert.Equal("EMPTY", dbSlot.Status);
+
+            var auditCount = await db.AuditLogs.CountAsync(
+                a => a.EntityId == order.Id.ToString() && a.Action == "PACKAGE_DELIVERY_CONFIRMATION");
+            Assert.Equal(1, auditCount);
         });
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Concurrent_wrong_otp_across_db_contexts_and_backend_instances_is_atomic()
+    {
+        var (customerId, _) = await NewUserAsync(AppRoles.Customer);
+        var (originOpId, _) = await NewUserAsync(AppRoles.StationOperator);
+        var (destOpId, destOpToken) = await NewUserAsync(AppRoles.StationOperator);
+
+        // 1. Two concurrent wrong OTP requests on two separate database contexts
+        var (_, dest1, order1, _) = await SeedArrivedOrderAsync(customerId, originOpId, destOpId);
+        using (var scope1 = _factory.Services.CreateScope())
+        using (var scope2 = _factory.Services.CreateScope())
+        {
+            var svc1 = scope1.ServiceProvider.GetRequiredService<IStationOperationService>();
+            var svc2 = scope2.ServiceProvider.GetRequiredService<IStationOperationService>();
+
+            var res = await Task.WhenAll(
+                svc1.PickupAsync(destOpId, dest1.Id, new ConfirmPickupRequest { TrackingNumber = order1.TrackingNumber, PickupSecureCode = "000001" }),
+                svc2.PickupAsync(destOpId, dest1.Id, new ConfirmPickupRequest { TrackingNumber = order1.TrackingNumber, PickupSecureCode = "000002" }));
+
+            Assert.All(res, r => Assert.Equal(400, r.StatusCode));
+            var remaining = res.Select(r => r.AttemptsRemaining).OrderBy(x => x).ToList();
+            Assert.Equal(new int?[] { 1, 2 }, remaining);
+        }
+
+        // 2. Concurrent wrong OTP requests across two separate backend instances + mixing Pickup and ValidateCode
+        var (_, dest2, order2, _) = await SeedArrivedOrderAsync(customerId, originOpId, destOpId);
+        using var backendInstance2 = CreateAdditionalBackendInstance();
+        using var client2 = backendInstance2.CreateClient();
+
+        // Fire 2 concurrent wrong OTP requests across Backend Instance 1 and Backend Instance 2
+        var b1Task = SendWithClientAsync(_client, HttpMethod.Post,
+            $"/api/landing-stations/{dest2.Id}/operations/pickup", destOpToken,
+            new { trackingNumber = order2.TrackingNumber, pickupSecureCode = "111111" });
+        var b2Task = SendWithClientAsync(client2, HttpMethod.Post,
+            $"/api/landing-stations/{dest2.Id}/operations/validate-code", destOpToken,
+            new { trackingNumber = order2.TrackingNumber, pickupSecureCode = "222222" });
+
+        await Task.WhenAll(b1Task, b2Task);
+        var b1Res = await b1Task;
+        var b2Res = await b2Task;
+        Assert.Equal(HttpStatusCode.BadRequest, b1Res.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, b2Res.StatusCode);
+
+        var b1Json = await b1Res.Content.ReadFromJsonAsync<JsonElement>();
+        var b2Json = await b2Res.Content.ReadFromJsonAsync<JsonElement>();
+        var remList = new[]
+        {
+            b1Json.GetProperty("attemptsRemaining").GetInt32(),
+            b2Json.GetProperty("attemptsRemaining").GetInt32()
+        }.OrderBy(x => x).ToArray();
+        Assert.Equal(new[] { 1, 2 }, remList);
+
+        // Now fire 2 more concurrent wrong requests across Pickup (Instance 1) and ValidateCode (Instance 2):
+        // One is attempt #3 (causes lockout), the other is #4 (rejected as already locked). Neither can bypass the 3-attempt limit!
+        var b3Task = SendWithClientAsync(_client, HttpMethod.Post,
+            $"/api/landing-stations/{dest2.Id}/operations/pickup", destOpToken,
+            new { trackingNumber = order2.TrackingNumber, pickupSecureCode = "333333" });
+        var b4Task = SendWithClientAsync(client2, HttpMethod.Post,
+            $"/api/landing-stations/{dest2.Id}/operations/validate-code", destOpToken,
+            new { trackingNumber = order2.TrackingNumber, pickupSecureCode = "444444" });
+
+        await Task.WhenAll(b3Task, b4Task);
+        var b3Res = await b3Task;
+        var b4Res = await b4Task;
+        Assert.Equal((HttpStatusCode)423, b3Res.StatusCode);
+        var b4Json = await b4Res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(b4Json.GetProperty("isLocked").GetBoolean());
+        Assert.Equal(0, b4Json.GetProperty("attemptsRemaining").GetInt32());
+
+        // Total recorded failed attempts in PostgreSQL must be strictly 3 (attempt #4 was blocked by lockout)
+        await _factory.WithDbAsync(async db =>
+        {
+            var failedCount = await db.AuditLogs.CountAsync(
+                a => a.EntityId == order2.Id.ToString() && a.Action == "PICKUP_OTP_FAILED");
+            Assert.Equal(3, failedCount);
+        });
+    }
+
+    [PostgresFact]
+    public async Task Postgres_Lockout_persists_across_backend_restart_and_resets_after_10_minutes()
+    {
+        var (customerId, _) = await NewUserAsync(AppRoles.Customer);
+        var (originOpId, _) = await NewUserAsync(AppRoles.StationOperator);
+        var (destOpId, destOpToken) = await NewUserAsync(AppRoles.StationOperator);
+
+        var (_, dest, order, _) = await SeedArrivedOrderAsync(customerId, originOpId, destOpId);
+
+        // Trigger 3 wrong attempts on Backend Instance 1 -> 423 Locked for 10 minutes
+        for (var i = 1; i <= 3; i++)
+        {
+            var res = await SendAsync(HttpMethod.Post,
+                $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken,
+                new { trackingNumber = order.TrackingNumber, pickupSecureCode = $"00000{i}" });
+
+            if (i < 3)
+            {
+                Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+                var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+                Assert.Equal(3 - i, body.GetProperty("attemptsRemaining").GetInt32());
+            }
+            else
+            {
+                Assert.Equal((HttpStatusCode)423, res.StatusCode);
+                Assert.True(res.Headers.Contains("Retry-After"));
+                var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+                var expiresAt = body.GetProperty("lockoutExpiresAt").GetDateTime();
+                Assert.True(expiresAt > DateTime.UtcNow.AddMinutes(9));
+            }
+        }
+
+        // Simulate backend restart by starting a fresh backend host instance against the same PostgreSQL DB
+        using var restartedBackend = CreateAdditionalBackendInstance();
+        using var restartedClient = restartedBackend.CreateClient();
+
+        // Even with the CORRECT OTP on the restarted backend instance, order is still locked -> 423 Locked
+        var lockedOnRestart = await SendWithClientAsync(restartedClient, HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken,
+            new { trackingNumber = order.TrackingNumber, pickupSecureCode = order.PickupSecureCode });
+        Assert.Equal((HttpStatusCode)423, lockedOnRestart.StatusCode);
+
+        // Simulate 10 minutes passing in PostgreSQL
+        await _factory.WithDbAsync(async db =>
+        {
+            var expiredTime = DateTime.UtcNow.AddMinutes(-11);
+            var logs = await db.AuditLogs
+                .Where(a => a.EntityId == order.Id.ToString() && a.Action == "PICKUP_OTP_FAILED")
+                .ToListAsync();
+            foreach (var log in logs)
+                log.Timestamp = expiredTime;
+            await db.SaveChangesAsync();
+        });
+
+        // After 10-minute lockout expires, next wrong attempt resets counter to 0 and returns 2 attempts remaining
+        var nextWrong = await SendWithClientAsync(restartedClient, HttpMethod.Post,
+            $"/api/landing-stations/{dest.Id}/operations/pickup", destOpToken,
+            new { trackingNumber = order.TrackingNumber, pickupSecureCode = "999999" });
+        Assert.Equal(HttpStatusCode.BadRequest, nextWrong.StatusCode);
+        var nextWrongBody = await nextWrong.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, nextWrongBody.GetProperty("attemptsRemaining").GetInt32());
     }
 }
