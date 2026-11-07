@@ -414,7 +414,7 @@ public class StationSlotPostgresTests : IClassFixture<PostgresApiFactory>, IDisp
 
         await _factory.WithDbAsync(async db =>
         {
-            var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == slotId.ToString() && a.Action == "STATION_SLOT_STATUS_UPDATE");
+            var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == slotId.ToString() && a.Action == "SLOT_STATUS_CHANGE");
             Assert.Equal(1, auditCount);
         });
     }
