@@ -106,7 +106,7 @@ public class StationSlotService : IStationSlotService
 
                 // Exclusive row lock on landing_stations in PostgreSQL
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT id FROM landing_stations WHERE id = {stationId} FOR UPDATE");
+                    $"SELECT \"Id\" FROM landing_stations WHERE \"Id\" = {stationId} FOR UPDATE");
 
                 var station = await _db.LandingStations
                     .Include(s => s.Slots)
@@ -228,7 +228,7 @@ public class StationSlotService : IStationSlotService
 
                 // Exclusive row lock on landing_stations in PostgreSQL
                 await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT id FROM landing_stations WHERE id = {initialSlot.StationId} FOR UPDATE");
+                    $"SELECT \"Id\" FROM landing_stations WHERE \"Id\" = {initialSlot.StationId} FOR UPDATE");
 
                 var slot = await _db.StationSlots
                     .Include(s => s.Station)

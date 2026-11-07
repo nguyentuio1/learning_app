@@ -396,14 +396,14 @@ public class StationSlotPostgresTests : IClassFixture<PostgresApiFactory>, IDisp
 
         var t1 = SendAsync(HttpMethod.Put, $"/api/station-slots/{slotId}/status", adminToken, new
         {
-            targetStatus = "MAINTENANCE",
+            targetStatus = "ERROR",
             reason = "Pin repair."
         });
 
         var t2 = SendAsync(HttpMethod.Put, $"/api/station-slots/{slotId}/status", adminToken, new
         {
-            targetStatus = "RESERVED",
-            reason = "Incoming drone."
+            targetStatus = "ERROR",
+            reason = "Sensor failure."
         });
 
         var responses = await Task.WhenAll(t1, t2);
