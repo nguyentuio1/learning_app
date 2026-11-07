@@ -72,7 +72,7 @@ public partial class LandingStationService : ILandingStationService
 
     public async Task<LandingStationDetailDto> GetByIdAsync(Guid userId, Guid id)
     {
-        await LoadActiveUserAsync(userId);
+        var caller = await LoadActiveUserAsync(userId);
 
         var station = await _db.LandingStations
             .AsNoTracking()
@@ -80,6 +80,11 @@ public partial class LandingStationService : ILandingStationService
             .Include(s => s.Slots)
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Landing station not found.");
+
+        if (caller.Role?.Code == AppRoles.StationOperator && station.OperatorId != userId)
+        {
+            throw new ApiException(StatusCodes.Status403Forbidden, "You can only view your assigned landing station.");
+        }
 
         var slotIds = station.Slots.Select(s => s.Id).ToList();
         var activeMissions = slotIds.Count == 0
@@ -306,8 +311,8 @@ public partial class LandingStationService : ILandingStationService
 
         var now = DateTime.UtcNow;
         var initialStatus = station.Status;
-        station.Status = targetStatus;
-        station.UpdatedAt = now;
+
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
 
         if (_db.Database.IsRelational())
         {
@@ -322,6 +327,18 @@ public partial class LandingStationService : ILandingStationService
                 throw new ApiException(StatusCodes.Status409Conflict,
                     "The station status was updated concurrently. Refresh and try again.");
             }
+
+            _db.Entry(station).State = EntityState.Unchanged;
+        }
+        else
+        {
+            if (station.Status != initialStatus)
+            {
+                throw new ApiException(StatusCodes.Status409Conflict,
+                    "The station status was updated concurrently. Refresh and try again.");
+            }
+            station.Status = targetStatus;
+            station.UpdatedAt = now;
         }
 
         _db.AuditLogs.Add(new AuditLog
@@ -371,6 +388,13 @@ public partial class LandingStationService : ILandingStationService
         }
 
         await _db.SaveChangesAsync();
+        if (tx != null)
+        {
+            await tx.CommitAsync();
+        }
+
+        station.Status = targetStatus;
+        station.UpdatedAt = now;
 
         return new LandingStationStatusChangeResponseDto(
             LandingStationDto.From(station),

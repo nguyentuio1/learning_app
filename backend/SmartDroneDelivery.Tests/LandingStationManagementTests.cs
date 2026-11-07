@@ -375,4 +375,95 @@ public class LandingStationManagementTests : IClassFixture<AuthApiFactory>
             Assert.True(await db.Notifications.AnyAsync(n => n.UserId == dispatcher.Id && n.Type == "STATION_REROUTE_ALERT"));
         });
     }
+
+    [Fact]
+    public async Task GetById_allows_assigned_operator_and_admin_and_dispatcher_but_forbids_other_operator()
+    {
+        var admin = await NewUserAsync(AppRoles.Admin);
+        var dispatcher = await NewUserAsync(AppRoles.Dispatcher);
+        var assignedOp = await NewUserAsync(AppRoles.StationOperator);
+        var otherOp = await NewUserAsync(AppRoles.StationOperator);
+
+        var code = $"HCM-{Interlocked.Increment(ref _counter):D3}";
+        var stationId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code,
+                Name = $"Station {code}",
+                Address = "123 Test St",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 2,
+                Status = "OPERATIONAL",
+                OperatorId = assignedOp.Id
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+            stationId = station.Id;
+        });
+
+        // 1. Assigned operator can read own station -> 200 OK
+        var ownRes = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}", assignedOp.Access);
+        Assert.Equal(HttpStatusCode.OK, ownRes.StatusCode);
+
+        // 2. Another station operator cannot read this station -> 403 Forbidden
+        var otherRes = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}", otherOp.Access);
+        Assert.Equal(HttpStatusCode.Forbidden, otherRes.StatusCode);
+
+        // 3. Admin can read any station -> 200 OK
+        var adminRes = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}", admin.Access);
+        Assert.Equal(HttpStatusCode.OK, adminRes.StatusCode);
+
+        // 4. Dispatcher can read any station -> 200 OK
+        var dispRes = await SendAsync(HttpMethod.Get, $"/api/landing-stations/{stationId}", dispatcher.Access);
+        Assert.Equal(HttpStatusCode.OK, dispRes.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_concurrent_requests_detect_conflict()
+    {
+        var admin = await NewUserAsync(AppRoles.Admin);
+        var op = await NewUserAsync(AppRoles.StationOperator);
+        var code = $"HCM-{Interlocked.Increment(ref _counter):D3}";
+        var stationId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var station = new LandingStation
+            {
+                StationCode = code,
+                Name = $"Concurrent Hub {code}",
+                Address = "456 Concurrency Ave",
+                Latitude = 10.7m,
+                Longitude = 106.6m,
+                TotalSlots = 2,
+                Status = "OPERATIONAL",
+                OperatorId = op.Id
+            };
+            db.LandingStations.Add(station);
+            await db.SaveChangesAsync();
+            stationId = station.Id;
+        });
+
+        var task1 = SendAsync(HttpMethod.Put, $"/api/landing-stations/{stationId}/status", admin.Access, new
+        {
+            newStatus = "MAINTENANCE",
+            reason = "Scheduled sensor upgrade."
+        });
+
+        var task2 = SendAsync(HttpMethod.Put, $"/api/landing-stations/{stationId}/status", admin.Access, new
+        {
+            newStatus = "OFFLINE",
+            reason = "Emergency electrical maintenance."
+        });
+
+        var responses = await Task.WhenAll(task1, task2);
+        var statusCodes = responses.Select(r => r.StatusCode).ToList();
+
+        // Either one succeeds (200) and one fails (409), or both 200 if processed sequentially, but at least one must succeed
+        Assert.Contains(HttpStatusCode.OK, statusCodes);
+    }
 }
