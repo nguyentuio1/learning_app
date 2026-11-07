@@ -392,4 +392,76 @@ public class DroneManagementTests : IClassFixture<AuthApiFactory>
         });
         Assert.Equal(HttpStatusCode.Conflict, updateRes.StatusCode);
     }
+
+    [Fact]
+    public async Task Create_duplicate_serial_number_returns_409_Conflict()
+    {
+        var admin = await NewUserAsync(AppRoles.Admin);
+        var serial = $"DRN-DUP-{Interlocked.Increment(ref _counter):D4}";
+
+        var firstRes = await SendAsync(HttpMethod.Post, "/api/drones", admin.Access, new
+        {
+            serialNumber = serial,
+            modelName = "Falcon 1",
+            maxPayloadGram = 1500m,
+            maxFlightRangeKm = 15m,
+            batteryCapacityMah = 10000
+        });
+        Assert.Equal(HttpStatusCode.Created, firstRes.StatusCode);
+
+        var secondRes = await SendAsync(HttpMethod.Post, "/api/drones", admin.Access, new
+        {
+            serialNumber = serial,
+            modelName = "Falcon 2",
+            maxPayloadGram = 1600m,
+            maxFlightRangeKm = 16m,
+            batteryCapacityMah = 12000
+        });
+        Assert.Equal(HttpStatusCode.Conflict, secondRes.StatusCode);
+    }
+
+    [Fact]
+    public async Task Maintenance_concurrent_requests_detect_conflict()
+    {
+        var dispatcher = await NewUserAsync(AppRoles.Dispatcher);
+        var serial = $"DRN-CONC-{Interlocked.Increment(ref _counter):D4}";
+        var droneId = Guid.Empty;
+
+        await _factory.WithDbAsync(async db =>
+        {
+            var drone = new Drone
+            {
+                SerialNumber = serial,
+                ModelName = "Falcon Concurrent",
+                MaxPayloadGram = 2000,
+                MaxFlightRangeKm = 20,
+                BatteryCapacityMah = 15000,
+                Status = "IDLE"
+            };
+            db.Drones.Add(drone);
+            await db.SaveChangesAsync();
+            droneId = drone.Id;
+        });
+
+        var task1 = SendAsync(HttpMethod.Put, $"/api/drones/{droneId}/maintenance", dispatcher.Access, new
+        {
+            action = "START",
+            expectedStatus = "IDLE",
+            reason = "Routine inspection 1."
+        });
+
+        var task2 = SendAsync(HttpMethod.Put, $"/api/drones/{droneId}/maintenance", dispatcher.Access, new
+        {
+            action = "START",
+            expectedStatus = "IDLE",
+            reason = "Routine inspection 2."
+        });
+
+        var responses = await Task.WhenAll(task1, task2);
+        var statusCodes = responses.Select(r => r.StatusCode).ToList();
+
+        // Exactly one must succeed, the concurrent second must conflict
+        Assert.Contains(HttpStatusCode.OK, statusCodes);
+        Assert.Contains(HttpStatusCode.Conflict, statusCodes);
+    }
 }

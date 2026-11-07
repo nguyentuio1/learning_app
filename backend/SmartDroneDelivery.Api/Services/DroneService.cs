@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.DTOs;
@@ -16,6 +17,8 @@ public interface IDroneService
 
 public class DroneService : IDroneService
 {
+    private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> DroneLocks = new();
+
     private static readonly HashSet<string> ValidStatuses = new(StringComparer.Ordinal)
     {
         "IDLE", "ASSIGNED", "FLYING", "CHARGING", "MAINTENANCE"
@@ -153,16 +156,31 @@ public class DroneService : IDroneService
         if (_db.Database.IsRelational())
         {
             await using var tx = await _db.Database.BeginTransactionAsync();
-            _db.Drones.Add(drone);
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+            try
+            {
+                _db.Drones.Add(drone);
+                _db.AuditLogs.Add(audit);
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                await tx.RollbackAsync();
+                throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+            }
         }
         else
         {
-            _db.Drones.Add(drone);
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
+            try
+            {
+                _db.Drones.Add(drone);
+                _db.AuditLogs.Add(audit);
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                throw new ApiException(StatusCodes.Status409Conflict, "Serial number is already used.");
+            }
         }
 
         return DroneDto.From(drone);
@@ -225,10 +243,14 @@ public class DroneService : IDroneService
     {
         await LoadActiveUserAsync(userId);
 
-        var drone = await _db.Drones
-            .Include(d => d.CurrentStation)
-            .FirstOrDefaultAsync(d => d.Id == id)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Drone not found.");
+        var sem = DroneLocks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync();
+        try
+        {
+            var drone = await _db.Drones
+                .Include(d => d.CurrentStation)
+                .FirstOrDefaultAsync(d => d.Id == id)
+                ?? throw new ApiException(StatusCodes.Status404NotFound, "Drone not found.");
 
         var errors = new Dictionary<string, List<string>>();
         var action = request.Action?.Trim().ToUpperInvariant() ?? string.Empty;
@@ -301,6 +323,8 @@ public class DroneService : IDroneService
             Timestamp = now
         };
 
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+
         if (_db.Database.IsRelational())
         {
             var updatedRows = await _db.Drones
@@ -313,18 +337,30 @@ public class DroneService : IDroneService
                     "The drone status was updated concurrently. Refresh and try again.");
             }
 
+            _db.Entry(drone).State = EntityState.Unchanged;
             _db.AuditLogs.Add(audit);
             await _db.SaveChangesAsync();
+            await tx!.CommitAsync();
             drone.Status = targetStatus;
         }
         else
         {
+            if (drone.Status != expectedStatus)
+            {
+                throw new ApiException(StatusCodes.Status409Conflict,
+                    "The drone status was updated concurrently. Refresh and try again.");
+            }
             drone.Status = targetStatus;
             _db.AuditLogs.Add(audit);
             await _db.SaveChangesAsync();
         }
 
         return DroneDto.From(drone);
+        }
+        finally
+        {
+            sem.Release();
+        }
     }
 
     private static void ValidateSpecs(
