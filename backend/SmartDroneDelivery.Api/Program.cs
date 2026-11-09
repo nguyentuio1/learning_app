@@ -71,6 +71,10 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 builder.Services.AddScoped<IDeliveryOrderMutationService, DeliveryOrderMutationService>();
+builder.Services.AddScoped<IStationOperationService, StationOperationService>();
+builder.Services.Configure<PickupTimeoutOptions>(builder.Configuration.GetSection(PickupTimeoutOptions.SectionName));
+builder.Services.AddScoped<IPickupTimeoutService, PickupTimeoutService>();
+builder.Services.AddHostedService<PickupTimeoutWorker>();
 builder.Services.AddScoped<IStationAvailabilityService, StationAvailabilityService>();
 
 builder.Services.AddControllers()
