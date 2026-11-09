@@ -141,8 +141,8 @@ For non-nullable `Guid` request properties, reject `Guid.Empty` explicitly; `[Re
 | `UpdateDeliveryOrderDto` | The DTO contains exactly four fields: `RecipientName`: `[Required]`, `[MaxLength(150)]`; `RecipientPhone`: `[Required]`, `[Phone]`, `[MaxLength(20)]`; `DestinationStationId`: non-empty `Guid` referencing a valid destination station; `DeliveryAddressId`: optional nullable `Guid` referencing an address owned by the customer. No `PackageId`, `OriginStationId`, or `Status` field is permitted. Accepted only while status is `PENDING`. |
 | `CancelDeliveryOrderDto` | `CancellationReason`: `[Required]`, `[MaxLength(500)]`; maps to `DeliveryOrder.CancelReason` / database `cancel_reason`. Service verifies the current order state permits cancellation. |
 | `ConfirmDeliveryDto` | `SecureCode`: `[Required]`, exactly six decimal digits; compare securely and apply the agreed attempt/lockout policy. |
-| `DeliveryOrderFilterParams` | Optional `Status` (must be one of `OrderStatus`), `TrackingNumber`, `OriginStationId`, `DestinationStationId`, `FromCreatedAt`, `ToCreatedAt`; `Page`: `[Range(1, int.MaxValue)]`; `PageSize`: `[Range(1, 100)]`. Require `FromCreatedAt <= ToCreatedAt`. |
-| `DeliveryOrderDetailResponseDto` | `Id`, tracking number, status, package summary, origin/destination summaries, optional delivery address summary, recipient name/phone, timestamps, status-history list. Never serialize `PickupSecureCode` in the general detail DTO. |
+| `DeliveryOrderFilterParams` | Optional `Status` (one value, must be one of `OrderStatus`), `SearchKeyword` (at most 50 characters, partial match on the tracking number, case-insensitive), `FromDate`, `ToDate` (inclusive, compared with `CreatedAt`); `Page`: `[Range(1, int.MaxValue)]`, default 1; `PageSize`: `[Range(1, 100)]`, default 20. Require `FromDate <= ToDate`. There is no filter by station. |
+| `DeliveryOrderDetailResponseDto` | `Id`, tracking number, status, package summary, origin/destination summaries, optional delivery address summary, recipient name/phone, timestamps, and the `StatusLogs` list (oldest first; there is no separate status-history endpoint). Never serialize `PickupSecureCode` in the general detail DTO. |
 | `DeliveryStatusLogResponseDto` | `FromStatus`, `ToStatus`, optional remarks/actor display, UTC `CreatedAt`. |
 | `NotificationResponseDto` | `Id`, optional `OrderId`, type, title, message, read flag, created/read timestamps. |
 
@@ -166,7 +166,7 @@ Parameters and return types below use C#-style names for clarity; they are desig
 | `IDeliveryOrderService.GetMineAsync` | `Guid customerId`, `DeliveryOrderFilterParams filters` | `Task<PagedResponse<DeliveryOrderDetailResponseDto>>` | Return caller-owned filtered orders and paging metadata. |
 | `IDeliveryOrderService.GetByIdAsync` | `Guid customerId`, `Guid id` | `Task<DeliveryOrder>` | Read only an order belonging to the caller, including history. |
 | `IDeliveryOrderService.UpdateAsync` | `Guid customerId`, `Guid id`, `UpdateDeliveryOrderDto dto` | `Task<DeliveryOrder>` | Update only a permitted pre-approval order. |
-| `IDeliveryOrderService.CancelAsync` | `Guid customerId`, `Guid id`, `CancelDeliveryOrderDto dto` | `Task` | Check cancellable state; persist `dto.CancellationReason` to `cancel_reason` with status/log/notification atomically. |
+| `IDeliveryOrderService.CancelAsync` | `Guid customerId`, `Guid id`, `CancelDeliveryOrderDto dto` | `Task<DeliveryOrderDetailResponseDto>` | Check cancellable state; persist `dto.CancellationReason` to `cancel_reason` with status/log/notification atomically. |
 | `IDeliveryOrderService.ConfirmDeliveryAsync` | `Guid customerId`, `Guid id`, `string secureCode` | `Task` | Verify code, apply allowed completion transition, set actual delivery time, and log. Apply attempt/rate-limit policy when agreed. |
 | `INotificationService.CreateOrderStatusNotificationAsync` | `DeliveryOrder order`, `OrderStatus status` | `Task` | Persist the status-change notification; called as part of a durable transaction/outbox design. |
 | `INotificationService.GetMineAsync` | `Guid userId` | `Task<IReadOnlyList<Notification>>` | List only the caller's notifications. |
@@ -192,7 +192,7 @@ All listed routes require authentication and role `CUSTOMER`. IDs are scoped to 
 | `GET /api/delivery-orders` | `GetMineAsync(filters)`; `200` with paged results | `200`, `400`, `401`, `403` |
 | `GET /api/delivery-orders/{id}` | `GetByIdAsync`; `200` with detail and history | `200`, `401`, `403`, `404` |
 | `PUT /api/delivery-orders/{id}` | `UpdateAsync`; `200` with updated detail | `200`, `400`, `401`, `403`, `404`, `409` |
-| `POST /api/delivery-orders/{id}/cancel` | `CancelAsync`; `204` | `204`, `400`, `401`, `403`, `404`, `409` |
+| `POST /api/delivery-orders/{id}/cancel` | `CancelAsync`; `200` with `DeliveryOrderDetailResponseDto` | `200`, `400`, `401`, `403`, `404`, `409` |
 | `POST /api/delivery-orders/{id}/confirm-delivery` | `ConfirmDeliveryAsync`; `204` | `204`, `400`, `401`, `403`, `404`, `409` |
 | `NotificationsController GET /api/notifications` | `GetMineAsync`; `200` with notification list | `200`, `401`, `403` |
 | `PUT /api/notifications/{id}/read` | `MarkReadAsync`; `204` | `204`, `401`, `403`, `404` |

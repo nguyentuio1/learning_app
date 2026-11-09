@@ -65,7 +65,7 @@ sequenceDiagram
                 %% Step 5: Business Rule Validation (FR-10)
                 alt Order.Status != PENDING (Order is APPROVED, IN_TRANSIT, DELIVERED, CANCELLED, etc.)
                     OrderSvc -->> Controller: Throws BusinessRuleException("Order cannot be modified after approval")
-                    Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails)
+                    Controller -->> Client: 409 Conflict (RFC 7807 ProblemDetails)
                     Client -->> Customer: Displays "Cannot update order that is already approved or processed"
                 else Order Status == PENDING
                     %% Step 6: Validate New Destination Station / Address (if changed)
@@ -140,7 +140,7 @@ sequenceDiagram
                     %% Step 6: Validate Status for Cancellation (FR-10, FR-14)
                     alt Order.Status NOT IN (PENDING, APPROVED) (Order is IN_TRANSIT, DELIVERED, CANCELLED, FAILED)
                         OrderSvc -->> Controller: Throws BusinessRuleException("Order cannot be cancelled in its current status")
-                        Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails)
+                        Controller -->> Client: 409 Conflict (RFC 7807 ProblemDetails)
                         Client -->> Customer: Displays "Cannot cancel order once flight has started or order is finalized"
                     else Order Status IS Cancellable (PENDING or APPROVED)
                         %% Step 7: Database Transaction & Persistence (FR-14)
@@ -159,8 +159,8 @@ sequenceDiagram
                         NotifSvc -->> OrderSvc: Notification Created
 
                         %% Step 9: Return Response DTO
-                        OrderSvc -->> Controller: Return DeliveryOrderResponseDto (Status=CANCELLED)
-                        Controller -->> Client: 200 OK (Body: DeliveryOrderResponseDto)
+                        OrderSvc -->> Controller: Return DeliveryOrderDetailResponseDto (Status=CANCELLED)
+                        Controller -->> Client: 200 OK (Body: DeliveryOrderDetailResponseDto)
                         Client -->> Customer: Displays "Order cancelled successfully" screen
                     end
                 end
@@ -175,7 +175,7 @@ sequenceDiagram
 2. The controller authenticates the customer and checks the `CUSTOMER` role, then passes `id`, `customerId`, and the update data to the order service. The service verifies that the order exists, belongs to the customer, and is still in `PENDING` status.
 3. The service checks that the new destination station is `OPERATIONAL` and differs from the origin station, and validates the delivery address if it has changed. If validation succeeds, the service updates the order properties and saves the changes; the API returns `200 OK` with a `DeliveryOrderDetailResponseDto`.
 4. **Cancel:** The customer enters a non-empty cancellation reason. The application sends `POST /api/delivery-orders/{id}/cancel` with the JWT and a `CancelDeliveryOrderDto`; the service then checks ownership, the reason, and the order status.
-5. Only orders in `PENDING` or `APPROVED` status can be cancelled. The service sets the status to `CANCELLED` and saves `CancellationReason` and a `DeliveryStatusLog` record (`FromStatus` → `CANCELLED`, `ChangedByUserId = customerId`, `Notes = CancellationReason`) in a transaction. `INotificationService` then creates a customer notification; the API returns `200 OK` with a `DeliveryOrderResponseDto`.
+5. Only orders in `PENDING` or `APPROVED` status can be cancelled. The service sets the status to `CANCELLED` and saves `CancellationReason` and a `DeliveryStatusLog` record (`FromStatus` → `CANCELLED`, `ChangedByUserId = customerId`, `Notes = CancellationReason`) in a transaction. `INotificationService` then creates a customer notification; the API returns `200 OK` with a `DeliveryOrderDetailResponseDto`.
 
 ## 4. Responses and Exception Paths
 
@@ -186,7 +186,8 @@ sequenceDiagram
 | Client-side validation fails | The application displays form errors and does not send a request to the API. |
 | JWT is invalid or expired, or the role is not `CUSTOMER` | The API returns `401 Unauthorized` or `403 Forbidden` with `ProblemDetails`; the application prompts the customer to sign in or displays a permission error. |
 | The order cannot be found or does not belong to the customer | The API returns `404 Not Found` with `ProblemDetails`; the application reports that the order could not be found or accessed. |
-| The order is in a state that does not permit updating or cancellation, or the submitted data/reason is invalid | The API returns `400 Bad Request` with `ProblemDetails`; the application displays the corresponding error. |
+| The submitted data or reason is invalid | The API returns `400 Bad Request` with `ProblemDetails`; the application displays the corresponding error. |
+| The order is in a state that does not permit updating or cancellation | The API returns `409 Conflict` with `ProblemDetails`; a repeated cancel of a cancelled order is also `409` and creates no second log or notification. |
 | An update request attempts to include `PackageId` or `Status` | The API rejects the disallowed field with `400 Bad Request`; neither field is part of `UpdateDeliveryOrderDto`. |
 | The order is updated successfully | The API returns `200 OK` with a `DeliveryOrderDetailResponseDto`; the application displays the updated order details. |
-| The order is cancelled successfully | The API returns `200 OK` with a `DeliveryOrderResponseDto`; the cancellation status and history are saved, and the customer is notified. |
+| The order is cancelled successfully | The API returns `200 OK` with a `DeliveryOrderDetailResponseDto`; the cancellation status and history are saved, and the customer is notified. |
