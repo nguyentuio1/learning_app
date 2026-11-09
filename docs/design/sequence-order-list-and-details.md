@@ -4,7 +4,7 @@
 
 **Subtask:** [LA-229](https://hungndemail.atlassian.net/browse/LA-229) - Sequence diagram for listing orders and details
 
-This design shows how a Customer filters and pages through their orders, opens one order, and loads its status history. Dispatcher and Logistics Manager read access is described as a role-specific extension below. The diagrams specify behavior for a future order API; they do not claim these endpoints or classes are implemented today.
+This design shows how a Customer filters and pages through their orders, opens one order, and reads its status history (`statusLogs` in the detail). Dispatcher and Logistics Manager read access is described as a role-specific extension below. The diagrams specify behavior for a future order API; they do not claim these endpoints or classes are implemented today.
 
 ## Sources and scope
 
@@ -13,7 +13,7 @@ This design shows how a Customer filters and pages through their orders, opens o
 - [ERD](../architecture/erd.md), [DBML](../architecture/erd.dbml) and the current `DeliveryOrder`, `DeliveryStatusLog` and `AppDbContext` classes establish the fields and relationships below.
 - [Auth API contract](../api/auth-api.md) and [auth sequence](sequence-auth.md) establish Bearer authentication and one-time refresh on an expired access token. There is no delivery-order API contract in `docs/api` yet.
 
-SmartDroneDelivery manages delivery operations; this read-only flow does not control the drone or change an order status. Live drone position and map loading are separate from the status-history query.
+SmartDroneDelivery manages delivery operations; this read-only flow does not control the drone or change an order status. Live drone position and map loading are separate from the order detail.
 
 ## Participants and proposed interface
 
@@ -32,7 +32,7 @@ Proposed requests for API-contract review:
 |---|---|---|
 | Filtered list | `GET /api/delivery-orders?status=IN_TRANSIT&trackingNumber=DD-...&page=1&pageSize=20` | Page of order summaries, total matching count, page and page size. Filters are optional and only an example of query naming. |
 | Detail | `GET /api/delivery-orders/{orderId}` | One order's permitted customer, package, origin/destination, recipient, current status and timestamps. Sensitive values are projected by role. |
-| Status history | `GET /api/delivery-orders/{orderId}/status-history` | Chronological entries with `fromStatus`, `toStatus`, `remarks`, `createdAt` and a permitted actor label if available. |
+| Status history | Part of `GET /api/delivery-orders/{id}`: the `statusLogs` array, oldest first ([customer-order-api.md](../api/customer-order-api.md) section 5.3). There is no separate status-history endpoint. | Entries with `fromStatus`, `toStatus`, `remarks`, `createdAt` and a permitted actor label if available. |
 
 The `orderId` is the UUID primary key; `trackingNumber` is a unique searchable field. The product/API owner must confirm whether the final API uses these three endpoints or embeds history in the detail response. The sequence of server checks and the ERD relationships apply either way. No new persistence tables are introduced.
 
@@ -92,7 +92,7 @@ sequenceDiagram
 
 For a Customer, the query starts with `delivery_orders.customer_id == authenticated user id`; this restriction applies to **both** count and rows. Then apply requested filters. A status filter must use one of the eight `delivery_orders.status` values: `PENDING`, `APPROVED`, `READY_FOR_TAKEOFF`, `IN_TRANSIT`, `ARRIVED`, `DELIVERED`, `CANCELLED`, `FAILED`. Tracking search must not reveal matches outside the authorized scope. Sort by `delivery_orders.created_at DESC, delivery_orders.id DESC` before paging so equal timestamps have a deterministic order. The database applies `Skip`/`Take` (or equivalent) after the scoped filter; it does not load every order and paginate in the client. Page numbers start at 1; a bounded positive `pageSize` and maximum are to be agreed in the API contract. If a stale page is beyond the last page after data changes, return an empty page with the current total so the client can move to a valid page.
 
-## 2. Open order detail and load status history
+## 2. Open order detail with its status history
 
 ```mermaid
 sequenceDiagram
@@ -123,34 +123,21 @@ sequenceDiagram
         else Accessible order
             Query->>Query: Project permitted fields, omit pickup secure code
             Query-->>Controller: Order detail
-            Controller-->>Client: 200 order detail
+            Query->>DB: Read status logs for orderId, sort by createdAt then id
+            DB-->>Query: Ordered status logs
+            Query-->>Controller: Order detail with statusLogs
+            Controller-->>Client: 200 order detail with statusLogs
             Client-->>Customer: Show current status, package and route
-            Client->>Client: Show history loading state
-            Client->>Auth: GET proposed status-history by orderId + Bearer token
-            Auth->>Controller: Validated identity and role
-            Controller->>Query: GetHistory(orderId, identity, role)
-            Query->>DB: Re-check accessible order before reading its logs
-            alt Order no longer accessible or was removed
-                DB-->>Query: No accessible order
-                Query-->>Controller: No accessible order
-                Controller-->>Client: 404 Not Found (proposed)
-                Client-->>Customer: History unavailable, do not show stale entries
-            else Accessible order
-                Query->>DB: Read status logs for orderId, sort by createdAt then id
-                DB-->>Query: Ordered status logs
-                Query-->>Controller: History DTOs
-                Controller-->>Client: 200 status history
-                alt History has entries
-                    Client-->>Customer: Show timeline with status and timestamp
-                else No history entries
-                    Client-->>Customer: Show empty history state, keep current status visible
-                end
+            alt statusLogs has entries
+                Client-->>Customer: Show timeline with status and timestamp
+            else statusLogs is empty
+                Client-->>Customer: Show empty history state, keep current status visible
             end
         end
     end
 ```
 
-`delivery_status_logs.order_id` links each log to its order. Logs contain nullable `from_status`, required `to_status`, nullable `changed_by`, optional `remarks` and `created_at`. The first entry may have no previous status or actor. Order logs are sorted by `created_at ASC, id ASC` so entries with the same timestamp have stable order. The current order status comes from `delivery_orders.status`; the timeline must not infer a new current state from a delayed or missing log. A history failure has its own retry/error state and must not replace a successfully loaded detail with a false empty timeline. On back navigation, the client retains the selected filters and page where practical, then may refresh to reflect changed order data.
+`delivery_status_logs.order_id` links each log to its order. Logs contain nullable `from_status`, required `to_status`, nullable `changed_by`, optional `remarks` and `created_at`. The first entry may have no previous status or actor. Order logs are sorted by `created_at ASC, id ASC` so entries with the same timestamp have stable order. The current order status comes from `delivery_orders.status`; the timeline must not infer a new current state from a delayed or missing log. The history is loaded with the detail in one request, so a failed detail request shows one error state; an empty `statusLogs` array must still show the current status. On back navigation, the client retains the selected filters and page where practical, then may refresh to reflect changed order data.
 
 ## Authorization and data boundaries
 
@@ -170,7 +157,7 @@ Role filtering in the UI is for navigation only; the API re-checks it on every l
 | Filtering | Status and tracking filters are validated and applied after server-side authorized scope. Changing a filter returns to page 1. |
 | Pagination | Total and rows use the same scope/filter; deterministic sort precedes server-side offset/limit. Empty and out-of-range pages are handled. |
 | Detail | Selecting one UUID loads permitted order, package and station fields; missing or inaccessible orders have an explicit result. |
-| Status history | History is requested only for an accessible order, ordered by timestamp and log ID; empty and failed loads differ. |
+| Status history | `statusLogs` is returned only with an accessible order, ordered by timestamp and log ID; an empty array and a failed load are different states. |
 | ERD/status consistency | `delivery_orders`, `packages`, `landing_stations`, `delivery_status_logs` and all eight order status values match the current model. |
 
 Before implementation, the order API owner must confirm endpoint paths, DTO field visibility, filter operators, `pageSize` cap, detail/history response shape, staff access scope and whether inaccessible detail uses `403` or `404`. Those are proposed interface choices, not claims about current backend behavior. Status updates and real-time tracking are designed in their own flows. No code or database migration is introduced by this document.
