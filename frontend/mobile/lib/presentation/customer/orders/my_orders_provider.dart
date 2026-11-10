@@ -70,7 +70,9 @@ class MyOrdersNotifier extends AsyncNotifier<List<DeliveryOrder>> {
 
   Future<void> loadNextPage() async {
     final currentItems = state.value;
-    if (!_hasMore || _loadingMore || currentItems == null) return;
+    if (state.isLoading || !_hasMore || _loadingMore || currentItems == null) {
+      return;
+    }
 
     final params = ref.read(deliveryOrderFilterParamsProvider);
     final generation = _generation;

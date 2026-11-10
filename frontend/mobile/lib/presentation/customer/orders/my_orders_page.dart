@@ -199,7 +199,11 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           );
         }
         if (index >= items.length - 3 && notifier.hasMore) {
-          notifier.loadNextPage();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              notifier.loadNextPage();
+            }
+          });
         }
         final order = items[index];
         return Card(
