@@ -75,14 +75,18 @@ class OrderDeliveryAddressDto {
   final String? recipientPhone;
   final String? streetAddress;
 
-  factory OrderDeliveryAddressDto.fromJson(Map<String, dynamic> json) =>
-      OrderDeliveryAddressDto(
-        id: json['id'] as String?,
-        addressLabel: json['addressLabel'] as String?,
-        recipientName: json['recipientName'] as String?,
-        recipientPhone: json['recipientPhone'] as String?,
-        streetAddress: json['streetAddress'] as String?,
-      );
+  factory OrderDeliveryAddressDto.fromJson(
+    Map<String, dynamic> json,
+  ) => OrderDeliveryAddressDto(
+    id: json['id'] as String?,
+    addressLabel: json['label'] as String? ?? json['addressLabel'] as String?,
+    recipientName:
+        json['contactName'] as String? ?? json['recipientName'] as String?,
+    recipientPhone:
+        json['contactPhone'] as String? ?? json['recipientPhone'] as String?,
+    streetAddress:
+        json['addressLine'] as String? ?? json['streetAddress'] as String?,
+  );
 }
 
 class OrderAiEtaPredictionDto {
