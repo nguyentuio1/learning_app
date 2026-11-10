@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../data/providers/delivery_order_providers.dart';
 import '../../../routes/route_paths.dart';
 import 'create_order_notifier.dart';
 
@@ -11,14 +12,22 @@ class ReviewOrderPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final order = ref.watch(createOrderNotifierProvider);
+    final stations = ref.watch(orderStationsProvider).asData?.value ?? const [];
+    String stationLabel(String id) {
+      for (final station in stations) {
+        if (station.id == id) return '${station.name} · ${station.stationCode}';
+      }
+      return id;
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Review order')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           _row('Package', order.package?.packageName ?? ''),
-          _row('Origin station', order.originStationId),
-          _row('Destination station', order.destinationStationId),
+          _row('Origin station', stationLabel(order.originStationId)),
+          _row('Destination station', stationLabel(order.destinationStationId)),
           _row('Delivery address', order.address?.addressLine ?? 'None'),
           _row('Recipient name', order.recipientName),
           _row('Recipient phone', order.recipientPhone),

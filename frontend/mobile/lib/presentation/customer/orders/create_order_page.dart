@@ -238,6 +238,7 @@ class _StationPicker extends StatelessWidget {
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
     key: fieldKey,
     initialValue: value,
+    isExpanded: true,
     decoration: InputDecoration(
       labelText: label,
       border: const OutlineInputBorder(),
@@ -246,7 +247,11 @@ class _StationPicker extends StatelessWidget {
       for (final station in items)
         DropdownMenuItem(
           value: station.id,
-          child: Text('${station.name} · ${station.stationCode}'),
+          child: Text(
+            '${station.name} · ${station.stationCode}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
     ],
     onChanged: (id) {
@@ -273,6 +278,7 @@ class _AddressPicker extends StatelessWidget {
   Widget build(BuildContext context) => DropdownButtonFormField<String?>(
     key: const Key('order-address'),
     initialValue: selected?.id,
+    isExpanded: true,
     decoration: const InputDecoration(
       labelText: 'Delivery address (optional)',
       border: OutlineInputBorder(),
@@ -282,7 +288,11 @@ class _AddressPicker extends StatelessWidget {
       for (final address in items)
         DropdownMenuItem<String?>(
           value: address.id,
-          child: Text('${address.label} · ${address.addressLine}'),
+          child: Text(
+            '${address.label} · ${address.addressLine}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
     ],
     onChanged: (id) => onChanged(

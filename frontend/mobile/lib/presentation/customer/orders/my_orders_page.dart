@@ -199,7 +199,10 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           );
         }
         if (index >= items.length - 3 && notifier.hasMore) {
-          notifier.loadNextPage();
+          // Never modify provider state while the widget tree is building.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) notifier.loadNextPage();
+          });
         }
         final order = items[index];
         return Card(

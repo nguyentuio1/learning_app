@@ -78,10 +78,16 @@ class OrderDeliveryAddressDto {
   factory OrderDeliveryAddressDto.fromJson(Map<String, dynamic> json) =>
       OrderDeliveryAddressDto(
         id: json['id'] as String?,
-        addressLabel: json['addressLabel'] as String?,
-        recipientName: json['recipientName'] as String?,
-        recipientPhone: json['recipientPhone'] as String?,
-        streetAddress: json['streetAddress'] as String?,
+        // The API returns label/contactName/contactPhone/addressLine; the
+        // older names are kept as a fallback.
+        addressLabel:
+            (json['label'] ?? json['addressLabel']) as String?,
+        recipientName:
+            (json['contactName'] ?? json['recipientName']) as String?,
+        recipientPhone:
+            (json['contactPhone'] ?? json['recipientPhone']) as String?,
+        streetAddress:
+            (json['addressLine'] ?? json['streetAddress']) as String?,
       );
 }
 
