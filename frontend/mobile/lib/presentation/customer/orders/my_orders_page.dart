@@ -42,6 +42,16 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My orders'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(RoutePaths.customerHome);
+            }
+          },
+        ),
         actions: [
           IconButton(
             key: const Key('create-order'),

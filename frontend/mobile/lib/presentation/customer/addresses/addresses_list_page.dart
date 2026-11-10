@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/error/error_message.dart';
 import '../../../data/models/customer_address.dart';
+import '../../../routes/route_paths.dart';
 import 'address_notifier.dart';
 import 'add_edit_address_page.dart';
 
@@ -14,7 +16,19 @@ class AddressesListPage extends ConsumerWidget {
     final addresses = ref.watch(addressNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved addresses')),
+      appBar: AppBar(
+        title: const Text('Saved addresses'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(RoutePaths.customerHome);
+            }
+          },
+        ),
+      ),
       body: addresses.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
