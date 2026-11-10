@@ -55,7 +55,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return isPublicEntry ? null : RoutePaths.login;
         case AuthStatus.authenticated:
           if (flavor == AppFlavor.customer && loc == RoutePaths.register) {
-            return RoutePaths.customerOrders;
+            return RoutePaths.customerHome;
           }
           final onEntry =
               loc == RoutePaths.splash ||

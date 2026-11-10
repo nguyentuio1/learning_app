@@ -16,7 +16,19 @@ class PackagesListPage extends ConsumerWidget {
     final packages = ref.watch(packageNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage packages')),
+      appBar: AppBar(
+        title: const Text('Manage packages'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(RoutePaths.customerHome);
+            }
+          },
+        ),
+      ),
       body: packages.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
