@@ -7,12 +7,18 @@ class ApiException implements Exception {
     this.statusCode,
     this.code,
     this.isNetwork = false,
+    this.attemptsRemaining,
+    this.lockoutExpiresAt,
+    this.retryAfterSeconds,
   });
 
   final String message;
   final int? statusCode;
   final String? code;
   final bool isNetwork;
+  final int? attemptsRemaining;
+  final DateTime? lockoutExpiresAt;
+  final int? retryAfterSeconds;
 
   factory ApiException.fromDio(DioException e) {
     switch (e.type) {
@@ -30,6 +36,15 @@ class ApiException implements Exception {
         final data = e.response?.data;
         String? msg;
         String? code;
+        int? attemptsRemaining;
+        DateTime? lockoutExpiresAt;
+        int? retryAfterSeconds;
+
+        final retryAfterHeader = e.response?.headers.value('retry-after');
+        if (retryAfterHeader != null) {
+          retryAfterSeconds = int.tryParse(retryAfterHeader.trim());
+        }
+
         if (data is Map) {
           msg = data['detail']?.toString() ?? data['message']?.toString();
           if (msg == null && data['errors'] is Map) {
@@ -43,11 +58,24 @@ class ApiException implements Exception {
           }
           msg ??= data['title']?.toString();
           code = data['code']?.toString() ?? data['type']?.toString();
+          if (data['attemptsRemaining'] is num) {
+            attemptsRemaining = (data['attemptsRemaining'] as num).toInt();
+          }
+          if (data['lockoutExpiresAt'] is String) {
+            lockoutExpiresAt =
+                DateTime.tryParse(data['lockoutExpiresAt'] as String);
+          }
+          if (retryAfterSeconds == null && data['retryAfterSeconds'] is num) {
+            retryAfterSeconds = (data['retryAfterSeconds'] as num).toInt();
+          }
         }
         return ApiException(
           message: msg ?? 'Something went wrong. Please try again.',
           statusCode: e.response?.statusCode,
           code: code,
+          attemptsRemaining: attemptsRemaining,
+          lockoutExpiresAt: lockoutExpiresAt,
+          retryAfterSeconds: retryAfterSeconds,
         );
     }
   }

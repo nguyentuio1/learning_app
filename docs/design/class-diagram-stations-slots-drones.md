@@ -234,7 +234,7 @@ classDiagram
 |---|---|---|---|
 | `LandingStation` | `OPERATIONAL`, `MAINTENANCE`, `OFFLINE` | `OPERATIONAL` | `OPERATIONAL`: Available for flight departures, arrivals, and storage. <br/>`MAINTENANCE`: Hub isolated for repairs; no new missions scheduled. <br/>`OFFLINE`: Hub decommissioned or shut down. |
 | `StationSlot` | `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR` | `EMPTY` | `EMPTY`: Free for landing, charging, or parcel placement. <br/>`OCCUPIED`: Contains a drone or stored parcel. <br/>`RESERVED`: Booked by an in-flight mission en route. <br/>`ERROR`: Hardware fault, debris, or maintenance isolation. |
-| `Drone` | `IDLE`, `ASSIGNED`, `FLYING`, `CHARGING`, `MAINTENANCE` | `IDLE` | Aligned with ERD and `LA-233`. Only `IDLE` or `CHARGING` ($\ge 80\%$) drones can be assigned. |
+| `Drone` | `IDLE`, `ASSIGNED`, `FLYING`, `CHARGING`, `MAINTENANCE` | `IDLE` | Aligned with ERD and `LA-233`. Only `IDLE` drones are offered for assignment. `CHARGING` drones are not offered until a trusted battery source exists (the `drones` table has no charge column; see class-specification-delivery-workflow.md, open point 3). |
 | `FlightMission` | `PLANNED`, `IN_AIR`, `COMPLETED`, `ABORTED` | `PLANNED` | Aligned with ERD. Created when drone is assigned to an approved delivery order. |
 | `DeliveryOrder` | `PENDING`, `APPROVED`, `READY_FOR_TAKEOFF`, `IN_TRANSIT`, `ARRIVED`, `DELIVERED`, `CANCELLED`, `FAILED` | `PENDING` | Approved delivery order transitions to `READY_FOR_TAKEOFF` upon origin intake, and `ARRIVED` to `DELIVERED` upon pickup confirmation. |
 

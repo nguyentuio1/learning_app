@@ -10,21 +10,14 @@ import '../../../routes/route_paths.dart';
 import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
 import 'my_orders_provider.dart';
-import 'order_messages.dart';
-import 'resolve_failed_delivery_sheet.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
-  const OrderDetailPage({
-    DeliveryOrder? order,
-    String? orderId,
-    this.allowFailureResolution = false,
-    super.key,
-  }) : initialOrder = order,
-       orderId = orderId ?? '';
+  const OrderDetailPage({DeliveryOrder? order, String? orderId, super.key})
+    : initialOrder = order,
+      orderId = orderId ?? '';
 
   final DeliveryOrder? initialOrder;
   final String orderId;
-  final bool allowFailureResolution;
 
   String get detailId => orderId.isNotEmpty ? orderId : initialOrder?.id ?? '';
 
@@ -42,15 +35,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Widget build(BuildContext context) {
     ref.listen(cancelOrderControllerProvider, (previous, next) {
       if (previous?.isLoading != true) return;
-      if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              orderOperationErrorMessage(next.error!, cancelling: true),
-            ),
-          ),
-        );
-      } else if (next.hasValue) {
+      if (!next.hasError && next.hasValue) {
         if (_cancelSheetOpen) Navigator.of(context).pop();
         setState(() {
           _cancelled = true;
@@ -107,8 +92,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       children: [
         _detail('Tracking number', order.trackingNumber ?? order.id),
         _detail('Status', order.status),
-        if (order.parsedStatus == DeliveryOrderStatus.failed)
-          _failedDeliveryBanner(detail),
         _detail('Recipient', order.recipientName),
         _detail('Phone', order.recipientPhone),
         _detail('Origin station', _stationLabel(origin, order.originStationId)),
@@ -216,43 +199,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
-        if (widget.allowFailureResolution &&
-            order.parsedStatus == DeliveryOrderStatus.failed)
-          FilledButton.icon(
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              builder: (_) => ResolveFailedDeliverySheet(orderId: order.id),
-            ),
-            icon: const Icon(Icons.assignment_turned_in_outlined),
-            label: const Text('Resolve failed delivery'),
-          ),
       ],
-    );
-  }
-
-  Widget _failedDeliveryBanner(DeliveryOrderDetailResponseDto detail) {
-    final reason = detail.failureReason ?? detail.cancelReason;
-    return Card(
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Delivery failed',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              reason == null || reason.isEmpty
-                  ? 'Failure reason unavailable.'
-                  : 'Failure reason: $reason',
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -320,7 +267,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         clipBehavior: Clip.antiAlias,
-        builder: (_) => CancelOrderSheet(orderId: order.id),
+        builder: (_) =>
+            CancelOrderSheet(orderId: order.id, currentStatus: order.status),
       );
     } finally {
       _cancelSheetOpen = false;

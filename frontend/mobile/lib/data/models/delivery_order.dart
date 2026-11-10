@@ -1,24 +1,3 @@
-enum DeliveryOrderStatus {
-  pending('PENDING'),
-  approved('APPROVED'),
-  readyForTakeoff('READY_FOR_TAKEOFF'),
-  inTransit('IN_TRANSIT'),
-  arrived('ARRIVED'),
-  delivered('DELIVERED'),
-  failed('FAILED'),
-  cancelled('CANCELLED'),
-  unknown('');
-
-  const DeliveryOrderStatus(this.value);
-
-  final String value;
-
-  static DeliveryOrderStatus fromValue(String? value) => values.firstWhere(
-    (status) => status.value == value,
-    orElse: () => DeliveryOrderStatus.unknown,
-  );
-}
-
 class DeliveryOrder {
   const DeliveryOrder({
     required this.id,
@@ -39,8 +18,6 @@ class DeliveryOrder {
   final String status;
   final String? deliveryAddressId;
   final String? trackingNumber;
-
-  DeliveryOrderStatus get parsedStatus => DeliveryOrderStatus.fromValue(status);
 
   factory DeliveryOrder.fromJson(Map<String, dynamic> json) => DeliveryOrder(
     id: json['id'] as String,

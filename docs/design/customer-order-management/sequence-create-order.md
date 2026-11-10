@@ -62,28 +62,27 @@ sequenceDiagram
                 Controller -->> Client: 404 Not Found (RFC 7807 ProblemDetails)
                 Client -->> Customer: Displays "Package or station not found"
             else Package and Stations Found
-                alt Business Rule Violated<br/>(Package not owned by customer, WeightGram > 3000,<br/>LengthCm > 30, WidthCm > 20, or HeightCm > 15,<br/>Origin == Destination, or a station is not OPERATIONAL)
+                alt Business Rule Violated<br/>(WeightGram > 3000,<br/>LengthCm > 30, WidthCm > 20, or HeightCm > 15,<br/>Origin == Destination, or a station is not OPERATIONAL)
                     OrderSvc -->> Controller: Throws ValidationException / BusinessRuleException
                     Controller -->> Client: 400 Bad Request (RFC 7807 ProblemDetails)
                     Client -->> Customer: Displays specific validation error
                 else All Business Rules Validated
                     %% Step 5: Entity Generation & Code Generation
-                    Note over OrderSvc: 1. Generate Unique TrackingNumber (e.g., "SDD20261015X8K9")<br/>2. Generate 6-digit SecureCode (e.g., "839201")<br/>3. Set Status = PENDING
+                    Note over OrderSvc: 1. Generate Unique TrackingNumber (e.g., "DD-202610-0988", format DD-YYYYMM-NNNN)<br/>2. Generate 6-digit SecureCode (e.g., "839201")<br/>3. Set Status = PENDING
 
-                    %% Step 6: Database Transaction & Persistence
+                    %% Step 6: Database Transaction & Persistence (order, first status log and notification, or nothing)
                     OrderSvc ->> DbContext: Begin Transaction
                     OrderSvc ->> DbContext: AddAsync(DeliveryOrder Entity)
                     OrderSvc ->> DbContext: AddAsync(DeliveryStatusLog Entity: From=null, To=PENDING)
+
+                    %% Step 7: Notification in the same transaction (FR-12)
+                    OrderSvc ->> NotifSvc: CreateNotification(customerId, orderId, "Order created", PENDING)
+                    NotifSvc ->> DbContext: Add(Notification Entity), no separate save
+                    NotifSvc -->> OrderSvc: Notification added to the unit of work
+
                     OrderSvc ->> DbContext: SaveChangesAsync()
                     OrderSvc ->> DbContext: Commit Transaction
-                    DbContext -->> OrderSvc: Transaction Committed Successfully
-
-                    %% Step 7: Notification Service Integration (FR-12)
-                    OrderSvc ->> NotifSvc: CreateNotificationAsync(customerId, orderId, "Order Created Successfully", PENDING)
-                    NotifSvc ->> DbContext: AddAsync(Notification Entity)
-                    NotifSvc ->> DbContext: SaveChangesAsync()
-                    DbContext -->> NotifSvc: Saved
-                    NotifSvc -->> OrderSvc: Notification Created
+                    DbContext -->> OrderSvc: Order, status log and notification committed together
 
                     %% Step 8: Return Response DTO
                     OrderSvc -->> Controller: Return DeliveryOrderDetailResponseDto
@@ -99,9 +98,9 @@ sequenceDiagram
 
 1. The customer selects a package and origin and destination stations, then enters the recipient's details. Before sending the request, the application validates required fields and the phone number format.
 2. Once the data is valid, the application sends `POST /api/delivery-orders` with the JWT in the `Authorization` header and a `CreateDeliveryOrderDto` body. The controller authenticates the customer and checks the `CUSTOMER` role, then forwards the request and `customerId` to the order service.
-3. The order service retrieves the package through `IPackageService` and checks that the stations exist and have `OPERATIONAL` status. A missing package or station results in `404 Not Found`. If the entities exist but a business rule is violated (the package does not belong to the customer, `WeightGram > 3000` g (3.0 kg), `LengthCm > 30` cm, `WidthCm > 20` cm, `HeightCm > 15` cm, the origin and destination are the same, or a station is not `OPERATIONAL`), the request results in `400 Bad Request`. The corresponding accepted limits are `WeightGram <= 3000`, `LengthCm <= 30`, `WidthCm <= 20`, and `HeightCm <= 15`.
-4. If validation succeeds, the service generates a unique tracking number and a six-digit secure code, sets the initial status to `PENDING`, and begins a database transaction. It adds and saves both the `DeliveryOrder` and the initial `DeliveryStatusLog` (`From=null`, `To=PENDING`) within the transaction, then commits before proceeding.
-5. After the transaction commits successfully, the service creates a customer notification through `INotificationService` (FR-12). Finally, it returns a successful response containing a `DeliveryOrderDetailResponseDto`, with HTTP status `201 Created` and the new order's URI.
+3. The order service retrieves the package through `IPackageService` and checks that the stations exist and have `OPERATIONAL` status. A missing package or station, or a package that belongs to another customer, results in `404 Not Found` (BR-CO-36). If the entities exist but a business rule is violated (the package does not belong to the customer, `WeightGram > 3000` g (3.0 kg), `LengthCm > 30` cm, `WidthCm > 20` cm, `HeightCm > 15` cm, the origin and destination are the same, or a station is not `OPERATIONAL`), the request results in `400 Bad Request`. The corresponding accepted limits are `WeightGram <= 3000`, `LengthCm <= 30`, `WidthCm <= 20`, and `HeightCm <= 15`.
+4. If validation succeeds, the service generates a unique tracking number and a six-digit secure code, sets the initial status to `PENDING`, and begins a database transaction. It adds the `DeliveryOrder`, the initial `DeliveryStatusLog` (`From=null`, `To=PENDING`) and the customer `Notification` in the same transaction and commits once; if any step fails, nothing is saved.
+5. The notification (FR-12) is created inside that transaction, not after it, so an order never exists without its notification. The service then returns a successful response containing a `DeliveryOrderDetailResponseDto`, with HTTP status `201 Created` and the new order's URI.
 
 ## 4. Responses and Exception Paths
 

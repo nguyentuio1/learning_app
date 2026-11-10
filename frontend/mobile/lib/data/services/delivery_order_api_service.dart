@@ -7,9 +7,7 @@ import '../models/cancel_delivery_order_dto.dart';
 import '../models/delivery_order.dart';
 import '../models/delivery_order_detail_response_dto.dart';
 import '../models/delivery_order_filter_params.dart';
-import '../models/mark_failed_delivery_request_dto.dart';
 import '../models/paged_result.dart';
-import '../models/resolve_failed_delivery_request_dto.dart';
 import '../models/update_delivery_order_dto.dart';
 
 class DeliveryOrderApiService {
@@ -139,34 +137,6 @@ class DeliveryOrderApiService {
       await _dio.post<void>(
         '${ApiEndpoints.deliveryOrders}/$id/cancel',
         data: {'cancellationReason': cancellation.cancellationReason.trim()},
-      );
-    } on DioException catch (error) {
-      throw error.apiException;
-    }
-  }
-
-  Future<void> markFailed(
-    String id,
-    MarkFailedDeliveryRequestDto request,
-  ) async {
-    try {
-      await _dio.post<void>(
-        '${ApiEndpoints.deliveryOrders}/$id/fail',
-        data: request.toJson(),
-      );
-    } on DioException catch (error) {
-      throw error.apiException;
-    }
-  }
-
-  Future<void> resolveFailedDelivery(
-    String id,
-    ResolveFailedDeliveryRequestDto request,
-  ) async {
-    try {
-      await _dio.post<void>(
-        '${ApiEndpoints.deliveryOrders}/$id/resolve-failure',
-        data: request.toJson(),
       );
     } on DioException catch (error) {
       throw error.apiException;

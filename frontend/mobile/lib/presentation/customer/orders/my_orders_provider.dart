@@ -102,15 +102,6 @@ final myOrdersProvider =
       name: 'myOrders',
     );
 
-final failedOrdersProvider = FutureProvider.autoDispose<List<DeliveryOrder>>((
-  ref,
-) async {
-  final result = await ref
-      .watch(deliveryOrderApiServiceProvider)
-      .getOrders(const DeliveryOrderFilterParams(status: 'FAILED'));
-  return result.items;
-}, name: 'failedOrders');
-
 class OrderDetailNotifier
     extends AsyncNotifier<DeliveryOrderDetailResponseDto> {
   OrderDetailNotifier(this.orderId);

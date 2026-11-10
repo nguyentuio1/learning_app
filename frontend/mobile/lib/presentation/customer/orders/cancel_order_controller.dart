@@ -10,10 +10,22 @@ class CancelOrderController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
-  Future<void> cancelOrder(String id, String cancellationReason) async {
+  Future<void> cancelOrder(
+    String id,
+    String currentStatus,
+    String cancellationReason,
+  ) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final reason = cancellationReason.trim();
+      final status = currentStatus.trim().toUpperCase();
+      if (status != 'PENDING' && status != 'APPROVED') {
+        throw const ApiException(
+          message: 'This order can no longer be cancelled.',
+          statusCode: 409,
+          code: 'MSG-P-CO-22',
+        );
+      }
       if (reason.isEmpty) {
         throw const ApiException(
           message: 'Enter a cancellation reason.',

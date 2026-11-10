@@ -22,6 +22,7 @@ if (Encoding.UTF8.GetByteCount(jwt.Key) < 32)
     throw new InvalidOperationException("Jwt:Key must be at least 32 bytes long.");
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<ILandingStationService, LandingStationService>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -32,6 +33,7 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<IStationSlotService, StationSlotService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -69,12 +71,17 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 builder.Services.AddScoped<IDeliveryOrderMutationService, DeliveryOrderMutationService>();
+builder.Services.AddScoped<IStationOperationService, StationOperationService>();
+builder.Services.Configure<PickupTimeoutOptions>(builder.Configuration.GetSection(PickupTimeoutOptions.SectionName));
+builder.Services.AddScoped<IPickupTimeoutService, PickupTimeoutService>();
+builder.Services.AddHostedService<PickupTimeoutWorker>();
 builder.Services.AddScoped<IStationAvailabilityService, StationAvailabilityService>();
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
         options.InvalidModelStateResponseFactory = ApiProblemDetails.FromModelState);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddScoped<IDroneService, DroneService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

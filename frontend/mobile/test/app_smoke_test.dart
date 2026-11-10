@@ -1,22 +1,37 @@
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:smart_drone_delivery/app/app.dart';
 import 'package:smart_drone_delivery/app/providers.dart';
-import 'package:smart_drone_delivery/core/storage/storage_providers.dart';
-import 'package:smart_drone_delivery/core/storage/token_storage.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
-import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
+import 'package:smart_drone_delivery/data/models/landing_station.dart';
+import 'package:smart_drone_delivery/data/providers/landing_station_providers.dart';
 import 'package:smart_drone_delivery/core/theme/app_theme.dart';
+import 'package:smart_drone_delivery/data/services/landing_station_api_service.dart';
 import 'package:smart_drone_delivery/presentation/auth/login_page.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/test_helpers.dart';
 
+/// Fake service trả về danh sách trống để smoke test không cần mạng.
+class _EmptyStationService extends LandingStationApiService {
+  _EmptyStationService() : super(Dio());
+
+  @override
+  Future<List<LandingStation>> getStations({
+    String? status,
+    String? search,
+  }) async =>
+      const [];
+}
+
 Future<void> _pump(
   WidgetTester tester,
   AppConfig config,
-  TokenStorage storage,
-) async {
+  TokenStorage storage, {
+  List<Override> extra = const [],
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -24,6 +39,7 @@ Future<void> _pump(
         tokenStorageProvider.overrideWithValue(storage),
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
         userStorageProvider.overrideWithValue(InMemoryUserStorage()),
+        ...extra,
       ],
       child: const App(),
     ),
@@ -37,6 +53,13 @@ Future<InMemoryTokenStorage> _loggedIn() async {
   return s;
 }
 
+/// Override station service so the Operator home loads without a backend.
+List<Override> _operatorOverrides() => [
+      landingStationApiServiceProvider.overrideWithValue(
+        _EmptyStationService(),
+      ),
+    ];
+
 void main() {
   testWidgets('Customer đã đăng nhập -> vào Customer home', (tester) async {
     await _pump(tester, AppConfig.customer(), await _loggedIn());
@@ -44,8 +67,14 @@ void main() {
   });
 
   testWidgets('Operator đã đăng nhập -> vào Operator home', (tester) async {
-    await _pump(tester, AppConfig.operator(), await _loggedIn());
-    expect(find.text('Station Operator app'), findsOneWidget);
+    await _pump(
+      tester,
+      AppConfig.operator(),
+      await _loggedIn(),
+      extra: _operatorOverrides(),
+    );
+    // Operator home shows the availability dashboard title.
+    expect(find.text('Station availability'), findsOneWidget);
   });
 
   testWidgets('Chưa đăng nhập -> bị chuyển tới Login', (tester) async {
