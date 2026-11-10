@@ -19,6 +19,7 @@ import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/pickup/package_pickup_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
 import '../presentation/profile/profile_page.dart';
@@ -76,11 +77,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.customerHome,
           builder: (_, _) => const CustomerHomePage(),
         )
-      else
+      else ...[
         GoRoute(
           path: RoutePaths.operatorHome,
           builder: (_, _) => const OperatorHomePage(),
         ),
+        GoRoute(
+          path: RoutePaths.operatorPickup,
+          builder: (_, _) => const PackagePickupPage(),
+        ),
+      ],
       GoRoute(path: RoutePaths.profile, builder: (_, _) => const ProfilePage()),
       GoRoute(
         path: RoutePaths.editProfile,

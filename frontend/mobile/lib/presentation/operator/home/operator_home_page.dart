@@ -169,6 +169,15 @@ class OperatorHomePage extends ConsumerWidget {
                     }
                   },
                 ),
+                const SizedBox(height: 12),
+
+                // Quick Action: Package Pickup Confirmation (LA-29 / LA-126)
+                FilledButton.icon(
+                  key: const Key('operator-pickup-button'),
+                  onPressed: () => context.push(RoutePaths.operatorPickup),
+                  icon: const Icon(Icons.mark_email_read_outlined),
+                  label: const Text('Confirm Package Pickup'),
+                ),
                 const SizedBox(height: 16),
 
                 // Availability Metrics Card
