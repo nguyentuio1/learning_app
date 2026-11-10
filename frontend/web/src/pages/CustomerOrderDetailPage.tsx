@@ -11,7 +11,14 @@ export function CustomerOrderDetailPage() {
   const { order, loading, error, refresh } = useCustomerOrder(id)
   return <main className="order-page"><Link to="/orders">← Back to orders</Link>
     {loading ? <div role="status" className="order-loading"><Spin description="Loading order" /></div> : error ? <Alert type="error" showIcon title={error} action={<Button onClick={refresh}>Try again</Button>} /> : order && <>
-      <header className="order-heading"><div><span className="order-eyebrow">DELIVERY DETAILS</span><h1>{order.trackingNumber}</h1><Tag className={`order-status order-status-${order.status.toLowerCase()}`}>{orderStatusLabel(order.status)}</Tag><p className="order-subtitle">Created {orderTime(order.createdAt)}</p></div><Button onClick={refresh}>Refresh</Button></header>
+      <header className="order-heading"><div><span className="order-eyebrow">DELIVERY DETAILS</span><h1>{order.trackingNumber}</h1><Tag className={`order-status order-status-${order.status.toLowerCase()}`}>{orderStatusLabel(order.status)}</Tag><p className="order-subtitle">Created {orderTime(order.createdAt)}</p></div>
+        <div className="order-actions">
+          {(order.status === 'PENDING' || order.status === 'APPROVED') && <Link className="order-primary-link" to={`/orders/${encodeURIComponent(order.id)}/manage`}>
+            {order.status === 'PENDING' ? 'Edit or cancel order' : 'Cancel order'}
+          </Link>}
+          <Button onClick={refresh}>Refresh</Button>
+        </div>
+      </header>
       <div className="order-columns"><div>
         <OrderReveal><section className="order-panel"><h2>Package & recipient</h2><dl className="order-facts">
           <div><dt>Package</dt><dd>{order.packageName}</dd></div><div><dt>Weight</dt><dd>{order.package?.weightGram ?? '—'} g</dd></div>
