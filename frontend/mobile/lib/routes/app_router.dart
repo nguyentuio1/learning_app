@@ -19,6 +19,7 @@ import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/orders/failed_orders_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
 import '../presentation/profile/profile_page.dart';
@@ -81,6 +82,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.operatorHome,
           builder: (_, _) => const OperatorHomePage(),
         ),
+      if (flavor == AppFlavor.operator) ...[
+        GoRoute(
+          path: RoutePaths.operatorFailedDeliveries,
+          builder: (_, _) => const FailedOrdersPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.operatorOrderDetails,
+          builder: (_, state) {
+            final order = state.extra;
+            return OrderDetailPage(
+              orderId: state.pathParameters['orderId'],
+              order: order is DeliveryOrder ? order : null,
+              allowFailureResolution: true,
+            );
+          },
+        ),
+      ],
       GoRoute(path: RoutePaths.profile, builder: (_, _) => const ProfilePage()),
       GoRoute(
         path: RoutePaths.editProfile,

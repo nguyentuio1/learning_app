@@ -25,6 +25,19 @@ class OperatorHomePage extends ConsumerWidget {
         ),
       ],
     ),
-    body: const Center(child: Text('Station Operator app')),
+    body: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Station Operator app'),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => context.push(RoutePaths.operatorFailedDeliveries),
+            icon: const Icon(Icons.error_outline),
+            label: const Text('Failed deliveries'),
+          ),
+        ],
+      ),
+    ),
   );
 }

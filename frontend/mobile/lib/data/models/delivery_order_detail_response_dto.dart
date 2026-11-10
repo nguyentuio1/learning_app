@@ -146,6 +146,7 @@ class DeliveryOrderDetailResponseDto {
     this.packageId,
     this.deliveryAddressId,
     this.cancelReason,
+    this.failureReason,
     this.createdAt,
     this.updatedAt,
     this.scheduledDepartureTime,
@@ -169,6 +170,7 @@ class DeliveryOrderDetailResponseDto {
   final String? packageId;
   final String? deliveryAddressId;
   final String? cancelReason;
+  final String? failureReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? scheduledDepartureTime;
@@ -204,6 +206,9 @@ class DeliveryOrderDetailResponseDto {
       packageId: json['packageId'] as String?,
       deliveryAddressId: json['deliveryAddressId'] as String?,
       cancelReason: json['cancelReason'] as String?,
+      failureReason:
+          json['failureReason'] as String? ??
+          logs.where((log) => log.toStatus == 'FAILED').lastOrNull?.remarks,
       createdAt: _parseDate(json['createdAt']),
       updatedAt: _parseDate(json['updatedAt']),
       scheduledDepartureTime: _parseDate(json['scheduledDepartureTime']),
