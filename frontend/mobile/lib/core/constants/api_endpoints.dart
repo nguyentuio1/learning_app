@@ -12,4 +12,8 @@ abstract final class ApiEndpoints {
   static const landingStations = '/landing-stations';
   static const packages = '/packages';
   static const deliveryOrders = '/delivery-orders';
+
+  static String landingStation(String id) => '$landingStations/$id';
+  static String landingStationAvailability(String id) =>
+      '$landingStations/$id/availability';
 }
