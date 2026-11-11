@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_exception.dart';
-import '../../../data/models/cancel_delivery_order_dto.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
 import '../../../routes/route_paths.dart';
+import 'cancel_order_controller.dart';
+import 'cancel_order_sheet.dart';
 import 'my_orders_provider.dart';
-import 'order_messages.dart';
-import 'order_notifier.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   const OrderDetailPage({DeliveryOrder? order, String? orderId, super.key})
@@ -27,34 +26,24 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
-  bool _cancelling = false;
+  bool _cancelSheetOpen = false;
   bool _cancelled = false;
+  DeliveryOrder? _cancellingOrder;
   DeliveryOrder? _localOrder;
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(orderNotifierProvider, (previous, next) {
-      if (next.hasError && _cancelling) {
-        _cancelling = false;
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              orderOperationErrorMessage(next.error!, cancelling: true),
-            ),
-          ),
-        );
-      } else if (previous?.isLoading == true && next.hasValue && _cancelling) {
-        _cancelling = false;
-        if (!mounted) return;
+    ref.listen(cancelOrderControllerProvider, (previous, next) {
+      if (previous?.isLoading != true) return;
+      if (!next.hasError && next.hasValue) {
+        if (_cancelSheetOpen) Navigator.of(context).pop();
         setState(() {
           _cancelled = true;
-          final order = _localOrder ?? widget.initialOrder;
-          if (order != null) {
-            _localOrder = _withStatus(order, 'CANCELLED');
-          }
+          final order = _cancellingOrder ?? _localOrder ?? widget.initialOrder;
+          if (order != null) _localOrder = _withStatus(order, 'CANCELLED');
         });
         ref.invalidate(orderDetailProvider(widget.detailId));
+        ref.invalidate(myOrdersProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Order cancelled successfully.')),
         );
@@ -81,8 +70,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           ),
         ),
         data: (response) {
-          final order =
-              _localOrder ?? widget.initialOrder ?? _orderFrom(response);
+          final order = _localOrder ?? _orderFrom(response);
           return _buildDetails(order, response);
         },
       ),
@@ -207,7 +195,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         if ((order.status == 'PENDING' || order.status == 'APPROVED') &&
             !_cancelled)
           OutlinedButton.icon(
-            onPressed: _cancelling ? null : () => _confirmCancellation(order),
+            onPressed: () => _confirmCancellation(order),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
@@ -269,20 +257,22 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   );
 
   Future<void> _confirmCancellation(DeliveryOrder order) async {
-    final reason = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const _CancelOrderSheet(),
-    );
-    if (!mounted || reason == null) return;
-    setState(() => _cancelling = true);
-    await ref
-        .read(orderNotifierProvider.notifier)
-        .cancelOrder(
-          order.id,
-          CancelDeliveryOrderDto(cancellationReason: reason),
-          currentStatus: order.status,
-        );
+    _cancellingOrder = order;
+    _cancelSheetOpen = true;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        builder: (_) =>
+            CancelOrderSheet(orderId: order.id, currentStatus: order.status),
+      );
+    } finally {
+      _cancelSheetOpen = false;
+    }
   }
 
   Future<void> _editOrder(DeliveryOrder order) async {
@@ -316,6 +306,17 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 }
 
+DeliveryOrder _withStatus(DeliveryOrder order, String status) => DeliveryOrder(
+  id: order.id,
+  recipientName: order.recipientName,
+  recipientPhone: order.recipientPhone,
+  originStationId: order.originStationId,
+  destinationStationId: order.destinationStationId,
+  status: status,
+  deliveryAddressId: order.deliveryAddressId,
+  trackingNumber: order.trackingNumber,
+);
+
 DeliveryOrder _orderFrom(DeliveryOrderDetailResponseDto detail) =>
     DeliveryOrder(
       id: detail.id,
@@ -328,17 +329,6 @@ DeliveryOrder _orderFrom(DeliveryOrderDetailResponseDto detail) =>
       trackingNumber: detail.trackingNumber,
     );
 
-DeliveryOrder _withStatus(DeliveryOrder order, String status) => DeliveryOrder(
-  id: order.id,
-  recipientName: order.recipientName,
-  recipientPhone: order.recipientPhone,
-  originStationId: order.originStationId,
-  destinationStationId: order.destinationStationId,
-  status: status,
-  deliveryAddressId: order.deliveryAddressId,
-  trackingNumber: order.trackingNumber,
-);
-
 String _formatTimestamp(DateTime value) => value.toLocal().toString();
 
 String orderDetailErrorMessage(Object error) {
@@ -347,78 +337,4 @@ String orderDetailErrorMessage(Object error) {
     return 'Order not found or unavailable to your account.';
   }
   return 'Unable to load order details. Please try again.';
-}
-
-class _CancelOrderSheet extends StatefulWidget {
-  const _CancelOrderSheet();
-
-  @override
-  State<_CancelOrderSheet> createState() => _CancelOrderSheetState();
-}
-
-class _CancelOrderSheetState extends State<_CancelOrderSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _reasonController = TextEditingController();
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        24,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Cancel this order?',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _reasonController,
-              maxLength: 500,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Cancellation reason',
-                alignLabelWithHint: true,
-              ),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter a cancellation reason.'
-                  : null,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Keep order'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () {
-                    if (!_formKey.currentState!.validate()) return;
-                    Navigator.pop(context, _reasonController.text.trim());
-                  },
-                  child: const Text('Confirm cancellation'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

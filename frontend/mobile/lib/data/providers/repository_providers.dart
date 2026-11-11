@@ -22,4 +22,3 @@ final profileRepositoryProvider = Provider<ProfileRepository>(
   (ref) => ProfileRepositoryImpl(ref.watch(dioProvider)),
   name: 'profileRepository',
 );
-

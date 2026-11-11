@@ -224,7 +224,7 @@ void main() {
     }
   });
 
-  testWidgets('C09 maps a cancellation 409 to the catalog snackbar', (
+  testWidgets('C09 shows a cancellation 409 inline in the sheet', (
     tester,
   ) async {
     final service = _FakeDeliveryOrderApiService(
@@ -241,7 +241,7 @@ void main() {
     expect(find.text('This order can no longer be cancelled.'), findsOneWidget);
   });
 
-  testWidgets('C09 maps a cancellation 404 to the catalog snackbar', (
+  testWidgets('C09 shows a cancellation 404 inline in the sheet', (
     tester,
   ) async {
     final service = _FakeDeliveryOrderApiService(

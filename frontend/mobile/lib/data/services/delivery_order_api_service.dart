@@ -136,7 +136,7 @@ class DeliveryOrderApiService {
     try {
       await _dio.post<void>(
         '${ApiEndpoints.deliveryOrders}/$id/cancel',
-        data: cancellation.toJson(),
+        data: {'cancellationReason': cancellation.cancellationReason.trim()},
       );
     } on DioException catch (error) {
       throw error.apiException;

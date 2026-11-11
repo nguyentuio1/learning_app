@@ -39,6 +39,7 @@ Chỉ phụ thuộc **xuống dưới**. Widget không bao giờ import Dio; Rep
 | `routerProvider` (`routes`) | `Provider<GoRouter>` | Router theo flavor + chặn truy cập |
 | `authControllerProvider` (`core/session`) | `NotifierProvider<AuthController, AuthStatus>` | Trạng thái phiên toàn app |
 | `loginControllerProvider` | `AsyncNotifierProvider.autoDispose` | State màn hình đăng nhập |
+| `failedDeliveryControllerProvider` | `AsyncNotifierProvider.autoDispose` | Đánh dấu và xử lý đơn giao thất bại; invalidate danh sách và chi tiết đơn sau khi thành công |
 | `themeModeProvider` | `NotifierProvider<…, ThemeMode>` | Sáng/tối |
 
 Import gọn: `import 'package:smart_drone_delivery/app/providers.dart';`
