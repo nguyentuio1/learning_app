@@ -131,10 +131,12 @@ public partial class StationOperationService : IStationOperationService
     private static partial Regex SecureCodeRegex();
 
     private readonly AppDbContext _db;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public StationOperationService(AppDbContext db)
+    public StationOperationService(AppDbContext db, IOrderTransitionWriter transitions)
     {
         _db = db;
+        _transitions = transitions;
     }
 
     public async Task<StationOrderInfoDto> GetOrderInfoAsync(Guid userId, Guid stationId, string trackingNumber)
@@ -169,6 +171,7 @@ public partial class StationOperationService : IStationOperationService
 
     public async Task<PackageIntakeResponseDto> IntakeAsync(Guid userId, Guid stationId, PackageIntakeRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await AuthorizeStationOperatorAsync(userId, stationId);
 
         var errors = new Dictionary<string, List<string>>();
@@ -227,20 +230,10 @@ public partial class StationOperationService : IStationOperationService
                     throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
 
                 var now = DateTime.UtcNow;
-                order.Status = "READY_FOR_TAKEOFF";
-                order.UpdatedAt = now;
+                await _transitions.StageAsync(order, "APPROVED", "READY_FOR_TAKEOFF", userId,
+                    $"Package intake completed, loaded into slot {slot.SlotNumber}", now);
                 slot.Status = "OCCUPIED";
                 slot.LastUpdated = now;
-
-                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-                {
-                    OrderId = order.Id,
-                    FromStatus = "APPROVED",
-                    ToStatus = "READY_FOR_TAKEOFF",
-                    ChangedBy = userId,
-                    Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
-                    CreatedAt = now
-                });
 
                 _db.AuditLogs.Add(new AuditLog
                 {
@@ -290,20 +283,10 @@ public partial class StationOperationService : IStationOperationService
                     throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
 
                 var now = DateTime.UtcNow;
-                order.Status = "READY_FOR_TAKEOFF";
-                order.UpdatedAt = now;
+                await _transitions.StageAsync(order, "APPROVED", "READY_FOR_TAKEOFF", userId,
+                    $"Package intake completed, loaded into slot {slot.SlotNumber}", now);
                 slot.Status = "OCCUPIED";
                 slot.LastUpdated = now;
-
-                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-                {
-                    OrderId = order.Id,
-                    FromStatus = "APPROVED",
-                    ToStatus = "READY_FOR_TAKEOFF",
-                    ChangedBy = userId,
-                    Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
-                    CreatedAt = now
-                });
 
                 _db.AuditLogs.Add(new AuditLog
                 {
@@ -343,6 +326,7 @@ public partial class StationOperationService : IStationOperationService
 
     public async Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await AuthorizeStationOperatorAsync(userId, stationId);
 
         var errors = new Dictionary<string, List<string>>();
@@ -379,19 +363,8 @@ public partial class StationOperationService : IStationOperationService
                 throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
 
             var now = DateTime.UtcNow;
-            order.Status = "FAILED";
+            await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
             order.CancelReason = reason;
-            order.UpdatedAt = now;
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                FromStatus = "APPROVED",
-                ToStatus = "FAILED",
-                ChangedBy = userId,
-                Remarks = reason,
-                CreatedAt = now
-            });
 
             _db.AuditLogs.Add(new AuditLog
             {
@@ -426,6 +399,7 @@ public partial class StationOperationService : IStationOperationService
 
     public async Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await AuthorizeStationOperatorAsync(userId, stationId);
 
         var errors = new Dictionary<string, List<string>>();
@@ -515,21 +489,11 @@ public partial class StationOperationService : IStationOperationService
 
             await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, true, now, userId);
 
-            order.Status = "DELIVERED";
+            await _transitions.StageAsync(order, "ARRIVED", "DELIVERED", userId,
+                "Secure code verified, parcel handed over to recipient", now);
             order.ActualDeliveryTime = now;
-            order.UpdatedAt = now;
             slot.Status = "EMPTY";
             slot.LastUpdated = now;
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                FromStatus = "ARRIVED",
-                ToStatus = "DELIVERED",
-                ChangedBy = userId,
-                Remarks = "Secure code verified, parcel handed over to recipient",
-                CreatedAt = now
-            });
 
             // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
             _db.AuditLogs.Add(new AuditLog
@@ -634,21 +598,11 @@ public partial class StationOperationService : IStationOperationService
             await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, true, now, userId);
 
             var slot = mission.DestinationSlot;
-            order.Status = "DELIVERED";
+            await _transitions.StageAsync(order, "ARRIVED", "DELIVERED", userId,
+                "Secure code verified, parcel handed over to recipient", now);
             order.ActualDeliveryTime = now;
-            order.UpdatedAt = now;
             slot.Status = "EMPTY";
             slot.LastUpdated = now;
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                FromStatus = "ARRIVED",
-                ToStatus = "DELIVERED",
-                ChangedBy = userId,
-                Remarks = "Secure code verified, parcel handed over to recipient",
-                CreatedAt = now
-            });
 
             // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
             _db.AuditLogs.Add(new AuditLog
