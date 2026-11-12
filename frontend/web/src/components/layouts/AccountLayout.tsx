@@ -6,8 +6,15 @@ import { operationFeatures } from '../../features/operations/navigation'
 import './account-layout.css'
 import './account-motion.css'
 
-function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' | 'orders' | 'addresses' | 'packages' }) {
+function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' | 'orders' | 'addresses' | 'packages' | 'drone' | 'route' | 'activity' | 'grid' | 'schedule' | 'alert' | 'clipboard' }) {
   return <svg className="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {name === 'drone' && <><rect x="8" y="8" width="8" height="8" rx="3"/><path d="m8 8-3-3m11 3 3-3M8 16l-3 3m11-3 3 3M2 5h6M16 5h6M2 19h6m8 0h6"/></>}
+    {name === 'route' && <><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="6" r="2.5"/><path d="M8 18h5a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h4"/></>}
+    {name === 'activity' && <path d="M2 12h5l3-8 4 16 3-8h5"/>}
+    {name === 'grid' && <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>}
+    {name === 'schedule' && <><path d="M9 21H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3M7 2v4M17 2v4M3 10h8"/><circle cx="17" cy="17" r="5"/><path d="M17 14v3l2 1"/></>}
+    {name === 'alert' && <path d="m12 3 10 18H2L12 3zM12 9v5M12 17v.5"/>}
+    {name === 'clipboard' && <path d="M8 4H5v17h14V4h-3M9 3h6v4H9zM8 12h8M8 16h5"/>}
     {name === 'users' && <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v2"/></>}
     {name === 'roles' && <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></>}
     {name === 'profile' && <><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></>}
@@ -16,6 +23,16 @@ function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' 
     {name === 'addresses' && <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></>}
     {name === 'packages' && <><path d="m4 8 8-4 8 4v9l-8 4-8-4V8Z"/><path d="m4 8 8 4 8-4M12 12v9"/></>}
   </svg>
+}
+
+const operationIcons: Record<string, Parameters<typeof AccountIcon>[0]['name']> = {
+  '/drones': 'drone',
+  '/stations': 'route',
+  '/station-availability': 'activity',
+  '/station-slots': 'grid',
+  '/dispatcher/scheduling': 'schedule',
+  '/dispatcher/failures': 'alert',
+  '/dispatcher/approvals': 'clipboard',
 }
 
 export function AccountLayout() {
@@ -48,7 +65,7 @@ export function AccountLayout() {
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/packages" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="packages"/>Packages</NavLink>}
         {operationFeatures.filter(feature => feature.roles.some(role => role === auth.user?.role.code)).map(feature => (
           <NavLink key={feature.path} to={feature.path} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}>
-            <AccountIcon name="addresses"/>{feature.label}
+            <AccountIcon name={operationIcons[feature.path] ?? 'grid'}/>{feature.label}
           </NavLink>
         ))}
       </nav>
