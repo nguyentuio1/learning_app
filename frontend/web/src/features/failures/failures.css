@@ -1,0 +1,13 @@
+/* Reuse the reviewed operations cards and palette, scoped to failed deliveries. */
+.failure-feature { min-width:0; }
+.failure-feature .operations-heading>div { min-width:0; }
+.failure-feature .operations-panel { min-width:0; overflow-wrap:anywhere; }
+.failure-feature .ant-timeline { margin-top:24px; }
+.failure-feature .ant-timeline p { white-space:pre-wrap; }
+@media(max-width:760px) {
+  .account-layout:has(.failure-feature) .account-sidebar nav { flex-wrap:wrap; }
+  .failure-feature .operations-facts>div { grid-template-columns:110px minmax(0,1fr); }
+}
+@media(max-width:560px) {
+  .failure-feature .operations-filters .ant-form-item { min-width:0; flex:1 1 100%; }
+}
