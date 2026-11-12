@@ -1,5 +1,7 @@
 # API Contract - Delivery Workflow (Dispatcher, Scheduling, Tracking, Failures)
 
+Documentation task: [LA-339 - Sprint 5 API contracts](https://hungndemail.atlassian.net/browse/LA-339). Covers the original contract in commit `0c9fddc` (PR #139) and the dispatcher read-side supplement below.
+
 Contract for the fourth API group of SmartDroneDelivery (Sprint 5: LA-31 review and approve or reject, LA-32 order status state machine, LA-33 schedule and assign a drone, LA-34 failed deliveries, LA-330 telemetry simulator; plus the read side of LA-35 and LA-36 so Sprint 6 can start). Backend, web and mobile build against this document. Customer notifications (LA-326) are in [notification-api.md](notification-api.md).
 
 > **Status: proposed, to be confirmed by the team.** Any change goes through a pull request that edits this file, and the change is announced to the team. Items that still need a decision are collected in section 9.
@@ -13,6 +15,10 @@ Sources: [class specification](../design/class-specification-delivery-workflow.m
 | LA-32 state machine | section 4 (rules shared by every endpoint) |
 | LA-35, LA-36 read side, LA-330 simulator | section 5 |
 | LA-34 failed deliveries | section 6 |
+| LA-136 backend / LA-137 web scheduling reads | sections 3.4 and 3.5 |
+| LA-139 backend / LA-140 web failure reads | sections 6.4 and 6.5 |
+
+Read-side supplement checked against Jira on 2026-11-12: [LA-137](https://hungndemail.atlassian.net/browse/LA-137), [LA-140](https://hungndemail.atlassian.net/browse/LA-140), their parent stories [LA-33](https://hungndemail.atlassian.net/browse/LA-33) and [LA-34](https://hungndemail.atlassian.net/browse/LA-34), and backend tasks [LA-136](https://hungndemail.atlassian.net/browse/LA-136), [LA-139](https://hungndemail.atlassian.net/browse/LA-139), [LA-336](https://hungndemail.atlassian.net/browse/LA-336). The stories require scheduling approved orders and showing failure/resolution history; they do not specify read routes or DTOs. The four read endpoints below are proposed additions, not existing backend endpoints. LA-140 concerns failed deliveries, not network communication failures; a telemetry gap alone does not fail an order.
 
 ## 1. Conventions
 
@@ -133,6 +139,79 @@ Response `201 Created` with `Location: /api/delivery-orders/{id}/flight-mission`
 ```
 Errors: `400` `droneId` missing, package heavier than the payload, or route beyond the range with the 30 percent reserve; `403`; `404` order or drone not found; `409` the order is not `APPROVED` or not scheduled, it already has a `PLANNED` or `IN_AIR` mission, the drone is not `IDLE` or has an overlapping mission, the destination station is not `OPERATIONAL`, or it has no `EMPTY` slot.
 
+### 3.4 GET /api/dispatch/approved-orders (LA-136, LA-137)
+
+Auth: `DISPATCHER`, `ADMIN`, active accounts only. Lists orders whose **current** status is `APPROVED`, across customers. Scheduling and assignment do not remove an order from this queue; intake does. This is independent of the customer-owned `GET /api/delivery-orders`.
+
+| Query | Rule |
+|---|---|
+| `originStationId`, `destinationStationId` | Optional UUIDs, match the respective station |
+| `searchKeyword` | Optional, trimmed, at most 50 characters; case-insensitive literal partial match on `trackingNumber` |
+| `fromDate`, `toDate` | Optional UTC ISO 8601, inclusive bounds on `createdAt`; `fromDate <= toDate` |
+| `scheduledFrom`, `scheduledTo` | Optional UTC ISO 8601, inclusive bounds on `scheduledDepartureTime`; `scheduledFrom <= scheduledTo`; excludes unscheduled orders when either is supplied |
+| `assignmentStatus` | Optional `UNASSIGNED` or `ASSIGNED`; omit for both |
+| `page`, `pageSize` | Default 1 and 20; `page >= 1`, `pageSize` 1 to 100 |
+
+Filters combine with AND. Sort by `createdAt` ascending, then `orderId` ascending to break ties. Response `200 OK`: `PagedResult<ApprovedOrderSummary>` using `items/page/pageSize/totalCount/totalPages`. Counts are after filtering, before pagination. Empty results and pages beyond the last page return `items: []`; zero matches means `totalPages: 0`.
+
+`ApprovedOrderSummary` example:
+
+```json
+{
+  "orderId": "e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33",
+  "trackingNumber": "DD-202611-0012",
+  "status": "APPROVED",
+  "packageId": "c41f8b0a-2d37-4a6b-8e1c-5f7a9d3b6e22",
+  "packageName": "Books",
+  "weightGram": 450,
+  "originStation": { "id": "7d2e5a90-1b4c-4f38-a6d1-9c8e0b3f5a44", "stationCode": "HCM-01", "name": "District 1 Hub" },
+  "destinationStation": { "id": "a1c3e5f7-2b4d-4a6c-8e0f-1b3d5f7a9c21", "stationCode": "HCM-02", "name": "Thu Duc Hub" },
+  "scheduledDepartureTime": null,
+  "estimatedDeliveryTime": null,
+  "assignmentStatus": "UNASSIGNED",
+  "missionId": null,
+  "droneId": null,
+  "droneSerialNumber": null,
+  "createdAt": "2026-11-12T02:40:00Z",
+  "updatedAt": "2026-11-12T03:15:00Z"
+}
+```
+
+`ASSIGNED` means an active mission (`PLANNED` or `IN_AIR`) exists; otherwise `UNASSIGNED`, with all three mission/drone identifiers null. Old aborted or completed missions never count as an assignment. Schedule times are nullable independently of assignment: an order can be scheduled but unassigned.
+
+Errors: `400` malformed UUID, date, reversed date range, unsupported assignment enum or invalid search/pagination; `401` missing/invalid token; `403` inactive account or other role. A valid station UUID with no matching orders returns an empty page.
+
+### 3.5 GET /api/dispatch/orders/{id} (LA-136, LA-137)
+
+Auth: `DISPATCHER`, `ADMIN`. Staff detail across customers, readable in every order status so an open screen can refresh after intake, cancellation or another dispatcher's action. Response `200 OK`: `DispatchOrderDetail` with these required keys:
+
+| Field | Shape / meaning |
+|---|---|
+| `orderId`, `trackingNumber`, `status` | UUID, string, current order status |
+| `package` | `Package` from customer-order-api.md section 1, including dimensions, weight, fragility and nullable image URL |
+| `originStation`, `destinationStation` | `StationSummary` from customer-order-api.md section 1, including code, address, coordinates and status |
+| `scheduledDepartureTime`, `estimatedDeliveryTime`, `actualDepartureTime`, `actualDeliveryTime` | Nullable UTC timestamps |
+| `assignmentStatus` | Same derivation as 3.4 |
+| `currentMission` | Null when no active mission; otherwise the object below |
+| `statusLogs` | `StatusLog[]` from customer-order-api.md section 1; oldest first, database log id ascending for timestamp ties; empty array if none |
+| `createdAt`, `updatedAt` | UTC timestamps |
+
+`currentMission` when assigned:
+
+```json
+{
+  "id": "d5f7b9c1-4e6a-4c8b-8d2f-3b5d7f9a1c24",
+  "flightStatus": "PLANNED",
+  "drone": { "id": "c4e6a8b0-3d5f-4b7a-9c1e-2a4c6e8f0b13", "serialNumber": "DR-0001", "modelName": "SkyCarrier S1", "status": "ASSIGNED" },
+  "startSlotId": null,
+  "destinationSlotId": "b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10",
+  "startTime": null,
+  "endTime": null
+}
+```
+
+Slot ids and start/end times are nullable. This read makes no reservation and does not promise that a write will succeed. The UI uses this detail, then 3.1, 3.2 and 3.3; it refreshes detail and queue after writes, including a `409`. Errors: `400` invalid UUID; `401`; `403`; `404` unknown order. A known order outside `APPROVED` still returns `200`; the UI disables scheduling/assignment and shows its current status.
+
 ## 4. State machine (LA-32)
 
 The arrows below are the only ones allowed; anything else returns `409` (BR-DW-01, BR-DW-18). `DELIVERED` and `CANCELLED` have no outgoing arrow.
@@ -239,6 +318,66 @@ Auth: `STATION_OPERATOR` of that station, `ADMIN` (the own-station rule of [stat
 Empties the slot that holds the parcel. If the order is `FAILED` with `RETURN_REQUESTED`, it becomes `CANCELLED` with `cancelReason = RETURNED_TO_ORIGIN`, with status log, notification and audit `FAILED_DELIVERY_RESOLVED`. Response `200 OK`: `OrderDecision`.
 Errors: `400` tracking number missing; `403` not the operator of this station; `404` unknown tracking number; `409` the order is not `FAILED` or the parcel is not in a slot of this station. This endpoint is to be copied into section 4 of [station-api.md](station-api.md) when this contract is confirmed.
 
+### 6.4 GET /api/dispatch/failed-orders (LA-139, LA-140)
+
+Auth: `DISPATCHER`, `ADMIN`. Response `200 OK`: `PagedResult<FailedOrderSummary>`, with the same pagination/count/empty-page rules as 3.4. One row per order, representing its **latest failure episode** (latest status log entering `FAILED`, ordered by `createdAt`, then log id). Resolved orders remain discoverable through the resolution filter; an order that fails again is represented by the new episode.
+
+| Query | Rule |
+|---|---|
+| `originStationId`, `destinationStationId`, `searchKeyword`, `page`, `pageSize` | Same rules as 3.4 |
+| `fromDate`, `toDate` | Optional inclusive UTC bounds on `failedAt`, not order creation; validate ordering |
+| `failureType` | Optional `MISSION_ABORTED`, `EMERGENCY_LANDING`, `HARDWARE_FAULT`, `COLLECTION_TIMEOUT` or `UNKNOWN` |
+| `resolutionStatus` | Optional `UNRESOLVED`, `RETURN_REQUESTED`, `RESOLVED`, `ALL`; default `UNRESOLVED` |
+
+Filters combine with AND. Sort by `failedAt` descending, then `orderId` ascending. `UNKNOWN` represents legacy failures whose type was not stored; never infer a failure type by parsing human-written remarks. `FailedOrderSummary` has required fields:
+
+| Field | Shape / meaning |
+|---|---|
+| `orderId`, `trackingNumber`, `status` | Order identity and current status (may have moved beyond `FAILED`) |
+| `packageName` | String |
+| `originStation`, `destinationStation` | `{ id, stationCode, name }`, as in 3.4 |
+| `failureLogId` | Integer id of the status log entering `FAILED`; identifies the episode |
+| `failureType`, `failureReason`, `failedAt` | Type above; nullable original failure log remarks; UTC timestamp |
+| `resolutionStatus` | Derived state defined below |
+| `lastResolutionAction` | Null, `RESCHEDULE`, `RETURN_TO_ORIGIN` or `CANCEL`; null when not recorded |
+| `resolvedAt` | Nullable UTC timestamp; null until resolution completes |
+| `updatedAt` | Current order update timestamp |
+
+Resolution derivation for the latest episode: `FAILED` with `cancelReason = RETURN_REQUESTED` means `RETURN_REQUESTED`; other `FAILED` orders mean `UNRESOLVED`; an episode followed by a transition from `FAILED` to `APPROVED` or `CANCELLED` means `RESOLVED`, even if the order has progressed further. `RETURN_REQUESTED` is not resolved until return confirmation. `lastResolutionAction` is `RETURN_TO_ORIGIN` for a requested or completed return. A plain cancellation is `CANCEL`.
+
+Errors: `400` invalid filters, UUID, dates, enum, search or pagination; `401`; `403`. Valid filters with no results return an empty page.
+
+### 6.5 GET /api/dispatch/failed-orders/{id} (LA-139, LA-140)
+
+`id` is the **order UUID**, not a mission or failure log id. Auth: `DISPATCHER`, `ADMIN`. Response `200 OK`: all fields of `DispatchOrderDetail` (3.5), plus the following required fields. Readable after resolution, so refreshing after `RESCHEDULE` or `CANCEL` does not lose the detail.
+
+| Field | Shape / meaning |
+|---|---|
+| `latestFailure` | Object containing `failureLogId`, `failureType`, `failureReason`, `failedAt`, `resolutionStatus`, `lastResolutionAction`, `resolvedAt`, as defined in 6.4 |
+| `returnToOriginStatus` | `NOT_REQUESTED`, `REQUESTED` or `CONFIRMED`, for the latest episode |
+| `parcelLocation` | Null if unverified; otherwise `{ stationId, slotId }` for the station/slot currently holding the parcel; nullable `slotId` if held outside a slot |
+| `failureHistory` | Array of episode objects with the same shape as `latestFailure`, oldest first, log id ascending for ties |
+| `resolutionHistory` | Array of recorded handling events below, oldest first, persistent event id ascending for ties |
+| `resolutionHistoryComplete` | Boolean; false for legacy episodes with missing structured handling records |
+
+`resolutionHistory` event shape:
+
+```json
+{
+  "failureLogId": 184,
+  "action": "RETURN_TO_ORIGIN",
+  "note": "Return the checked parcel to the origin operator.",
+  "performedBy": "f9c7a501-1234-4567-8abc-123456789abc",
+  "createdAt": "2026-11-12T09:00:00Z"
+}
+```
+
+Event actions are `RESCHEDULE`, `RETURN_TO_ORIGIN`, `CANCEL`, `RETURN_CONFIRMED`, `PARCEL_CLEARED`; `performedBy` is a nullable actor UUID and `note` is nullable for legacy records. Preserve history across rescheduling and repeated failures. No fabricated event or note for missing legacy data; return recorded events only, possibly `[]`, with `resolutionHistoryComplete: false`. New failure/resolution writes must persist enough structured data to return complete history (section 8).
+
+`returnToOriginStatus` is `REQUESTED` for the latest episode's return request and `CONFIRMED` only when receipt at the **origin** station is recorded (`RETURNED_TO_ORIGIN`); otherwise `NOT_REQUESTED`. Clearing a destination slot under LA-336 only creates a `PARCEL_CLEARED` event. It must never imply `RETURN_CONFIRMED` or a verified parcel location at the origin. Reads never change the order, release a slot or send notifications.
+
+Errors: `400` malformed UUID; `401`; `403`; `404` unknown order or order with no recorded failure episode. A resolved episode still returns `200`. The UI submits the existing write routes in 6.1/6.2, then refreshes this detail and the queue; a concurrent-state `409` also requires a refresh. A `404` during refresh means the selection cannot be loaded and the UI returns to the list.
+
 ## 7. Error example
 
 ```json
@@ -247,6 +386,8 @@ Errors: `400` tracking number missing; `403` not the operator of this station; `
 
 ## 8. Differences with the code that is already merged
 
+- The customer list/detail controller explicitly authorizes `CUSTOMER` and scopes reads to the token owner. Sections 3.4, 3.5, 6.4 and 6.5 need separate dispatcher query endpoints/DTOs; do not widen customer authorization or make staff call customer-owned reads. Until implemented, UI work can use fixtures matching these proposed DTOs; do not treat manually entered order ids as a completed list integration.
+- `delivery_status_logs` stores failure remarks but no structured `failureType`; `audit_logs` has no action payload for resolution notes, package verification or failure-episode association. LA-139 needs durable structured metadata (schema/migration to be agreed) written atomically with failure, resolution and parcel operations, keyed to the failure log id. Store original type/reason, handling action/note/actor/time and explicit return confirmation. Keep the existing status log and audit entries. Legacy types use `UNKNOWN` and incomplete history is explicit, rather than guessed from text. GET endpoints must not create or backfill records as a side effect.
 - The unique index on `flight_missions.order_id` allows one mission per order forever. `RESCHEDULE` needs a second mission for the same order, so the index becomes a partial unique index `WHERE flight_status IN ('PLANNED','IN_AIR')` (migration, first change of LA-33).
 - `POST /api/delivery-orders/{id}/cancel` (LA-107) changes only the order. When a mission exists it must also abort the mission, set the drone `IDLE` and the destination slot `EMPTY` (row 5 of section 4).
 - Mobile code that calls `/fail` or `/resolve-failure` (drafted in PR #133 and removed from it) can be rebuilt on sections 6.1 and 6.2 once the backend exists.
@@ -261,3 +402,5 @@ Errors: `400` tracking number missing; `403` not the operator of this station; `
 6. **SignalR in Sprint 5 or 6.** The hub can wait for Sprint 6 (LA-35); polling of 5.2 works until then.
 7. **Telemetry over HTTP.** Proposed: only for tests and demos, `ADMIN` only. If the simulator always runs inside the backend, 5.4 can be dropped.
 8. **Landing and takeoff triggers.** Takeoff happens at the scheduled time. Landing is derived from telemetry (near the destination and almost stopped); the distance and speed limits are not defined and depend on the simulator.
+9. **Parcel clearing versus return confirmation (LA-336).** Jira LA-336 proposes `clear-expired-parcel` with `slotId` and `reason` at the destination, leaving the order `FAILED`. Section 6.3 currently combines parcel removal with closing a requested return. These operations must be reconciled with station-api.md before implementation: destination clearing cannot confirm origin receipt; explicit origin receipt must be required to set `RETURNED_TO_ORIGIN`. The read fields in 6.5 distinguish the two facts.
+10. **Failure metadata persistence.** Confirm the schema/migration for section 8 before implementing LA-139. The read contract defines history and unknown-data behavior; the current entities alone cannot supply complete structured history or failure-type filtering for new records.
