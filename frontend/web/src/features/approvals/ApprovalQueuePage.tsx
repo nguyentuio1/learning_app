@@ -37,21 +37,24 @@ export function ApprovalQueuePage() {
   function choose(order: PendingOrder, action: 'approve' | 'reject') {
     setError(''); setNotice(''); decisionForm.resetFields(); setSelected({ order, action })
   }
+  function refreshAfterDecision() {
+    setFilters(previous => ({ ...previous, page: 1 }))
+  }
   async function decide(values: { reason?: string }) {
     if (!selected || submitting.current) return
     submitting.current = true; setSaving(true); setError('')
     try {
       const result = selected.action === 'approve' ? await approvalApi.approve(selected.order.orderId) : await approvalApi.reject(selected.order.orderId, values.reason || '')
       setNotice(`${result.trackingNumber}: ${result.status.replaceAll('_', ' ')}. The queue has been refreshed.`)
-      setSelected(undefined); queue.reload()
+      setSelected(undefined); refreshAfterDecision()
     } catch (cause) {
       decisionForm.setFields(validationFields(cause, ['reason'] as const))
       if (uncertainMutation(cause)) {
         setNotice('The decision could not be confirmed. Check the refreshed queue before making another decision.')
-        setSelected(undefined); queue.reload()
+        setSelected(undefined); refreshAfterDecision()
       } else if (axios.isAxiosError(cause) && (cause.response?.status === 409 || cause.response?.status === 404)) {
         setNotice(typeof cause.response.data?.detail === 'string' ? cause.response.data.detail : operationError(cause))
-        setSelected(undefined); queue.reload()
+        setSelected(undefined); refreshAfterDecision()
       } else { setError(operationError(cause)) }
     } finally { submitting.current = false; setSaving(false) }
   }
