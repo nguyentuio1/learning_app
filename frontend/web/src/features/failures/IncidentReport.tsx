@@ -9,7 +9,7 @@ import { failureTypeOptions } from './failureOptions'
 
 const load = (signal: AbortSignal) => failureApi.active(signal)
 interface Values { orderId: string; failureType: FailureType; reason: string }
-export function IncidentReport({ onClose, onReported }: { onClose: () => void; onReported: (id: string) => void }) {
+export function IncidentReport({ onClose, onReported, onQueueRefresh }: { onClose: () => void; onReported: (id: string) => void; onQueueRefresh: () => void }) {
   const active = useResource(load)
   const [form] = Form.useForm<Values>()
   const [pending, setPending] = useState<Values>()
@@ -29,7 +29,7 @@ export function IncidentReport({ onClose, onReported }: { onClose: () => void; o
       if (uncertainMutation(cause)) setUncertainOrder(pending.orderId)
       form.setFields(validationFields(cause, ['failureType', 'reason'] as const))
       if (uncertainMutation(cause) || (axios.isAxiosError(cause) && [404, 409].includes(cause.response?.status || 0))) {
-        active.reload(); form.setFieldValue('orderId', undefined)
+        active.reload(); onQueueRefresh(); form.setFieldValue('orderId', undefined)
       }
     } finally { busy.current = false; setSaving(false); setPending(undefined) }
   }

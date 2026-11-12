@@ -28,7 +28,7 @@ export function FailureHandlingPage() {
     action={id ? <Button onClick={() => navigate('/dispatcher/failures')}>Back to failed deliveries</Button> : <div className="operations-actions"><Button onClick={queue.reload} disabled={queue.loading}>Refresh deliveries</Button><Button type="primary" onClick={() => setReporting(true)}>Report an incident</Button></div>}>
     {!id ? <>
       {location.state?.failureMissing && <Alert type="warning" showIcon title="The selected failure record could not be found. Choose another delivery." />}
-      {reporting && <IncidentReport onClose={() => setReporting(false)} onReported={orderId => { setReporting(false); queue.reload(); navigate('/dispatcher/failures/' + orderId) }} />}
+      {reporting && <IncidentReport onQueueRefresh={queue.reload} onClose={() => setReporting(false)} onReported={orderId => { setReporting(false); queue.reload(); navigate('/dispatcher/failures/' + orderId) }} />}
       <FailedOrders {...queue} filters={filters} onFilter={setFilters} />
     </> : uuid.test(id) ? <HandleOrder key={id} id={id} onChanged={queue.reload} /> : <Alert type="error" title="Invalid order ID." />}
   </OperationsPage></div>
