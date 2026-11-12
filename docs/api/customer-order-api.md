@@ -256,6 +256,8 @@ The order endpoints only accept stations whose status is `OPERATIONAL`. It was a
 
 Base path `/api/delivery-orders`. Auth: yes, `CUSTOMER`.
 
+Dispatcher scheduling and failed-delivery screens use the separate staff read contracts in [delivery-workflow-api.md](delivery-workflow-api.md), sections 3.4/3.5 (LA-137) and 6.4/6.5 (LA-140). The list/detail endpoints below remain customer-owned reads.
+
 ### 5.1 POST /api/delivery-orders (LA-23, LA-103)
 Create an order.
 
