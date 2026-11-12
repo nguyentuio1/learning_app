@@ -6,6 +6,7 @@ import '../core/config/app_config.dart';
 import '../core/session/auth_controller.dart';
 import '../data/models/delivery_order.dart';
 import '../presentation/auth/login_page.dart';
+import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
@@ -18,6 +19,7 @@ import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/pickup/package_pickup_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
 import '../presentation/profile/profile_page.dart';
@@ -47,9 +49,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         case AuthStatus.unknown:
           return loc == RoutePaths.splash ? null : RoutePaths.splash;
         case AuthStatus.unauthenticated:
-          return loc == RoutePaths.login ? null : RoutePaths.login;
+          final isPublicEntry =
+              loc == RoutePaths.login ||
+              (flavor == AppFlavor.customer && loc == RoutePaths.register);
+          return isPublicEntry ? null : RoutePaths.login;
         case AuthStatus.authenticated:
-          final onEntry = loc == RoutePaths.splash || loc == RoutePaths.login;
+          if (flavor == AppFlavor.customer && loc == RoutePaths.register) {
+            return RoutePaths.customerHome;
+          }
+          final onEntry =
+              loc == RoutePaths.splash ||
+              loc == RoutePaths.login ||
+              loc == RoutePaths.register;
           return onEntry ? home : null;
       }
     },
@@ -58,14 +69,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RoutePaths.login, builder: (_, _) => const LoginPage()),
       if (flavor == AppFlavor.customer)
         GoRoute(
+          path: RoutePaths.register,
+          builder: (_, _) => const RegisterPage(),
+        ),
+      if (flavor == AppFlavor.customer)
+        GoRoute(
           path: RoutePaths.customerHome,
           builder: (_, _) => const CustomerHomePage(),
         )
-      else
+      else ...[
         GoRoute(
           path: RoutePaths.operatorHome,
           builder: (_, _) => const OperatorHomePage(),
         ),
+        GoRoute(
+          path: RoutePaths.operatorPickup,
+          builder: (_, _) => const PackagePickupPage(),
+        ),
+      ],
       GoRoute(path: RoutePaths.profile, builder: (_, _) => const ProfilePage()),
       GoRoute(
         path: RoutePaths.editProfile,

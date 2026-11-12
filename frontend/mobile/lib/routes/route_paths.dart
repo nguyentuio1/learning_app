@@ -3,6 +3,7 @@
 abstract final class RoutePaths {
   static const splash = '/splash';
   static const login = '/login';
+  static const register = '/register';
   static const customerHome = '/customer';
   static const customerAddresses = '/customer/addresses';
   static const customerPackages = '/customer/packages';
@@ -15,6 +16,7 @@ abstract final class RoutePaths {
   static const customerOrderSubmitted = '/customer/orders/create/submitted';
   static const customerOrdersEdit = '/customer/orders/edit';
   static const operatorHome = '/operator';
+  static const operatorPickup = '/operator/pickup';
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const changePassword = '/profile/change-password';

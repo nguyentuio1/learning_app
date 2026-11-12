@@ -5,7 +5,10 @@ import { RequireAuth } from './RequireAuth'
 import { allRoles, managementRoles } from '../types/auth'
 import { OrderUiProvider } from '../components/orders/OrderUiProvider'
 
+import { operationFeatures } from '../features/operations/navigation'
+
 const LoginPage = lazy(() => import('../pages/LoginPage').then(module => ({ default: module.LoginPage })))
+const RegisterPage = lazy(() => import('../pages/RegisterPage').then(module => ({ default: module.RegisterPage })))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then(module => ({ default: module.NotFoundPage })))
 const ProfilePage = lazy(() => import('../pages/ProfilePage').then(module => ({ default: module.ProfilePage })))
 const AccountLayout = lazy(() => import('../components/layouts/AccountLayout').then(module => ({ default: module.AccountLayout })))
@@ -28,6 +31,7 @@ export function AppRouter() {
     <Suspense fallback={<div className="page-shell" role="status" aria-live="polite">Loading page…</div>}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route element={<RequireAuth roles={['CUSTOMER']} />}>
           <Route element={<OrderUiProvider><AccountLayout /></OrderUiProvider>}>
             <Route path="/orders" element={<CustomerOrdersPage />} />
@@ -63,6 +67,13 @@ export function AppRouter() {
         <Route element={<RequireAuth roles={managementRoles} />}>
           <Route path="/" element={<HomePage />} />
         </Route>
+        {operationFeatures.flatMap(feature => feature.routes.map(({ path, Page, roles }) => (
+          <Route key={path} element={<RequireAuth roles={roles ?? feature.roles} />}>
+            <Route element={<AccountLayout />}>
+              <Route path={path} element={<Page />} />
+            </Route>
+          </Route>
+        )))}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

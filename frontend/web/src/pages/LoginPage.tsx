@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { Alert, Button, Form, Input, Spin } from 'antd'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LoginIllustration } from '../components/auth/LoginIllustration'
+import { operationDestination } from '../features/operations/navigation'
 import './login.css'
 
 export function LoginPage() {
@@ -25,6 +26,8 @@ export function LoginPage() {
     // Accept only implemented internal destinations, never arbitrary redirect URLs.
     const usesMobile = auth.user?.role.code === 'STATION_OPERATOR'
     const requested = location.state?.from
+    const operation = operationDestination(requested, auth.user?.role.code)
+    if (operation) return <Navigate to={operation} replace />
     const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles)$/i.test(requested)
     const customerDestination = typeof requested === 'string' && /^\/(?:(?:addresses|packages)(?:\/new|\/[0-9a-f-]{36})?|orders(?:\/new|\/[0-9a-f-]{36}(?:\/(?:edit|manage))?)?)$/i.test(requested)
     const destination = auth.user?.role.code === 'CUSTOMER'
@@ -69,6 +72,7 @@ export function LoginPage() {
         </Form.Item>
         <div className="login-feedback" aria-live="polite">{(error || auth.message) && <Alert showIcon type={error ? 'error' : 'info'} title={error || auth.message} />}</div>
         <Button className="sign-in" htmlType="submit" type="primary" size="large" block loading={busy}>Sign in</Button>
+        <p className="account-switch">New to SmartDrone? <Link to="/register">Register</Link></p>
       </Form>
     </section>
   </main>

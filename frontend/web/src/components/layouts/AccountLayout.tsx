@@ -2,6 +2,7 @@ import { Avatar, Button, ConfigProvider } from 'antd'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useAccountMotion } from '../../hooks/useAccountMotion'
+import { operationFeatures } from '../../features/operations/navigation'
 import './account-layout.css'
 import './account-motion.css'
 
@@ -24,7 +25,8 @@ export function AccountLayout() {
   const isAdmin = auth.user?.role.code === 'ADMIN'
   const managedOrderId = pathname.match(/^\/orders\/([^/]+)\/(?:edit|manage)$/)?.[1]
   const initials = auth.user?.fullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SD'
-  const section = pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
+  const operation = operationFeatures.find(feature => pathname === feature.path || pathname.startsWith(feature.path + '/'))
+  const section = operation ? operation.label : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
   return <ConfigProvider theme={{ token: {
     colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
     colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
@@ -44,6 +46,11 @@ export function AccountLayout() {
         </>}
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/addresses" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="addresses"/>Addresses</NavLink>}
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/packages" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="packages"/>Packages</NavLink>}
+        {operationFeatures.filter(feature => feature.roles.some(role => role === auth.user?.role.code)).map(feature => (
+          <NavLink key={feature.path} to={feature.path} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}>
+            <AccountIcon name="addresses"/>{feature.label}
+          </NavLink>
+        ))}
       </nav>
       <div className="account-sidebar-bottom">
         <div className="account-workspace-role">{auth.user?.role.name}</div>

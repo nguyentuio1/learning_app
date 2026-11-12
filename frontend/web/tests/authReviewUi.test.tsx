@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ContextType } from 'react'
 import { ConfigProvider } from 'antd'
@@ -24,7 +24,15 @@ beforeEach(() => {
   onAccessError.mockReset()
   mock = new MockAdapter(apiClient)
 })
-afterEach(() => mock.restore())
+afterEach(async () => {
+  await act(async () => {
+    await new Promise<void>(resolve => window.setTimeout(resolve, 50))
+  })
+  cleanup()
+  mock.restore()
+  vi.clearAllTimers()
+  vi.useRealTimers()
+})
 
 function authValue(role: Role | null): NonNullable<ContextType<typeof AuthContext>> {
   return {
@@ -35,7 +43,7 @@ function authValue(role: Role | null): NonNullable<ContextType<typeof AuthContex
       role: { id: 5, code: role, name: role }, createdAt: '2026-10-20T00:00:00Z',
     } : null,
     accessToken: role ? 'token' : null, refreshToken: role ? 'refresh' : null,
-    generation: 0, message: '', login, logout, updateProfile: vi.fn(),
+    generation: 0, message: '', login, register: vi.fn(), logout, updateProfile: vi.fn(),
   }
 }
 function loginApp(role: Role | null, from?: string) {

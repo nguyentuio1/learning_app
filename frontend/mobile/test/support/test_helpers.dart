@@ -3,6 +3,7 @@ import 'package:smart_drone_delivery/core/storage/auth_tokens.dart';
 import 'package:smart_drone_delivery/core/storage/token_storage.dart';
 import 'package:smart_drone_delivery/core/storage/user_storage.dart';
 import 'package:smart_drone_delivery/domain/entities/user.dart';
+import 'package:smart_drone_delivery/domain/entities/registered_session.dart';
 import 'package:smart_drone_delivery/domain/repositories/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,11 +39,39 @@ class InMemoryUserStorage implements UserStorage {
 
 /// AuthRepository giả: getMe() trả về hồ sơ cố định, không gọi mạng.
 class FakeAuthRepository implements AuthRepository {
+  FakeAuthRepository({this.registerError});
+  final Object? registerError;
+
   @override
   Future<AuthTokens> login({
     required String email,
     required String password,
   }) async => const AuthTokens(accessToken: 'a', refreshToken: 'r');
+
+  @override
+  Future<RegisteredSession> register({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phoneNumber,
+  }) async {
+    if (registerError != null) throw registerError!;
+    return RegisteredSession(
+      tokens: const AuthTokens(
+        accessToken: 'registered-a',
+        refreshToken: 'registered-r',
+      ),
+      user: User(
+        id: 'registered-001',
+        email: email,
+        fullName: fullName,
+        phoneNumber: phoneNumber,
+        status: 'ACTIVE',
+        roleCode: 'CUSTOMER',
+        createdAt: DateTime(2026, 1, 1),
+      ),
+    );
+  }
 
   @override
   Future<void> logout() async {}

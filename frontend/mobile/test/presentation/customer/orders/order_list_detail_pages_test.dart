@@ -34,7 +34,12 @@ final _detail = DeliveryOrderDetailResponseDto.fromJson({
   'package': {'packageName': 'Books', 'weightGram': 450},
   'originStation': {'name': 'Origin Hub'},
   'destinationStation': {'name': 'Destination Hub'},
-  'deliveryAddress': {'streetAddress': '1 Main Street'},
+  'deliveryAddress': {
+    'label': 'Home',
+    'contactName': 'Mai Tran',
+    'contactPhone': '555-0100',
+    'addressLine': '1 Main Street',
+  },
   'aiEtaPrediction': {'predictedDurationMinutes': 24},
   'statusLogs': [
     {
@@ -195,7 +200,10 @@ void main() {
     expect(find.text('Books'), findsOneWidget);
     expect(find.text('Origin Hub'), findsOneWidget);
     expect(find.text('Destination Hub'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('1 Main Street'), findsOneWidget);
+    expect(find.text('Mai Tran'), findsOneWidget);
+    expect(find.text('555-0100'), findsOneWidget);
     expect(find.text('24 minutes'), findsOneWidget);
     expect(find.text('— → PENDING'), findsOneWidget);
     expect(find.text('APPROVED → IN_TRANSIT'), findsOneWidget);

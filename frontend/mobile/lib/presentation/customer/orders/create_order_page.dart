@@ -137,9 +137,18 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
               data: (items) => _AddressPicker(
                 items: items,
                 selected: state.address,
-                onChanged: ref
-                    .read(createOrderNotifierProvider.notifier)
-                    .selectAddress,
+                onChanged: (address) {
+                  final notifier = ref.read(
+                    createOrderNotifierProvider.notifier,
+                  );
+                  notifier.selectAddress(address);
+                  if (address != null) {
+                    _name.text = address.contactName;
+                    _phone.text = address.contactPhone;
+                    notifier.setRecipientName(address.contactName);
+                    notifier.setRecipientPhone(address.contactPhone);
+                  }
+                },
               ),
             ),
             const SizedBox(height: 16),
@@ -272,6 +281,7 @@ class _AddressPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String?>(
     key: const Key('order-address'),
+    isExpanded: true,
     initialValue: selected?.id,
     decoration: const InputDecoration(
       labelText: 'Delivery address (optional)',
@@ -282,7 +292,17 @@ class _AddressPicker extends StatelessWidget {
       for (final address in items)
         DropdownMenuItem<String?>(
           value: address.id,
-          child: Text('${address.label} · ${address.addressLine}'),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${address.label} · ${address.addressLine}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
     ],
     onChanged: (id) => onChanged(

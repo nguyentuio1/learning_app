@@ -42,6 +42,16 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My orders'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(RoutePaths.customerHome);
+            }
+          },
+        ),
         actions: [
           IconButton(
             key: const Key('create-order'),
@@ -199,7 +209,11 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           );
         }
         if (index >= items.length - 3 && notifier.hasMore) {
-          notifier.loadNextPage();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              notifier.loadNextPage();
+            }
+          });
         }
         final order = items[index];
         return Card(

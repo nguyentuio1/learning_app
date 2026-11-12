@@ -1,0 +1,96 @@
+name: CI
+
+# Every pull request into develop or main has to pass the unit tests of the three projects
+# (Project Management Plan, LA-327). The job names below are the names to require in the branch ruleset.
+on:
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Most tests use the EF Core in-memory provider. The concurrency tests of LA-322 need a real PostgreSQL;
+    # they create and drop their own database on this server and are skipped when the variable is not set.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_POSTGRES_CONNECTION: Host=localhost;Port=5432;Username=postgres;Password=postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: dotnet test
+        run: dotnet test backend/SmartDroneDelivery.sln --configuration Release --verbosity minimal
+
+  web:
+    name: Web lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  mobile:
+    name: Mobile analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      # pubspec.lock needs Flutter 3.47 or newer, so follow the stable channel.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      # Warnings and errors fail the build. Info-level lints (deprecations, unnecessary imports) stay visible
+      # in the log but do not block a merge; clean them up in a separate task, then drop the flag.
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test

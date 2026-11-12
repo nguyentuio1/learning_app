@@ -11,4 +11,5 @@ export '../core/theme/theme_mode_provider.dart';
 export '../data/providers/repository_providers.dart';
 export '../presentation/auth/auth_providers.dart';
 export '../presentation/auth/login_controller.dart';
+export '../presentation/auth/register_controller.dart';
 export '../routes/app_router.dart';

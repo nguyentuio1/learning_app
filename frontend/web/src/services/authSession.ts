@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AuthResponse, AuthUser, Session } from '../types/auth'
+import type { AuthResponse, AuthUser, RegisterRequest, Session } from '../types/auth'
 
 export const apiBaseURL = import.meta.env.DEV ? '/' : import.meta.env.VITE_API_BASE_URL
 const transport = axios.create({ baseURL: apiBaseURL, timeout: 20000 })
@@ -45,6 +45,20 @@ export const session = {
     session.clear()
     const generation = state.generation
     const { data } = await transport.post<AuthResponse>('/api/auth/login', { email: email.trim(), password })
+    accept(data, generation)
+  },
+  async register(request: RegisterRequest) {
+    requireConfiguration()
+    session.clear()
+    const generation = state.generation
+    const { data } = await transport.post<AuthResponse>('/api/auth/register', {
+      ...request,
+      email: request.email.trim(),
+      fullName: request.fullName.trim(),
+    })
+    if (data.user?.role?.code !== 'CUSTOMER') {
+      throw new Error('The server returned an invalid customer session.')
+    }
     accept(data, generation)
   },
   updateProfile(user: AuthUser) {
