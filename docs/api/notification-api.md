@@ -1,5 +1,7 @@
 # API Contract - Customer Notifications
 
+Documentation task: [LA-339 - Sprint 5 API contracts](https://hungndemail.atlassian.net/browse/LA-339). The original notification contract was added in commit `0c9fddc` (PR #139).
+
 Contract for LA-326 (customer notifications: list, unread count, mark as read; requirement FR-12, use case UC-10, wireframe C22). Backend, web and mobile build against this document.
 
 > **Status: proposed, to be confirmed by the team.** Any change goes through a pull request that edits this file. Open points are in section 5.

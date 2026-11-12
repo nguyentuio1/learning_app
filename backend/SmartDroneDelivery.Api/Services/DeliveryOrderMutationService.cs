@@ -17,14 +17,17 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
     private static readonly Regex PhoneRegex = new(@"^\d{9,11}$", RegexOptions.Compiled);
 
     private readonly AppDbContext _db;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public DeliveryOrderMutationService(AppDbContext db)
+    public DeliveryOrderMutationService(AppDbContext db, IOrderTransitionWriter transitions)
     {
         _db = db;
+        _transitions = transitions;
     }
 
     public async Task<DeliveryOrderDetailDto> UpdateAsync(Guid orderId, Guid customerId, UpdateDeliveryOrderRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await EnsureActiveCustomerAsync(customerId);
         ValidateUpdateRequestFields(request);
 
@@ -108,6 +111,7 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
 
     public async Task<DeliveryOrderDetailDto> CancelAsync(Guid orderId, Guid customerId, CancelDeliveryOrderRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await EnsureActiveCustomerAsync(customerId);
 
         if (request == null || string.IsNullOrWhiteSpace(request.CancellationReason))
@@ -126,75 +130,11 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
         var previousStatus = order.Status;
         var now = DateTime.UtcNow;
 
-        if (_db.Database.IsRelational())
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        try
         {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-
-            var affectedRows = await _db.DeliveryOrders
-                .Where(o => o.Id == orderId && o.CustomerId == customerId && o.Status == previousStatus)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(o => o.Status, "CANCELLED")
-                    .SetProperty(o => o.CancelReason, trimmedReason)
-                    .SetProperty(o => o.UpdatedAt, now));
-
-            if (affectedRows == 0)
-            {
-                await tx.RollbackAsync();
-                throw CannotCancelStatus();
-            }
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                ChangedBy = customerId,
-                FromStatus = previousStatus,
-                ToStatus = "CANCELLED",
-                Remarks = trimmedReason,
-                CreatedAt = now
-            });
-
-            _db.Notifications.Add(new Notification
-            {
-                Id = Guid.NewGuid(),
-                UserId = order.CustomerId,
-                OrderId = order.Id,
-                Type = "ORDER_STATUS_CHANGED",
-                Title = "Order Cancelled",
-                Message = $"Your delivery order {order.TrackingNumber} has been cancelled.",
-                IsRead = false,
-                CreatedAt = now
-            });
-
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-        else
-        {
-            order.Status = "CANCELLED";
+            await _transitions.StageAsync(order, previousStatus, "CANCELLED", customerId, trimmedReason, now);
             order.CancelReason = trimmedReason;
-            order.UpdatedAt = now;
-
-            try
-            {
-                var affectedRows = await _db.SaveChangesAsync();
-                if (affectedRows == 0)
-                    throw CannotCancelStatus();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                _db.ChangeTracker.Clear();
-                throw CannotCancelStatus();
-            }
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                ChangedBy = customerId,
-                FromStatus = previousStatus,
-                ToStatus = "CANCELLED",
-                Remarks = trimmedReason,
-                CreatedAt = now
-            });
 
             _db.Notifications.Add(new Notification
             {
@@ -209,6 +149,12 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
             });
 
             await _db.SaveChangesAsync();
+            if (tx is not null) await tx.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _db.ChangeTracker.Clear();
+            throw CannotCancelStatus();
         }
 
         return await LoadDetailDtoAsync(orderId);

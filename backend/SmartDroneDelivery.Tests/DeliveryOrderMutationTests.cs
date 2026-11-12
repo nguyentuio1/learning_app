@@ -319,4 +319,42 @@ public class DeliveryOrderMutationTests : IClassFixture<AuthApiFactory>, IDispos
             Assert.Equal(1, await db.Notifications.CountAsync(n => n.OrderId == orderId));
         });
     }
+
+    [Fact]
+    public async Task Edit_racing_with_cancellation_does_not_leave_duplicate_transition_effects()
+    {
+        var (userId, token) = await SeedUserAsync();
+        var (originId, destId, altDestId, _) = await SeedStationsAsync();
+        for (var round = 0; round < 10; round++)
+        {
+            var orderId = await SeedOrderAsync(userId, originId, destId, status: "PENDING");
+            var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            async Task<HttpResponseMessage> Send(bool cancel)
+            {
+                await gate.Task;
+                using var request = Authorized(cancel ? HttpMethod.Post : HttpMethod.Put,
+                    $"/api/delivery-orders/{orderId}" + (cancel ? "/cancel" : ""), token);
+                request.Content = cancel
+                    ? JsonContent.Create(new { cancellationReason = "Recipient unavailable" })
+                    : JsonContent.Create(new { recipientName = "Updated recipient", recipientPhone = "0901234567", destinationStationId = altDestId, deliveryAddressId = (Guid?)null });
+                return await _client.SendAsync(request);
+            }
+            var cancel = Send(true);
+            var update = Send(false);
+            gate.SetResult();
+            var responses = await Task.WhenAll(cancel, update);
+            try
+            {
+                Assert.Equal(HttpStatusCode.OK, responses[0].StatusCode);
+                Assert.True(responses[1].StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict);
+                await _factory.WithDbAsync(async db =>
+                {
+                    Assert.Equal("CANCELLED", (await db.DeliveryOrders.FindAsync(orderId))!.Status);
+                    Assert.Equal(1, await db.DeliveryStatusLogs.CountAsync(x => x.OrderId == orderId && x.ToStatus == "CANCELLED"));
+                    Assert.Equal(1, await db.Notifications.CountAsync(x => x.OrderId == orderId));
+                });
+            }
+            finally { foreach (var response in responses) response.Dispose(); }
+        }
+    }
 }
