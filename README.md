@@ -163,6 +163,7 @@ A new push to the pull request cancels the run that is still going. A failing ch
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
 - Design diagrams: [`docs/design/`](docs/design/)
 - Real-time tracking sequence (LA-238): [telemetry intake, SignalR and web/mobile updates](docs/design/sequence-real-time-tracking.md)
+- Dashboard sequence (LA-240): [filtered statistics queries and web results](docs/design/sequence-dashboard.md)
 
 ## Contributing
 
