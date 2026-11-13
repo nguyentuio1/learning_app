@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<DeliveryStatusLog> DeliveryStatusLogs => Set<DeliveryStatusLog>();
     public DbSet<Drone> Drones => Set<Drone>();
     public DbSet<FlightMission> FlightMissions => Set<FlightMission>();
+    public DbSet<SimulatorDiversion> SimulatorDiversions => Set<SimulatorDiversion>();
     public DbSet<FlightTelemetryLog> FlightTelemetryLogs => Set<FlightTelemetryLog>();
     public DbSet<AiEtaPrediction> AiEtaPredictions => Set<AiEtaPrediction>();
     public DbSet<AiChatSession> AiChatSessions => Set<AiChatSession>();
@@ -32,6 +33,19 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<SimulatorDiversion>(entity =>
+        {
+            entity.ToTable("simulator_diversions");
+            entity.HasKey(e => e.MissionId);
+            entity.Property(e => e.MissionId).ValueGeneratedNever();
+            entity.Property(e => e.AbortLatitude).HasPrecision(12, 9);
+            entity.Property(e => e.AbortLongitude).HasPrecision(12, 9);
+            entity.Property(e => e.LandingLatitude).HasPrecision(12, 9);
+            entity.Property(e => e.LandingLongitude).HasPrecision(12, 9);
+            entity.HasOne(e => e.Mission).WithOne().HasForeignKey<SimulatorDiversion>(e => e.MissionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.LandingStation).WithMany().HasForeignKey(e => e.LandingStationId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         modelBuilder.Entity<DeliveryFailureEpisode>(entity =>
         {
