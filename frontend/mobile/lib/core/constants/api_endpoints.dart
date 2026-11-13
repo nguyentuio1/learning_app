@@ -1,4 +1,4 @@
-/// Tập trung đường dẫn API khớp với tài liệu backend (docs/api/auth-api.md, docs/api/station-api.md).
+/// Tập trung đường dẫn API khớp với tài liệu backend (docs/api/auth-api.md, docs/api/station-api.md, docs/api/notification-api.md).
 /// Ghép với baseUrl (mặc định: http://localhost:5055/api).
 abstract final class ApiEndpoints {
   static const register = '/auth/register';
@@ -22,4 +22,10 @@ abstract final class ApiEndpoints {
       '$landingStations/$stationId/operations/orders/$trackingNumber';
   static String stationPickup(String stationId) =>
       '$landingStations/$stationId/operations/pickup';
+
+  // Customer Notifications (LA-326)
+  static const notifications = '/notifications';
+  static const notificationsUnreadCount = '/notifications/unread-count';
+  static String notificationRead(String id) => '$notifications/$id/read';
+  static const notificationsReadAll = '/notifications/read-all';
 }
