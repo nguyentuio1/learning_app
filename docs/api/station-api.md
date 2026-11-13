@@ -231,7 +231,9 @@ Request (`PackageIntakeRequest`)
 | `measuredLengthCm`, `measuredWidthCm`, `measuredHeightCm` | Required, greater than 0; at most 30, 20 and 15. |
 | `visualInspectionPassed` | Required, must be `true`. If the seal is damaged, use 4.3. |
 
-In one transaction: order `APPROVED` to `READY_FOR_TAKEOFF`, slot `EMPTY` to `OCCUPIED`, status log, audit entry, notification "Ready for takeoff" to the customer.
+LA-136 clarification: the order must already have both schedule times and a valid `PLANNED` mission, with its drone `ASSIGNED` at origin and its destination slot `RESERVED`. Without these resources, return `409` without changing the order or a slot.
+
+In one transaction: link the selected origin slot to the planned mission, order `APPROVED` to `READY_FOR_TAKEOFF`, slot `EMPTY` to `OCCUPIED`, status log, audit entry, notification "Ready for takeoff" to the customer.
 
 Response `200 OK`
 ```json
@@ -328,6 +330,6 @@ These need a team decision. The contract above states the proposed answer.
 5. **Reserved slot to ERROR.** Sequence 5 lets an operator mark a `RESERVED` slot as `ERROR` and alert the dispatcher. BR-LS-06 and the class specification refuse it with `409`. Proposed: follow BR-LS-06 and edit the sequence diagram.
 6. **Who can confirm a pickup.** The class specification also lists `CUSTOMER` for `pickup` and `validate-code`. BR-LS-22 says the code is "validated blindly by the system" at the station. Proposed: operator and admin only; the customer shows the code at the station.
 7. **Restoring a station.** BR-LS-04 asks for sensor self-tests before `OPERATIONAL`, which is outside the software (D-05). Proposed: no check, only a `reason`.
-8. **Intake without a drone.** Intake works on an `APPROVED` order. Drone assignment (Sprint 5) is not required first, so the response has no `assignedDroneId`. If the team wants assignment before intake, `409` is added for an order with no mission.
+8. **Intake assignment prerequisite (resolved by LA-136).** Intake requires a scheduled `APPROVED` order and valid `PLANNED` assignment; otherwise `409` with no effects. The selected origin slot is stored as the mission `startSlotId`. This ensures the simulator can take off from a confirmed parcel slot; the response shape remains unchanged.
 9. **Where the reason is stored.** `audit_logs` has `userId`, `action`, `entityName`, `entityId`, `ipAddress`, `userAgent`, `timestamp` and nothing for a reason. Station status, slot status and intake rejection all take a `reason`. Proposed: the order rejection reason goes to `cancelReason` and the status log `remarks`; for station and slot changes add a nullable `details` text column to `audit_logs` (one small migration). Without it, the reason is validated but not kept. Needs a decision before LA-26 starts.
 10. **Realtime.** Slot and station changes are also pushed over SignalR (`station-slots-{stationId}`, `dispatcher-alerts`). The hub is not part of this REST contract; web screens refresh with the REST endpoints until it exists.

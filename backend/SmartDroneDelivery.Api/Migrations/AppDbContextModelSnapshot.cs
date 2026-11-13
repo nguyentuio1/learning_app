@@ -279,6 +279,7 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(30)
@@ -291,6 +292,7 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
@@ -414,6 +416,11 @@ namespace SmartDroneDelivery.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
                     b.Property<Guid?>("DestinationSlotId")
                         .HasColumnType("uuid");
 
@@ -421,6 +428,9 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("EndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EstimatedArrivalTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FlightStatus")
@@ -432,6 +442,9 @@ namespace SmartDroneDelivery.Api.Migrations
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ScheduledDepartureTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("StartSlotId")
                         .HasColumnType("uuid");
@@ -446,9 +459,13 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.HasIndex("DroneId");
 
                     b.HasIndex("OrderId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_flight_missions_OrderId_Active")
+                        .HasFilter("\"FlightStatus\" IN ('PLANNED', 'IN_AIR')");
 
                     b.HasIndex("StartSlotId");
+
+                    b.HasIndex("OrderId", "CreatedAt");
 
                     b.ToTable("flight_missions", (string)null);
                 });
@@ -961,8 +978,8 @@ namespace SmartDroneDelivery.Api.Migrations
                         .IsRequired();
 
                     b.HasOne("SmartDroneDelivery.Api.Entities.DeliveryOrder", "Order")
-                        .WithOne("FlightMission")
-                        .HasForeignKey("SmartDroneDelivery.Api.Entities.FlightMission", "OrderId")
+                        .WithMany("FlightMissions")
+                        .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1077,7 +1094,7 @@ namespace SmartDroneDelivery.Api.Migrations
                 {
                     b.Navigation("AiEtaPrediction");
 
-                    b.Navigation("FlightMission");
+                    b.Navigation("FlightMissions");
 
                     b.Navigation("Notifications");
 
