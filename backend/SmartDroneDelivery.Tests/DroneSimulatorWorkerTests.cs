@@ -12,6 +12,12 @@ using SmartDroneDelivery.Api.Services;
 
 namespace SmartDroneDelivery.Tests;
 
+[CollectionDefinition(nameof(DroneSimulatorWorkerCollection), DisableParallelization = true)]
+public sealed class DroneSimulatorWorkerCollection { }
+
+// The real InMemory transition writer uses a process-wide operation gate. Other
+// factories must not delay this test's manually fired tick observation window.
+[Collection(nameof(DroneSimulatorWorkerCollection))]
 public class DroneSimulatorWorkerTests
 {
     [Fact]
