@@ -291,7 +291,8 @@ public partial class StationOperationService : IStationOperationService
 
             var now = DateTime.UtcNow;
             await MissionResources.AbortPlannedAsync(_db, order, now);
-            await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
+            var failedLog = await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
+            FailureRecording.Record(_db, failedLog, "UNKNOWN", "INTAKE_REJECTION");
             order.CancelReason = reason;
 
             _db.AuditLogs.Add(new AuditLog
