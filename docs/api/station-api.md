@@ -227,7 +227,7 @@ Request (`PackageIntakeRequest`)
 |---|---|
 | `trackingNumber` | Required. The order's origin station must be `{stationId}`. |
 | `slotId` | Required. A slot of `{stationId}` with status `EMPTY`. |
-| `measuredWeightGram` | Required, greater than 0 and at most 3000. |
+| `measuredWeightGram` | Required, greater than 0, at most 3000 and no greater than the assigned drone's payload capacity (BR-LS-10). Equality is accepted. |
 | `measuredLengthCm`, `measuredWidthCm`, `measuredHeightCm` | Required, greater than 0; at most 30, 20 and 15. |
 | `visualInspectionPassed` | Required, must be `true`. If the seal is damaged, use 4.3. |
 
@@ -246,10 +246,10 @@ Response `200 OK`
   "confirmedAt": "2026-11-06T03:10:00Z"
 }
 ```
-Errors: `400` a measure is over the limit or `visualInspectionPassed` is not `true`; `403`; `404` order, slot or station not found, or the order does not start at this station; `409` the order is not `APPROVED`, or the slot is not `EMPTY` (including a second request for the same order).
+Errors: `400` a measure is over the limit (including the assigned drone's payload capacity) or `visualInspectionPassed` is not `true`; `403`; `404` order, slot or station not found, or the order does not start at this station; `409` the order is not `APPROVED`, or the slot is not `EMPTY` (including a second request for the same order).
 
 ### 4.3 POST .../operations/intake-reject
-The parcel failed the check (too heavy, too big, damaged). Request: `{ "trackingNumber": "DD-202611-0001", "reason": "Weighs 3400 g, over the 3000 g limit." }` (`reason` 5 to 500 characters). Order `APPROVED` to `FAILED` with `cancelReason = reason`, status log, audit entry, notification. No slot changes. Response `200 OK`: `{ "orderId": "...", "trackingNumber": "...", "status": "FAILED" }`. Errors: `400`, `403`, `404`, `409` the order is not `APPROVED`.
+The parcel failed the check (too heavy, too big, damaged). Request: `{ "trackingNumber": "DD-202611-0001", "reason": "Weighs 3400 g, over the 3000 g limit." }` (`reason` 5 to 500 characters). Order `APPROVED` to `FAILED` with `cancelReason = reason`, status log, audit entry, notification. In the same transaction, abort an existing unflown `PLANNED` assignment, release its assigned drone and change its `RESERVED` destination slot to `EMPTY`. Rejection does not create an occupied origin slot or clear an actual occupied parcel; `409` is returned if releasing the current assignment would require physical parcel removal. Response `200 OK`: `{ "orderId": "...", "trackingNumber": "...", "status": "FAILED" }`. Errors: `400`, `403`, `404`, `409` the order is not `APPROVED`.
 
 ### 4.4 POST .../operations/pickup (UC-08, FR-26, FR-27)
 The recipient collects the parcel at the **destination** station. The operator types the tracking number and the 6-digit code the recipient shows.

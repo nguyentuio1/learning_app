@@ -323,6 +323,95 @@ public class SchedulingPostgresTests(PostgresApiFactory factory) : IClassFixture
         await factory.WithDbAsync(async db => Assert.Equal("OCCUPIED", (await db.StationSlots.FindAsync(source.Id))!.Status));
     }
 
+    [PostgresFact]
+    public async Task Intake_rejection_waiting_for_assignment_releases_committed_resources()
+    {
+        using var client = factory.CreateClient();
+        var s = await SeedAsync();
+        var admin = await ReviewData.UserAsync(factory.Services, "ADMIN");
+        var pause = new PauseSave("DRONE_ASSIGNMENT");
+        await using var db = Context(pause);
+        var assignment = new SchedulingService(db, new OrderTransitionWriter(db), new DeliveryRouteEstimate(db, Options.Create(new DeliveryFlightOptions())))
+            .AssignAsync(s.Order.Id, s.Actor.Id, new(s.Drone.Id));
+        await pause.Reached.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var rejection = SchedulingData.Send(client, admin.Token, $"/api/landing-stations/{s.Order.OriginStationId}/operations/intake-reject", HttpMethod.Post,
+            new { trackingNumber = s.Order.TrackingNumber, reason = "Seal damaged during inspection" });
+        var blocked = await WaitForLockAsync(rejection, "delivery_orders");
+        pause.Release.TrySetResult();
+        await assignment;
+        using var response = await rejection;
+        Assert.True(blocked, "Intake rejection must wait for assignment's order transaction.");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await AssertUnassignedAsync(s.Order.Id, s.Drone.Id);
+        await factory.WithDbAsync(async saved => {
+            Assert.Equal("FAILED", (await saved.DeliveryOrders.FindAsync(s.Order.Id))!.Status);
+            var mission = await saved.FlightMissions.SingleAsync(m => m.OrderId == s.Order.Id);
+            Assert.Equal("ABORTED", mission.FlightStatus); Assert.NotNull(mission.EndTime);
+            Assert.Equal(1, await saved.DeliveryStatusLogs.CountAsync(l => l.OrderId == s.Order.Id));
+            Assert.Equal(1, await saved.Notifications.CountAsync(n => n.OrderId == s.Order.Id));
+        });
+    }
+
+    [PostgresFact]
+    public async Task Assignment_waiting_for_intake_rejection_cannot_create_a_mission()
+    {
+        using var client = factory.CreateClient();
+        var s = await SeedAsync();
+        var admin = await ReviewData.UserAsync(factory.Services, "ADMIN");
+        var pause = new PauseSave("PACKAGE_INTAKE_REJECT");
+        await using var db = Context(pause);
+        var rejection = new StationOperationService(db, new OrderTransitionWriter(db)).RejectIntakeAsync(admin.Id, s.Order.OriginStationId,
+            new() { TrackingNumber = s.Order.TrackingNumber, Reason = "Seal damaged during inspection" });
+        await pause.Reached.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var assignment = SchedulingData.Send(client, s.Actor.Token, $"/api/delivery-orders/{s.Order.Id}/flight-mission", HttpMethod.Post, new { droneId = s.Drone.Id });
+        var blocked = await WaitForLockAsync(assignment, "delivery_orders");
+        pause.Release.TrySetResult();
+        await rejection;
+        using var response = await assignment;
+        Assert.True(blocked, "Assignment must wait for the intake rejection transaction.");
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        await AssertUnassignedAsync(s.Order.Id, s.Drone.Id);
+        await factory.WithDbAsync(async saved => Assert.Equal("FAILED", (await saved.DeliveryOrders.FindAsync(s.Order.Id))!.Status));
+    }
+
+    [PostgresFact]
+    public async Task Intake_rejection_notification_failure_rolls_back_assignment_release_and_failure_effects()
+    {
+        using var client = factory.CreateClient();
+        var s = await SeedAsync();
+        var admin = await ReviewData.UserAsync(factory.Services, "ADMIN");
+        using var assigned = await SchedulingData.Send(client, s.Actor.Token, $"/api/delivery-orders/{s.Order.Id}/flight-mission", HttpMethod.Post, new { droneId = s.Drone.Id });
+        Assert.Equal(HttpStatusCode.Created, assigned.StatusCode);
+        await using var connection = new NpgsqlConnection(factory.DatabaseConnectionString);
+        await connection.OpenAsync();
+        var name = "reject_fail_" + Guid.NewGuid().ToString("N");
+        await using (var command = new NpgsqlCommand($"""
+            CREATE FUNCTION {name}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+                IF NEW."OrderId" = '{s.Order.Id}'::uuid THEN RAISE EXCEPTION 'Injected rejection failure'; END IF; RETURN NEW;
+            END; $$;
+            CREATE TRIGGER {name} BEFORE INSERT ON notifications FOR EACH ROW EXECUTE FUNCTION {name}();
+            """, connection)) await command.ExecuteNonQueryAsync();
+        try {
+            using var response = await SchedulingData.Send(client, admin.Token, $"/api/landing-stations/{s.Order.OriginStationId}/operations/intake-reject", HttpMethod.Post,
+                new { trackingNumber = s.Order.TrackingNumber, reason = "Seal damaged during inspection" });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            await factory.WithDbAsync(async db => {
+                var order = (await db.DeliveryOrders.FindAsync(s.Order.Id))!;
+                Assert.Equal("APPROVED", order.Status); Assert.Null(order.CancelReason);
+                var mission = await db.FlightMissions.SingleAsync(m => m.OrderId == order.Id);
+                Assert.Equal("PLANNED", mission.FlightStatus); Assert.Null(mission.EndTime); Assert.Null(mission.StartSlotId);
+                Assert.Equal("ASSIGNED", (await db.Drones.FindAsync(s.Drone.Id))!.Status);
+                Assert.Equal("RESERVED", (await db.StationSlots.FindAsync(mission.DestinationSlotId))!.Status);
+                Assert.False(await db.DeliveryStatusLogs.AnyAsync(l => l.OrderId == order.Id));
+                Assert.False(await db.Notifications.AnyAsync(n => n.OrderId == order.Id));
+                Assert.Equal(1, await db.AuditLogs.CountAsync(a => a.EntityId == order.Id.ToString()));
+            });
+        } finally {
+            await using var command = new NpgsqlCommand($"DROP TRIGGER {name} ON notifications; DROP FUNCTION {name}();", connection);
+            await command.ExecuteNonQueryAsync();
+        }
+    }
+
     private static object Specs(decimal weight) => new { modelName = "Small", maxPayloadGram = weight, maxFlightRangeKm = 15, batteryCapacityMah = 5000 };
 
     private async Task<(ReviewData.Actor Actor, DeliveryOrder Order, Drone Drone)> SeedAsync(string status = "APPROVED")

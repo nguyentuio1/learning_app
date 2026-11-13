@@ -227,6 +227,11 @@ public partial class StationOperationService : IStationOperationService
         if (drone is null || drone.Status != "ASSIGNED" || drone.CurrentStationId != stationId
             || destination is null || destination.StationId != order.DestinationStationId || destination.Status != "RESERVED")
             throw new ApiException(StatusCodes.Status409Conflict, "The planned assignment resources are no longer valid.");
+        if (request.MeasuredWeightGram!.Value > drone.MaxPayloadGram)
+        {
+            AddError(errors, "measuredWeightGram", "Measured weight exceeds the assigned drone's payload capacity.");
+            ThrowIfInvalid(errors);
+        }
         var slot = await _db.StationSlots.SingleOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
         if (slot.Status != "EMPTY")
@@ -285,6 +290,7 @@ public partial class StationOperationService : IStationOperationService
                 throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
 
             var now = DateTime.UtcNow;
+            await MissionResources.AbortPlannedAsync(_db, order, now);
             await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
             order.CancelReason = reason;
 

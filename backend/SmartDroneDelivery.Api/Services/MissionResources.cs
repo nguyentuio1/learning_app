@@ -26,7 +26,7 @@ public static class MissionResources
         {
             if (!await IsLatestSlotClaimAsync(db, mission, slot.Id, ct)) continue;
             if (slot.Status == "OCCUPIED")
-                throw new ApiException(StatusCodes.Status409Conflict, "The parcel must be physically removed before cancellation.");
+                throw new ApiException(StatusCodes.Status409Conflict, "The parcel must be physically removed before releasing its planned assignment.");
             if (slot.Status == "RESERVED") { slot.Status = "EMPTY"; slot.LastUpdated = now; }
         }
         var drone = await db.Drones.SingleAsync(d => d.Id == mission.DroneId, ct);

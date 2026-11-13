@@ -52,7 +52,7 @@ public class SchedulingService(AppDbContext db, IOrderTransitionWriter transitio
         var estimate = await routes.GetAsync(order, ct);
         var drones = await db.Drones.AsNoTracking().ToListAsync(ct);
         var missions = await db.FlightMissions.AsNoTracking().Include(m => m.Order)
-            .Where(m => m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR" || m.StartTime != null).ToListAsync(ct);
+            .Where(m => m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR" || m.FlightStatus == "COMPLETED" || m.StartTime != null).ToListAsync(ct);
         return drones.Select(d => {
             var reasons = Reasons(d, order, estimate.DistanceKm, missions.Where(m => m.DroneId == d.Id));
             return new DroneCandidateDto(d.Id, d.SerialNumber, d.ModelName, d.MaxPayloadGram, d.MaxFlightRangeKm,
@@ -82,7 +82,7 @@ public class SchedulingService(AppDbContext db, IOrderTransitionWriter transitio
         if (drone is null) throw NotFound("Drone");
         var estimate = await routes.GetAsync(order, ct);
         var missions = await db.FlightMissions.AsNoTracking().Include(m => m.Order).Where(m => m.DroneId == drone.Id
-            && (m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR" || m.StartTime != null)).ToListAsync(ct);
+            && (m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR" || m.FlightStatus == "COMPLETED" || m.StartTime != null)).ToListAsync(ct);
         var reasons = Reasons(drone, order, estimate.DistanceKm, missions);
         if (reasons.Contains("PAYLOAD_EXCEEDED")) throw FieldError("droneId", "The package exceeds this drone's payload.");
         if (reasons.Contains("RANGE_INSUFFICIENT")) throw FieldError("droneId", "The route exceeds this drone's range including the 30 percent reserve.");

@@ -120,7 +120,7 @@ Audit actions used by this module: `ORDER_APPROVAL`, `ORDER_REJECTION`, `ORDER_C
 | 12 | `ARRIVED` | `FAILED` | System (24 hour timeout) | 24 hours after arrival | Status log; notification; the parcel stays in its slot, which stays `OCCUPIED` (BR-LS-20). |
 | 13 | `FAILED` | `APPROVED` | Dispatcher (reschedule) | Resolution note | `ScheduledDepartureTime`, `EstimatedDeliveryTime` cleared; reserved slot released; old mission and drone released (section 5, item 1); status log; notification; audit `FAILED_DELIVERY_RESOLVED`. |
 | 14 | `FAILED` | `CANCELLED` | Dispatcher (cancel), Station operator (returned package received) | Resolution note | `CancelReason` (`RETURNED_TO_ORIGIN` for a return); slots and drone released; status log; notification; audit `FAILED_DELIVERY_RESOLVED`. |
-| 15 | `APPROVED` | `FAILED` | Origin station operator (intake rejection, already merged) | Parcel fails the check; reason 5 to 500 characters | `CancelReason`; status log; notification; audit `PACKAGE_INTAKE_REJECT`; no slot changes. See [station-api.md](../api/station-api.md) section 4.3. |
+| 15 | `APPROVED` | `FAILED` | Origin station operator (intake rejection, already merged) | Parcel fails the check; reason 5 to 500 characters | `CancelReason`; status log; notification; audit `PACKAGE_INTAKE_REJECT`; abort/release an unflown planned assignment, assigned drone and RESERVED destination slot atomically. No occupied origin slot is created and an actual occupied parcel is never cleared. See [station-api.md](../api/station-api.md) section 4.3. |
 
 ### Rules that apply to every transition
 
