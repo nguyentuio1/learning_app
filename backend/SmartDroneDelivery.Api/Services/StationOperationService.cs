@@ -131,10 +131,12 @@ public partial class StationOperationService : IStationOperationService
     private static partial Regex SecureCodeRegex();
 
     private readonly AppDbContext _db;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public StationOperationService(AppDbContext db)
+    public StationOperationService(AppDbContext db, IOrderTransitionWriter transitions)
     {
         _db = db;
+        _transitions = transitions;
     }
 
     public async Task<StationOrderInfoDto> GetOrderInfoAsync(Guid userId, Guid stationId, string trackingNumber)
@@ -169,6 +171,7 @@ public partial class StationOperationService : IStationOperationService
 
     public async Task<PackageIntakeResponseDto> IntakeAsync(Guid userId, Guid stationId, PackageIntakeRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await AuthorizeStationOperatorAsync(userId, stationId);
 
         var errors = new Dictionary<string, List<string>>();
@@ -196,153 +199,61 @@ public partial class StationOperationService : IStationOperationService
 
         ThrowIfInvalid(errors);
 
-        var sem = OrderLocks.GetOrAdd(tracking, _ => new SemaphoreSlim(1, 1));
-        await sem.WaitAsync();
-        try
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        var order = _db.Database.IsNpgsql()
+            ? (await _db.DeliveryOrders.FromSqlInterpolated($"SELECT * FROM delivery_orders WHERE \"TrackingNumber\" = {tracking} FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking);
+        if (order is null || order.OriginStationId != stationId)
+            throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
+        if (order.Status != "APPROVED" || order.ScheduledDepartureTime is null || order.EstimatedDeliveryTime is null)
+            throw new ApiException(StatusCodes.Status409Conflict, "Intake requires an APPROVED, scheduled order with a PLANNED assignment.");
+
+        // Slot configuration takes station FOR UPDATE. SHARE before loading the slot
+        // prevents a deletion that prechecked EMPTY from deleting an occupied intake.
+        if (_db.Database.IsNpgsql())
+            await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT \"Id\" FROM landing_stations WHERE \"Id\" IN ({order.OriginStationId}, {order.DestinationStationId}) ORDER BY \"Id\" FOR SHARE");
+        var mission = _db.Database.IsNpgsql()
+            ? (await _db.FlightMissions.FromSqlInterpolated($"SELECT * FROM flight_missions WHERE \"OrderId\" = {order.Id} AND \"FlightStatus\" = 'PLANNED' FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.FlightMissions.SingleOrDefaultAsync(m => m.OrderId == order.Id && m.FlightStatus == "PLANNED");
+        if (mission is null || mission.StartSlotId.HasValue || !mission.DestinationSlotId.HasValue)
+            throw new ApiException(StatusCodes.Status409Conflict, "A valid PLANNED assignment is required before intake.");
+        if (_db.Database.IsNpgsql())
         {
-            DeliveryOrder order;
-            if (_db.Database.IsRelational())
-            {
-                await using var tx = await _db.Database.BeginTransactionAsync();
-
-                // Lock order and slot in PostgreSQL
-                await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT \"Id\" FROM delivery_orders WHERE \"TrackingNumber\" = {tracking} FOR UPDATE");
-                await _db.Database.ExecuteSqlInterpolatedAsync(
-                    $"SELECT \"Id\" FROM station_slots WHERE \"Id\" = {request.SlotId!.Value} FOR UPDATE");
-
-                order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
-                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
-
-                if (order.OriginStationId != stationId)
-                    throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
-
-                if (order.Status != "APPROVED")
-                    throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
-
-                var slot = await _db.StationSlots.FirstOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
-                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
-
-                if (slot.Status != "EMPTY")
-                    throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
-
-                var now = DateTime.UtcNow;
-                order.Status = "READY_FOR_TAKEOFF";
-                order.UpdatedAt = now;
-                slot.Status = "OCCUPIED";
-                slot.LastUpdated = now;
-
-                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-                {
-                    OrderId = order.Id,
-                    FromStatus = "APPROVED",
-                    ToStatus = "READY_FOR_TAKEOFF",
-                    ChangedBy = userId,
-                    Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
-                    CreatedAt = now
-                });
-
-                _db.AuditLogs.Add(new AuditLog
-                {
-                    UserId = userId,
-                    Action = "PACKAGE_INTAKE_CONFIRMATION",
-                    EntityName = "DeliveryOrder",
-                    EntityId = order.Id.ToString(),
-                    Timestamp = now
-                });
-
-                _db.Notifications.Add(new Notification
-                {
-                    UserId = order.CustomerId,
-                    OrderId = order.Id,
-                    Type = "ORDER_STATUS",
-                    Title = "Ready for takeoff",
-                    Message = "Your parcel has been verified and loaded at origin station.",
-                    CreatedAt = now
-                });
-
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-
-                return new PackageIntakeResponseDto(
-                    order.Id,
-                    order.TrackingNumber,
-                    order.Status,
-                    slot.Id,
-                    slot.SlotNumber,
-                    now);
-            }
-            else
-            {
-                order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
-                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this origin station.");
-
-                if (order.OriginStationId != stationId)
-                    throw new ApiException(StatusCodes.Status404NotFound, "Order origin is not this station.");
-
-                if (order.Status != "APPROVED")
-                    throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
-
-                var slot = await _db.StationSlots.FirstOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
-                    ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
-
-                if (slot.Status != "EMPTY")
-                    throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
-
-                var now = DateTime.UtcNow;
-                order.Status = "READY_FOR_TAKEOFF";
-                order.UpdatedAt = now;
-                slot.Status = "OCCUPIED";
-                slot.LastUpdated = now;
-
-                _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-                {
-                    OrderId = order.Id,
-                    FromStatus = "APPROVED",
-                    ToStatus = "READY_FOR_TAKEOFF",
-                    ChangedBy = userId,
-                    Remarks = $"Package intake completed, loaded into slot {slot.SlotNumber}",
-                    CreatedAt = now
-                });
-
-                _db.AuditLogs.Add(new AuditLog
-                {
-                    UserId = userId,
-                    Action = "PACKAGE_INTAKE_CONFIRMATION",
-                    EntityName = "DeliveryOrder",
-                    EntityId = order.Id.ToString(),
-                    Timestamp = now
-                });
-
-                _db.Notifications.Add(new Notification
-                {
-                    UserId = order.CustomerId,
-                    OrderId = order.Id,
-                    Type = "ORDER_STATUS",
-                    Title = "Ready for takeoff",
-                    Message = "Your parcel has been verified and loaded at origin station.",
-                    CreatedAt = now
-                });
-
-                await _db.SaveChangesAsync();
-
-                return new PackageIntakeResponseDto(
-                    order.Id,
-                    order.TrackingNumber,
-                    order.Status,
-                    slot.Id,
-                    slot.SlotNumber,
-                    now);
-            }
+            await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT \"Id\" FROM drones WHERE \"Id\" = {mission.DroneId} FOR UPDATE");
+            await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT \"Id\" FROM station_slots WHERE \"Id\" IN ({request.SlotId!.Value}, {mission.DestinationSlotId.Value}) ORDER BY \"Id\" FOR UPDATE");
         }
-        finally
+        var drone = await _db.Drones.SingleOrDefaultAsync(d => d.Id == mission.DroneId);
+        var destination = await _db.StationSlots.SingleOrDefaultAsync(s => s.Id == mission.DestinationSlotId.Value);
+        if (drone is null || drone.Status != "ASSIGNED" || drone.CurrentStationId != stationId
+            || destination is null || destination.StationId != order.DestinationStationId || destination.Status != "RESERVED")
+            throw new ApiException(StatusCodes.Status409Conflict, "The planned assignment resources are no longer valid.");
+        if (request.MeasuredWeightGram!.Value > drone.MaxPayloadGram)
         {
-            sem.Release();
+            AddError(errors, "measuredWeightGram", "Measured weight exceeds the assigned drone's payload capacity.");
+            ThrowIfInvalid(errors);
         }
+        var slot = await _db.StationSlots.SingleOrDefaultAsync(s => s.Id == request.SlotId!.Value && s.StationId == stationId)
+            ?? throw new ApiException(StatusCodes.Status404NotFound, "Slot not found at this origin station.");
+        if (slot.Status != "EMPTY")
+            throw new ApiException(StatusCodes.Status409Conflict, $"Slot status is {slot.Status}, must be EMPTY.");
+        var now = DateTime.UtcNow;
+        await _transitions.StageAsync(order, "APPROVED", "READY_FOR_TAKEOFF", userId,
+            $"Package intake completed, loaded into slot {slot.SlotNumber}", now);
+        mission.StartSlotId = slot.Id;
+        slot.Status = "OCCUPIED";
+        slot.LastUpdated = now;
+        _db.AuditLogs.Add(new AuditLog { UserId = userId, Action = "PACKAGE_INTAKE_CONFIRMATION",
+            EntityName = "DeliveryOrder", EntityId = order.Id.ToString(), Timestamp = now });
+        _db.Notifications.Add(new Notification { UserId = order.CustomerId, OrderId = order.Id, Type = "ORDER_STATUS",
+            Title = "Ready for takeoff", Message = "Your parcel has been verified and loaded at origin station.", CreatedAt = now });
+        await _db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
+        return new(order.Id, order.TrackingNumber, order.Status, slot.Id, slot.SlotNumber, now);
     }
 
     public async Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await AuthorizeStationOperatorAsync(userId, stationId);
 
         var errors = new Dictionary<string, List<string>>();
@@ -379,19 +290,9 @@ public partial class StationOperationService : IStationOperationService
                 throw new ApiException(StatusCodes.Status409Conflict, $"Order status is {order.Status}, must be APPROVED.");
 
             var now = DateTime.UtcNow;
-            order.Status = "FAILED";
+            await MissionResources.AbortPlannedAsync(_db, order, now);
+            await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
             order.CancelReason = reason;
-            order.UpdatedAt = now;
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                FromStatus = "APPROVED",
-                ToStatus = "FAILED",
-                ChangedBy = userId,
-                Remarks = reason,
-                CreatedAt = now
-            });
 
             _db.AuditLogs.Add(new AuditLog
             {
@@ -426,6 +327,7 @@ public partial class StationOperationService : IStationOperationService
 
     public async Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await AuthorizeStationOperatorAsync(userId, stationId);
 
         var errors = new Dictionary<string, List<string>>();
@@ -501,7 +403,8 @@ public partial class StationOperationService : IStationOperationService
             // Contract 7.3: Destination slot must be explicitly linked from FlightMission
             var mission = await _db.FlightMissions
                 .Include(m => m.DestinationSlot)
-                .FirstOrDefaultAsync(m => m.OrderId == order.Id);
+                .Where(m => m.OrderId == order.Id && m.FlightStatus == "COMPLETED")
+                .OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).FirstOrDefaultAsync();
 
             if (mission?.DestinationSlot == null || mission.DestinationSlot.StationId != stationId)
             {
@@ -513,23 +416,15 @@ public partial class StationOperationService : IStationOperationService
             await _db.Database.ExecuteSqlInterpolatedAsync(
                 $"SELECT \"Id\" FROM station_slots WHERE \"Id\" = {slot.Id} FOR UPDATE");
 
+            if (slot.Status != "OCCUPIED" || !await MissionResources.IsLatestSlotClaimAsync(_db, mission!, slot.Id))
+                throw new ApiException(StatusCodes.Status409Conflict, "The destination slot no longer holds this parcel.");
             await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, true, now, userId);
 
-            order.Status = "DELIVERED";
+            await _transitions.StageAsync(order, "ARRIVED", "DELIVERED", userId,
+                "Secure code verified, parcel handed over to recipient", now);
             order.ActualDeliveryTime = now;
-            order.UpdatedAt = now;
             slot.Status = "EMPTY";
             slot.LastUpdated = now;
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                FromStatus = "ARRIVED",
-                ToStatus = "DELIVERED",
-                ChangedBy = userId,
-                Remarks = "Secure code verified, parcel handed over to recipient",
-                CreatedAt = now
-            });
 
             // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
             _db.AuditLogs.Add(new AuditLog
@@ -623,7 +518,8 @@ public partial class StationOperationService : IStationOperationService
             // Contract 7.3: Destination slot must be explicitly linked from FlightMission
             var mission = await _db.FlightMissions
                 .Include(m => m.DestinationSlot)
-                .FirstOrDefaultAsync(m => m.OrderId == order.Id);
+                .Where(m => m.OrderId == order.Id && m.FlightStatus == "COMPLETED")
+                .OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).FirstOrDefaultAsync();
 
             if (mission?.DestinationSlot == null || mission.DestinationSlot.StationId != stationId)
             {
@@ -631,24 +527,16 @@ public partial class StationOperationService : IStationOperationService
                     "Order has no destination slot linked to an active or completed flight mission.");
             }
 
+            var slot = mission.DestinationSlot;
+            if (slot.Status != "OCCUPIED" || !await MissionResources.IsLatestSlotClaimAsync(_db, mission, slot.Id))
+                throw new ApiException(StatusCodes.Status409Conflict, "The destination slot no longer holds this parcel.");
             await OtpLockoutManager.RecordAttemptAsync(_db, order.Id, true, now, userId);
 
-            var slot = mission.DestinationSlot;
-            order.Status = "DELIVERED";
+            await _transitions.StageAsync(order, "ARRIVED", "DELIVERED", userId,
+                "Secure code verified, parcel handed over to recipient", now);
             order.ActualDeliveryTime = now;
-            order.UpdatedAt = now;
             slot.Status = "EMPTY";
             slot.LastUpdated = now;
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                FromStatus = "ARRIVED",
-                ToStatus = "DELIVERED",
-                ChangedBy = userId,
-                Remarks = "Secure code verified, parcel handed over to recipient",
-                CreatedAt = now
-            });
 
             // BR-LS-22: NEVER store pickupSecureCode in logs or audit entries!
             _db.AuditLogs.Add(new AuditLog

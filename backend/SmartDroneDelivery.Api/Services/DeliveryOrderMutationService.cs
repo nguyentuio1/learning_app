@@ -17,14 +17,17 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
     private static readonly Regex PhoneRegex = new(@"^\d{9,11}$", RegexOptions.Compiled);
 
     private readonly AppDbContext _db;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public DeliveryOrderMutationService(AppDbContext db)
+    public DeliveryOrderMutationService(AppDbContext db, IOrderTransitionWriter transitions)
     {
         _db = db;
+        _transitions = transitions;
     }
 
     public async Task<DeliveryOrderDetailDto> UpdateAsync(Guid orderId, Guid customerId, UpdateDeliveryOrderRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await EnsureActiveCustomerAsync(customerId);
         ValidateUpdateRequestFields(request);
 
@@ -108,6 +111,7 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
 
     public async Task<DeliveryOrderDetailDto> CancelAsync(Guid orderId, Guid customerId, CancelDeliveryOrderRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await EnsureActiveCustomerAsync(customerId);
 
         if (request == null || string.IsNullOrWhiteSpace(request.CancellationReason))
@@ -117,84 +121,20 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
         if (trimmedReason.Length > 500)
             throw FieldError("cancellationReason", "Cancellation reason must be at most 500 characters.");
 
-        var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Delivery order not found.");
-
-        if (order.Status is not ("PENDING" or "APPROVED"))
-            throw CannotCancelStatus();
-
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        var order = _db.Database.IsNpgsql()
+            ? (await _db.DeliveryOrders.FromSqlInterpolated($"SELECT * FROM delivery_orders WHERE \"Id\" = {orderId} FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.Id == orderId);
+        if (order is null || order.CustomerId != customerId)
+            throw new ApiException(StatusCodes.Status404NotFound, "Delivery order not found.");
+        if (order.Status is not ("PENDING" or "APPROVED")) throw CannotCancelStatus();
         var previousStatus = order.Status;
         var now = DateTime.UtcNow;
-
-        if (_db.Database.IsRelational())
+        try
         {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-
-            var affectedRows = await _db.DeliveryOrders
-                .Where(o => o.Id == orderId && o.CustomerId == customerId && o.Status == previousStatus)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(o => o.Status, "CANCELLED")
-                    .SetProperty(o => o.CancelReason, trimmedReason)
-                    .SetProperty(o => o.UpdatedAt, now));
-
-            if (affectedRows == 0)
-            {
-                await tx.RollbackAsync();
-                throw CannotCancelStatus();
-            }
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                ChangedBy = customerId,
-                FromStatus = previousStatus,
-                ToStatus = "CANCELLED",
-                Remarks = trimmedReason,
-                CreatedAt = now
-            });
-
-            _db.Notifications.Add(new Notification
-            {
-                Id = Guid.NewGuid(),
-                UserId = order.CustomerId,
-                OrderId = order.Id,
-                Type = "ORDER_STATUS_CHANGED",
-                Title = "Order Cancelled",
-                Message = $"Your delivery order {order.TrackingNumber} has been cancelled.",
-                IsRead = false,
-                CreatedAt = now
-            });
-
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-        else
-        {
-            order.Status = "CANCELLED";
+            await MissionResources.AbortPlannedAsync(_db, order, now);
+            await _transitions.StageAsync(order, previousStatus, "CANCELLED", customerId, trimmedReason, now);
             order.CancelReason = trimmedReason;
-            order.UpdatedAt = now;
-
-            try
-            {
-                var affectedRows = await _db.SaveChangesAsync();
-                if (affectedRows == 0)
-                    throw CannotCancelStatus();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                _db.ChangeTracker.Clear();
-                throw CannotCancelStatus();
-            }
-
-            _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-            {
-                OrderId = order.Id,
-                ChangedBy = customerId,
-                FromStatus = previousStatus,
-                ToStatus = "CANCELLED",
-                Remarks = trimmedReason,
-                CreatedAt = now
-            });
 
             _db.Notifications.Add(new Notification
             {
@@ -209,6 +149,12 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
             });
 
             await _db.SaveChangesAsync();
+            if (tx is not null) await tx.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _db.ChangeTracker.Clear();
+            throw CannotCancelStatus();
         }
 
         return await LoadDetailDtoAsync(orderId);

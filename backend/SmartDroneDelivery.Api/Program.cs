@@ -33,6 +33,14 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
+builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
+builder.Services.AddScoped<ISchedulingService, SchedulingService>();
+builder.Services.AddScoped<DeliveryRouteEstimate>();
+builder.Services.AddOptions<DeliveryFlightOptions>()
+    .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
+    .Validate(o => double.IsFinite(o.CruiseSpeedMps) && o.CruiseSpeedMps > 0,
+        "DeliveryFlight:CruiseSpeedMps must be finite and greater than zero.").ValidateOnStart();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
 
 builder.Services
