@@ -17,6 +17,10 @@ abstract final class RoutePaths {
   static const customerOrdersEdit = '/customer/orders/edit';
   static const operatorHome = '/operator';
   static const operatorPickup = '/operator/pickup';
+  static const operatorFailedOrders = '/operator/failed-orders';
+  static const operatorFailedOrderDetail = '/operator/failed-orders/:orderId';
+  static String operatorFailedOrderDetailFor(String orderId) =>
+      '/operator/failed-orders/$orderId';
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const changePassword = '/profile/change-password';

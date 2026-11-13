@@ -19,6 +19,8 @@ import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/failures/failed_order_detail_page.dart';
+import '../presentation/operator/failures/failed_orders_page.dart';
 import '../presentation/operator/pickup/package_pickup_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
@@ -45,6 +47,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
+      final roleCode = ref.read(currentUserProvider)?.roleCode.toUpperCase();
+      final canManageFailures = roleCode == 'DISPATCHER' || roleCode == 'ADMIN';
+      if (flavor == AppFlavor.operator &&
+          loc.startsWith(RoutePaths.operatorFailedOrders) &&
+          !canManageFailures) {
+        return RoutePaths.operatorHome;
+      }
       switch (ref.read(authControllerProvider)) {
         case AuthStatus.unknown:
           return loc == RoutePaths.splash ? null : RoutePaths.splash;
@@ -85,6 +94,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: RoutePaths.operatorPickup,
           builder: (_, _) => const PackagePickupPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.operatorFailedOrders,
+          builder: (_, _) => const FailedOrdersPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.operatorFailedOrderDetail,
+          builder: (_, state) => FailedOrderDetailPage(
+            orderId: state.pathParameters['orderId'] ?? '',
+          ),
         ),
       ],
       GoRoute(path: RoutePaths.profile, builder: (_, _) => const ProfilePage()),
