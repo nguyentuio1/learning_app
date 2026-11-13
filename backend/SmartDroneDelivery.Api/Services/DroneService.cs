@@ -27,10 +27,12 @@ public class DroneService : IDroneService
     };
 
     private readonly AppDbContext _db;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public DroneService(AppDbContext db)
+    public DroneService(AppDbContext db, IOrderTransitionWriter? transitions = null)
     {
         _db = db;
+        _transitions = transitions ?? new OrderTransitionWriter(db);
     }
 
     public async Task<IReadOnlyList<DroneDto>> ListAsync(Guid userId, string? status, Guid? stationId, string? search)
@@ -207,54 +209,31 @@ public class DroneService : IDroneService
 
     public async Task<DroneDto> UpdateAsync(Guid userId, Guid id, UpdateDroneRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await LoadActiveUserAsync(userId);
-
-        var drone = await _db.Drones
-            .Include(d => d.CurrentStation)
-            .FirstOrDefaultAsync(d => d.Id == id)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Drone not found.");
-
         var errors = new Dictionary<string, List<string>>();
         ValidateSpecs(request.ModelName, request.MaxPayloadGram, request.MaxFlightRangeKm, request.BatteryCapacityMah, errors);
         ThrowIfInvalid(errors);
-
-        var hasActiveMission = await _db.FlightMissions
-            .AsNoTracking()
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        // Assignment also locks the drone before checking eligibility. Never lock an
+        // order after this row: that would reverse assignment's order -> drone locks.
+        var drone = _db.Database.IsNpgsql()
+            ? (await _db.Drones.FromSqlInterpolated($"SELECT * FROM drones WHERE \"Id\" = {id} FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.Drones.FirstOrDefaultAsync(d => d.Id == id);
+        if (drone is null) throw new ApiException(StatusCodes.Status404NotFound, "Drone not found.");
+        await _db.Entry(drone).ReloadAsync();
+        await _db.Entry(drone).Reference(d => d.CurrentStation).LoadAsync();
+        var hasActiveMission = await _db.FlightMissions.AsNoTracking()
             .AnyAsync(m => m.DroneId == id && (m.FlightStatus == "PLANNED" || m.FlightStatus == "IN_AIR"));
         if (hasActiveMission || drone.Status is "ASSIGNED" or "FLYING")
-        {
-            throw new ApiException(StatusCodes.Status409Conflict,
-                "The drone has an active mission. Resolve it in the dispatch workflow first.");
-        }
-
-        var now = DateTime.UtcNow;
+            throw new ApiException(StatusCodes.Status409Conflict, "The drone has an active mission. Resolve it in the dispatch workflow first.");
         drone.ModelName = request.ModelName!.Trim();
         drone.MaxPayloadGram = request.MaxPayloadGram!.Value;
         drone.MaxFlightRangeKm = request.MaxFlightRangeKm!.Value;
         drone.BatteryCapacityMah = request.BatteryCapacityMah!.Value;
-
-        var audit = new AuditLog
-        {
-            UserId = userId,
-            Action = "DRONE_UPDATE",
-            EntityName = "Drone",
-            EntityId = drone.Id.ToString(),
-            Timestamp = now
-        };
-
-        if (_db.Database.IsRelational())
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-        else
-        {
-            _db.AuditLogs.Add(audit);
-            await _db.SaveChangesAsync();
-        }
-
+        _db.AuditLogs.Add(new AuditLog { UserId = userId, Action = "DRONE_UPDATE", EntityName = "Drone", EntityId = drone.Id.ToString(), Timestamp = DateTime.UtcNow });
+        await _db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
         return DroneDto.From(drone);
     }
 

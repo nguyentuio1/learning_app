@@ -48,21 +48,21 @@ Controllers, services and DTOs below are **proposed**. The entities and their co
 | `EstimatedDeliveryTime` | `DateTime?` | | Computed by scheduling, later refined by the AI estimate. |
 | `ActualDeliveryTime` | `DateTime?` | | Set when the pickup code is accepted. |
 | `CreatedAt`, `UpdatedAt` | `DateTime` | NOT NULL, `UpdatedAt` is a concurrency token | |
-| Navigations | | | `Customer`, `Package`, `OriginStation`, `DestinationStation`, `Dispatcher`, `DeliveryAddress`, `FlightMission`, `AiEtaPrediction`, `StatusLogs`, `Notifications`. |
+| Navigations | | | `Customer`, `Package`, `OriginStation`, `DestinationStation`, `Dispatcher`, `DeliveryAddress`, `FlightMissions`, `AiEtaPrediction`, `StatusLogs`, `Notifications`. |
 
 ### 2.2 FlightMission (`flight_missions`)
 
 | Property | Type | Key / nullability | Rule |
 |---|---|---|---|
 | `Id` | `Guid` | PK | |
-| `OrderId` | `Guid` | FK `delivery_orders`, `Restrict`, **unique** | One mission per order in the current schema (see section 5, item 1). |
+| `OrderId` | `Guid` | FK `delivery_orders`, `Restrict` | One-to-many mission history; partial unique index permits at most one `PLANNED`/`IN_AIR` mission per order (LA-136). |
 | `DroneId` | `Guid` | FK `drones`, `Restrict` | The assigned drone. |
 | `StartSlotId` | `Guid?` | FK `station_slots`, `SetNull` | Origin slot. Filled at package intake, when the operator chooses the slot. |
 | `DestinationSlotId` | `Guid?` | FK `station_slots`, `SetNull` | Destination slot. Reserved when the drone is assigned (BR-DW-06). |
 | `FlightStatus` | `string` `varchar(30)` | NOT NULL, default `PLANNED` | `PLANNED`, `IN_AIR`, `COMPLETED`, `ABORTED`. |
 | `StartTime`, `EndTime` | `DateTime?` | | Actual flight times only. They are not used to store a planned window. |
 
-The mission has **no** planned departure or arrival column. The planned window is `delivery_orders.scheduled_departure_time` to `estimated_delivery_time`.
+LA-136 adds `CreatedAt` (UTC, database default current timestamp) for stable history ordering and nullable `ScheduledDepartureTime`/`EstimatedArrivalTime` snapshots. Assignment copies the order window into the new mission. Actual `StartTime`/`EndTime` remain actual flight times. Legacy active windows are copied from the order during migration; inactive history never inherits a later rescheduled order window.
 
 ### 2.3 DeliveryStatusLog (`delivery_status_logs`)
 
@@ -120,7 +120,7 @@ Audit actions used by this module: `ORDER_APPROVAL`, `ORDER_REJECTION`, `ORDER_C
 | 12 | `ARRIVED` | `FAILED` | System (24 hour timeout) | 24 hours after arrival | Status log; notification; the parcel stays in its slot, which stays `OCCUPIED` (BR-LS-20). |
 | 13 | `FAILED` | `APPROVED` | Dispatcher (reschedule) | Resolution note | `ScheduledDepartureTime`, `EstimatedDeliveryTime` cleared; reserved slot released; old mission and drone released (section 5, item 1); status log; notification; audit `FAILED_DELIVERY_RESOLVED`. |
 | 14 | `FAILED` | `CANCELLED` | Dispatcher (cancel), Station operator (returned package received) | Resolution note | `CancelReason` (`RETURNED_TO_ORIGIN` for a return); slots and drone released; status log; notification; audit `FAILED_DELIVERY_RESOLVED`. |
-| 15 | `APPROVED` | `FAILED` | Origin station operator (intake rejection, already merged) | Parcel fails the check; reason 5 to 500 characters | `CancelReason`; status log; notification; audit `PACKAGE_INTAKE_REJECT`; no slot changes. See [station-api.md](../api/station-api.md) section 4.3. |
+| 15 | `APPROVED` | `FAILED` | Origin station operator (intake rejection, already merged) | Parcel fails the check; reason 5 to 500 characters | `CancelReason`; status log; notification; audit `PACKAGE_INTAKE_REJECT`; abort/release an unflown planned assignment, assigned drone and RESERVED destination slot atomically. No occupied origin slot is created and an actual occupied parcel is never cleared. See [station-api.md](../api/station-api.md) section 4.3. |
 
 ### Rules that apply to every transition
 
@@ -221,11 +221,11 @@ Endpoints are proposed and will be fixed in the Sprint 5 contract. Customer endp
 
 The functions document was written before the schema and the station and drone designs were final. These points differ from it or from each other. Each states the proposed answer.
 
-1. **One mission per order.** `flight_missions.order_id` is unique, but `FAILED` to `APPROVED` (reschedule) needs a second assignment for the same order. Proposed: replace the unique index by a partial unique index `WHERE flight_status IN ('PLANNED','IN_AIR')`, so aborted and completed missions stay as history. This needs a migration and is the first change of the Sprint 5 assignment work. Until then a reschedule would have to overwrite the old mission, which loses its history.
-2. **Planned times.** F-05 saves `scheduled_departure_time` on the mission. The column is on the order. This document follows the order, like [sequence-drone-management.md](sequence-drone-management.md).
+1. **Mission history (implemented by LA-136).** The order has a mission collection and the active partial unique index allows history while preventing a second `PLANNED`/`IN_AIR` mission. Historical missions are never overwritten to reschedule.
+2. **Planned times (LA-136).** The order remains the current scheduling source. Assignment also retains the departure/arrival interval on the mission so subsequent order rescheduling cannot change historical overlap calculations. Actual flight times remain separate.
 3. **Battery level.** BR-DW-07 requires 80 percent but `drones` has no charge column and telemetry exists only for a mission. Proposed: a drone is a candidate only when `IDLE`, and the dispatcher confirms readiness in the maintenance action ([drone-api.md](../api/drone-api.md) section 3). `CHARGING` drones are not offered until a trusted source exists (the telemetry simulator, LA-330).
 4. **Origin slot at assignment.** Sequence-drone-management section 4 reserves "the selected slots" at both stations. BR-DW-06 and F-05 reserve the **destination** slot only, and [station-api.md](../api/station-api.md) intake needs an `EMPTY` origin slot chosen by the operator. Proposed: reserve only the destination slot at assignment, and set `StartSlotId` at intake. Section 4 of sequence-drone-management should be corrected to match.
 5. **Return to origin.** There is no status for "returning" and no task entity. Proposed: the order stays `FAILED` after the dispatcher chooses `RETURN_TO_ORIGIN`, with `cancel_reason = RETURN_REQUESTED` as the marker, and a notification goes to the station operator. The order becomes `CANCELLED` with `RETURNED_TO_ORIGIN` when the operator confirms the parcel with the `parcel-removal` operation. A task table is only worth adding if returns must be listed. See [sequence-failed-delivery-handling.md](sequence-failed-delivery-handling.md).
-6. **Customer cancel with a mission.** The merged `CancelAsync` (LA-107) only changes the order, because no mission can exist yet. When assignment exists, cancelling an `APPROVED` order must also abort the mission and release the drone and slot (row 5). This is a required change in Sprint 5.
+6. **Customer cancel with a mission (implemented by LA-136).** Cancelling an `APPROVED` order aborts its current unflown planned mission and releases its assigned drone and reserved destination slot atomically. Historical slot claims are not cleared. An occupied current parcel slot prevents cancellation until physical removal is confirmed.
 7. **Takeoff and landing triggers.** The takeoff is automatic at the scheduled time and the landing is derived from telemetry (the last sample is within a distance of the destination and the speed is near zero). The distance and the speed thresholds are not defined and depend on the simulator.
 8. **Reschedule when the parcel is not at the origin.** Row 13 sends the order back to `APPROVED`, and the next steps assume the package can be handed in at the origin station. After a timeout failure the parcel sits in a destination slot. Proposed: `RESCHEDULE` is refused with `409` until the dispatcher has set `packageVerified` and the operator has emptied the slot that still holds the parcel.

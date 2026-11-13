@@ -37,7 +37,7 @@ public class DeliveryOrder
     public LandingStation DestinationStation { get; set; } = null!;
     public User? Dispatcher { get; set; }
     public CustomerAddress? DeliveryAddress { get; set; }
-    public FlightMission? FlightMission { get; set; }
+    public ICollection<FlightMission> FlightMissions { get; set; } = new List<FlightMission>();
     public AiEtaPrediction? AiEtaPrediction { get; set; }
     public ICollection<DeliveryStatusLog> StatusLogs { get; set; } = new List<DeliveryStatusLog>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
