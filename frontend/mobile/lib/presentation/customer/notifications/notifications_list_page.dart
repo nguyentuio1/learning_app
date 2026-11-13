@@ -65,8 +65,9 @@ class NotificationsListPage extends ConsumerWidget {
               ],
               selected: {onlyUnread},
               onSelectionChanged: (selection) {
-                ref.read(notificationsFilterProvider.notifier).state =
-                    selection.first;
+                ref
+                    .read(notificationsFilterProvider.notifier)
+                    .setOnlyUnread(selection.first);
               },
             ),
           ),
@@ -126,13 +127,13 @@ class _NotificationCard extends ConsumerWidget {
       elevation: item.isRead ? 0 : 2,
       color: item.isRead
           ? Theme.of(context).cardColor
-          : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.15),
+          : Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: item.isRead
               ? Colors.grey.shade300
-              : Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
         ),
       ),
       child: InkWell(

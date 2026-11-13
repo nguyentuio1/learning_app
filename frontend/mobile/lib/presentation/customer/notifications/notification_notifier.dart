@@ -6,7 +6,18 @@ import '../../../data/models/notification_model.dart';
 import '../../../data/models/paged_result.dart';
 import '../../../data/providers/notification_providers.dart';
 
-final notificationsFilterProvider = StateProvider.autoDispose<bool>((ref) => false);
+class NotificationsFilterNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void setOnlyUnread(bool value) => state = value;
+}
+
+final notificationsFilterProvider =
+    NotifierProvider.autoDispose<NotificationsFilterNotifier, bool>(
+  NotificationsFilterNotifier.new,
+  name: 'notificationsFilter',
+);
 
 final customerNotificationsProvider =
     FutureProvider.autoDispose<PagedResult<NotificationModel>>((ref) async {
