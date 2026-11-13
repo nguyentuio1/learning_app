@@ -1,7 +1,6 @@
 // LA-142: Test failed delivery handling UI and integration
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'antd'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import MockAdapter from 'axios-mock-adapter'
@@ -155,7 +154,7 @@ it('validates date boundaries on queue filter', async () => {
   fireEvent.change(fromInput, { target: { value: '2026-11-25' } })
   fireEvent.change(throughInput, { target: { value: '2026-11-05' } })
 
-  await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
   expect(await screen.findByText('End date must not be before start date.')).toBeInTheDocument()
 })
 
@@ -173,7 +172,7 @@ it('opens incident report form, validates fields, and reports an in-flight incid
   })
 
   show()
-  await userEvent.click(await screen.findByRole('button', { name: 'Report an incident' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Report an incident' }))
 
   expect(await screen.findByText('Report an in-flight incident')).toBeInTheDocument()
 
@@ -182,20 +181,20 @@ it('opens incident report form, validates fields, and reports an in-flight incid
   await waitFor(() => expect(submitBtn).toBeEnabled())
 
   // Click submit without selecting delivery
-  await userEvent.click(submitBtn)
+  fireEvent.click(submitBtn)
   expect(await screen.findByText('Choose a delivery.')).toBeInTheDocument()
 
   // Select in-transit delivery
   const deliverySelect = screen.getByLabelText('In-transit delivery')
   fireEvent.mouseDown(deliverySelect)
   const option = await screen.findByText('DD-202611-0077 · DRN-301', { selector: '.ant-select-item-option-content' })
-  await userEvent.click(option)
+  fireEvent.click(option)
 
   // Select failure type
   const typeSelect = screen.getByLabelText('Failure type')
   fireEvent.mouseDown(typeSelect)
   const typeOption = await screen.findByText('Hardware fault', { selector: '.ant-select-item-option-content' })
-  await userEvent.click(typeOption)
+  fireEvent.click(typeOption)
 
   // Enter reason
   fireEvent.change(screen.getByLabelText('Incident reason'), {
@@ -241,13 +240,13 @@ it('resolves failed delivery with RESCHEDULE and requires package verification',
   fireEvent.change(screen.getByLabelText('Resolution note'), {
     target: { value: ' Parcel recovered from emergency landing site in good shape ' },
   })
-  await userEvent.click(screen.getByRole('button', { name: 'Review resolution' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Review resolution' }))
   expect(await screen.findByText('Confirm that the package has been verified.')).toBeInTheDocument()
   expect(mock.history.post).toHaveLength(0)
 
   // Check the verification box
-  await userEvent.click(screen.getByRole('checkbox', { name: 'Package has been physically verified' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Review resolution' }))
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Package has been physically verified' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Review resolution' }))
 
   // Modal confirmation
   expect(await screen.findByText('Apply this resolution?')).toBeInTheDocument()
