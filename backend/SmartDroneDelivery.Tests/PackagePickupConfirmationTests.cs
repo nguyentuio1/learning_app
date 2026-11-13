@@ -94,7 +94,7 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             Status = "OPERATIONAL",
             OperatorId = destOpId
         };
-        var destSlot = new StationSlot { Id = Guid.NewGuid(), StationId = dest.Id, SlotNumber = 1, Status = initialStatus == "ARRIVED" ? "OCCUPIED" : "EMPTY" };
+        var destSlot = new StationSlot { Id = Guid.NewGuid(), StationId = dest.Id, SlotNumber = 1, Status = initialStatus == "ARRIVED" ? "OCCUPIED" : "RESERVED" };
 
         var pkg = new Package
         {
@@ -117,7 +117,9 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             RecipientName = "Le Thi Huong",
             RecipientPhone = "0909123456",
             PickupSecureCode = "654321",
-            Status = initialStatus
+            Status = initialStatus,
+            ScheduledDepartureTime = DateTime.UtcNow.AddHours(2),
+            EstimatedDeliveryTime = DateTime.UtcNow.AddHours(2).AddMinutes(10)
         };
 
         var drone = new Drone
@@ -126,14 +128,16 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             ModelName = "Carrier X",
             MaxPayloadGram = 2500,
             MaxFlightRangeKm = 30,
-            BatteryCapacityMah = 18000
+            BatteryCapacityMah = 18000,
+            CurrentStationId = origin.Id,
+            Status = initialStatus == "ARRIVED" ? "CHARGING" : "ASSIGNED"
         };
 
         var mission = new FlightMission
         {
             Order = order,
             Drone = drone,
-            StartSlot = originSlot,
+            StartSlot = initialStatus == "ARRIVED" ? originSlot : null,
             DestinationSlot = destSlot,
             FlightStatus = initialStatus == "ARRIVED" ? "COMPLETED" : "PLANNED"
         };
@@ -164,6 +168,48 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
 
     private static async Task<JsonElement> JsonAsync(HttpResponseMessage response) =>
         await response.Content.ReadFromJsonAsync<JsonElement>();
+
+    [Fact]
+    public async Task Customer_cancel_racing_with_intake_rejection_leaves_only_the_winning_transition()
+    {
+        var customer = await NewUserAsync(AppRoles.Customer);
+        var originOperator = await NewUserAsync(AppRoles.StationOperator);
+        var destinationOperator = await NewUserAsync(AppRoles.StationOperator);
+        for (var round = 0; round < 10; round++)
+        {
+            var scenario = await SetupTestScenarioAsync(customer.Id, originOperator.Id, destinationOperator.Id);
+            var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            async Task<HttpResponseMessage> Cancel()
+            {
+                await gate.Task;
+                return await SendAsync(HttpMethod.Post, $"/api/delivery-orders/{scenario.Order.Id}/cancel", customer.Access,
+                    new { cancellationReason = "Customer cancelled before intake" });
+            }
+            async Task<HttpResponseMessage> Reject()
+            {
+                await gate.Task;
+                return await SendAsync(HttpMethod.Post, $"/api/landing-stations/{scenario.Origin.Id}/operations/intake-reject", originOperator.Access,
+                    new { trackingNumber = scenario.Order.TrackingNumber, reason = "Parcel is damaged" });
+            }
+            var cancel = Cancel();
+            var reject = Reject();
+            gate.SetResult();
+            var results = await Task.WhenAll(cancel, reject);
+            try
+            {
+                Assert.Equal(1, results.Count(x => x.StatusCode == HttpStatusCode.OK));
+                Assert.Equal(1, results.Count(x => x.StatusCode == HttpStatusCode.Conflict));
+                await _factory.WithDbAsync(async db =>
+                {
+                    var order = await db.DeliveryOrders.FindAsync(scenario.Order.Id);
+                    var log = Assert.Single(await db.DeliveryStatusLogs.Where(x => x.OrderId == scenario.Order.Id).ToListAsync());
+                    Assert.Equal(order!.Status, log.ToStatus);
+                    Assert.Equal(1, await db.Notifications.CountAsync(x => x.OrderId == scenario.Order.Id && x.UserId == customer.Id));
+                });
+            }
+            finally { foreach (var response in results) response.Dispose(); }
+        }
+    }
 
     [Fact]
     public async Task GetStationOrderInfo_masks_secure_code_and_recipient_phone_and_checks_station_role()
@@ -859,12 +905,16 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
         var dest = new LandingStation { Id = Guid.NewGuid(), StationCode = $"PG-DST-APR-{n}", Name = "Dst", Address = "Dst Addr", Latitude = 10.8m, Longitude = 106.8m, TotalSlots = 2, Status = "OPERATIONAL", OperatorId = destOpId };
         var originSlot = new StationSlot { Id = Guid.NewGuid(), StationId = origin.Id, SlotNumber = 1, Status = "EMPTY" };
         var pkg = new Package { SenderId = customerId, PackageName = "Package", WeightGram = 500, LengthCm = 10, WidthCm = 10, HeightCm = 10 };
-        var order = new DeliveryOrder { TrackingNumber = $"PG-TRK-APR-{n}", CustomerId = customerId, Package = pkg, OriginStationId = origin.Id, DestinationStationId = dest.Id, RecipientName = "Recipient", RecipientPhone = "0900000000", PickupSecureCode = "123456", Status = "APPROVED" };
+        var order = new DeliveryOrder { TrackingNumber = $"PG-TRK-APR-{n}", CustomerId = customerId, Package = pkg, OriginStationId = origin.Id, DestinationStationId = dest.Id, RecipientName = "Recipient", RecipientPhone = "0900000000", PickupSecureCode = "123456", Status = "APPROVED", ScheduledDepartureTime = DateTime.UtcNow.AddHours(2), EstimatedDeliveryTime = DateTime.UtcNow.AddHours(2).AddMinutes(10) };
 
+        var destinationSlot = new StationSlot { StationId = dest.Id, SlotNumber = 1, Status = "RESERVED" };
+        var drone = new Drone { SerialNumber = $"PG-APR-DRN-{n}", ModelName = "Carrier", MaxPayloadGram = 3000, MaxFlightRangeKm = 30, Status = "ASSIGNED", CurrentStationId = origin.Id };
+        var mission = new FlightMission { Order = order, Drone = drone, DestinationSlot = destinationSlot };
         await _factory.WithDbAsync(async db =>
         {
             db.LandingStations.AddRange(origin, dest);
-            db.StationSlots.Add(originSlot);
+            db.StationSlots.AddRange(originSlot, destinationSlot);
+            db.FlightMissions.Add(mission);
             db.Packages.Add(pkg);
             db.DeliveryOrders.Add(order);
             await db.SaveChangesAsync();

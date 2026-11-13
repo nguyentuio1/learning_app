@@ -22,11 +22,13 @@ public class PackageService : IPackageService
 
     private readonly AppDbContext _db;
     private readonly IPackageStorage _storage;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public PackageService(AppDbContext db, IPackageStorage storage)
+    public PackageService(AppDbContext db, IPackageStorage storage, IOrderTransitionWriter? transitions = null)
     {
         _db = db;
         _storage = storage;
+        _transitions = transitions ?? new OrderTransitionWriter(db);
     }
 
     public async Task<IReadOnlyList<PackageDto>> ListAsync(Guid userId, bool? available = null)
@@ -90,22 +92,28 @@ public class PackageService : IPackageService
 
     public async Task<PackageDto> UpdateAsync(Guid packageId, Guid userId, string userRole, UpdatePackageRequest request)
     {
+        using var operation = await _transitions.EnterOperationAsync();
         await EnsureActiveUserAsync(userId);
         ValidatePackageFields(request.PackageName, request.WeightGram, request.LengthCm, request.WidthCm, request.HeightCm, request.PackageImageUrl);
-
-        var package = await _db.Packages
-            .Include(p => p.DeliveryOrder)
-            .FirstOrDefaultAsync(p => p.Id == packageId);
-
-        if (package == null || (userRole == AppRoles.Customer && package.SenderId != userId))
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        // The order is the serialization point shared with approval and assignment.
+        var linkedOrder = _db.Database.IsNpgsql()
+            ? (await _db.DeliveryOrders.FromSqlInterpolated($"SELECT * FROM delivery_orders WHERE \"PackageId\" = {packageId} FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.DeliveryOrders.SingleOrDefaultAsync(o => o.PackageId == packageId);
+        if (linkedOrder is not null) await _db.Entry(linkedOrder).ReloadAsync();
+        var package = _db.Database.IsNpgsql()
+            ? (await _db.Packages.FromSqlInterpolated($"SELECT * FROM packages WHERE \"Id\" = {packageId} FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.Packages.SingleOrDefaultAsync(p => p.Id == packageId);
+        if (package is null || (userRole == AppRoles.Customer && package.SenderId != userId))
             throw new ApiException(StatusCodes.Status404NotFound, "Package not found.");
-
-        // Prevent modifying a package linked to an order that is no longer PENDING
-        if (package.DeliveryOrder != null && package.DeliveryOrder.Status != "PENDING")
-        {
+        await _db.Entry(package).ReloadAsync();
+        // A newly created link between the two locks must retry with order-first
+        // locking; do not acquire an order lock while holding a package row lock.
+        if (linkedOrder is null && await _db.DeliveryOrders.AnyAsync(o => o.PackageId == packageId))
+            throw new ApiException(StatusCodes.Status409Conflict, "The package was linked to an order concurrently. Refresh and retry.");
+        if (linkedOrder is not null && linkedOrder.Status != "PENDING")
             throw new ApiException(StatusCodes.Status409Conflict,
-                $"Cannot modify package because associated delivery order is in status '{package.DeliveryOrder.Status}'.");
-        }
+                $"Cannot modify package because associated delivery order is in status '{linkedOrder.Status}'.");
 
         var oldImageUrl = package.PackageImageUrl;
         var newImageUrl = string.IsNullOrWhiteSpace(request.PackageImageUrl) ? null : request.PackageImageUrl.Trim();
@@ -119,6 +127,7 @@ public class PackageService : IPackageService
         package.PackageImageUrl = newImageUrl;
 
         await _db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
 
         if (!string.IsNullOrEmpty(oldImageUrl) &&
             !string.Equals(oldImageUrl, newImageUrl, StringComparison.OrdinalIgnoreCase) &&

@@ -232,8 +232,11 @@ The arrows below are the only ones allowed; anything else returns `409` (BR-DW-0
 | 12 | `ARRIVED` | `FAILED` | System | 24 hour collection timeout (merged, LA-125) |
 | 13 | `FAILED` | `APPROVED` | Dispatcher | 6.2 `RESCHEDULE` |
 | 14 | `FAILED` | `CANCELLED` | Dispatcher, Station operator | 6.2 `CANCEL`, 6.3 |
+| 15 | `APPROVED` | `FAILED` | Origin station operator | Intake rejection, [station-api.md](station-api.md) section 4.3 (merged) |
 
 Every arrow appends one `delivery_status_logs` row (`changedBy` is `null` for the system) and creates one notification for the customer (BR-DW-04, BR-DW-21). Effects on mission, drone and slots are listed per row in section 3 of the class specification.
+
+LA-134 provides the internal `IOrderTransitionWriter` shared by these operations. `ApplyAsync` saves the transition, log and customer notification atomically, joining an existing transaction when supplied. Operations that already provide their own notification and resource effects use `StageAsync` inside their transaction, then save and commit everything together. Neither method is a public arbitrary-status HTTP endpoint; each controller/service must still authorize its caller and validate the operation-specific preconditions. Initial order creation remains responsible for the first `PENDING` log.
 
 ## 5. Tracking and telemetry (read side of LA-35 and LA-36, LA-330)
 
@@ -255,7 +258,7 @@ Auth: `DISPATCHER`, `MANAGER`, `ADMIN`. Query: `stationId` (optional, origin or 
   "telemetryStale": false
 }
 ```
-`telemetryStale` is `true` when the last sample is older than 60 seconds (BR-DW-13). Errors: `403`.
+`telemetryStale` is `true` when there is no sample (`lastTelemetryAt: null`) or the last sample is older than 60 seconds (BR-DW-13). Exactly 60 seconds is not stale. The latest persisted sample is selected by timestamp descending, then sample id descending. Schedule/ETA fields remain nullable for older unscheduled missions. Active-account roles are rechecked in the database. Errors: `400` malformed station UUID; `401`; `403`.
 
 ### 5.2 GET /api/delivery-orders/{id}/tracking
 Auth: the owning `CUSTOMER`, or `DISPATCHER`, `MANAGER`, `ADMIN`. A customer who does not own the order gets `404` (BR-CO-36). Response `200 OK`
@@ -307,12 +310,14 @@ Auth: `DISPATCHER`, `ADMIN`. The order must be `FAILED`; it stays `FAILED` until
 ```
 | `action` | Result | Resources |
 |---|---|---|
-| `RESCHEDULE` | `APPROVED`; `scheduledDepartureTime` and `estimatedDeliveryTime` cleared; the next assignment creates a new mission | Reserved destination slot released; old mission stays `ABORTED` as history; drone back to `IDLE` |
+| `RESCHEDULE` | `APPROVED`; `scheduledDepartureTime` and `estimatedDeliveryTime` cleared; the next assignment creates a new mission | Owned reserved destination slot released; old mission stays `ABORTED` as history; grounded assigned drone can return to `IDLE` |
 | `RETURN_TO_ORIGIN` | Stays `FAILED` with `cancelReason = RETURN_REQUESTED`; a notification goes to the origin station operator; closed by 6.3 | Released by 6.3 |
-| `CANCEL` | `CANCELLED` | Slots and drone released |
+| `CANCEL` | `CANCELLED` | Owned reservations released only after physical parcel removal; grounded assigned drone can return to `IDLE` |
 
 `note` is required (1 to 500). `packageVerified` must be `true` for `RESCHEDULE`. Writes the status log (where the status changes), a notification and audit `FAILED_DELIVERY_RESOLVED`. Response `200 OK`: `OrderDecision`.
 Errors: `400` unknown `action`, note missing or too long, `packageVerified` not `true` for `RESCHEDULE`; `403`; `404`; `409` status is not `FAILED`, a return was already requested, or for `RESCHEDULE` the parcel is still in a destination slot that the operator has not emptied (6.3 first).
+
+LA-139 physical-state correction: `CANCEL` also returns `409` while an owned destination slot remains `OCCUPIED`; terminal cancellation must not strand a parcel behind a failed-order-only removal operation. Neither decision empties an occupied slot. Historical source-slot links after takeoff do not prove current parcel ownership, and slots reused by another mission are preserved. A different current `PLANNED` mission with a `READY_FOR_TAKEOFF` order and the slot as its source proves reuse even when that mission was created earlier; its parcel is not attributed to the failed order. `FLYING` drones retain that status and their actual nullable station until a trusted landing is confirmed; marking a mission `ABORTED` is not a landing. `CHARGING` drones retain their charging state. LA-336 owns physical removal and origin receipt routes; LA-139 does not implement them. Return requests persist one handling event and notify the origin operator without claiming receipt or creating a second status transition.
 
 ### 6.3 POST /api/landing-stations/{stationId}/operations/parcel-removal
 Auth: `STATION_OPERATOR` of that station, `ADMIN` (the own-station rule of [station-api.md](station-api.md) applies). The operator confirms that a parcel left the slot after a failure. Request
@@ -333,7 +338,7 @@ Auth: `DISPATCHER`, `ADMIN`. Response `200 OK`: `PagedResult<FailedOrderSummary>
 | `failureType` | Optional `MISSION_ABORTED`, `EMERGENCY_LANDING`, `HARDWARE_FAULT`, `COLLECTION_TIMEOUT` or `UNKNOWN` |
 | `resolutionStatus` | Optional `UNRESOLVED`, `RETURN_REQUESTED`, `RESOLVED`, `ALL`; default `UNRESOLVED` |
 
-Filters combine with AND. Sort by `failedAt` descending, then `orderId` ascending. `UNKNOWN` represents legacy failures whose type was not stored; never infer a failure type by parsing human-written remarks. `FailedOrderSummary` has required fields:
+Filters combine with AND. Sort by `failedAt` descending, then `orderId` ascending. `UNKNOWN` represents unclassified failures: legacy failures whose type was not stored, and newly recorded intake rejections whose internal source is `INTAKE_REJECTION`. New intake-rejection history is complete even though its public type is `UNKNOWN`; legacy history remains incomplete. Never infer a failure type by parsing human-written remarks. `FailedOrderSummary` has required fields:
 
 | Field | Shape / meaning |
 |---|---|
@@ -348,6 +353,8 @@ Filters combine with AND. Sort by `failedAt` descending, then `orderId` ascendin
 | `updatedAt` | Current order update timestamp |
 
 Resolution derivation for the latest episode: `FAILED` with `cancelReason = RETURN_REQUESTED` means `RETURN_REQUESTED`; other `FAILED` orders mean `UNRESOLVED`; an episode followed by a transition from `FAILED` to `APPROVED` or `CANCELLED` means `RESOLVED`, even if the order has progressed further. `RETURN_REQUESTED` is not resolved until return confirmation. `lastResolutionAction` is `RETURN_TO_ORIGIN` for a requested or completed return. A plain cancellation is `CANCEL`.
+
+For newly structured episodes, request/confirmation state comes from durable handling events. The old `RETURN_REQUESTED` / `RETURNED_TO_ORIGIN` marker fallback applies only to legacy episodes without metadata: the intake-rejection contract also stores arbitrary human reasons in `cancelReason`, so matching reason text must not fabricate return state or prevent handling.
 
 Errors: `400` invalid filters, UUID, dates, enum, search or pagination; `401`; `403`. Valid filters with no results return an empty page.
 
@@ -380,6 +387,8 @@ Event actions are `RESCHEDULE`, `RETURN_TO_ORIGIN`, `CANCEL`, `RETURN_CONFIRMED`
 
 `returnToOriginStatus` is `REQUESTED` for the latest episode's return request and `CONFIRMED` only when receipt at the **origin** station is recorded (`RETURNED_TO_ORIGIN`); otherwise `NOT_REQUESTED`. Clearing a destination slot under LA-336 only creates a `PARCEL_CLEARED` event. It must never imply `RETURN_CONFIRMED` or a verified parcel location at the origin. Reads never change the order, release a slot or send notifications.
 
+Verified occupied-slot location is projected with all ownership predicates in one database statement. An intake commit must not fall between an independent ownership check and an occupancy read and cause another parcel to be attributed to the failed order.
+
 Errors: `400` malformed UUID; `401`; `403`; `404` unknown order or order with no recorded failure episode. A resolved episode still returns `200`. The UI submits the existing write routes in 6.1/6.2, then refreshes this detail and the queue; a concurrent-state `409` also requires a refresh. A `404` during refresh means the selection cannot be loaded and the UI returns to the list.
 
 ## 7. Error example
@@ -392,13 +401,17 @@ Errors: `400` malformed UUID; `401`; `403`; `404` unknown order or order with no
 
 - The customer list/detail controller explicitly authorizes `CUSTOMER` and scopes reads to the token owner. Sections 3.4, 3.5, 6.4 and 6.5 need separate dispatcher query endpoints/DTOs; do not widen customer authorization or make staff call customer-owned reads. Until implemented, UI work can use fixtures matching these proposed DTOs; do not treat manually entered order ids as a completed list integration.
 - `delivery_status_logs` stores failure remarks but no structured `failureType`; `audit_logs` has no action payload for resolution notes, package verification or failure-episode association. LA-139 needs durable structured metadata (schema/migration to be agreed) written atomically with failure, resolution and parcel operations, keyed to the failure log id. Store original type/reason, handling action/note/actor/time and explicit return confirmation. Keep the existing status log and audit entries. Legacy types use `UNKNOWN` and incomplete history is explicit, rather than guessed from text. GET endpoints must not create or backfill records as a side effect.
-- The unique index on `flight_missions.order_id` allows one mission per order forever. `RESCHEDULE` needs a second mission for the same order, so the index becomes a partial unique index `WHERE flight_status IN ('PLANNED','IN_AIR')` (migration, first change of LA-33).
-- `POST /api/delivery-orders/{id}/cancel` (LA-107) changes only the order. When a mission exists it must also abort the mission, set the drone `IDLE` and the destination slot `EMPTY` (row 5 of section 4).
+  LA-139 implements `delivery_failure_episodes` (failure-log primary/foreign key, immutable public type/original reason/internal source) and `failure_handling_events` (persistent id, failure-log association, action/note/actor/time). Existing timeout and intake-rejection producers stage their metadata in their existing transactions and preserve their existing audit/notification effects. `FailureRecording.Record` only stages metadata; `FailureService.StageInAirFailureAsync` stages an in-air failure and its effects for trusted system callers. Such callers own the operation gate, order row lock, transaction, save and commit; staging never enters the gate or commits recursively. No arbitrary client status/control endpoint is added.
+- LA-136 replaces the forever-unique mission/order relation with one-to-many history and a partial unique active-mission index (`PLANNED`/`IN_AIR`). Each mission retains `createdAt` and its planned departure/arrival interval, so order rescheduling cannot rewrite old intervals. Staff reads include only the current active mission; pickup selects the latest completed mission and verifies the slot has not since been claimed by another mission.
+- LA-136 makes customer cancellation abort the current unflown `PLANNED` mission and release its assigned drone and reserved destination slot in the same transaction. It never clears historical slot links or an actually occupied parcel. Customer cancellation remains limited to `PENDING`/`APPROVED`; a planned mission with an occupied current parcel slot returns `409` until physical removal is confirmed. No assignment-delete or staff-cancel route is introduced.
+- Intake now requires both schedule times and a valid `PLANNED` assignment with an `ASSIGNED` drone at origin and a `RESERVED` destination slot. It records the operator-selected origin slot on that mission before moving the order to `READY_FOR_TAKEOFF`; otherwise `409` has no slot or lifecycle effects. This resolves station-api.md open point 8 for simulator takeoff.
+- Intake compares measured weight with the locked assigned drone payload before any effects (BR-LS-10). Intake rejection atomically aborts/releases an unflown planned assignment, assigned drone and existing destination reservation; it never occupies a source slot or clears a physical parcel. Structured failure metadata remains LA-139 scope.
+- Drone specification edits lock/reload the drone inside their transaction and refuse active missions. Linked-package specification edits lock/reload the order and allow edits only while it is still `PENDING`. Assignment therefore validates committed payload/range/weight values.
 - Mobile code that calls `/fail` or `/resolve-failure` (drafted in PR #133 and removed from it) can be rebuilt on sections 6.1 and 6.2 once the backend exists.
 
 ## 9. Open points
 
-1. **Cruise speed for the estimate.** `estimatedDeliveryTime` needs a speed or the AI estimate (Sprint 7). Proposed: use the AI estimate when it exists, otherwise geodesic distance divided by a configured cruise speed; the value is a configuration setting the team has to decide.
+1. **Cruise speed for the estimate (LA-136 implementation proposal).** `DeliveryFlight:CruiseSpeedMps` defaults to 12 m/s and must be finite and greater than zero; the simulator should use this same setting. Without a usable AI estimate, use geodesic station distance divided by that speed, round duration up to whole minutes with a minimum of one minute, and add it to departure. A stored AI estimate with positive distance and duration is used consistently for scheduling, candidate range and assignment range. Until the future AI producer defines route-version invalidation, this stored estimate is authoritative; approval/scheduling changes to `updatedAt` do not invalidate it. Mission creation stores its departure/arrival interval separately from the mutable order schedule. Compare both missions' closed buffered windows `[departure - 15 min, arrival + 20 min]`, using actual start/end times where recorded, otherwise retained mission times (order times only for active legacy missions). Touching endpoints count as overlap; strictly separated windows do not. This is symmetric regardless of assignment order (35 minutes between one flight's arrival and the next departure is still touching; a larger gap is clear). An aborted mission that never took off has no remaining occupied interval.
 2. **Rows of the approval queue.** Proposed: show the customer name and phone to the dispatcher, but not the recipient data. To be confirmed.
 3. **Changing a schedule.** Proposed: refused with `409` while a `PLANNED` mission exists. A `DELETE /api/delivery-orders/{id}/flight-mission` that cancels the assignment is not defined yet; it is needed before a dispatcher can fix a wrong assignment.
 4. **Battery level.** BR-DW-07 asks for 80 percent charge but `drones` has no charge column. Proposed: only `IDLE` drones are candidates and the dispatcher confirms readiness in the maintenance action of [drone-api.md](drone-api.md). `CHARGING` drones are not offered until the simulator gives a trusted value.

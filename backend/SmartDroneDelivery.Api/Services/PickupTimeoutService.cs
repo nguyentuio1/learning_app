@@ -27,11 +27,13 @@ public class PickupTimeoutService : IPickupTimeoutService
 
     private readonly AppDbContext _db;
     private readonly PickupTimeoutOptions _options;
+    private readonly IOrderTransitionWriter _transitions;
 
-    public PickupTimeoutService(AppDbContext db, IOptions<PickupTimeoutOptions> options)
+    public PickupTimeoutService(AppDbContext db, IOptions<PickupTimeoutOptions> options, IOrderTransitionWriter transitions)
     {
         _db = db;
         _options = options.Value;
+        _transitions = transitions;
     }
 
     public async Task<int> ExpireOverdueAsync(DateTime now, CancellationToken cancellationToken = default)
@@ -65,6 +67,7 @@ public class PickupTimeoutService : IPickupTimeoutService
 
     private async Task<bool> ExpireOneAsync(Guid orderId, DateTime now, DateTime cutoff, CancellationToken ct)
     {
+        using var operation = await _transitions.EnterOperationAsync(ct);
         await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync(ct) : null;
 
         // Same row lock as the pickup: a pickup that is running now either finishes first (the order is no longer
@@ -87,19 +90,9 @@ public class PickupTimeoutService : IPickupTimeoutService
         if (arrivedAt is null || arrivedAt > cutoff)
             return false;
 
-        order.Status = "FAILED";
+        var failedLog = await _transitions.StageAsync(order, "ARRIVED", "FAILED", null, LogRemarks, now, ct);
+        FailureRecording.Record(_db, failedLog, "COLLECTION_TIMEOUT", "PICKUP_TIMEOUT");
         order.CancelReason = CancelReason;
-        order.UpdatedAt = now;
-
-        _db.DeliveryStatusLogs.Add(new DeliveryStatusLog
-        {
-            OrderId = order.Id,
-            FromStatus = "ARRIVED",
-            ToStatus = "FAILED",
-            ChangedBy = null,
-            Remarks = LogRemarks,
-            CreatedAt = now
-        });
 
         _db.AuditLogs.Add(new AuditLog
         {
