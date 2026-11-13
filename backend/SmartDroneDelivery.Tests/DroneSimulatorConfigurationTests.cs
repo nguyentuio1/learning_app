@@ -59,6 +59,31 @@ public class DroneSimulatorConfigurationTests
     }
 
     [Theory]
+    [InlineData("0.000000001")]
+    [InlineData("0.000999")]
+    public void Cruise_speed_below_supported_minimum_is_rejected_on_start_even_if_disabled(string speed)
+    {
+        using var baseFactory = new AuthApiFactory();
+        using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["DeliveryFlight:CruiseSpeedMps"] = speed })));
+        var error = Assert.Throws<OptionsValidationException>(() => factory.CreateClient());
+        Assert.Contains("DeliveryFlight:CruiseSpeedMps must be at least 0.001.", error.Failures);
+    }
+
+    [Theory]
+    [InlineData("0.001", 0.001)]
+    [InlineData("12", 12)]
+    [InlineData("999.99", 999.99)]
+    public void Supported_cruise_speed_boundaries_and_normal_value_allow_startup(string setting, double expectedSpeed)
+    {
+        using var baseFactory = new AuthApiFactory();
+        using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["DeliveryFlight:CruiseSpeedMps"] = setting })));
+        using var client = factory.CreateClient();
+        Assert.Equal(expectedSpeed, factory.Services.GetRequiredService<IOptions<DeliveryFlightOptions>>().Value.CruiseSpeedMps);
+    }
+
+    [Theory]
     [InlineData("0")]
     [InlineData("-1")]
     [InlineData("NaN")]
