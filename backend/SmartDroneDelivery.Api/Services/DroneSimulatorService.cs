@@ -8,7 +8,7 @@ using SmartDroneDelivery.Api.Options;
 namespace SmartDroneDelivery.Api.Services;
 
 /// <summary>Trusted software flight events. Each mission tick is one atomic operation.</summary>
-public class DroneSimulatorService(AppDbContext db, IOrderTransitionWriter transitions,
+public partial class DroneSimulatorService(AppDbContext db, IOrderTransitionWriter transitions,
     IFlightTelemetryService telemetry, TimeProvider clock, IOptions<DroneSimulatorOptions> options,
     IOptions<DeliveryFlightOptions> flight)
 {
@@ -21,7 +21,7 @@ public class DroneSimulatorService(AppDbContext db, IOrderTransitionWriter trans
         var utc = clock.GetUtcNow().UtcDateTime;
         var now = new DateTime(utc.Ticks - utc.Ticks % 10, DateTimeKind.Utc);
         var candidates = await db.FlightMissions.AsNoTracking()
-            .Where(m => m.FlightStatus == "IN_AIR" || (m.FlightStatus == "PLANNED"
+            .Where(m => m.FlightStatus == "IN_AIR" || db.SimulatorDiversions.Any(d => d.MissionId == m.Id && d.LandedAt == null) || (m.FlightStatus == "PLANNED"
                 && m.Order.Status == "READY_FOR_TAKEOFF" && m.Order.ScheduledDepartureTime <= now))
             .OrderBy(m => m.OrderId).ThenBy(m => m.Id).Select(m => new { m.Id, m.OrderId }).ToListAsync(ct);
         var existingEntities = db.ChangeTracker.Entries().Select(e => e.Entity).ToHashSet(ReferenceEqualityComparer.Instance);
@@ -52,19 +52,34 @@ public class DroneSimulatorService(AppDbContext db, IOrderTransitionWriter trans
         // Tracking queries may return an entity previously loaded by the caller.
         // Reload after its row lock so eligibility uses committed/current facts.
         await db.Entry(order).ReloadAsync(ct);
-        if (order.Status is not ("READY_FOR_TAKEOFF" or "IN_TRANSIT")) return;
-        var stations = db.Database.IsNpgsql()
+        var recovering = await db.SimulatorDiversions.AsNoTracking().AnyAsync(d => d.MissionId == missionId && d.LandedAt == null, ct);
+        if (!recovering && order.Status is not ("READY_FOR_TAKEOFF" or "IN_TRANSIT")) return;
+        // A diversion may use any designated operational station. Lock the complete
+        // candidate set in the same sorted order before locking mission/drone rows.
+        var allStations = recovering || options.Value.AbortAfterSeconds.HasValue;
+        var stations = allStations
+            ? db.Database.IsNpgsql()
+                ? await db.LandingStations.FromSqlRaw("SELECT * FROM landing_stations ORDER BY \"Id\" FOR SHARE").ToListAsync(ct)
+                : await db.LandingStations.ToListAsync(ct)
+            : db.Database.IsNpgsql()
             ? await db.LandingStations.FromSqlInterpolated($"SELECT * FROM landing_stations WHERE \"Id\" IN ({order.OriginStationId}, {order.DestinationStationId}) ORDER BY \"Id\" FOR SHARE").ToListAsync(ct)
             : await db.LandingStations.Where(s => s.Id == order.OriginStationId || s.Id == order.DestinationStationId).ToListAsync(ct);
         foreach (var station in stations) await db.Entry(station).ReloadAsync(ct);
         var origin = stations.SingleOrDefault(s => s.Id == order.OriginStationId);
         var destination = stations.SingleOrDefault(s => s.Id == order.DestinationStationId);
-        if (origin is null || destination is null || origin.Status != "OPERATIONAL" || destination.Status != "OPERATIONAL") return;
         var mission = db.Database.IsNpgsql()
             ? (await db.FlightMissions.FromSqlInterpolated($"SELECT * FROM flight_missions WHERE \"Id\" = {missionId} FOR UPDATE").ToListAsync(ct)).SingleOrDefault()
             : await db.FlightMissions.SingleOrDefaultAsync(m => m.Id == missionId, ct);
         if (mission is null) return;
         await db.Entry(mission).ReloadAsync(ct);
+        if (recovering)
+        {
+            await RecoverAsync(mission, stations, now, ct);
+            await db.SaveChangesAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
+            return;
+        }
+        if (origin is null || destination is null) return;
         if (mission.OrderId != order.Id || mission.FlightStatus is not ("PLANNED" or "IN_AIR")
             || mission.StartSlotId is null || mission.DestinationSlotId is null || mission.StartSlotId == mission.DestinationSlotId) return;
         if (db.Database.IsNpgsql())
@@ -78,8 +93,23 @@ public class DroneSimulatorService(AppDbContext db, IOrderTransitionWriter trans
         foreach (var slot in slots) await db.Entry(slot).ReloadAsync(ct);
         var source = slots.SingleOrDefault(s => s.Id == mission.StartSlotId);
         var target = slots.SingleOrDefault(s => s.Id == mission.DestinationSlotId);
-        var package = await db.Packages.AsNoTracking().SingleOrDefaultAsync(p => p.Id == order.PackageId, ct);
         var distance = DeliveryRouteEstimate.DistanceKm(origin.Latitude, origin.Longitude, destination.Latitude, destination.Longitude) * 1000;
+        if (mission.FlightStatus == "IN_AIR" && order.Status == "IN_TRANSIT" && mission.StartTime is { } started
+            && mission.EndTime is null && drone is { Status: "FLYING", CurrentStationId: null } && now > started
+            && options.Value.AbortAfterSeconds is { } abortAfter && (now - started).TotalSeconds >= abortAfter
+            && (now - started).TotalSeconds * flight.Value.CruiseSpeedMps < distance)
+        {
+            var latest = await db.FlightTelemetryLogs.AsNoTracking().Where(l => l.MissionId == mission.Id).MaxAsync(l => (DateTime?)l.Timestamp, ct);
+            if (latest > now) return;
+            var fractionAtAbort = Math.Clamp((now - started).TotalSeconds * flight.Value.CruiseSpeedMps / distance, 0, 1);
+            var atAbort = Position(origin, destination, fractionAtAbort, distance);
+            await AbortAsync(order, mission, stations, atAbort, now, ct);
+            await db.SaveChangesAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
+            return;
+        }
+        if (origin.Status != "OPERATIONAL" || destination.Status != "OPERATIONAL") return;
+        var package = await db.Packages.AsNoTracking().SingleOrDefaultAsync(p => p.Id == order.PackageId, ct);
         if (drone is null || package is null || package.WeightGram <= 0 || package.WeightGram > drone.MaxPayloadGram
             || distance / 1000 * 1.3 > (double)drone.MaxFlightRangeKm
             || source is null || source.StationId != origin.Id || target is null || target.StationId != destination.Id || target.Status != "RESERVED"
@@ -113,7 +143,7 @@ public class DroneSimulatorService(AppDbContext db, IOrderTransitionWriter trans
         var fraction = distance <= 0 ? (elapsed > 0 ? 1 : 0) : Math.Clamp(elapsed * flight.Value.CruiseSpeedMps / distance, 0, 1);
         var arrived = fraction >= 1;
         var position = Position(origin, destination, fraction, distance);
-        telemetry.Stage(mission, new TelemetrySampleRequest {
+        if (!IsTelemetryLost(elapsed)) telemetry.Stage(mission, new TelemetrySampleRequest {
             Latitude = position.Latitude, Longitude = position.Longitude,
             AltitudeMeters = arrived ? 0 : options.Value.AltitudeMeters,
             SpeedMps = arrived ? 0 : (decimal)flight.Value.CruiseSpeedMps,

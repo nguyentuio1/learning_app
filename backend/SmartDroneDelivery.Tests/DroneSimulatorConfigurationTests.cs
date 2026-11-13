@@ -16,6 +16,7 @@ public class DroneSimulatorConfigurationTests
         _ = factory.CreateClient();
         var options = factory.Services.GetRequiredService<IOptions<DroneSimulatorOptions>>().Value;
         Assert.False(options.Enabled); Assert.Equal(2, options.TickIntervalSeconds); Assert.Equal(80, options.AltitudeMeters);
+        Assert.Null(options.AbortAfterSeconds); Assert.Null(options.TelemetryLossAfterSeconds); Assert.Null(options.TelemetryLossDurationSeconds);
         Assert.Equal(12, factory.Services.GetRequiredService<IOptions<DeliveryFlightOptions>>().Value.CruiseSpeedMps);
         Guid id = default;
         await factory.WithDbAsync(async db => id = await SimulatorData.SeedAsync(db, DateTimeOffset.UtcNow.AddMinutes(-1)));
@@ -39,11 +40,37 @@ public class DroneSimulatorConfigurationTests
     [InlineData("DeliveryFlight:CruiseSpeedMps", "0")]
     [InlineData("DeliveryFlight:CruiseSpeedMps", "NaN")]
     [InlineData("DeliveryFlight:CruiseSpeedMps", "1000")]
+    [InlineData("DroneSimulator:AbortAfterSeconds", "-1")]
+    [InlineData("DroneSimulator:AbortAfterSeconds", "NaN")]
+    [InlineData("DroneSimulator:AbortAfterSeconds", "Infinity")]
+    [InlineData("DroneSimulator:AbortAfterSeconds", "86401")]
+    [InlineData("DroneSimulator:TelemetryLossAfterSeconds", "1")]
+    [InlineData("DroneSimulator:TelemetryLossAfterSeconds", "NaN")]
+    [InlineData("DroneSimulator:TelemetryLossDurationSeconds", "1")]
+    [InlineData("DroneSimulator:TelemetryLossDurationSeconds", "0")]
+    [InlineData("DroneSimulator:TelemetryLossDurationSeconds", "-1")]
+    [InlineData("DroneSimulator:TelemetryLossDurationSeconds", "Infinity")]
     public void Invalid_configuration_is_rejected_on_start_even_if_disabled(string key, string value)
     {
         using var baseFactory = new AuthApiFactory();
         using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
             config.AddInMemoryCollection(new Dictionary<string, string?> { [key] = value })));
+        Assert.Throws<OptionsValidationException>(() => factory.CreateClient());
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("86401")]
+    public void Loss_duration_must_be_positive_finite_and_bounded_even_with_valid_offset(string duration)
+    {
+        using var baseFactory = new AuthApiFactory();
+        using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> {
+                ["DroneSimulator:TelemetryLossAfterSeconds"] = "1", ["DroneSimulator:TelemetryLossDurationSeconds"] = duration
+            })));
         Assert.Throws<OptionsValidationException>(() => factory.CreateClient());
     }
 }

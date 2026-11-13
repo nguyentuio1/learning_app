@@ -50,7 +50,9 @@ builder.Services.AddOptions<DroneSimulatorOptions>()
     .Validate(o => double.IsFinite(o.TickIntervalSeconds) && o.TickIntervalSeconds >= 0.001 && o.TickIntervalSeconds <= (uint.MaxValue - 1d) / 1000,
         "DroneSimulator:TickIntervalSeconds must be between 0.001 and 4294967.294 seconds.")
     .Validate(o => o.AltitudeMeters >= 0 && o.AltitudeMeters <= 9999.99m,
-        "DroneSimulator:AltitudeMeters must be between 0 and 9999.99.").ValidateOnStart();
+        "DroneSimulator:AltitudeMeters must be between 0 and 9999.99.")
+    .Validate(o => o.HasValidScenarios(), "DroneSimulator scenario offsets must be finite, between 0 and 86400 seconds; telemetry loss requires both offset and a positive duration at most 86400 seconds.")
+    .ValidateOnStart();
 builder.Services.AddScoped<DroneSimulatorService>();
 builder.Services.AddHostedService<DroneSimulatorWorker>();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
