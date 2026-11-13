@@ -13,6 +13,9 @@ public interface IFlightTelemetryService
     Task IngestForAdminAsync(Guid userId, Guid missionId, TelemetrySampleRequest request, CancellationToken ct = default);
     // Trusted internal simulator entry point. Not exposed as a client-accessible route.
     Task IngestAsync(Guid missionId, TelemetrySampleRequest request, CancellationToken ct = default);
+    // Trusted lifecycle caller owns the mission/order/resource locks, transaction and save.
+    // Allows the final in-air sample to be staged before completing the mission atomically.
+    void Stage(FlightMission mission, TelemetrySampleRequest request);
     // Callers exposing this read model must authorize the owning order before returning data.
     Task<MissionTelemetrySnapshot> GetLatestAsync(Guid missionId, CancellationToken ct = default);
 }
@@ -51,6 +54,21 @@ public class FlightTelemetryService(AppDbContext db, TimeProvider clock) : IFlig
         if (status != "IN_AIR")
             throw new ApiException(StatusCodes.Status409Conflict, "Telemetry requires an IN_AIR mission.");
 
+        AddSample(missionId, request, timestamp);
+        await db.SaveChangesAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+    }
+
+    public void Stage(FlightMission mission, TelemetrySampleRequest request)
+    {
+        if (db.Database.IsRelational() && db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Telemetry staging requires the caller's transaction.");
+        if (db.Entry(mission).State is EntityState.Detached or EntityState.Added or EntityState.Deleted || mission.FlightStatus != "IN_AIR")
+            throw new InvalidOperationException("Telemetry staging requires a tracked, persisted IN_AIR mission.");
+        AddSample(mission.Id, request, Validate(request));
+    }
+
+    private void AddSample(Guid missionId, TelemetrySampleRequest request, DateTime timestamp) =>
         db.FlightTelemetryLogs.Add(new FlightTelemetryLog
         {
             MissionId = missionId,
@@ -61,9 +79,6 @@ public class FlightTelemetryService(AppDbContext db, TimeProvider clock) : IFlig
             BatteryPercentage = request.BatteryPercentage!.Value,
             Timestamp = timestamp
         });
-        await db.SaveChangesAsync(ct);
-        if (transaction is not null) await transaction.CommitAsync(ct);
-    }
 
     public async Task<MissionTelemetrySnapshot> GetLatestAsync(Guid missionId, CancellationToken ct = default)
     {
