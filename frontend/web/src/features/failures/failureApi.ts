@@ -36,7 +36,7 @@ export interface FailureFilters {
 interface Queue { items: FailedOrder[]; page: number; pageSize: number; totalCount: number; totalPages: number }
 export interface ActiveDelivery {
   orderId: string; trackingNumber: string; orderStatus: string; missionId: string; flightStatus: string; droneSerialNumber: string
-  originStationId: string; destinationStationId: string; scheduledDepartureTime: string; estimatedDeliveryTime: string
+  originStationId: string; destinationStationId: string; scheduledDepartureTime: string | null; estimatedDeliveryTime: string | null
   lastTelemetryAt: string | null; telemetryStale: boolean
 }
 const path = (id: string) => '/api/delivery-orders/' + encodeURIComponent(id)
