@@ -219,6 +219,30 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.ToTable("customer_addresses", (string)null);
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryFailureEpisode", b =>
+                {
+                    b.Property<long>("FailureLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FailureType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("OriginalReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("FailureLogId");
+
+                    b.ToTable("delivery_failure_episodes", (string)null);
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -408,6 +432,41 @@ namespace SmartDroneDelivery.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("drones", (string)null);
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FailureHandlingEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("FailureLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("PerformedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformedBy");
+
+                    b.HasIndex("FailureLogId", "CreatedAt", "Id");
+
+                    b.ToTable("failure_handling_events", (string)null);
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FlightMission", b =>
@@ -887,6 +946,17 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryFailureEpisode", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.DeliveryStatusLog", "FailureLog")
+                        .WithOne("FailureEpisode")
+                        .HasForeignKey("SmartDroneDelivery.Api.Entities.DeliveryFailureEpisode", "FailureLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FailureLog");
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryOrder", b =>
                 {
                     b.HasOne("SmartDroneDelivery.Api.Entities.User", "Customer")
@@ -962,6 +1032,24 @@ namespace SmartDroneDelivery.Api.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CurrentStation");
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FailureHandlingEvent", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.DeliveryStatusLog", "FailureLog")
+                        .WithMany("HandlingEvents")
+                        .HasForeignKey("FailureLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartDroneDelivery.Api.Entities.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("PerformedBy")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("FailureLog");
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FlightMission", b =>
@@ -1099,6 +1187,13 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.Navigation("Notifications");
 
                     b.Navigation("StatusLogs");
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryStatusLog", b =>
+                {
+                    b.Navigation("FailureEpisode");
+
+                    b.Navigation("HandlingEvents");
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.Drone", b =>

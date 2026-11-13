@@ -36,6 +36,8 @@ builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService
 builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
 builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
 builder.Services.AddScoped<ISchedulingService, SchedulingService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<FailureService>();
 builder.Services.AddScoped<DeliveryRouteEstimate>();
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
