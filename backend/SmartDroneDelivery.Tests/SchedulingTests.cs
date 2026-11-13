@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.Entities;
@@ -430,9 +431,19 @@ public class SchedulingTests(AuthApiFactory factory) : IClassFixture<AuthApiFact
     [InlineData(double.PositiveInfinity)]
     public void Flight_configuration_refuses_nonpositive_or_nonfinite_cruise_speed(double speed)
     {
-        using var invalid = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
-            services.PostConfigure<DeliveryFlightOptions>(o => o.CruiseSpeedMps = speed)));
-        Assert.Throws<OptionsValidationException>(() => invalid.CreateClient());
+        using var invalid = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services => {
+            services.PostConfigure<DeliveryFlightOptions>(o => o.CruiseSpeedMps = speed);
+            // Test registered options validation directly: failed deferred-host startup
+            // can dispose its provider before surfacing the original validation error.
+            // Keep production IValidateOptions registrations; remove only startup
+            // execution in this invalid-config host. Production ValidateOnStart stays.
+            services.RemoveAll<IStartupValidator>();
+        }));
+        Assert.NotEmpty(invalid.Services.GetServices<IValidateOptions<DeliveryFlightOptions>>());
+        var options = invalid.Services.GetRequiredService<IOptions<DeliveryFlightOptions>>();
+        var error = Assert.Throws<OptionsValidationException>(() => options.Value);
+        Assert.Equal(typeof(DeliveryFlightOptions), error.OptionsType);
+        Assert.Contains("DeliveryFlight:CruiseSpeedMps must be finite and greater than zero.", error.Failures);
     }
 
     [Fact]
