@@ -8,22 +8,28 @@ import './customer-notifications.css'
 
 const { Text, Paragraph } = Typography
 
+interface NotificationsState {
+  data?: NotificationPage
+  unreadCount: number
+  error?: string
+}
+
 export function CustomerNotificationsPage() {
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [data, setData] = useState<NotificationPage>()
-  const [unreadCount, setUnreadCount] = useState<number>(0)
-  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<NotificationsState>()
   const [actionLoading, setActionLoading] = useState(false)
-  const [error, setError] = useState<string>()
+  const [actionError, setActionError] = useState<string>()
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const loading = !result
+  const data = result?.data
+  const unreadCount = result?.unreadCount ?? 0
+  const error = actionError ?? result?.error
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
-    setError(undefined)
-
     const isReadParam = filter === 'UNREAD' ? false : undefined
 
     Promise.all([
@@ -32,28 +38,32 @@ export function CustomerNotificationsPage() {
     ])
       .then(([pageData, count]) => {
         if (!controller.signal.aborted) {
-          setData(pageData)
-          setUnreadCount(count)
-          setLoading(false)
+          setResult({ data: pageData, unreadCount: count })
         }
       })
-      .catch(err => {
+      .catch(() => {
         if (!controller.signal.aborted) {
-          setError('Unable to load notifications. Please try again.')
-          setLoading(false)
+          setResult({ unreadCount: 0, error: 'Unable to load notifications. Please try again.' })
         }
       })
 
     return () => controller.abort()
   }, [filter, page, pageSize, refreshKey])
 
+  function reload() {
+    setActionError(undefined)
+    setResult(undefined)
+    setRefreshKey(k => k + 1)
+  }
+
   async function handleMarkAsRead(id: string) {
     try {
       setActionLoading(true)
+      setActionError(undefined)
       await customerNotificationApi.markAsRead(id)
-      setRefreshKey(k => k + 1)
+      reload()
     } catch {
-      setError('Failed to mark notification as read.')
+      setActionError('Failed to mark notification as read.')
     } finally {
       setActionLoading(false)
     }
@@ -62,10 +72,11 @@ export function CustomerNotificationsPage() {
   async function handleMarkAllAsRead() {
     try {
       setActionLoading(true)
+      setActionError(undefined)
       await customerNotificationApi.markAllAsRead()
-      setRefreshKey(k => k + 1)
+      reload()
     } catch {
-      setError('Failed to mark all notifications as read.')
+      setActionError('Failed to mark all notifications as read.')
     } finally {
       setActionLoading(false)
     }
@@ -96,7 +107,7 @@ export function CustomerNotificationsPage() {
           type="error"
           showIcon
           title={error}
-          action={<Button size="small" onClick={() => setRefreshKey(k => k + 1)}>Try again</Button>}
+          action={<Button size="small" onClick={reload}>Try again</Button>}
           style={{ marginBottom: 16 }}
         />
       )}
@@ -108,6 +119,8 @@ export function CustomerNotificationsPage() {
             onChange={e => {
               setFilter(e.target.value)
               setPage(1)
+              setActionError(undefined)
+              setResult(undefined)
             }}
             optionType="button"
             buttonStyle="solid"
@@ -182,6 +195,8 @@ export function CustomerNotificationsPage() {
                   onChange={(newPage, newPageSize) => {
                     setPage(newPageSize !== pageSize ? 1 : newPage)
                     setPageSize(newPageSize)
+                    setActionError(undefined)
+                    setResult(undefined)
                   }}
                   showTotal={total => `${total} ${total === 1 ? 'notification' : 'notifications'}`}
                 />
