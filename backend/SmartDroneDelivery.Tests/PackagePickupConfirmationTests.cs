@@ -166,6 +166,48 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
         await response.Content.ReadFromJsonAsync<JsonElement>();
 
     [Fact]
+    public async Task Customer_cancel_racing_with_intake_rejection_leaves_only_the_winning_transition()
+    {
+        var customer = await NewUserAsync(AppRoles.Customer);
+        var originOperator = await NewUserAsync(AppRoles.StationOperator);
+        var destinationOperator = await NewUserAsync(AppRoles.StationOperator);
+        for (var round = 0; round < 10; round++)
+        {
+            var scenario = await SetupTestScenarioAsync(customer.Id, originOperator.Id, destinationOperator.Id);
+            var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            async Task<HttpResponseMessage> Cancel()
+            {
+                await gate.Task;
+                return await SendAsync(HttpMethod.Post, $"/api/delivery-orders/{scenario.Order.Id}/cancel", customer.Access,
+                    new { cancellationReason = "Customer cancelled before intake" });
+            }
+            async Task<HttpResponseMessage> Reject()
+            {
+                await gate.Task;
+                return await SendAsync(HttpMethod.Post, $"/api/landing-stations/{scenario.Origin.Id}/operations/intake-reject", originOperator.Access,
+                    new { trackingNumber = scenario.Order.TrackingNumber, reason = "Parcel is damaged" });
+            }
+            var cancel = Cancel();
+            var reject = Reject();
+            gate.SetResult();
+            var results = await Task.WhenAll(cancel, reject);
+            try
+            {
+                Assert.Equal(1, results.Count(x => x.StatusCode == HttpStatusCode.OK));
+                Assert.Equal(1, results.Count(x => x.StatusCode == HttpStatusCode.Conflict));
+                await _factory.WithDbAsync(async db =>
+                {
+                    var order = await db.DeliveryOrders.FindAsync(scenario.Order.Id);
+                    var log = Assert.Single(await db.DeliveryStatusLogs.Where(x => x.OrderId == scenario.Order.Id).ToListAsync());
+                    Assert.Equal(order!.Status, log.ToStatus);
+                    Assert.Equal(1, await db.Notifications.CountAsync(x => x.OrderId == scenario.Order.Id && x.UserId == customer.Id));
+                });
+            }
+            finally { foreach (var response in results) response.Dispose(); }
+        }
+    }
+
+    [Fact]
     public async Task GetStationOrderInfo_masks_secure_code_and_recipient_phone_and_checks_station_role()
     {
         var customer = await NewUserAsync(AppRoles.Customer);

@@ -33,6 +33,8 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
+builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
 
 builder.Services

@@ -102,7 +102,7 @@ Audit actions used by this module: `ORDER_APPROVAL`, `ORDER_REJECTION`, `ORDER_C
 
 ## 3. State machine
 
-`OrderStateMachine.Transitions` holds exactly the arrows below. Anything else is refused with `409 Conflict`. `DELIVERED` and `CANCELLED` have no outgoing arrow (BR-DW-18).
+`OrderStateMachine.CanTransition` accepts exactly the arrows below. Anything else is refused with `409 Conflict`. `DELIVERED` and `CANCELLED` have no outgoing arrow (BR-DW-18).
 
 | # | From | To | Who or what triggers it | Guard | Changes made in the same transaction |
 |---|---|---|---|---|---|
@@ -120,10 +120,11 @@ Audit actions used by this module: `ORDER_APPROVAL`, `ORDER_REJECTION`, `ORDER_C
 | 12 | `ARRIVED` | `FAILED` | System (24 hour timeout) | 24 hours after arrival | Status log; notification; the parcel stays in its slot, which stays `OCCUPIED` (BR-LS-20). |
 | 13 | `FAILED` | `APPROVED` | Dispatcher (reschedule) | Resolution note | `ScheduledDepartureTime`, `EstimatedDeliveryTime` cleared; reserved slot released; old mission and drone released (section 5, item 1); status log; notification; audit `FAILED_DELIVERY_RESOLVED`. |
 | 14 | `FAILED` | `CANCELLED` | Dispatcher (cancel), Station operator (returned package received) | Resolution note | `CancelReason` (`RETURNED_TO_ORIGIN` for a return); slots and drone released; status log; notification; audit `FAILED_DELIVERY_RESOLVED`. |
+| 15 | `APPROVED` | `FAILED` | Origin station operator (intake rejection, already merged) | Parcel fails the check; reason 5 to 500 characters | `CancelReason`; status log; notification; audit `PACKAGE_INTAKE_REJECT`; no slot changes. See [station-api.md](../api/station-api.md) section 4.3. |
 
 ### Rules that apply to every transition
 
-1. **One writer.** Only `IOrderTransitionWriter.ApplyAsync` changes `Status`. It checks `OrderStateMachine.CanTransition(from, to)` and then runs the effects of the row above.
+1. **One writer.** `IOrderTransitionWriter` changes `Status` after checking `OrderStateMachine.CanTransition(from, to)`. `ApplyAsync` saves status, log and customer notification. Existing operations use `StageAsync` in their own transaction and supply the operation-specific notification, audit and resource effects before saving and committing together. The operation service remains responsible for role authorization and the guards/effects of its row. Initial creation writes its own first `PENDING` log.
 2. **Conditional update, not a long lock.** The write is `UPDATE delivery_orders SET Status = @to ... WHERE Id = @id AND Status = @expectedFrom`. Zero rows changed means someone else moved the order first, and the answer is `409` with no log, audit entry or notification. This is the pattern of `DeliveryOrderMutationService`, and its behaviour under concurrent requests is tested on PostgreSQL (LA-322). The functions document says `SELECT ... FOR UPDATE`; the conditional update gives the same guarantee and is what the merged code does.
 3. **All or nothing.** Status, mission, drone, slots, status log, audit entry and notification are saved in one transaction. A notification that cannot be pushed afterwards (SignalR, mobile push) never undoes the change; the stored row is the source.
 4. **What a response may contain.** Responses never contain `PickupSecureCode` or audit data.
@@ -139,6 +140,8 @@ public interface IOrderTransitionWriter
 {
     // expectedFrom is the status the caller saw. Throws ApiException 409 when the order has moved or the arrow is not allowed.
     Task ApplyAsync(Guid orderId, string expectedFrom, string to, Guid? actorId, string? remarks, CancellationToken ct = default);
+    // Existing operations: caller owns the relational transaction, notification/resource effects, SaveChanges and commit.
+    Task StageAsync(DeliveryOrder order, string expectedFrom, string to, Guid? actorId, string? remarks, DateTime now, CancellationToken ct = default);
 }
 
 public interface IOrderReviewService
