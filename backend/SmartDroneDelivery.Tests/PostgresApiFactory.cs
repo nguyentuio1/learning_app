@@ -64,6 +64,9 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?> { ["Seed:DevelopmentData"] = "false" }));
         builder.ConfigureServices(services =>
         {
+            // Manual deterministic simulator ticks must never race the hosted worker.
+            foreach (var descriptor in services.Where(d => d.ImplementationType == typeof(DroneSimulatorWorker)).ToList())
+                services.Remove(descriptor);
             foreach (var descriptor in services
                          .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
                                      || d.ServiceType == typeof(DbContextOptions)).ToList())
