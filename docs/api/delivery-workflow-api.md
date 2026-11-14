@@ -232,8 +232,11 @@ The arrows below are the only ones allowed; anything else returns `409` (BR-DW-0
 | 12 | `ARRIVED` | `FAILED` | System | 24 hour collection timeout (merged, LA-125) |
 | 13 | `FAILED` | `APPROVED` | Dispatcher | 6.2 `RESCHEDULE` |
 | 14 | `FAILED` | `CANCELLED` | Dispatcher, Station operator | 6.2 `CANCEL`, 6.3 |
+| 15 | `APPROVED` | `FAILED` | Origin station operator | Intake rejection, [station-api.md](station-api.md) section 4.3 (merged) |
 
 Every arrow appends one `delivery_status_logs` row (`changedBy` is `null` for the system) and creates one notification for the customer (BR-DW-04, BR-DW-21). Effects on mission, drone and slots are listed per row in section 3 of the class specification.
+
+LA-134 provides the internal `IOrderTransitionWriter` shared by these operations. `ApplyAsync` saves the transition, log and customer notification atomically, joining an existing transaction when supplied. Operations that already provide their own notification and resource effects use `StageAsync` inside their transaction, then save and commit everything together. Neither method is a public arbitrary-status HTTP endpoint; each controller/service must still authorize its caller and validate the operation-specific preconditions. Initial order creation remains responsible for the first `PENDING` log.
 
 ## 5. Tracking and telemetry (read side of LA-35 and LA-36, LA-330)
 
