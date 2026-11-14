@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'antd'
 import { MemoryRouter } from 'react-router-dom'
@@ -44,7 +44,15 @@ beforeEach(() => {
     ...credentials().user, role: 'System Administrator', roleCode: 'ADMIN',
   }])
 })
-afterEach(() => { cleanup(); session.clear() })
+afterEach(async () => {
+  cleanup()
+  session.clear()
+  // AntD form feedback schedules 10 ms updates without cancelling them on unmount.
+  // Drain those real timers under act before Vitest tears down this file's DOM.
+  await act(async () => {
+    await new Promise<void>(resolve => setTimeout(resolve, 10))
+  })
+})
 afterAll(() => mock.restore())
 
 function open(path: string) {
