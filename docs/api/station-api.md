@@ -296,6 +296,37 @@ When locked: `isLocked` is `true`, `attemptsRemaining` is 0, `lockoutExpiresAt` 
 ### 4.6 Pickup timeout (no endpoint)
 A background job moves an order from `ARRIVED` to `FAILED` 24 hours after it arrived, with `cancelReason = "Pickup window expired (24h timeout)"`, and alerts the dispatcher and the station operator (F-08, BR-LS-15). Clients only see the new status. The job is part of this sprint's backend work but has no API.
 
+### 4.7 POST .../operations/clear-expired-parcel (LA-336)
+
+Full route: `POST /api/landing-stations/{stationId}/operations/clear-expired-parcel`.
+The assigned `STATION_OPERATOR` of the destination station, or `ADMIN`, confirms that they have **already physically moved** an expired parcel to the station holding area. The timeout alone leaves its slot `OCCUPIED` (BR-LS-20).
+
+```json
+{ "slotId": "c7c4f082-224e-4bfa-a3a3-e967322fe9fa", "reason": "Moved expired parcel to holding rack A." }
+```
+
+`slotId` is required and cannot be the empty GUID. `reason` is trimmed and must contain 5–500 characters. Unknown body fields are rejected.
+
+Response `200 OK`:
+
+```json
+{
+  "orderId": "f91d5510-c697-446a-873d-8841c1a4ca43",
+  "trackingNumber": "DD-20261114-001",
+  "slotId": "c7c4f082-224e-4bfa-a3a3-e967322fe9fa",
+  "slotStatus": "EMPTY",
+  "clearedAt": "2026-11-14T08:30:00Z"
+}
+```
+
+- The slot must belong to this station, remain `OCCUPIED`, and still belong to the latest destination mission claim of a `FAILED` order whose destination is this station. Newer claims and current READY source intake claims prevent clearing historical parcel links.
+- The latest failure must be an `ARRIVED` → `FAILED` pickup timeout: structured `COLLECTION_TIMEOUT` / `PICKUP_TIMEOUT`, or a legacy log with the original automated timeout remark. Intake or in-flight failures are not expired parcels.
+- One transaction locks the order, station and slot, rechecks permissions and ownership, then changes the slot to `EMPTY`. Availability counts immediately reflect the free slot. `audit_logs` records `EXPIRED_PARCEL_CLEARED`, the slot, actor, reason and timestamp (BR-LS-21).
+- The existing failure status log gets a physical-removal remark. No new failure episode is created; its structured original reason is preserved. The order remains `FAILED`, its `updatedAt` changes, and actual delivery time, missions and drone state remain unchanged. This operation does not confirm return to origin or resolve the failure.
+- `400`: invalid body; `401`: missing/invalid token; `403`: wrong role, inactive account or another station's operator; `404`: unknown station or slot; `409`: slot at another station, invalid state, no valid expired parcel ownership, or repeated clearing. Database errors roll back the slot, timestamp, status-log remark and audit together.
+
+Schema addition: nullable `audit_logs.Reason` (maximum 500 characters); existing audit records remain valid.
+
 ## 5. Error examples
 
 ```json

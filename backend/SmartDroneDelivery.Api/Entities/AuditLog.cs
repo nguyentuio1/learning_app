@@ -9,6 +9,7 @@ public class AuditLog
     public string EntityId { get; set; } = string.Empty;
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
+    public string? Reason { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
     public User? User { get; set; }

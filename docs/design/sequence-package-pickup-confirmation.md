@@ -201,12 +201,16 @@ sequenceDiagram
         Service->>DB: Commit Transaction
         
         Service->>Hub: Publish Return-to-Sender alert to Dispatcher dashboard and Station Operator tablet (O10)
-        Note over Hub: Operator relocates package to station holding rack to free the landing/locker slot
+        Note over Hub: Timeout leaves the slot OCCUPIED until physical removal is confirmed (LA-336)
     end
     Service-->>Worker: Sweep completed (count of expired orders processed)
 ```
 
 ---
+
+### 4.1 Confirm physical removal of an expired parcel (LA-336)
+
+After moving the parcel to the station holding rack, the destination station operator (or admin) calls `POST /api/landing-stations/{stationId}/operations/clear-expired-parcel` with `slotId` and a 5–500 character reason. The backend locks the order, station and slot in one transaction, verifies that the latest pickup-timeout failure is still `FAILED` and that this occupied slot still belongs to that parcel, then sets the slot to `EMPTY`. It appends a physical-removal remark to the existing failure log and writes an audit entry with actor and reason. The order remains `FAILED`; this does not mark it delivered, rescheduled or returned. A repeat call returns `409`, and any persistence failure rolls back every change. See [station API section 4.7](../api/station-api.md#47-post-operationsclear-expired-parcel-la-336).
 
 ## 5. Security and business rule traceability
 
