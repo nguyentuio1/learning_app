@@ -349,6 +349,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EntityName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.EntityId).HasMaxLength(100).IsRequired();
             entity.Property(e => e.IpAddress).HasMaxLength(50);
+            entity.Property(e => e.Reason).HasMaxLength(500);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("now()");
 
             entity.HasOne(e => e.User)

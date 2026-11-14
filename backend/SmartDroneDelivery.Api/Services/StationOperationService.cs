@@ -121,6 +121,7 @@ public interface IStationOperationService
     Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request);
     Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
     Task<ValidateSecureCodeResponseDto> ValidateCodeAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
+    Task<ClearExpiredParcelResponseDto> ClearExpiredParcelAsync(Guid userId, Guid stationId, ClearExpiredParcelRequest request, CancellationToken cancellationToken = default);
 }
 
 public partial class StationOperationService : IStationOperationService
@@ -675,7 +676,7 @@ public partial class StationOperationService : IStationOperationService
 
     private async Task AuthorizeStationOperatorAsync(Guid userId, Guid stationId)
     {
-        var caller = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId)
+        var caller = await _db.Users.AsNoTracking().Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new ApiException(StatusCodes.Status401Unauthorized, "Missing, invalid or expired token.");
 
         if (caller.Status != "ACTIVE")
