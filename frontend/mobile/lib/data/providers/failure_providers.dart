@@ -39,7 +39,7 @@ class FailureOrderQueryNotifier extends Notifier<FailureOrderQuery> {
       pageSize: pageSize ?? state.pageSize,
       failureType: clearFailureType ? null : failureType ?? state.failureType,
       resolutionStatus: clearResolutionStatus
-          ? null
+          ? 'ALL'
           : resolutionStatus ?? state.resolutionStatus,
       searchKeyword: clearSearchKeyword
           ? null

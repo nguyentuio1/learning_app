@@ -71,6 +71,7 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
                     SizedBox(
                       width: 175,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: query.failureType,
                         decoration: const InputDecoration(
                           labelText: 'Failure type',
@@ -79,7 +80,10 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
                         items: [
                           const DropdownMenuItem(child: Text('All types')),
                           for (final type in _failureTypes)
-                            DropdownMenuItem(value: type, child: Text(type)),
+                            DropdownMenuItem(
+                              value: type.$1,
+                              child: Text(type.$2),
+                            ),
                         ],
                         onChanged: (value) => ref
                             .read(failureOrderQueryProvider.notifier)
@@ -92,13 +96,17 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
                     SizedBox(
                       width: 180,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: query.resolutionStatus,
                         decoration: const InputDecoration(
                           labelText: 'Resolution',
                           isDense: true,
                         ),
                         items: [
-                          const DropdownMenuItem(child: Text('All statuses')),
+                          const DropdownMenuItem(
+                            value: 'ALL',
+                            child: Text('All statuses'),
+                          ),
                           for (final status in _resolutionStatuses)
                             DropdownMenuItem(
                               value: status,
@@ -107,10 +115,7 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
                         ],
                         onChanged: (value) => ref
                             .read(failureOrderQueryProvider.notifier)
-                            .update(
-                              resolutionStatus: value,
-                              clearResolutionStatus: value == null,
-                            ),
+                            .update(resolutionStatus: value),
                       ),
                     ),
                     OutlinedButton.icon(
@@ -119,10 +124,18 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
                       label: Text(
                         query.fromDate == null
                             ? 'Date range'
-                            : '${_shortDate(query.fromDate!)} – '
-                                  '${_shortDate(query.toDate!)}',
+                            : '${_shortDate(query.fromDate!)} – ${_shortDate(query.toDate!)}',
                       ),
                     ),
+                    if (query.fromDate != null || query.toDate != null)
+                      TextButton.icon(
+                        key: const Key('clear-date-range'),
+                        onPressed: () => ref
+                            .read(failureOrderQueryProvider.notifier)
+                            .update(clearFromDate: true, clearToDate: true),
+                        icon: const Icon(Icons.clear),
+                        label: const Text('Clear dates'),
+                      ),
                   ],
                 ),
               ],
@@ -137,7 +150,7 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
                 onRetry: () => ref.invalidate(failedOrdersProvider),
               ),
               data: (page) => page.items.isEmpty
-                  ? const Center(child: Text('No failed deliveries found.'))
+                  ? _EmptyState(onReset: _resetFilters)
                   : RefreshIndicator(
                       onRefresh: () async =>
                           ref.invalidate(failedOrdersProvider),
@@ -183,6 +196,19 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
         );
   }
 
+  void _resetFilters() {
+    _searchController.clear();
+    ref
+        .read(failureOrderQueryProvider.notifier)
+        .update(
+          clearFailureType: true,
+          resolutionStatus: 'ALL',
+          clearSearchKeyword: true,
+          clearFromDate: true,
+          clearToDate: true,
+        );
+  }
+
   Future<void> _openMarkFailedSheet() async {
     final reported = await showModalBottomSheet<bool>(
       context: context,
@@ -202,10 +228,10 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
   Future<void> _selectDateRange(FailureOrderQuery query) async {
     final initialStart = query.fromDate == null
         ? null
-        : DateTime.tryParse(query.fromDate!);
+        : DateTime.tryParse(query.fromDate!)?.toLocal();
     final initialEnd = query.toDate == null
         ? null
-        : DateTime.tryParse(query.toDate!);
+        : DateTime.tryParse(query.toDate!)?.toLocal();
     final range = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -222,7 +248,7 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
             range.start.year,
             range.start.month,
             range.start.day,
-          ).toIso8601String(),
+          ).toUtc().toIso8601String(),
           toDate: DateTime(
             range.end.year,
             range.end.month,
@@ -230,7 +256,9 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
             23,
             59,
             59,
-          ).toIso8601String(),
+            999,
+            999,
+          ).toUtc().toIso8601String(),
         );
   }
 
@@ -238,8 +266,8 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
     final date = DateTime.tryParse(value);
     return date == null
         ? value
-        : '${date.year}-${date.month.toString().padLeft(2, '0')}-'
-              '${date.day.toString().padLeft(2, '0')}';
+        : '${date.toLocal().year}-${date.toLocal().month.toString().padLeft(2, '0')}-'
+              '${date.toLocal().day.toString().padLeft(2, '0')}';
   }
 }
 
@@ -271,11 +299,16 @@ class _FailedOrderCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _StatusBadge(label: 'FAILED', color: theme.colorScheme.error),
+                  _StatusBadge(
+                    key: Key('order-status-${order.orderId}'),
+                    label: order.status,
+                    color: _orderStatusColor(theme, order.status),
+                  ),
                   const SizedBox(width: 6),
                   _StatusBadge(
+                    key: Key('failure-type-${order.orderId}'),
                     label: order.failureType,
-                    color: Colors.deepOrange.shade700,
+                    color: _failureTypeColor,
                   ),
                 ],
               ),
@@ -289,6 +322,7 @@ class _FailedOrderCard extends StatelessWidget {
               Text('Destination: ${_stationLabel(order.destinationStation)}'),
               const SizedBox(height: 8),
               _StatusBadge(
+                key: Key('resolution-status-${order.orderId}'),
                 label: order.resolutionStatus,
                 color: _resolutionColor(order.resolutionStatus),
               ),
@@ -341,7 +375,7 @@ class _Pagination extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.color});
+  const _StatusBadge({required this.label, required this.color, super.key});
 
   final String label;
   final Color color;
@@ -356,6 +390,34 @@ class _StatusBadge extends StatelessWidget {
     child: Text(
       label,
       style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
+    ),
+  );
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.onReset});
+
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'No failed deliveries found.',
+            key: Key('failed-orders-empty'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            key: const Key('reset-failure-filters'),
+            onPressed: onReset,
+            child: const Text('Reset Filters'),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -387,9 +449,11 @@ class _LoadError extends StatelessWidget {
 }
 
 const _failureTypes = [
-  'MISSION_ABORTED',
-  'EMERGENCY_LANDING',
-  'HARDWARE_FAULT',
+  ('MISSION_ABORTED', 'Mission Aborted'),
+  ('EMERGENCY_LANDING', 'Emergency Landing'),
+  ('HARDWARE_FAULT', 'Hardware Fault'),
+  ('COLLECTION_TIMEOUT', 'Collection Timeout'),
+  ('UNKNOWN', 'Unclassified Failure'),
 ];
 const _resolutionStatuses = ['UNRESOLVED', 'RETURN_REQUESTED', 'RESOLVED'];
 
@@ -402,10 +466,22 @@ String _stationLabel(OrderStationDto? station) => station == null
 
 Color _resolutionColor(String status) => switch (status) {
   'UNRESOLVED' => Colors.orange.shade800,
-  'RETURN_REQUESTED' => Colors.blue.shade700,
+  'RETURN_REQUESTED' => Colors.orange.shade800,
   'RESOLVED' => Colors.green.shade700,
   _ => Colors.grey,
 };
+
+Color _orderStatusColor(ThemeData theme, String status) => switch (status) {
+  'FAILED' || 'CANCELLED' => theme.colorScheme.error,
+  'APPROVED' ||
+  'READY_FOR_TAKEOFF' ||
+  'IN_TRANSIT' => theme.colorScheme.primary,
+  'DELIVERED' => Colors.green.shade700,
+  'ARRIVED' => Colors.orange.shade800,
+  _ => Colors.grey,
+};
+
+Color get _failureTypeColor => Colors.deepOrange.shade700;
 
 String _formatDate(DateTime value) =>
     value.toLocal().toString().split('.').first;

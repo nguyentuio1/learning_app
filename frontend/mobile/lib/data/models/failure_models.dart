@@ -6,7 +6,7 @@ class FailureOrderQuery {
     this.page = 1,
     this.pageSize = 20,
     this.failureType,
-    this.resolutionStatus,
+    this.resolutionStatus = 'ALL',
     this.searchKeyword,
     this.fromDate,
     this.toDate,
