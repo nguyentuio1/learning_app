@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -444,6 +445,34 @@ public class SchedulingTests(AuthApiFactory factory) : IClassFixture<AuthApiFact
         var error = Assert.Throws<OptionsValidationException>(() => options.Value);
         Assert.Equal(typeof(DeliveryFlightOptions), error.OptionsType);
         Assert.Contains("DeliveryFlight:CruiseSpeedMps must be finite and greater than zero.", error.Failures);
+    }
+
+    [Theory]
+    [InlineData("0.000000001", "DeliveryFlight:CruiseSpeedMps must be at least 0.001.")]
+    [InlineData("0.000999", "DeliveryFlight:CruiseSpeedMps must be at least 0.001.")]
+    [InlineData("1000", "DeliveryFlight:CruiseSpeedMps must be at most 999.99.")]
+    public void Flight_configuration_refuses_out_of_range_cruise_speed_on_start(string speed, string failure)
+    {
+        using var baseFactory = new AuthApiFactory();
+        using var configured = baseFactory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["DeliveryFlight:CruiseSpeedMps"] = speed })));
+
+        var error = Assert.Throws<OptionsValidationException>(() => configured.CreateClient());
+        Assert.Contains(failure, error.Failures);
+    }
+
+    [Theory]
+    [InlineData("0.001", 0.001)]
+    [InlineData("12", 12)]
+    [InlineData("999.99", 999.99)]
+    public void Flight_configuration_accepts_supported_cruise_speed_on_start(string setting, double expectedSpeed)
+    {
+        using var baseFactory = new AuthApiFactory();
+        using var configured = baseFactory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["DeliveryFlight:CruiseSpeedMps"] = setting })));
+
+        using var client = configured.CreateClient();
+        Assert.Equal(expectedSpeed, configured.Services.GetRequiredService<IOptions<DeliveryFlightOptions>>().Value.CruiseSpeedMps);
     }
 
     [Fact]
