@@ -40,7 +40,12 @@ builder.Services.AddScoped<DeliveryRouteEstimate>();
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
     .Validate(o => double.IsFinite(o.CruiseSpeedMps) && o.CruiseSpeedMps > 0,
-        "DeliveryFlight:CruiseSpeedMps must be finite and greater than zero.").ValidateOnStart();
+        "DeliveryFlight:CruiseSpeedMps must be finite and greater than zero.")
+    .Validate(o => o.CruiseSpeedMps >= 0.001,
+        "DeliveryFlight:CruiseSpeedMps must be at least 0.001.")
+    .Validate(o => o.CruiseSpeedMps <= 999.99,
+        "DeliveryFlight:CruiseSpeedMps must be at most 999.99.")
+    .ValidateOnStart();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
 
 builder.Services
