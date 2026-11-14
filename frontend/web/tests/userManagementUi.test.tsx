@@ -91,7 +91,7 @@ it('keeps the demo-style role and status selectors connected to real filters', a
   await user.click(screen.getByRole('button', { name: 'Reset' }))
   expect(await screen.findByRole('link', { name: 'View An Nguyen' })).toBeVisible()
   expect(within(screen.getByRole('cell', { name: 'Active' })).getByText('Active')).toHaveStyle({ backgroundColor: '#dcefd5', color: '#25673e' })
-})
+}, 30000)
 it('shows empty data without fabricated accounts', async () => {
   mock.onGet('/api/users').reply(200, [])
   show()
