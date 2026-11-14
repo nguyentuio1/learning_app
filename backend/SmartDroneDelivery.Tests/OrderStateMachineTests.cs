@@ -122,6 +122,69 @@ public class OrderStateMachineTests
         Assert.Equal(1, await db.Notifications.CountAsync());
     }
 
+    [Fact]
+    public async Task ApplyAsync_nonexistent_order_throws_404_and_leaves_no_records()
+    {
+        await using var db = NewDb();
+        var writer = new OrderTransitionWriter(db);
+        var nonexistentId = Guid.NewGuid();
+
+        var error = await Assert.ThrowsAsync<ApiException>(() =>
+            writer.ApplyAsync(nonexistentId, "PENDING", "APPROVED", null, null));
+
+        Assert.Equal(404, error.StatusCode);
+        Assert.Equal("Delivery order not found.", error.Message);
+        Assert.Empty(await db.DeliveryStatusLogs.ToListAsync());
+        Assert.Empty(await db.Notifications.ToListAsync());
+    }
+
+    [Fact]
+    public async Task StageAsync_untracked_entity_throws_InvalidOperationException()
+    {
+        await using var db = NewDb();
+        var untrackedOrder = new DeliveryOrder { Id = Guid.NewGuid(), Status = "PENDING" };
+        var writer = new OrderTransitionWriter(db);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            writer.StageAsync(untrackedOrder, "PENDING", "APPROVED", null, null, DateTime.UtcNow));
+
+        Assert.Contains("requires a tracked, persisted order", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("SCHEDULED")]
+    [InlineData("PICKED_UP")]
+    [InlineData("EN_ROUTE")]
+    [InlineData("COMPLETED")]
+    [InlineData("RETURNED")]
+    [InlineData("UNKNOWN")]
+    public void CanTransition_strictly_rejects_noncanonical_status_names(string nonCanonicalStatus)
+    {
+        string[] canonicalStates = ["PENDING", "APPROVED", "READY_FOR_TAKEOFF", "IN_TRANSIT", "ARRIVED", "DELIVERED", "CANCELLED", "FAILED"];
+        foreach (var canonical in canonicalStates)
+        {
+            Assert.False(OrderStateMachine.CanTransition(nonCanonicalStatus, canonical));
+            Assert.False(OrderStateMachine.CanTransition(canonical, nonCanonicalStatus));
+        }
+    }
+
+    [Fact]
+    public async Task EnterOperationAsync_allows_clean_sequential_scopes_without_deadlock()
+    {
+        await using var db = NewDb();
+        var writer = new OrderTransitionWriter(db);
+
+        using (var scope1 = await writer.EnterOperationAsync().WaitAsync(TimeSpan.FromSeconds(5)))
+        {
+            Assert.NotNull(scope1);
+        }
+
+        using (var scope2 = await writer.EnterOperationAsync().WaitAsync(TimeSpan.FromSeconds(5)))
+        {
+            Assert.NotNull(scope2);
+        }
+    }
+
     private static AppDbContext NewDb() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 }
