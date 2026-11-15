@@ -20,6 +20,7 @@ import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/expired_parcels/expired_parcel_screen.dart';
 import '../presentation/operator/failures/failed_order_detail_page.dart';
 import '../presentation/operator/failures/failed_orders_page.dart';
 import '../presentation/operator/pickup/package_pickup_page.dart';
@@ -95,6 +96,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: RoutePaths.operatorPickup,
           builder: (_, _) => const PackagePickupPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.operatorExpiredParcels,
+          builder: (_, state) => ExpiredParcelScreen(
+            stationId: state.pathParameters['stationId']!,
+          ),
         ),
         GoRoute(
           path: RoutePaths.operatorFailedOrders,
