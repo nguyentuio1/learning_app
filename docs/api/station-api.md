@@ -227,11 +227,13 @@ Request (`PackageIntakeRequest`)
 |---|---|
 | `trackingNumber` | Required. The order's origin station must be `{stationId}`. |
 | `slotId` | Required. A slot of `{stationId}` with status `EMPTY`. |
-| `measuredWeightGram` | Required, greater than 0 and at most 3000. |
+| `measuredWeightGram` | Required, greater than 0, at most 3000 and no greater than the assigned drone's payload capacity (BR-LS-10). Equality is accepted. |
 | `measuredLengthCm`, `measuredWidthCm`, `measuredHeightCm` | Required, greater than 0; at most 30, 20 and 15. |
 | `visualInspectionPassed` | Required, must be `true`. If the seal is damaged, use 4.3. |
 
-In one transaction: order `APPROVED` to `READY_FOR_TAKEOFF`, slot `EMPTY` to `OCCUPIED`, status log, audit entry, notification "Ready for takeoff" to the customer.
+LA-136 clarification: the order must already have both schedule times and a valid `PLANNED` mission, with its drone `ASSIGNED` at origin and its destination slot `RESERVED`. Without these resources, return `409` without changing the order or a slot.
+
+In one transaction: link the selected origin slot to the planned mission, order `APPROVED` to `READY_FOR_TAKEOFF`, slot `EMPTY` to `OCCUPIED`, status log, audit entry, notification "Ready for takeoff" to the customer.
 
 Response `200 OK`
 ```json
@@ -244,10 +246,10 @@ Response `200 OK`
   "confirmedAt": "2026-11-06T03:10:00Z"
 }
 ```
-Errors: `400` a measure is over the limit or `visualInspectionPassed` is not `true`; `403`; `404` order, slot or station not found, or the order does not start at this station; `409` the order is not `APPROVED`, or the slot is not `EMPTY` (including a second request for the same order).
+Errors: `400` a measure is over the limit (including the assigned drone's payload capacity) or `visualInspectionPassed` is not `true`; `403`; `404` order, slot or station not found, or the order does not start at this station; `409` the order is not `APPROVED`, or the slot is not `EMPTY` (including a second request for the same order).
 
 ### 4.3 POST .../operations/intake-reject
-The parcel failed the check (too heavy, too big, damaged). Request: `{ "trackingNumber": "DD-202611-0001", "reason": "Weighs 3400 g, over the 3000 g limit." }` (`reason` 5 to 500 characters). Order `APPROVED` to `FAILED` with `cancelReason = reason`, status log, audit entry, notification. No slot changes. Response `200 OK`: `{ "orderId": "...", "trackingNumber": "...", "status": "FAILED" }`. Errors: `400`, `403`, `404`, `409` the order is not `APPROVED`.
+The parcel failed the check (too heavy, too big, damaged). Request: `{ "trackingNumber": "DD-202611-0001", "reason": "Weighs 3400 g, over the 3000 g limit." }` (`reason` 5 to 500 characters). Order `APPROVED` to `FAILED` with `cancelReason = reason`, status log, audit entry, notification. In the same transaction, abort an existing unflown `PLANNED` assignment, release its assigned drone and change its `RESERVED` destination slot to `EMPTY`. Rejection does not create an occupied origin slot or clear an actual occupied parcel; `409` is returned if releasing the current assignment would require physical parcel removal. Response `200 OK`: `{ "orderId": "...", "trackingNumber": "...", "status": "FAILED" }`. Errors: `400`, `403`, `404`, `409` the order is not `APPROVED`.
 
 ### 4.4 POST .../operations/pickup (UC-08, FR-26, FR-27)
 The recipient collects the parcel at the **destination** station. The operator types the tracking number and the 6-digit code the recipient shows.
@@ -294,6 +296,46 @@ When locked: `isLocked` is `true`, `attemptsRemaining` is 0, `lockoutExpiresAt` 
 ### 4.6 Pickup timeout (no endpoint)
 A background job moves an order from `ARRIVED` to `FAILED` 24 hours after it arrived, with `cancelReason = "Pickup window expired (24h timeout)"`, and alerts the dispatcher and the station operator (F-08, BR-LS-15). Clients only see the new status. The job is part of this sprint's backend work but has no API.
 
+### 4.7 Expired parcels (LA-336)
+
+#### GET .../operations/expired-parcels
+
+Full route: `GET /api/landing-stations/{stationId}/operations/expired-parcels`.
+The assigned `STATION_OPERATOR` of the station or an `ADMIN` can list occupied destination slots whose latest claimed order failed because of a pickup timeout. Other failed orders, stale mission-slot links and slots reused by a current ready-for-takeoff mission are excluded.
+
+Response `200 OK` is an array of `{ slotId, slotNumber, trackingNumber, orderStatus, slotStatus, cancelReason, arrivedAt, elapsedDuration }`. `elapsedDuration` is the time elapsed since the latest `ARRIVED` status log. Empty stations return an empty array. Errors: `401`, `403` for an operator not assigned to this station, and `404` for an unknown station.
+
+#### POST .../operations/clear-expired-parcel
+
+Full route: `POST /api/landing-stations/{stationId}/operations/clear-expired-parcel`.
+The assigned `STATION_OPERATOR` of the destination station, or `ADMIN`, confirms that they have **already physically moved** an expired parcel to the station holding area. The timeout alone leaves its slot `OCCUPIED` (BR-LS-20).
+
+```json
+{ "slotId": "c7c4f082-224e-4bfa-a3a3-e967322fe9fa", "reason": "Moved expired parcel to holding rack A." }
+```
+
+`slotId` is required and cannot be the empty GUID. `reason` is trimmed and must contain 5–500 characters. Unknown body fields are rejected.
+
+Response `200 OK`:
+
+```json
+{
+  "orderId": "f91d5510-c697-446a-873d-8841c1a4ca43",
+  "trackingNumber": "DD-20261114-001",
+  "slotId": "c7c4f082-224e-4bfa-a3a3-e967322fe9fa",
+  "slotStatus": "EMPTY",
+  "clearedAt": "2026-11-14T08:30:00Z"
+}
+```
+
+- The slot must belong to this station, remain `OCCUPIED`, and still belong to the latest destination mission claim of a `FAILED` order whose destination is this station. Newer claims and current READY source intake claims prevent clearing historical parcel links.
+- The latest failure must be an `ARRIVED` → `FAILED` pickup timeout: structured `COLLECTION_TIMEOUT` / `PICKUP_TIMEOUT`, or a legacy log with the original automated timeout remark. Intake or in-flight failures are not expired parcels.
+- One transaction locks the order, station and slot, rechecks permissions and ownership, then changes the slot to `EMPTY`. Availability counts immediately reflect the free slot. `audit_logs` records `EXPIRED_PARCEL_CLEARED`, the slot, actor, reason and timestamp (BR-LS-21).
+- The existing failure status log gets a physical-removal remark. No new failure episode is created; its structured original reason is preserved. The order remains `FAILED`, its `updatedAt` changes, and actual delivery time, missions and drone state remain unchanged. This operation does not confirm return to origin or resolve the failure.
+- `400`: invalid body; `401`: missing/invalid token; `403`: wrong role, inactive account or another station's operator; `404`: unknown station or slot; `409`: slot at another station, invalid state, no valid expired parcel ownership, or repeated clearing. Database errors roll back the slot, timestamp, status-log remark and audit together.
+
+Schema addition: nullable `audit_logs.Reason` (maximum 500 characters); existing audit records remain valid.
+
 ## 5. Error examples
 
 ```json
@@ -328,6 +370,6 @@ These need a team decision. The contract above states the proposed answer.
 5. **Reserved slot to ERROR.** Sequence 5 lets an operator mark a `RESERVED` slot as `ERROR` and alert the dispatcher. BR-LS-06 and the class specification refuse it with `409`. Proposed: follow BR-LS-06 and edit the sequence diagram.
 6. **Who can confirm a pickup.** The class specification also lists `CUSTOMER` for `pickup` and `validate-code`. BR-LS-22 says the code is "validated blindly by the system" at the station. Proposed: operator and admin only; the customer shows the code at the station.
 7. **Restoring a station.** BR-LS-04 asks for sensor self-tests before `OPERATIONAL`, which is outside the software (D-05). Proposed: no check, only a `reason`.
-8. **Intake without a drone.** Intake works on an `APPROVED` order. Drone assignment (Sprint 5) is not required first, so the response has no `assignedDroneId`. If the team wants assignment before intake, `409` is added for an order with no mission.
+8. **Intake assignment prerequisite (resolved by LA-136).** Intake requires a scheduled `APPROVED` order and valid `PLANNED` assignment; otherwise `409` with no effects. The selected origin slot is stored as the mission `startSlotId`. This ensures the simulator can take off from a confirmed parcel slot; the response shape remains unchanged.
 9. **Where the reason is stored.** `audit_logs` has `userId`, `action`, `entityName`, `entityId`, `ipAddress`, `userAgent`, `timestamp` and nothing for a reason. Station status, slot status and intake rejection all take a `reason`. Proposed: the order rejection reason goes to `cancelReason` and the status log `remarks`; for station and slot changes add a nullable `details` text column to `audit_logs` (one small migration). Without it, the reason is validated but not kept. Needs a decision before LA-26 starts.
 10. **Realtime.** Slot and station changes are also pushed over SignalR (`station-slots-{stationId}`, `dispatcher-alerts`). The hub is not part of this REST contract; web screens refresh with the REST endpoints until it exists.

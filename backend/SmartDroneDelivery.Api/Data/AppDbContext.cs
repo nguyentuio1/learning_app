@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<DeliveryStatusLog> DeliveryStatusLogs => Set<DeliveryStatusLog>();
     public DbSet<Drone> Drones => Set<Drone>();
     public DbSet<FlightMission> FlightMissions => Set<FlightMission>();
+    public DbSet<SimulatorDiversion> SimulatorDiversions => Set<SimulatorDiversion>();
     public DbSet<FlightTelemetryLog> FlightTelemetryLogs => Set<FlightTelemetryLog>();
     public DbSet<AiEtaPrediction> AiEtaPredictions => Set<AiEtaPrediction>();
     public DbSet<AiChatSession> AiChatSessions => Set<AiChatSession>();
@@ -26,10 +27,48 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<DeliveryFailureEpisode> DeliveryFailureEpisodes => Set<DeliveryFailureEpisode>();
+    public DbSet<FailureHandlingEvent> FailureHandlingEvents => Set<FailureHandlingEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<SimulatorDiversion>(entity =>
+        {
+            entity.ToTable("simulator_diversions");
+            entity.HasKey(e => e.MissionId);
+            entity.Property(e => e.MissionId).ValueGeneratedNever();
+            entity.Property(e => e.AbortLatitude).HasPrecision(12, 9);
+            entity.Property(e => e.AbortLongitude).HasPrecision(12, 9);
+            entity.Property(e => e.LandingLatitude).HasPrecision(12, 9);
+            entity.Property(e => e.LandingLongitude).HasPrecision(12, 9);
+            entity.HasOne(e => e.Mission).WithOne().HasForeignKey<SimulatorDiversion>(e => e.MissionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.LandingStation).WithMany().HasForeignKey(e => e.LandingStationId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<DeliveryFailureEpisode>(entity =>
+        {
+            entity.ToTable("delivery_failure_episodes");
+            entity.HasKey(e => e.FailureLogId);
+            entity.Property(e => e.FailureLogId).ValueGeneratedNever();
+            entity.Property(e => e.FailureType).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.Source).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.OriginalReason).HasMaxLength(500);
+            entity.HasOne(e => e.FailureLog).WithOne(l => l.FailureEpisode)
+                .HasForeignKey<DeliveryFailureEpisode>(e => e.FailureLogId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<FailureHandlingEvent>(entity =>
+        {
+            entity.ToTable("failure_handling_events");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Action).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.HasIndex(e => new { e.FailureLogId, e.CreatedAt, e.Id });
+            entity.HasOne(e => e.FailureLog).WithMany(l => l.HandlingEvents)
+                .HasForeignKey(e => e.FailureLogId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Actor).WithMany().HasForeignKey(e => e.PerformedBy).OnDelete(DeleteBehavior.SetNull);
+        });
 
         // 1. Role
         modelBuilder.Entity<Role>(entity =>
@@ -224,10 +263,15 @@ public class AppDbContext : DbContext
             entity.ToTable("flight_missions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FlightStatus).HasMaxLength(30).HasDefaultValue("PLANNED");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(e => e.OrderId).IsUnique()
+                .HasFilter("\"FlightStatus\" IN ('PLANNED', 'IN_AIR')")
+                .HasDatabaseName("IX_flight_missions_OrderId_Active");
+            entity.HasIndex(e => new { e.OrderId, e.CreatedAt });
 
             entity.HasOne(e => e.Order)
-                .WithOne(o => o.FlightMission)
-                .HasForeignKey<FlightMission>(e => e.OrderId)
+                .WithMany(o => o.FlightMissions)
+                .HasForeignKey(e => e.OrderId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Drone)
@@ -319,6 +363,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EntityName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.EntityId).HasMaxLength(100).IsRequired();
             entity.Property(e => e.IpAddress).HasMaxLength(50);
+            entity.Property(e => e.Reason).HasMaxLength(500);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("now()");
 
             entity.HasOne(e => e.User)
