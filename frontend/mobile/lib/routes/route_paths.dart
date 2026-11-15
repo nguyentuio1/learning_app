@@ -15,6 +15,7 @@ abstract final class RoutePaths {
   static const customerOrdersReview = '/customer/orders/create/review';
   static const customerOrderSubmitted = '/customer/orders/create/submitted';
   static const customerOrdersEdit = '/customer/orders/edit';
+  static const customerNotifications = '/customer/notifications';
   static const operatorHome = '/operator';
   static const operatorPickup = '/operator/pickup';
   static const profile = '/profile';

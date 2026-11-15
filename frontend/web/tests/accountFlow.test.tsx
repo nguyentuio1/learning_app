@@ -40,6 +40,7 @@ beforeEach(() => {
   mock.onPost('/api/auth/login').reply(200, credentials())
   mock.onPost('/api/auth/logout').reply(204)
   mock.onGet('/api/users/me').reply(200, credentials().user)
+  mock.onGet('/api/notifications/unread-count').reply(200, { unreadCount: 0 })
   mock.onGet('/api/users').reply(200, [{
     ...credentials().user, role: 'System Administrator', roleCode: 'ADMIN',
   }])
@@ -115,14 +116,14 @@ it('opens order creation and loads the contract lookups', async () => {
   await signIn('CUSTOMER')
   open('/orders/new')
   expect(await screen.findByRole('heading', { name: 'Create delivery order' })).toBeVisible()
-  await waitFor(() => expect(mock.history.get).toHaveLength(3))
+  await waitFor(() => expect(mock.history.get.filter(request => request.url !== '/api/notifications/unread-count')).toHaveLength(3))
 })
 it('opens the paginated order list', async () => {
   mock.onGet('/api/delivery-orders').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
   await signIn('CUSTOMER')
   open('/orders')
   expect(await screen.findByRole('heading', { name: 'My orders' })).toBeVisible()
-  await waitFor(() => expect(mock.history.get).toHaveLength(1))
+  await waitFor(() => expect(mock.history.get.filter(request => request.url !== '/api/notifications/unread-count')).toHaveLength(1))
 })
 it('returns to login when renewal fails while loading a protected page', async () => {
   await signIn()

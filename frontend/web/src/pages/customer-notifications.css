@@ -1,0 +1,65 @@
+.notification-page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.notification-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.notification-filter-bar {
+  margin: 16px 0 24px 0;
+}
+
+.notification-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.notification-card {
+  transition: all 0.2s ease-in-out;
+  border-radius: 8px;
+}
+
+.notification-card.unread {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.notification-card.read {
+  background-color: #ffffff;
+}
+
+.notification-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notification-card-title {
+  font-size: 15px;
+}
+
+.notification-timestamp {
+  font-size: 13px;
+}
+
+.notification-message {
+  margin-bottom: 12px;
+  color: #333333;
+  line-height: 1.5;
+}
+
+.notification-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notification-pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
