@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/error/api_exception.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/station_operation_models.dart';
@@ -83,14 +82,22 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
       deliveryConfirmationControllerProvider(widget.orderId),
     );
     final detailAsync = ref.watch(orderDetailProvider(widget.orderId));
+    final detailError = detailAsync.hasError ? detailAsync.error : null;
 
-    if (state.accessLost) {
+    if (state.accessLost ||
+        (detailError != null &&
+            DeliveryConfirmationController.isAccessDeniedError(detailError))) {
+      final message = state.accessLost && state.errorMessage != null
+          ? state.errorMessage!
+          : (detailError != null
+                ? DeliveryConfirmationController.accessDeniedMessage(
+                    detailError,
+                  )
+                : 'Order not found or unavailable to your account.');
       return Scaffold(
         appBar: AppBar(title: const Text('Confirm delivery')),
         body: _AccessLostView(
-          message:
-              state.errorMessage ??
-              'Order not found or unavailable to your account.',
+          message: message,
           onBackToOrders: _goToOrders,
         ),
       );
@@ -102,7 +109,8 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
         body: _DeliveryCompletedView(
           confirmation: state.completedConfirmation!,
           onBackToOrders: _goToOrders,
-          onViewOrderHistory: () => _viewOrderHistory(state.completedConfirmation),
+          onViewOrderHistory: () =>
+              _viewOrderHistory(state.completedConfirmation),
         ),
       );
     }
@@ -110,11 +118,14 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Confirm delivery')),
       body: detailAsync.when(
+        skipError: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) {
-          if (_isAccessError(error)) {
+          if (DeliveryConfirmationController.isAccessDeniedError(error)) {
             return _AccessLostView(
-              message: orderDetailErrorMessage(error),
+              message: DeliveryConfirmationController.accessDeniedMessage(
+                error,
+              ),
               onBackToOrders: _goToOrders,
             );
           }
@@ -130,8 +141,13 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
                   ),
                   const SizedBox(height: 12),
                   FilledButton(
-                    onPressed: () =>
-                        ref.invalidate(orderDetailProvider(widget.orderId)),
+                    onPressed: () => ref
+                        .read(
+                          deliveryConfirmationControllerProvider(
+                            widget.orderId,
+                          ).notifier,
+                        )
+                        .refreshOrderEligibility(),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -163,13 +179,18 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
             return _IneligibleOrderView(
               detail: detail,
               errorMessage: state.errorMessage,
-              onRefresh: () =>
-                  ref.invalidate(orderDetailProvider(widget.orderId)),
+              onRefresh: () => ref
+                  .read(
+                    deliveryConfirmationControllerProvider(
+                      widget.orderId,
+                    ).notifier,
+                  )
+                  .refreshOrderEligibility(),
               onBack: () => _viewOrderHistory(null),
             );
           }
 
-          return _buildConfirmForm(context, detail, state);
+          return _buildConfirmForm(context, detail, state, detailAsync);
         },
       ),
     );
@@ -179,14 +200,22 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
     BuildContext context,
     DeliveryOrderDetailResponseDto detail,
     DeliveryConfirmationState state,
+    AsyncValue<DeliveryOrderDetailResponseDto> detailAsync,
   ) {
     final theme = Theme.of(context);
     final code = _codeController.text.trim();
-    final inputDisabled = state.isLocked || state.isSubmitting;
-    final canSubmit =
-        !inputDisabled && RegExp(r'^\d{6}$').hasMatch(code);
+    final isRefreshPendingOrFailed =
+        state.requiresOrderRefresh ||
+        detailAsync.isLoading ||
+        detailAsync.isRefreshing ||
+        detailAsync.hasError;
+    final inputDisabled =
+        state.isLocked || state.isSubmitting || isRefreshPendingOrFailed;
+    final canSubmit = !inputDisabled && RegExp(r'^\d{6}$').hasMatch(code);
     final trackingLabel =
-        detail.trackingNumber ?? widget.initialOrder?.trackingNumber ?? detail.id;
+        detail.trackingNumber ??
+        widget.initialOrder?.trackingNumber ??
+        detail.id;
     final stationLabel = _destinationLabel(detail);
 
     return SingleChildScrollView(
@@ -275,11 +304,19 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
           ),
           const SizedBox(height: 12),
 
-          if (state.errorMessage != null) ...[
+          if (state.errorMessage != null || isRefreshPendingOrFailed) ...[
             _ErrorAndLockoutBanner(
               state: state,
-              onRefreshOrder: state.requiresOrderRefresh
-                  ? () => ref.invalidate(orderDetailProvider(widget.orderId))
+              isRefreshPending:
+                  detailAsync.isLoading || detailAsync.isRefreshing,
+              onRefreshOrder: isRefreshPendingOrFailed
+                  ? () => ref
+                        .read(
+                          deliveryConfirmationControllerProvider(
+                            widget.orderId,
+                          ).notifier,
+                        )
+                        .refreshOrderEligibility()
                   : null,
             ),
             const SizedBox(height: 16),
@@ -345,16 +382,6 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
     ].whereType<String>().where((value) => value.isNotEmpty).join(' · ');
   }
 
-  bool _isAccessError(Object error) {
-    if (error is ApiException) {
-      return error.statusCode == 401 ||
-          error.statusCode == 403 ||
-          error.statusCode == 404 ||
-          error.code == 'MSG-P-CO-25';
-    }
-    return false;
-  }
-
   void _goToOrders() {
     final router = GoRouter.maybeOf(context);
     if (router != null) {
@@ -377,16 +404,21 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
 class _ErrorAndLockoutBanner extends StatelessWidget {
   const _ErrorAndLockoutBanner({
     required this.state,
+    this.isRefreshPending = false,
     this.onRefreshOrder,
   });
 
   final DeliveryConfirmationState state;
+  final bool isRefreshPending;
   final VoidCallback? onRefreshOrder;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tries = state.remainingAttempts;
+    final message =
+        state.errorMessage ??
+        'Refreshing order status before confirmation can continue.';
 
     return Container(
       key: const Key('confirm-delivery-error-banner'),
@@ -409,7 +441,7 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  state.errorMessage!,
+                  message,
                   style: TextStyle(
                     color: theme.colorScheme.onErrorContainer,
                     fontWeight: FontWeight.w600,
@@ -449,7 +481,7 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
             const SizedBox(height: 8),
             OutlinedButton.icon(
               key: const Key('refresh-order-status-button'),
-              onPressed: onRefreshOrder,
+              onPressed: isRefreshPending ? null : onRefreshOrder,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Refresh order status'),
             ),

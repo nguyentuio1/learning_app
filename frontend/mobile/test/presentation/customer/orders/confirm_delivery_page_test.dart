@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,7 +74,10 @@ class _FakeDeliveryOrderService extends DeliveryOrderApiService {
   ConfirmPickupResponse confirmResponse;
   ApiException? detailError;
   ApiException? confirmError;
+  Completer<DeliveryOrderDetailResponseDto>? nextDetailCompleter;
+  bool updateDetailToDeliveredOnConfirm = true;
   int detailLoadCount = 0;
+  int confirmCallCount = 0;
   String? lastConfirmedOrderId;
   ConfirmDeliveryRequest? lastConfirmRequest;
 
@@ -92,6 +97,11 @@ class _FakeDeliveryOrderService extends DeliveryOrderApiService {
   @override
   Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async {
     detailLoadCount++;
+    if (nextDetailCompleter != null) {
+      final completer = nextDetailCompleter!;
+      nextDetailCompleter = null;
+      return completer.future;
+    }
     if (detailError != null) {
       throw detailError!;
     }
@@ -103,12 +113,15 @@ class _FakeDeliveryOrderService extends DeliveryOrderApiService {
     String id,
     ConfirmDeliveryRequest request,
   ) async {
+    confirmCallCount++;
     lastConfirmedOrderId = id;
     lastConfirmRequest = request;
     if (confirmError != null) {
       throw confirmError!;
     }
-    detail = _buildDetail(status: 'DELIVERED');
+    if (updateDetailToDeliveredOnConfirm) {
+      detail = _buildDetail(status: 'DELIVERED');
+    }
     return confirmResponse;
   }
 }
@@ -169,50 +182,53 @@ void main() {
       fakeService = _FakeDeliveryOrderService();
     });
 
-    test('rejects malformed codes and non-ARRIVED orders without calling API', () async {
-      final container = ProviderContainer(
-        overrides: [
-          deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'rejects malformed codes and non-ARRIVED orders without calling API',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final sub = container.listen(
-        deliveryConfirmationControllerProvider(_arrivedOrderId),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
+        final sub = container.listen(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
 
-      final notifier = container.read(
-        deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
-      );
+        final notifier = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
+        );
 
-      final malformed = await notifier.confirmDelivery(
-        secureCode: '12345',
-        currentOrderStatus: 'ARRIVED',
-      );
-      expect(malformed, false);
-      expect(
-        container
-            .read(deliveryConfirmationControllerProvider(_arrivedOrderId))
-            .errorMessage,
-        'Pickup code must be exactly 6 digits.',
-      );
-      expect(fakeService.lastConfirmRequest, isNull);
+        final malformed = await notifier.confirmDelivery(
+          secureCode: '12345',
+          currentOrderStatus: 'ARRIVED',
+        );
+        expect(malformed, false);
+        expect(
+          container
+              .read(deliveryConfirmationControllerProvider(_arrivedOrderId))
+              .errorMessage,
+          'Pickup code must be exactly 6 digits.',
+        );
+        expect(fakeService.lastConfirmRequest, isNull);
 
-      final wrongStatus = await notifier.confirmDelivery(
-        secureCode: '593284',
-        currentOrderStatus: 'IN_TRANSIT',
-      );
-      expect(wrongStatus, false);
-      expect(
-        container
-            .read(deliveryConfirmationControllerProvider(_arrivedOrderId))
-            .errorMessage,
-        'Only arrived orders can be confirmed for delivery.',
-      );
-      expect(fakeService.lastConfirmRequest, isNull);
-    });
+        final wrongStatus = await notifier.confirmDelivery(
+          secureCode: '593284',
+          currentOrderStatus: 'IN_TRANSIT',
+        );
+        expect(wrongStatus, false);
+        expect(
+          container
+              .read(deliveryConfirmationControllerProvider(_arrivedOrderId))
+              .errorMessage,
+          'Only arrived orders can be confirmed for delivery.',
+        );
+        expect(fakeService.lastConfirmRequest, isNull);
+      },
+    );
 
     test(
       'surfaces 400 attemptsRemaining and 423 lockout with 0 attempts remaining',
@@ -303,6 +319,9 @@ void main() {
           deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
         );
 
+        // Hold the refresh GET open so requiresOrderRefresh stays true until resolved
+        fakeService.nextDetailCompleter =
+            Completer<DeliveryOrderDetailResponseDto>();
         fakeService.confirmError = const ApiException(
           message: 'Order already confirmed.',
           statusCode: 409,
@@ -317,6 +336,15 @@ void main() {
         expect(state.requiresOrderRefresh, true);
         expect(state.errorMessage, 'Order already confirmed.');
 
+        // Clear the refresh gate by completing a successful ARRIVED refresh
+        await notifier.refreshOrderEligibility();
+        state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.requiresOrderRefresh, false);
+
+        fakeService.nextDetailCompleter =
+            Completer<DeliveryOrderDetailResponseDto>();
         fakeService.confirmError = const ApiException(
           message: 'Network problem.',
           isNetwork: true,
@@ -331,6 +359,7 @@ void main() {
         expect(state.requiresOrderRefresh, true);
         expect(state.errorMessage, contains('Connection lost'));
 
+        await notifier.refreshOrderEligibility();
         fakeService.confirmError = const ApiException(
           message: 'Order not found or unavailable to your account.',
           statusCode: 404,
@@ -459,7 +488,7 @@ void main() {
         await tester.tap(
           find.byKey(const Key('confirm-delivery-submit-button')),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.textContaining('Attempts remaining: 0.'), findsOneWidget);
         expect(find.textContaining('Retry after 600s.'), findsOneWidget);
@@ -472,7 +501,221 @@ void main() {
     );
 
     testWidgets(
-      'shows ineligible state when order is not ARRIVED and hides protected data on 404 access loss',
+      'unlocks form and re-enables submission automatically when 423 lockout expires',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation:
+              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+        );
+
+        // Return 423 Locked with a 2-second lockout
+        service.confirmError = ApiException(
+          message: 'Too many wrong codes. Try again later.',
+          statusCode: 423,
+          retryAfterSeconds: 2,
+          lockoutExpiresAt: DateTime.now().toUtc().add(
+            const Duration(seconds: 2),
+          ),
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '593284',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pump();
+
+        // While locked, input and submit are disabled
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('pickup-secure-code-input')),
+              )
+              .enabled,
+          false,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        // Advance past the 2-second lockout without leaving the route
+        service.confirmError = null;
+        await tester.pump(const Duration(seconds: 3));
+
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('pickup-secure-code-input')),
+              )
+              .enabled,
+          true,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Delivered'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation:
+              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '593284',
+        );
+        await tester.pump();
+
+        // Hold the mandatory refresh GET open after a network failure on POST
+        final pendingRefresh = Completer<DeliveryOrderDetailResponseDto>();
+        service.nextDetailCompleter = pendingRefresh;
+        service.confirmError = const ApiException(
+          message: 'Network problem. Check your connection and try again.',
+          isNetwork: true,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pump();
+
+        expect(service.confirmCallCount, 1);
+
+        // Input and submit must remain disabled while the required GET is unresolved
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('pickup-secure-code-input')),
+              )
+              .enabled,
+          false,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        // If the refresh GET fails, preserve the block
+        pendingRefresh.completeError(
+          const ApiException(
+            message: 'Temporary server error.',
+            statusCode: 503,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        // Now allow the refresh GET to succeed with ARRIVED
+        service.detailError = null;
+        service.confirmError = null;
+        await tester.tap(find.byKey(const Key('refresh-order-status-button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(service.confirmCallCount, 2);
+        expect(find.text('Delivered'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'clears completed confirmation and hides protected tracking data when refreshed GET returns 403',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation:
+              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '593284',
+        );
+        await tester.pump();
+
+        // POST succeeds, but the subsequent refreshed GET returns 403 Forbidden
+        service.detailError = const ApiException(
+          message: 'An active customer account is required.',
+          statusCode: 403,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+
+        // Protected tracking number and slot ID must NOT be shown on screen
+        expect(find.textContaining('DD-202611-0012'), findsNothing);
+        expect(
+          find.textContaining('b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10'),
+          findsNothing,
+        );
+        expect(find.text('Delivered'), findsNothing);
+        expect(
+          find.text('An active customer account is required.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows ineligible state when order is not ARRIVED',
       (tester) async {
         final service = _FakeDeliveryOrderService(
           detail: _buildDetail(status: 'IN_TRANSIT'),

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/station_operation_models.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 import 'my_orders_provider.dart';
@@ -69,15 +72,145 @@ class DeliveryConfirmationController
   DeliveryConfirmationController(this.orderId);
 
   final String orderId;
+  Timer? _lockoutTimer;
+  int _refreshGeneration = 0;
 
   @override
-  DeliveryConfirmationState build() => const DeliveryConfirmationState();
+  DeliveryConfirmationState build() {
+    ref.onDispose(_cancelLockoutTimer);
+    ref.listen<AsyncValue<DeliveryOrderDetailResponseDto>>(
+      orderDetailProvider(orderId),
+      (previous, next) {
+        if (next.isLoading || next.isRefreshing) return;
+        if (next.hasError) {
+          final error = next.error;
+          if (error != null && isAccessDeniedError(error)) {
+            _cancelLockoutTimer();
+            state = state.copyWith(
+              isSubmitting: false,
+              accessLost: true,
+              clearCompletedConfirmation: true,
+              clearLockout: true,
+              requiresOrderRefresh: false,
+              errorMessage: accessDeniedMessage(error),
+            );
+          }
+          return;
+        }
+        if (next.hasValue && state.requiresOrderRefresh) {
+          final detail = next.requireValue;
+          if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
+            state = state.copyWith(requiresOrderRefresh: false);
+          }
+        }
+      },
+    );
+    return const DeliveryConfirmationState();
+  }
+
+  static bool isAccessDeniedError(Object error) {
+    if (error is ApiException) {
+      return error.statusCode == 401 ||
+          error.statusCode == 403 ||
+          error.statusCode == 404 ||
+          error.code == 'MSG-P-CO-25';
+    }
+    return false;
+  }
+
+  static String accessDeniedMessage(Object error) {
+    if (error is ApiException) {
+      if (error.code == 'MSG-P-CO-25' || error.statusCode == 404) {
+        return 'Order not found or unavailable to your account.';
+      }
+      if (error.message.isNotEmpty) {
+        return error.message;
+      }
+    }
+    return 'You no longer have access to this delivery order.';
+  }
+
+  void _cancelLockoutTimer() {
+    _lockoutTimer?.cancel();
+    _lockoutTimer = null;
+  }
+
+  void _scheduleLockoutExpiry({
+    required DateTime? expiresAt,
+    required int? retryAfterSeconds,
+  }) {
+    _cancelLockoutTimer();
+    final now = DateTime.now().toUtc();
+    Duration? duration;
+
+    if (expiresAt != null) {
+      final diff = expiresAt.difference(now);
+      if (diff > Duration.zero) {
+        duration = diff;
+      }
+    }
+    if (retryAfterSeconds != null && retryAfterSeconds > 0) {
+      final retryDuration = Duration(seconds: retryAfterSeconds);
+      if (duration == null || retryDuration < duration) {
+        duration = retryDuration;
+      }
+    }
+
+    if (duration == null) {
+      // Lockout timestamp is already in the past and no positive Retry-After was supplied.
+      duration = const Duration(milliseconds: 1);
+    }
+
+    _lockoutTimer = Timer(duration, () {
+      _lockoutTimer = null;
+      if (!ref.mounted) return;
+      state = state.copyWith(clearLockout: true, clearError: true);
+    });
+  }
+
+  Future<bool> refreshOrderEligibility() async {
+    final generation = ++_refreshGeneration;
+    state = state.copyWith(requiresOrderRefresh: true);
+    ref.invalidate(orderDetailProvider(orderId));
+    ref.invalidate(myOrdersProvider);
+
+    try {
+      final detail = await ref.read(orderDetailProvider(orderId).future);
+      if (!ref.mounted || generation != _refreshGeneration) return false;
+      if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
+        state = state.copyWith(requiresOrderRefresh: false);
+        return true;
+      }
+      state = state.copyWith(
+        requiresOrderRefresh: false,
+        errorMessage:
+            'Order ${detail.trackingNumber ?? detail.id} is currently ${detail.status}. Only ARRIVED orders can be confirmed for delivery.',
+      );
+      return false;
+    } catch (error) {
+      if (!ref.mounted || generation != _refreshGeneration) return false;
+      if (isAccessDeniedError(error)) {
+        _cancelLockoutTimer();
+        state = state.copyWith(
+          isSubmitting: false,
+          accessLost: true,
+          clearCompletedConfirmation: true,
+          clearLockout: true,
+          requiresOrderRefresh: false,
+          errorMessage: accessDeniedMessage(error),
+        );
+        return false;
+      }
+      state = state.copyWith(requiresOrderRefresh: true);
+      return false;
+    }
+  }
 
   Future<bool> confirmDelivery({
     required String secureCode,
     String? currentOrderStatus,
   }) async {
-    if (state.isSubmitting) {
+    if (state.isSubmitting || state.requiresOrderRefresh) {
       return false;
     }
 
@@ -86,6 +219,7 @@ class DeliveryConfirmationController
       if (expiresAt == null || expiresAt.isAfter(DateTime.now().toUtc())) {
         return false;
       }
+      _cancelLockoutTimer();
       state = state.copyWith(clearLockout: true, clearError: true);
     }
 
@@ -119,6 +253,7 @@ class DeliveryConfirmationController
             ConfirmDeliveryRequest(pickupSecureCode: code),
           );
       if (!ref.mounted) return false;
+      _cancelLockoutTimer();
       state = state.copyWith(
         isSubmitting: false,
         completedConfirmation: response,
@@ -134,40 +269,38 @@ class DeliveryConfirmationController
       if (!ref.mounted) return false;
 
       if (e.isNetwork) {
-        ref.invalidate(orderDetailProvider(orderId));
-        ref.invalidate(myOrdersProvider);
         state = state.copyWith(
           isSubmitting: false,
           requiresOrderRefresh: true,
           errorMessage:
               'Connection lost before confirmation completed. Order status is being refreshed before you retry.',
         );
+        unawaited(refreshOrderEligibility());
         return false;
       }
 
-      if (e.statusCode == 401 ||
-          e.statusCode == 403 ||
-          e.statusCode == 404) {
+      if (isAccessDeniedError(e)) {
+        _cancelLockoutTimer();
         ref.invalidate(orderDetailProvider(orderId));
         ref.invalidate(myOrdersProvider);
         state = state.copyWith(
           isSubmitting: false,
-          errorMessage: e.message,
+          errorMessage: accessDeniedMessage(e),
           accessLost: true,
           clearCompletedConfirmation: true,
           clearLockout: true,
+          requiresOrderRefresh: false,
         );
         return false;
       }
 
       if (e.statusCode == 409) {
-        ref.invalidate(orderDetailProvider(orderId));
-        ref.invalidate(myOrdersProvider);
         state = state.copyWith(
           isSubmitting: false,
           requiresOrderRefresh: true,
           errorMessage: e.message,
         );
+        unawaited(refreshOrderEligibility());
         return false;
       }
 
@@ -177,8 +310,10 @@ class DeliveryConfirmationController
       final expiresAt = e.lockoutExpiresAt;
       int? lockoutSeconds = e.retryAfterSeconds;
       if (lockoutSeconds == null && expiresAt != null) {
-        final diff = expiresAt.difference(DateTime.now().toUtc()).inSeconds;
-        lockoutSeconds = diff > 0 ? diff : 0;
+        final diffMs = expiresAt
+            .difference(DateTime.now().toUtc())
+            .inMilliseconds;
+        lockoutSeconds = diffMs > 0 ? (diffMs / 1000).ceil() : 0;
       }
 
       if (locked) {
@@ -189,6 +324,10 @@ class DeliveryConfirmationController
           isLocked: true,
           lockoutSecondsRemaining: lockoutSeconds,
           lockoutExpiresAt: expiresAt,
+        );
+        _scheduleLockoutExpiry(
+          expiresAt: expiresAt,
+          retryAfterSeconds: lockoutSeconds,
         );
         return false;
       }
@@ -218,6 +357,8 @@ class DeliveryConfirmationController
   }
 
   void reset() {
+    _cancelLockoutTimer();
+    _refreshGeneration++;
     state = const DeliveryConfirmationState();
   }
 }
