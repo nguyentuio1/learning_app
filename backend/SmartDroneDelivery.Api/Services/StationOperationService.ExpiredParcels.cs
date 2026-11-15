@@ -6,6 +6,77 @@ namespace SmartDroneDelivery.Api.Services;
 
 public partial class StationOperationService
 {
+    public async Task<IReadOnlyList<ExpiredParcelDto>> ListExpiredParcelsAsync(
+        Guid userId, Guid stationId, CancellationToken cancellationToken = default)
+    {
+        await AuthorizeStationOperatorAsync(userId, stationId);
+
+        var slots = await _db.StationSlots.AsNoTracking()
+            .Where(s => s.StationId == stationId && s.Status == "OCCUPIED")
+            .OrderBy(s => s.SlotNumber)
+            .ToListAsync(cancellationToken);
+        var expiredParcels = new List<ExpiredParcelDto>();
+        var now = DateTime.UtcNow;
+
+        foreach (var slot in slots)
+        {
+            var latestClaim = await _db.FlightMissions.AsNoTracking()
+                .Where(m => m.StartSlotId == slot.Id || m.DestinationSlotId == slot.Id)
+                .OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id)
+                .Select(m => new { m.Id, m.OrderId, m.DestinationSlotId })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (latestClaim is null || latestClaim.DestinationSlotId != slot.Id)
+                continue;
+
+            var order = await _db.DeliveryOrders.AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == latestClaim.OrderId
+                    && o.Status == "FAILED"
+                    && o.DestinationStationId == stationId, cancellationToken);
+            if (order is null)
+                continue;
+
+            var readySource = await _db.FlightMissions.AsNoTracking().AnyAsync(m =>
+                m.StartSlotId == slot.Id
+                && m.FlightStatus == "PLANNED"
+                && m.Order.Status == "READY_FOR_TAKEOFF", cancellationToken);
+            if (readySource)
+                continue;
+
+            var failedLog = await _db.DeliveryStatusLogs
+                .AsNoTracking()
+                .Include(log => log.FailureEpisode)
+                .Where(log => log.OrderId == order.Id && log.ToStatus == "FAILED")
+                .OrderByDescending(log => log.CreatedAt).ThenByDescending(log => log.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (failedLog is null || failedLog.FromStatus != "ARRIVED"
+                || (failedLog.FailureEpisode is { } episode
+                    ? episode.FailureType != "COLLECTION_TIMEOUT"
+                        || episode.Source != "PICKUP_TIMEOUT"
+                    : failedLog.Remarks != PickupTimeoutService.LogRemarks))
+            {
+                continue;
+            }
+
+            var arrivedAt = await _db.DeliveryStatusLogs.AsNoTracking()
+                .Where(log => log.OrderId == order.Id && log.ToStatus == "ARRIVED")
+                .MaxAsync(log => (DateTime?)log.CreatedAt, cancellationToken);
+            if (arrivedAt is null)
+                continue;
+
+            expiredParcels.Add(new ExpiredParcelDto(
+                slot.Id,
+                slot.SlotNumber,
+                order.TrackingNumber,
+                order.Status,
+                slot.Status,
+                PickupTimeoutService.CancelReason,
+                arrivedAt.Value,
+                now - arrivedAt.Value));
+        }
+
+        return expiredParcels;
+    }
+
     public async Task<ClearExpiredParcelResponseDto> ClearExpiredParcelAsync(Guid userId, Guid stationId,
         ClearExpiredParcelRequest request, CancellationToken cancellationToken = default)
     {

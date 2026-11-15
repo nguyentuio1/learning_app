@@ -17,6 +17,10 @@ abstract final class ApiEndpoints {
   static String landingStation(String id) => '$landingStations/$id';
   static String landingStationAvailability(String id) =>
       '$landingStations/$id/availability';
+  static String stationSlots(String stationId) =>
+      '$landingStations/$stationId/slots';
+  static String expiredParcels(String stationId) =>
+      '$landingStations/$stationId/operations/expired-parcels';
   static String failedOrderDetail(String id) => '$failedOrders/$id';
   static String reportDeliveryFailure(String id) => '$deliveryOrders/$id/fail';
   static String resolveDeliveryFailure(String id) =>
@@ -27,6 +31,8 @@ abstract final class ApiEndpoints {
       '$landingStations/$stationId/operations/orders/$trackingNumber';
   static String stationPickup(String stationId) =>
       '$landingStations/$stationId/operations/pickup';
+  static String clearExpiredParcel(String stationId) =>
+      '$landingStations/$stationId/operations/clear-expired-parcel';
 
   // Customer Notifications (LA-326)
   static const notifications = '/notifications';

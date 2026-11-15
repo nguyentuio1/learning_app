@@ -11,6 +11,36 @@ namespace SmartDroneDelivery.Tests;
 
 public class ExpiredParcelClearingTests(AuthApiFactory factory) : IClassFixture<AuthApiFactory>
 {
+    [Fact]
+    public async Task List_returns_timeout_parcels_with_slot_and_arrival_details()
+    {
+        var s = await ExpiredParcelData.SeedAsync(factory.Services);
+        var arrivedAt = DateTime.UtcNow.AddHours(-26);
+        await factory.WithDbAsync(async db => {
+            db.DeliveryStatusLogs.Add(new DeliveryStatusLog {
+                OrderId = s.Order.Id, FromStatus = "IN_AIR", ToStatus = "ARRIVED",
+                CreatedAt = arrivedAt
+            });
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient();
+        using var response = await SchedulingData.Send(
+            client, s.Actor.Token, ExpiredParcelData.ListPath(s), HttpMethod.Get);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var parcels = await response.Content.ReadFromJsonAsync<JsonElement[]>();
+        var parcel = Assert.Single(parcels!);
+        Assert.Equal(s.SlotId, parcel.GetProperty("slotId").GetGuid());
+        Assert.Equal(1, parcel.GetProperty("slotNumber").GetInt32());
+        Assert.Equal(s.Order.TrackingNumber, parcel.GetProperty("trackingNumber").GetString());
+        Assert.Equal("FAILED", parcel.GetProperty("orderStatus").GetString());
+        Assert.Equal("OCCUPIED", parcel.GetProperty("slotStatus").GetString());
+        Assert.Equal(PickupTimeoutService.CancelReason, parcel.GetProperty("cancelReason").GetString());
+        Assert.Equal(arrivedAt, parcel.GetProperty("arrivedAt").GetDateTime());
+        Assert.True(TimeSpan.Parse(parcel.GetProperty("elapsedDuration").GetString()!) >= TimeSpan.FromHours(26));
+    }
+
     [Theory]
     [InlineData("STATION_OPERATOR")]
     [InlineData("ADMIN")]
@@ -207,6 +237,7 @@ internal static class ExpiredParcelData
         return new(order, slot.Id, actor);
     }
     public static string Path(Scenario s) => $"/api/landing-stations/{s.Order.DestinationStationId}/operations/clear-expired-parcel";
+    public static string ListPath(Scenario s) => $"/api/landing-stations/{s.Order.DestinationStationId}/operations/expired-parcels";
     public static Task<HttpResponseMessage> ClearAsync(HttpClient client, Scenario s, string? reason = "Moved parcel to holding rack.") =>
         SchedulingData.Send(client, s.Actor.Token, Path(s), HttpMethod.Post, new { slotId = s.SlotId, reason });
     public static async Task AssertOccupiedAsync(IServiceProvider services, Scenario s)

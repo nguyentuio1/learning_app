@@ -77,6 +77,14 @@ public class StationOperationsController : ControllerBase
         return Ok(await _operations.ClearExpiredParcelAsync(CurrentUserId(), stationId, request, cancellationToken));
     }
 
+    [HttpGet("expired-parcels")]
+    public async Task<ActionResult<IReadOnlyList<ExpiredParcelDto>>> ListExpiredParcels(
+        Guid stationId, CancellationToken cancellationToken)
+    {
+        return Ok(await _operations.ListExpiredParcelsAsync(
+            CurrentUserId(), stationId, cancellationToken));
+    }
+
     [HttpPost("validate-code")]
     public async Task<ActionResult<ValidateSecureCodeResponseDto>> ValidateCode(Guid stationId, ConfirmPickupRequest request)
     {
