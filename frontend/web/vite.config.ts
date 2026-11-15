@@ -6,7 +6,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      proxy: { '/api': { target: env.VITE_API_BASE_URL || 'http://localhost:5055', changeOrigin: true } },
+      proxy: {
+        '/api': { target: env.VITE_API_BASE_URL || 'http://localhost:5055', changeOrigin: true },
+        '/hubs/tracking': { target: env.VITE_API_BASE_URL || 'http://localhost:5055', changeOrigin: true, ws: true },
+      },
     },
   }
 })

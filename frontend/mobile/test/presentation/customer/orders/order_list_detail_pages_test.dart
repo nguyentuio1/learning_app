@@ -4,14 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
-import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
 import 'package:smart_drone_delivery/data/models/paged_result.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
+import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/tracking/order_tracking_page.dart';
 import 'package:smart_drone_delivery/routes/route_paths.dart';
+
+import '../../../support/fake_tracking_repository.dart';
 
 const _order = DeliveryOrder(
   id: 'order-1',
@@ -22,40 +25,6 @@ const _order = DeliveryOrder(
   status: 'IN_TRANSIT',
   trackingNumber: 'TRACK-1',
 );
-
-final _detail = DeliveryOrderDetailResponseDto.fromJson({
-  'id': 'order-1',
-  'trackingNumber': 'TRACK-1',
-  'recipientName': 'Customer',
-  'recipientPhone': '123456789',
-  'originStationId': 'origin-1',
-  'destinationStationId': 'destination-1',
-  'status': 'IN_TRANSIT',
-  'package': {'packageName': 'Books', 'weightGram': 450},
-  'originStation': {'name': 'Origin Hub'},
-  'destinationStation': {'name': 'Destination Hub'},
-  'deliveryAddress': {
-    'label': 'Home',
-    'contactName': 'Mai Tran',
-    'contactPhone': '555-0100',
-    'addressLine': '1 Main Street',
-  },
-  'aiEtaPrediction': {'predictedDurationMinutes': 24},
-  'statusLogs': [
-    {
-      'fromStatus': 'APPROVED',
-      'toStatus': 'IN_TRANSIT',
-      'remarks': 'Drone departed',
-      'createdAt': '2026-11-04T08:02:00Z',
-    },
-    {
-      'fromStatus': null,
-      'toStatus': 'PENDING',
-      'remarks': 'Order created',
-      'createdAt': '2026-11-04T08:00:00Z',
-    },
-  ],
-});
 
 class _FakeOrderService extends DeliveryOrderApiService {
   _FakeOrderService({this.orders = const [_order]}) : super(Dio());
@@ -76,10 +45,6 @@ class _FakeOrderService extends DeliveryOrderApiService {
       totalPages: orders.isEmpty ? 0 : 1,
     );
   }
-
-  @override
-  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
-      _detail;
 }
 
 Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
@@ -95,6 +60,11 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
         builder: (_, _) => const MyOrdersPage(),
       ),
       GoRoute(
+        path: RoutePaths.customerOrderTracking,
+        builder: (_, state) =>
+            OrderTrackingPage(orderId: state.pathParameters['orderId'] ?? ''),
+      ),
+      GoRoute(
         path: RoutePaths.customerOrderDetails,
         builder: (_, state) => OrderDetailPage(
           orderId: state.pathParameters['orderId'],
@@ -104,9 +74,14 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
     ],
   );
   addTearDown(router.dispose);
+  final trackingRepository = FakeTrackingRepository();
+  addTearDown(trackingRepository.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        trackingRepositoryProvider.overrideWithValue(trackingRepository),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -190,28 +165,12 @@ void main() {
     expect(service.requests.last.toDate, isNull);
   });
 
-  testWidgets('opens detail and renders ordered status history', (
-    tester,
-  ) async {
+  testWidgets('opens tracking from an order card', (tester) async {
     await _pumpOrders(tester, _FakeOrderService());
     await tester.tap(find.text('TRACK-1'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Books'), findsOneWidget);
-    expect(find.text('Origin Hub'), findsOneWidget);
-    expect(find.text('Destination Hub'), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('1 Main Street'), findsOneWidget);
-    expect(find.text('Mai Tran'), findsOneWidget);
-    expect(find.text('555-0100'), findsOneWidget);
-    expect(find.text('24 minutes'), findsOneWidget);
-    expect(find.text('— → PENDING'), findsOneWidget);
-    expect(find.text('APPROVED → IN_TRANSIT'), findsOneWidget);
-    expect(find.text('Order created'), findsOneWidget);
-    expect(find.text('Drone departed'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('— → PENDING')).dy,
-      lessThan(tester.getTopLeft(find.text('APPROVED → IN_TRANSIT')).dy),
-    );
+    expect(find.text('Delivery tracking'), findsOneWidget);
+    expect(find.text('DD-202611-0012'), findsOneWidget);
   });
 }
