@@ -1,0 +1,117 @@
+# LA-247: Test Cases per Module — SmartDroneDelivery
+
+This document defines atomic test cases per module with explicit **Preconditions**, **Test Data**, **Steps**, **Expected Result**, and **Requirement / Contract IDs** traced to `docs/requirements/SRS.md`, `docs/requirements/use-cases.md`, and `docs/api/*.md`.
+
+---
+
+## 1. Authentication, Session & Profile
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-AUTH-01` | Public registration endpoint/form is available | Unused valid email, strong password, full name, phone | 1. Open registration or call `POST /api/auth/register`.<br>2. Submit valid customer fields. | Account is created (`201 Created`) with `CUSTOMER` role and tokens returned. | `FR-01`, `UC-01`, `auth-api.md` |
+| `TC-AUTH-02` | Customer account with `user@example.com` already exists | Existing email `user@example.com`, valid password | 1. Submit registration to `POST /api/auth/register` with duplicate email. | API returns `409 Conflict` (duplicate email error) and no second user is created. | `FR-01`, `UC-01`, `auth-api.md` |
+| `TC-AUTH-03` | Active user account exists | Valid email and matching password | 1. Submit credentials to `POST /api/auth/login`. | Returns `200 OK` with short-lived JWT access token and refresh token. | `FR-01`, `FR-02`, `UC-01`, `auth-api.md` |
+| `TC-AUTH-04` | User holds a valid refresh token | Valid unexpired refresh token | 1. Call `POST /api/auth/refresh` with refresh token.<br>2. Re-submit the previous refresh token. | First call returns new access/refresh pair; re-using rotated token is rejected (`401`). | `FR-02`, `UC-01`, `auth-api.md` |
+| `TC-AUTH-05` | User is signed in with active refresh token | Valid bearer token and refresh token | 1. Call `POST /api/auth/logout`.<br>2. Call `POST /api/auth/refresh` with the revoked token. | Logout clears session; subsequent refresh attempt fails with `401 Unauthorized`. | `FR-02`, `UC-01`, `auth-api.md` |
+| `TC-AUTH-06` | Web/Mobile client holds an expired access token and valid refresh token | Expired access token + valid refresh token | 1. Trigger a protected API request.<br>2. Interceptor catches `401`, calls `POST /api/auth/refresh`, and retries the original request. | Refresh succeeds (`200 OK`) and the retried protected request succeeds transparently. | `FR-02`, `UC-01`, `auth-api.md` |
+| `TC-AUTH-07` | Web/Mobile client holds an expired access token and an invalid/revoked refresh token | Expired access token + revoked refresh token | 1. Trigger a protected API request.<br>2. Interceptor catches `401` and `POST /api/auth/refresh` fails (`401`). | Local credentials are cleared and the user is redirected to the login screen. | `FR-02`, `UC-01`, `auth-api.md` |
+| `TC-PROF-01` | Authenticated active user | Updated full name and phone number | 1. Open profile or call `PUT /api/users/me`.<br>2. Submit valid profile fields. | Returns `200 OK` and persists updated profile fields. | `FR-04`, `UC-02`, `auth-api.md` |
+| `TC-PROF-02` | Authenticated active user | Wrong current password + valid new password | 1. Call `PUT /api/users/me/password` with incorrect current password. | Returns `401 Unauthorized`; existing session remains intact on Web/Mobile. | `FR-04`, `UC-02`, `auth-api.md` |
+| `TC-PROF-03` | Authenticated active user | Correct current password + valid new password | 1. Submit password change to `PUT /api/users/me/password`. | Returns `204 No Content`; client clears local session and redirects to login. | `FR-04`, `UC-02`, `auth-api.md` |
+
+---
+
+## 2. RBAC & User Management
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-RBAC-01` | Unauthenticated client | No `Authorization` header | 1. Request any protected endpoint or navigate to `/admin/users`. | API returns `401 Unauthorized`; Web/Mobile redirects to login without fetching private data. | `FR-03`, `UC-01` |
+| `TC-RBAC-02` | Authenticated `DISPATCHER` or `CUSTOMER` | Valid bearer token for non-Admin role | 1. Call `GET /api/users` or navigate to `/admin/users`. | API returns `403 Forbidden`; UI displays access-denied state without leaking user data. | `FR-03`, `FR-05`, `UC-21` |
+| `TC-USER-01` | Authenticated `ADMIN` | Role filter `DISPATCHER`, status filter `ACTIVE` | 1. Open User Management or call `GET /api/users?role=DISPATCHER&status=ACTIVE`. | Only matching active dispatcher accounts are returned. | `FR-05`, `UC-21` |
+| `TC-USER-02` | Authenticated `ADMIN` and target active user | Target user ID + new role code | 1. Confirm role assignment via `PUT /api/users/{id}/role`. | User role updates to target role; self-demotion by active admin is blocked (`409`). | `FR-05`, `UC-21` |
+| `TC-USER-03` | Authenticated `ADMIN` and target active user | Target user ID | 1. Deactivate user via `PUT /api/users/{id}/deactivate`.<br>2. Attempt login as deactivated user. | Status becomes `INACTIVE` and subsequent login is rejected (`401`/`403`); self-deactivation returns `409`. | `FR-05`, `UC-21`, `auth-api.md` |
+
+---
+
+## 3. Customer Delivery Prerequisites & Orders
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-ADDR-01` | Authenticated `CUSTOMER` | Label, street address, valid lat/lng pair | 1. Submit new address via Saved Addresses UI/API. | Address is saved; omitting both coordinates is allowed, providing only one coordinate is rejected. | `FR-06`, `UC-03`, `customer-order-api.md` |
+| `TC-ADDR-02` | Authenticated `CUSTOMER` owns saved address | Address ID referenced or conflicted | 1. Trigger delete on address.<br>2. Simulate conflict (`409`). | Address remains visible and inline conflict message is shown. | `FR-06`, `UC-03`, `customer-order-api.md` |
+| `TC-PKG-01` | Authenticated `CUSTOMER` | Package name, weight (g), L/W/H (cm) up to 2 decimals | 1. Create/update package via Packages UI/API. | Valid 2-decimal dimensions persist; out-of-range weight/dimensions fail validation. | `FR-07`, `UC-04`, `customer-order-api.md` |
+| `TC-ORD-01` | Authenticated `CUSTOMER` with active stations and package | Distinct origin/destination station IDs, recipient name/phone | 1. Confirm order creation via `POST /api/delivery-orders`. | Order is created in `PENDING` with tracking number and one-time pickup secure code. | `FR-08`, `FR-09`, `UC-05`, `customer-order-api.md` |
+| `TC-ORD-02` | Authenticated `CUSTOMER` | Same station ID for origin and destination | 1. Select identical origin and destination in Create Order form/API. | Validation rejects submission before or at API (`400 Bad Request`). | `FR-08`, `UC-05`, `customer-order-api.md` |
+| `TC-ORD-03` | Authenticated `CUSTOMER` owns orders | Local `fromDate` / `toDate` range | 1. Apply date filter on My Orders.<br>2. Inspect `GET /api/delivery-orders` query params. | Parameters are sent as UTC ISO boundaries and pagination resets to page 1; reversed dates are rejected client-side. | `FR-11`, `UC-07`, `customer-order-api.md` |
+| `TC-ORD-04` | Authenticated `CUSTOMER` owns `PENDING` order | Updated recipient name | 1. Edit `PENDING` order via `PUT /api/delivery-orders/{id}`. | `200 OK` and updated recipient details persist. | `FR-10`, `UC-06`, `customer-order-api.md` |
+| `TC-ORD-05` | Authenticated `CUSTOMER` owns order in `APPROVED` (or later) status | Order ID in `APPROVED` status + updated recipient name | 1. Attempt to edit non-`PENDING` order via UI or `PUT /api/delivery-orders/{id}`. | UI blocks direct editing and API returns `409 Conflict`. | `FR-10`, `UC-06`, `customer-order-api.md` |
+| `TC-ORD-06` | PostgreSQL DB; `PENDING` order seeded | 8 concurrent cancel requests | 1. Release 8 simultaneous `POST /api/delivery-orders/{id}/cancel` requests at a barrier. | Exactly one request returns `200 OK`; all others return `409 Conflict` with 1 status log and 1 notification. | `FR-10`, `UC-06`, `DeliveryOrderConcurrencyTests.cs` |
+
+---
+
+## 4. Landing Stations, Station Slots & Drone Fleet
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-STN-01` | Authenticated `ADMIN` | Station code, name, coordinates, `totalSlots` | 1. Create landing station via `POST /api/landing-stations`. | Station is created (`201 Created`) with initial status `OPERATIONAL` and `EMPTY` slots. | `FR-20`, `UC-16`, `station-api.md` |
+| `TC-STN-01B` | Authenticated `STATION_OPERATOR` | Station code, name, coordinates, `totalSlots` | 1. Attempt to create landing station via `POST /api/landing-stations`. | API returns `403 Forbidden` (station creation is `ADMIN`-only). | `FR-03`, `FR-20`, `UC-16`, `station-api.md` |
+| `TC-STN-02` | PostgreSQL DB; `OPERATIONAL` station seeded | Concurrent `PUT /api/landing-stations/{id}/status` requests | 1. Release concurrent status change requests at a barrier. | Winner updates status (`200 OK`); conflicting request returns `409 Conflict` without overwriting newer status. | `FR-20`, `UC-16`, `station-api.md`, `LandingStationManagementTests.cs` |
+| `TC-STN-03` | PostgreSQL DB; `OPERATIONAL` station seeded | Status change + simulated audit log save failure | 1. Trigger `PUT /api/landing-stations/{id}/status` where audit save fails after `ExecuteUpdateAsync`. | PostgreSQL rolls back both the station status update and notifications atomically. | `FR-20`, `UC-16`, `LandingStationManagementTests.cs` |
+| `TC-SLOT-01` | Authenticated `ADMIN`, `OPERATIONAL` station exists | Optional `slotNumber` | 1. Add slot via `POST /api/landing-stations/{stationId}/slots`.<br>2. Query `GET /api/landing-stations/{id}/availability`. | Slot is created (`201 Created`) in `EMPTY` state; availability counts reflect `EMPTY` / `OCCUPIED` / `RESERVED` / `ERROR` states. | `FR-21`, `FR-22`, `UC-16`, `UC-17`, `station-api.md` |
+| `TC-SLOT-01B` | Authenticated `STATION_OPERATOR`, station exists | Optional `slotNumber` | 1. Attempt to add slot via `POST /api/landing-stations/{stationId}/slots`. | API returns `403 Forbidden` (slot creation is `ADMIN`-only). | `FR-03`, `FR-21`, `UC-16`, `station-api.md` |
+| `TC-SLOT-02` | PostgreSQL DB; station & slot seeded | Concurrent slot creation / status updates | 1. Release concurrent slot requests against PostgreSQL. | Requests serialize cleanly and detect stale status conflicts (`409`). | `FR-21`, `UC-16`, `StationSlotManagementTests.cs` |
+| `TC-DRN-01` | Authenticated `DISPATCHER` / `ADMIN` | Unique serial number, model, payload, range | 1. Submit new drone via `POST /api/drones`. | Returns `201 Created` with `Location: /api/drones/{id}` and initial status `MAINTENANCE`. | `FR-19`, `UC-15`, `drone-api.md` |
+| `TC-DRN-02` | PostgreSQL DB; drone with serial `DRN-001` already exists | Duplicate serial number `DRN-001` | 1. Submit concurrent `POST /api/drones` requests with duplicate serial number. | Unique constraint / conflict handling returns `409 Conflict` for duplicate serial. | `FR-19`, `UC-15`, `drone-api.md`, `DroneManagementTests.cs` |
+| `TC-DRN-03` | Drone in `ASSIGNED` or `FLYING` status | Drone ID | 1. Open Drone Management UI.<br>2. Inspect maintenance and spec edit controls. | UI disables maintenance and specification edits while an active mission exists (`ASSIGNED` / `FLYING`). | `FR-19`, `UC-15`, `droneManagementUi.test.tsx` |
+
+---
+
+## 5. Station Operations & Package Pickup
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-PKP-01` | `APPROVED` order at assigned origin station; `STATION_OPERATOR` signed in | Valid `trackingNumber` / intake payload | 1. Station Operator confirms package intake via `POST /api/landing-stations/{stationId}/operations/intake`. | Returns `200 OK`; parcel intake is recorded and origin slot updates to `OCCUPIED`. | `FR-23`, `UC-18`, `station-api.md` |
+| `TC-PKP-01B` | `PENDING` (unapproved) order at origin station; `STATION_OPERATOR` signed in | `trackingNumber` of `PENDING` order | 1. Station Operator attempts intake via `POST /api/landing-stations/{stationId}/operations/intake`. | API returns `409 Conflict` because order is not in `APPROVED` state. | `FR-23`, `UC-18`, `station-api.md` |
+| `TC-PKP-02` | PostgreSQL DB; order ready for pickup with OTP | Wrong OTP repeated across concurrent requests | 1. Submit concurrent wrong OTP confirmations across separate DbContexts/API instances. | Attempt counter increments atomically; lockout persists across restarts and resets after 10 minutes. | `FR-23`, `UC-18`, `PackagePickupConfirmationTests.cs` |
+| `TC-PKP-03` | PostgreSQL DB; order nearing pickup timeout | Simultaneous pickup confirmation and timeout job | 1. Release pickup confirmation and timeout job concurrently. | Never both win; order and slot end in a single consistent terminal/post-pickup state. | `FR-23`, `UC-18`, `StationOperationsConcurrencyTests.cs` |
+
+---
+
+## 6. Sprint 5 Delivery Workflow & Notifications
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-WF-01` | `PENDING` order exists; `DISPATCHER` signed in | Local date range `2026-11-01` to `2026-11-15` | 1. Enter date filters in Approval Queue and click `Apply filters`. | `GET /api/dispatch/pending-orders` request count increments (`1 → 2`) with exact UTC ISO `fromDate`/`toDate`. | `FR-13`, `UC-11`, `delivery-workflow-api.md`, `deliveryApprovalUi.test.tsx` |
+| `TC-WF-02` | `OrderTransitionWriter` with tracked order | Invalid / terminal (`DELIVERED`, `CANCELLED`) transitions | 1. Call `StageAsync` for any disallowed or terminal transition. | Throws `409` `ApiException` with 0 status logs and 0 notifications persisted. | `FR-14`, `UC-11`, `UC-12`, `OrderStateMachineTests.cs` |
+| `TC-WF-03` | `OrderTransitionWriter` initialized | Sequential operation scopes | 1. Call `EnterOperationAsync()` twice sequentially with `WaitAsync(5s)`. | Both scopes acquire and release cleanly within 5 seconds without deadlock. | `FR-14`, `UC-11`, `UC-12`, `OrderStateMachineTests.cs` |
+| `TC-WF-04` | `APPROVED` unscheduled order; `DISPATCHER` signed in | Departure `< 15` min from now | 1. Enter departure `< 15` min from now and click `Save departure`. | Inline validation error `'Choose a departure at least 15 minutes from now.'` is shown and `0` `PUT` requests are sent. | `FR-15`, `UC-12`, `delivery-workflow-api.md`, `deliverySchedulingUi.test.tsx` |
+| `TC-WF-05` | `APPROVED` unscheduled order; `DISPATCHER` signed in | Valid departure `>= 15` min from now | 1. Enter valid departure and click `Save departure` (`PUT /api/delivery-orders/{id}/schedule`). | Exact UTC `scheduledDepartureTime` is sent; candidate drones (`GET /api/delivery-orders/{id}/available-drones`) load only after `PUT` succeeds and order refreshes. | `FR-15`, `FR-16`, `UC-12`, `delivery-workflow-api.md`, `deliverySchedulingUi.test.tsx` |
+| `TC-SCH-OVERLAP-01` | `(Planned)` Drone A already has an assigned mission from `09:00–10:00` | Overlapping mission assignment for Drone A (`09:30–10:30`) | 1. Submit request to assign Drone A to the new mission (`09:30–10:30`). | System rejects the assignment due to schedule overlap (`409 Conflict`); existing `09:00–10:00` mission remains intact; no new assignment or resource/slot reservation is created. | `FR-16`, `UC-12`, `delivery-workflow-api.md` |
+| `TC-WF-06` | Active in-flight order (valid UUID) | Valid UUID `orderId`, `HARDWARE_FAULT`, reason | 1. Open `Report an incident`, fill fields, and confirm modal (`POST /api/delivery-orders/{id}/fail`). | Navigates to `/dispatcher/failures/{uuid}` and loads refreshed failure detail. | `FR-18`, `UC-14`, `deliveryFailureHandlingUi.test.tsx` |
+| `TC-WF-07` | `FAILED` order detail page open; parcel cleared from destination slot | `action: RESCHEDULE`, note, verification checkbox | 1. Attempt `RESCHEDULE` without physical verification checkbox.<br>2. Check physical verification and confirm modal. | Unchecked submission is blocked; checked submission sends `packageVerified: true` and refreshes resolved state. | `FR-18`, `UC-14`, `deliveryFailureHandlingUi.test.tsx` |
+| `TC-NOTIF-01` | Customer has 21 unread notifications (Web) | `pageSize=20`, `Unread` filter | 1. Switch to `Unread`, navigate to page 2 (1 item).<br>2. Click `Mark as read` on item 21. | Page clamps back to page 1 and displays the remaining 20 unread items without showing empty state. | `FR-12`, `UC-10`, `notification-api.md`, `customerNotificationsUi.test.tsx` |
+| `TC-NOTIF-02` | Customer has 51 notifications (Mobile) | `pageSize=50`, item 51 unread | 1. Scroll to `Load more`, tap to fetch page 2.<br>2. Scroll to `Mark as read` on item 51 and tap. | Item 51 loads on page 2 and is marked read (`markAsReadCalls == 1`). | `FR-12`, `UC-10`, `notification-api.md`, `notifications_page_test.dart` |
+| `TC-NOTIF-03` | Mobile `All` page 2 `loadMore()` request is pending | Delayed `Completer` for `All` page 2; `Unread` item 51 | 1. Trigger `Load more` on `All`.<br>2. Switch to `Unread` before page 2 resolves.<br>3. Complete stale `All` page 2 future. | Stale `All` page 2 response is ignored (`_generation` mismatch); `Unread` list remains intact. | `FR-12`, `UC-10`, `notification-api.md`, `notifications_page_test.dart` |
+| `TC-NOTIF-04` | PostgreSQL DB; 1 unread notification seeded | 6 concurrent `PUT /api/notifications/{id}/read` requests | 1. Release 6 simultaneous `PUT /api/notifications/{id}/read` requests at a barrier. | All return `200 OK` and every response preserves the first persisted `ReadAt` timestamp. | `FR-12`, `UC-10`, `notification-api.md`, `NotificationConcurrencyTests.cs` |
+| `TC-NOTIF-05` | PostgreSQL DB; 5 unread notifications seeded | 4 concurrent `PUT /api/notifications/read-all` requests | 1. Release 4 simultaneous `PUT /api/notifications/read-all` requests at a barrier. | Sum of `updatedCount` across all 4 responses equals `5` (each row counted at most once). | `FR-12`, `UC-10`, `notification-api.md`, `NotificationConcurrencyTests.cs` |
+
+---
+
+## 7. Tracking, Delivery Map, Confirmation, Analytics, AI & External API (`FR-17`, `FR-24`–`FR-34`)
+
+> Cases marked `(Planned)` cover SRS requirements whose feature implementation or UI/endpoint execution is pending outside the `636f9a4` baseline.
+
+| TC ID | Preconditions | Test Data | Steps | Expected Result | Requirement |
+| --- | --- | --- | --- | --- | --- |
+| `TC-TRK-01` | Authenticated `DISPATCHER`; active `IN_TRANSIT` mission with telemetry seeded | Active order ID + mission telemetry | 1. Call `GET /api/dispatch/active-deliveries` or open Active Deliveries view. | Returns active deliveries with current order status, flight status, and latest telemetry timestamp/staleness. | `FR-17`, `UC-13`, `delivery-workflow-api.md` |
+| `TC-TRK-02` | Authenticated order owner or `DISPATCHER`; `IN_TRANSIT` order | Valid order UUID + SignalR `/hubs/tracking` | 1. Connect to `/hubs/tracking` and invoke `Subscribe(orderId)`.<br>2. Poll `GET /api/delivery-orders/{id}/tracking` with fresh and `>60s` telemetry. | Client receives `PositionUpdated` / `StatusChanged` triggers; `telemetryStale` flips to `true` after `60s` without disclosing `pickupSecureCode`. | `FR-24`, `UC-07`, `TrackingApiTests.cs`, `TrackingAcceptanceTests.cs` |
+| `TC-MAP-01` | Authenticated `DISPATCHER`; `IN_TRANSIT` order with station & drone coordinates | Valid `originStation`, `destinationStation`, `lastPosition` | 1. Navigate to `/delivery-map/{id}`.<br>2. Inspect markers, coordinates, and stale/non-transit states. | Displays station pins (`A`, `B`), reported drone marker, and coordinates; hides drone marker when non-`IN_TRANSIT` and warns when `telemetryStale` is `true`. | `FR-25`, `UC-07`, `deliveryMapUi.test.tsx` |
+| `TC-CNF-01` | `ARRIVED` order owned by `CUSTOMER`; destination slot `OCCUPIED` | Correct 6-digit `pickupSecureCode` | 1. Submit `POST /api/delivery-orders/{id}/confirm-delivery` with valid code. | Order transitions `ARRIVED → DELIVERED`, `actualDeliveryTime` is recorded, destination slot releases to `EMPTY`, and `pickupSecureCode` is never echoed. | `FR-26`, `FR-27`, `UC-08`, `DeliveryConfirmationTests.cs` |
+| `TC-CNF-02` | `ARRIVED` order; shared 3-attempt OTP lockout policy | 3 wrong 6-digit codes across customer/operator routes | 1. Submit 3 wrong codes.<br>2. Submit the correct code while locked. | Third wrong attempt returns `423 Locked` with `Retry-After`; subsequent correct code is rejected until lockout expires. | `FR-26`, `UC-08`, `DeliveryConfirmationTests.cs`, `DeliveryConfirmationAcceptanceTests.cs` |
+| `TC-ANA-01` | Authenticated `MANAGER`; orders across statuses seeded in local date window | `fromDate`, `toDate` (`<= 366` days) | 1. Call `GET /api/analytics/dashboard` and `GET /api/analytics/reports/deliveries`. | Returns status counts, `successRate`, `averageDelivery`, `stationUsage` (same-station deduplicated), and paginated report rows; `>366` days returns `400`. | `FR-28`, `UC-19`, `AnalyticsApiTests.cs`, `AnalyticsAcceptanceTests.cs` |
+| `TC-AI-01` | `(Planned)` Active `IN_TRANSIT` order with route distance and telemetry | Origin/destination coordinates, current speed, weather input | 1. Trigger ETA estimation / recalculation when telemetry or conditions update. | Persists `AiEtaPrediction` (`CalculatedDistanceKm`, `PredictedDurationMinutes`) and updates `estimatedDeliveryTime` without mutating order status. | `FR-29`, `UC-20` |
+| `TC-AI-02` | `(Planned)` Order with completed/failed status logs and telemetry events | Order ID with verified status history | 1. Request AI delivery history summary for the order. | Returns concise summary grounded strictly in verified order logs/events without fabricating missing timestamps. | `FR-30`, `UC-20` |
+| `TC-AI-03` | `(Planned)` Authenticated `CUSTOMER` A; `CUSTOMER` B owns a separate order | Question referencing Customer A's order vs Customer B's order | 1. Send chat prompt for own order (`POST` chat session/message).<br>2. Ask about Customer B's order ID. | Answers Customer A's question using only Customer A's data; refuses/denies cross-customer order context. | `FR-31`, `UC-09` |
+| `TC-AUD-01` | Authenticated `ADMIN` or actor performing sensitive action (login, role change, station/key action) | Valid credentials / role change / key create & revoke payloads | 1. Perform sensitive action.<br>2. Inspect `AuditLogs` table. | Immutable `AuditLog` row is written atomically with `UserId`, `Action`, `EntityName`, `EntityId`, and `Timestamp`, with zero plaintext secrets. | `FR-32`, `UC-22`, `IntegrationApiTests.cs`, `LandingStationManagementTests.cs` |
+| `TC-AUD-02` | `(Planned)` Authenticated `ADMIN`; multiple `AuditLog` entries across users/actions/dates | `userId`, `action`, `fromDate`, `toDate` query filters | 1. Query admin audit log search endpoint with user/action/date filters.<br>2. Call as non-`ADMIN`. | `ADMIN` receives matching read-only audit entries; non-`ADMIN` receives `403 Forbidden`. | `FR-33`, `UC-22` |
+| `TC-EXT-01` | `ADMIN` provisions scoped `X-API-Key` for active `CUSTOMER` | `X-API-Key` with `orders:create`, `orders:read`; valid package/stations | 1. `POST /api/v1/delivery-orders`.<br>2. `GET /api/v1/delivery-orders/{id}` & `/tracking`.<br>3. Revoke key and retry. | Create returns `201` with `pickupSecureCode` once; subsequent reads omit code; revoked/expired keys return `401` and foreign orders return `404`. | `FR-34`, `UC-05`, `UC-07`, `IntegrationApiTests.cs`, `ExternalIntegrationAcceptanceTests.cs` |
