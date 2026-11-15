@@ -8,6 +8,8 @@ using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.Middleware;
 using SmartDroneDelivery.Api.Options;
 using SmartDroneDelivery.Api.Services;
+using SmartDroneDelivery.Api.Security;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,9 @@ builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
 builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
 builder.Services.AddScoped<ISchedulingService, SchedulingService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IntegrationKeyService>();
+builder.Services.AddSingleton<IntegrationRateLimits>();
+builder.Services.AddScoped<ITrackingService, TrackingService>();
 builder.Services.AddScoped<FailureService>();
 builder.Services.AddScoped<DeliveryRouteEstimate>();
 builder.Services.AddOptions<DeliveryFlightOptions>()
@@ -91,7 +96,8 @@ builder.Services
             OnForbidden = context => ApiProblemDetails.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden,
                 "You do not have permission to perform this action.")
         };
-    });
+    })
+    .AddScheme<AuthenticationSchemeOptions, IntegrationKeyAuthenticationHandler>(IntegrationKeyAuthenticationHandler.SchemeName, _ => { });
 // Secure by default: an endpoint without [Authorize] or [AllowAnonymous] still needs a signed-in user.
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
@@ -113,6 +119,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.AddSecurityDefinition("IntegrationKey", new OpenApiSecurityScheme {Type=SecuritySchemeType.ApiKey,In=ParameterLocation.Header,Name="X-API-Key",Description="External /api/v1 routes only; create an integration key as ADMIN first. Never send with bearer credentials."});
+    options.OperationFilter<IntegrationSwagger>();
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

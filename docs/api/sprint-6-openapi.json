@@ -3,7 +3,7 @@
   "info": {
     "title": "LA-341 Sprint 6 API handoff",
     "version": "0.1.0",
-    "description": "Tracking/confirmation and analytics are implemented on their corresponding story branches. Analytics business-policy acceptance remains pending; external endpoints remain PROPOSED ONLY. Document merge is not endpoint deployment or business-policy approval. See sprint-6-api-contract.md for availability and client recovery behavior."
+    "description": "Analytics is integrated into develop through PR #202. Tracking/confirmation and external integration are implemented on their corresponding story branches; external integration into develop is tracked by PR #203. Code integration is not endpoint deployment or business-policy approval. See sprint-6-api-contract.md for availability and client recovery behavior."
   },
   "servers": [
     {
@@ -395,8 +395,8 @@
       "post": {
         "operationId": "createIntegrationKey",
         "summary": "Active ADMIN; issue one-time secret",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "Bearer": []
@@ -468,8 +468,8 @@
       "get": {
         "operationId": "listIntegrationKeys",
         "summary": "Active ADMIN; metadata only",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "Bearer": []
@@ -538,8 +538,8 @@
       "delete": {
         "operationId": "revokeIntegrationKey",
         "summary": "Active ADMIN; preserve audit history",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "Bearer": []
@@ -608,8 +608,8 @@
       "post": {
         "operationId": "createExternalOrder",
         "summary": "API key orders:create; bound customer",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "ApiKey": []
@@ -720,8 +720,8 @@
       "get": {
         "operationId": "getExternalOrder",
         "summary": "API key orders:read; bound customer only",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "ApiKey": []
@@ -816,8 +816,8 @@
       "get": {
         "operationId": "getExternalTracking",
         "summary": "API key orders:read; poll at most every five seconds",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "ApiKey": []
