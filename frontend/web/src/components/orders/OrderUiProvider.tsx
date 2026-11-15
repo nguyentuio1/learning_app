@@ -19,11 +19,9 @@ export function OrderUiProvider({ children }: { children: ReactNode }) {
       Modal: { headerBg: '#fffffc', contentBg: '#fffffc', titleColor: '#203b30', titleFontSize: 21 },
       Table: { headerBg: '#e4eddb', headerColor: '#36513f', rowHoverBg: '#f1f5ea', borderColor: '#e1e8dc', cellPaddingBlock: 18 },
       Pagination: { itemActiveBg: '#e4eddb', itemSize: 36 },
-      DatePicker: { activeBorderColor: '#4c7a56', hoverBorderColor: '#94ad94', activeShadow: '0 0 0 3px #4c7a5617', cellActiveWithRangeBg: '#e4eddb' },
     } }}
     modal={{ centered: true, classNames: { container: 'order-dialog', header: 'order-dialog-header', body: 'order-dialog-body', footer: 'order-dialog-footer' } }}
     select={{ classNames: { popup: { root: 'order-select-popup' } } }}
-    datePicker={{ classNames: { popup: { root: 'order-calendar-popup' } } }}
     form={{ scrollToFirstError: true }}
   >{children}</ConfigProvider>
 }

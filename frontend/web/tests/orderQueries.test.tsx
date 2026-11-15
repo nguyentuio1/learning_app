@@ -55,6 +55,35 @@ it('rejects reversed dates before requesting another page', async () => {
   expect(await screen.findByText('End date must not be before start date.')).toBeVisible()
   expect(mock.history.get).toHaveLength(1)
 })
+it.each([
+  { panel: 'month', option: 'Dec' },
+  { panel: 'year', option: '2027' },
+])('keeps the applied date after leaving the $panel picker with Escape', async ({ panel, option }) => {
+  mock.onGet('/api/delivery-orders').reply(200, { items: [], totalCount: 0 })
+  const user = userEvent.setup()
+  open()
+  await screen.findByText('No orders match these filters.')
+
+  await setDate('Created from', '2026-11-15')
+  const apply = screen.getByRole('button', { name: 'Apply filters' })
+  const expectedDate = orderDateBoundary('2026-11-15')
+  await user.click(apply)
+  await waitFor(() => expect(mock.history.get.at(-1)?.params.fromDate).toBe(expectedDate))
+
+  const fromInput = screen.getByLabelText('Created from')
+  await user.click(fromInput)
+  await user.click(await screen.findByRole('button', { name: 'Choose a ' + panel }))
+  await user.click(await screen.findByRole('cell', { name: option, exact: true }))
+  fireEvent.keyDown(fromInput, { key: 'Escape', code: 'Escape' })
+
+  await waitFor(() => expect(fromInput).toHaveValue('2026-11-15'))
+  await user.click(apply)
+  await waitFor(() => {
+    expect(mock.history.get).toHaveLength(3)
+    expect(mock.history.get.at(-1)?.params.fromDate).toBe(expectedDate)
+  })
+})
+
 it('shows server failures separately from an empty list and supports retry', async () => {
   mock.onGet('/api/delivery-orders').reply(500)
   open(); const retry = await screen.findByRole('button', { name: 'Try again' })

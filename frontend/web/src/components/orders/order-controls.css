@@ -10,7 +10,7 @@
 .order-dialog .ant-alert { margin-bottom:18px; }
 .order-dialog .order-actions { justify-content:flex-end; border-top:1px solid #e0e8d8; padding-top:20px; margin-top:28px; }
 .order-dialog .ant-btn-dangerous:not(.ant-btn-primary) { background:#fff8f4; border-color:#dcb9ac; color:#923d30; }
-.order-select-popup,.order-calendar-popup .ant-picker-panel-container { border:1px solid #c5d3bc; border-radius:12px; box-shadow:0 14px 36px #1e4f3c1c; }
+.order-select-popup { border:1px solid #c5d3bc; border-radius:12px; box-shadow:0 14px 36px #1e4f3c1c; }
 .order-select-popup { padding:6px; }
 .order-select-popup .ant-select-item { border-radius:7px; }
 .order-select-popup .ant-select-item-option-selected { box-shadow:inset 3px 0 #c5a04c; }
