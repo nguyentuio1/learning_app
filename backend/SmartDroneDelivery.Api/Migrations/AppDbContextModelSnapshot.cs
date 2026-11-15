@@ -575,6 +575,49 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.ToTable("flight_telemetry_logs", (string)null);
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.IntegrationApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .IsConcurrencyToken()
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string[]>("Scopes")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.ToTable("integration_api_keys", (string)null);
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.LandingStation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1144,6 +1187,17 @@ namespace SmartDroneDelivery.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Mission");
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.IntegrationApiKey", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.User", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.LandingStation", b =>
