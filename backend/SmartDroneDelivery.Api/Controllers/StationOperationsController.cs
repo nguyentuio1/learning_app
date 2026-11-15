@@ -39,36 +39,8 @@ public class StationOperationsController : ControllerBase
     }
 
     [HttpPost("pickup")]
-    public async Task<IActionResult> Pickup(Guid stationId, ConfirmPickupRequest request)
-    {
-        var result = await _operations.PickupAsync(CurrentUserId(), stationId, request);
-        if (result.Success)
-            return Ok(result.Response);
-
-        if (result.StatusCode == StatusCodes.Status423Locked)
-        {
-            if (result.RetryAfterSeconds.HasValue)
-                Response.Headers["Retry-After"] = result.RetryAfterSeconds.Value.ToString();
-
-            return StatusCode(StatusCodes.Status423Locked, new
-            {
-                type = "https://httpstatuses.com/423",
-                title = "Locked",
-                status = 423,
-                detail = result.Detail,
-                lockoutExpiresAt = result.LockoutExpiresAt
-            });
-        }
-
-        return StatusCode(result.StatusCode, new
-        {
-            type = $"https://httpstatuses.com/{result.StatusCode}",
-            title = "Bad Request",
-            status = result.StatusCode,
-            detail = result.Detail,
-            attemptsRemaining = result.AttemptsRemaining
-        });
-    }
+    public async Task<IActionResult> Pickup(Guid stationId, ConfirmPickupRequest request) =>
+        PickupResponses.Create(this, await _operations.PickupAsync(CurrentUserId(), stationId, request));
 
     [HttpPost("clear-expired-parcel")]
     public async Task<ActionResult<ClearExpiredParcelResponseDto>> ClearExpiredParcel(
