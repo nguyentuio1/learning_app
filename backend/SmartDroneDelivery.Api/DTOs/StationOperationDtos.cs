@@ -82,3 +82,13 @@ public record ClearExpiredParcelResponseDto(
     Guid SlotId,
     string SlotStatus,
     DateTime ClearedAt);
+
+public record ExpiredParcelDto(
+    Guid SlotId,
+    int SlotNumber,
+    string TrackingNumber,
+    string OrderStatus,
+    string SlotStatus,
+    string CancelReason,
+    DateTime ArrivedAt,
+    TimeSpan ElapsedDuration);

@@ -296,7 +296,16 @@ When locked: `isLocked` is `true`, `attemptsRemaining` is 0, `lockoutExpiresAt` 
 ### 4.6 Pickup timeout (no endpoint)
 A background job moves an order from `ARRIVED` to `FAILED` 24 hours after it arrived, with `cancelReason = "Pickup window expired (24h timeout)"`, and alerts the dispatcher and the station operator (F-08, BR-LS-15). Clients only see the new status. The job is part of this sprint's backend work but has no API.
 
-### 4.7 POST .../operations/clear-expired-parcel (LA-336)
+### 4.7 Expired parcels (LA-336)
+
+#### GET .../operations/expired-parcels
+
+Full route: `GET /api/landing-stations/{stationId}/operations/expired-parcels`.
+The assigned `STATION_OPERATOR` of the station or an `ADMIN` can list occupied destination slots whose latest claimed order failed because of a pickup timeout. Other failed orders, stale mission-slot links and slots reused by a current ready-for-takeoff mission are excluded.
+
+Response `200 OK` is an array of `{ slotId, slotNumber, trackingNumber, orderStatus, slotStatus, cancelReason, arrivedAt, elapsedDuration }`. `elapsedDuration` is the time elapsed since the latest `ARRIVED` status log. Empty stations return an empty array. Errors: `401`, `403` for an operator not assigned to this station, and `404` for an unknown station.
+
+#### POST .../operations/clear-expired-parcel
 
 Full route: `POST /api/landing-stations/{stationId}/operations/clear-expired-parcel`.
 The assigned `STATION_OPERATOR` of the destination station, or `ADMIN`, confirms that they have **already physically moved** an expired parcel to the station holding area. The timeout alone leaves its slot `OCCUPIED` (BR-LS-20).
