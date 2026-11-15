@@ -3,7 +3,7 @@
   "info": {
     "title": "LA-341 Sprint 6 API handoff",
     "version": "0.1.0",
-    "description": "Tracking/confirmation and external integration are implemented on their corresponding story branches; analytics follows its separate LA-153 branch. Document merge is not endpoint deployment or business-policy approval. See sprint-6-api-contract.md for availability and recovery behavior."
+    "description": "Analytics is integrated into develop through PR #202. Tracking/confirmation and external integration are implemented on their corresponding story branches; external integration into develop is tracked by PR #203. Code integration is not endpoint deployment or business-policy approval. See sprint-6-api-contract.md for availability and client recovery behavior."
   },
   "servers": [
     {
@@ -216,8 +216,8 @@
       "get": {
         "operationId": "getDashboard",
         "summary": "Active MANAGER; proposed metrics",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-153 on feature/LA-153-dashboard-reports-api, targeting story/LA-38-dashboard-reports. Business metric/policy acceptance remains pending. See sprint-6-api-contract.md section 5 for definitions and edge cases.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "Bearer": []
@@ -286,15 +286,16 @@
               "format": "date"
             }
           }
-        ]
+        ],
+        "x-business-policy-status": "proposed-pending-acceptance"
       }
     },
     "/api/analytics/reports/deliveries": {
       "get": {
         "operationId": "getDeliveryReport",
         "summary": "Active MANAGER; created-date current-state report",
-        "description": "PROPOSED for mocks; business-policy acceptance and backend implementation pending. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
-        "x-implementation-status": "proposed",
+        "description": "Implemented by LA-153 on feature/LA-153-dashboard-reports-api, targeting story/LA-38-dashboard-reports. Business metric/policy acceptance remains pending. See sprint-6-api-contract.md section 5 for definitions and edge cases.",
+        "x-implementation-status": "implemented-story-branch",
         "security": [
           {
             "Bearer": []
@@ -386,7 +387,8 @@
               "default": 20
             }
           }
-        ]
+        ],
+        "x-business-policy-status": "proposed-pending-acceptance"
       }
     },
     "/api/admin/integration-keys": {
