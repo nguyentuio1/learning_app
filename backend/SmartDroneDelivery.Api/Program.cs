@@ -46,7 +46,8 @@ builder.Services.AddOptions<DeliveryFlightOptions>()
     .Validate(o => o.CruiseSpeedMps >= 0.001,
         "DeliveryFlight:CruiseSpeedMps must be at least 0.001.")
     .Validate(o => o.CruiseSpeedMps <= 999.99,
-        "DeliveryFlight:CruiseSpeedMps must be at most 999.99.").ValidateOnStart();
+        "DeliveryFlight:CruiseSpeedMps must be at most 999.99.")
+    .ValidateOnStart();
 builder.Services.AddOptions<DroneSimulatorOptions>()
     .Bind(builder.Configuration.GetSection(DroneSimulatorOptions.SectionName))
     .Validate(o => double.IsFinite(o.TickIntervalSeconds) && o.TickIntervalSeconds >= 0.001 && o.TickIntervalSeconds <= (uint.MaxValue - 1d) / 1000,
@@ -107,6 +108,7 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddScoped<IDroneService, DroneService>();
 builder.Services.AddScoped<IFlightTelemetryService, FlightTelemetryService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

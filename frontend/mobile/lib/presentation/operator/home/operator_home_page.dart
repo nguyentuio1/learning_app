@@ -17,11 +17,19 @@ class OperatorHomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncState = ref.watch(stationAvailabilityNotifierProvider);
+    final roleCode = ref.watch(currentUserProvider)?.roleCode.toUpperCase();
+    final canManageFailures = roleCode == 'DISPATCHER' || roleCode == 'ADMIN';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Station availability'),
         actions: [
+          if (canManageFailures)
+            IconButton(
+              tooltip: 'Failed deliveries',
+              icon: const Icon(Icons.report_gmailerrorred_outlined),
+              onPressed: () => context.push(RoutePaths.operatorFailedOrders),
+            ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
