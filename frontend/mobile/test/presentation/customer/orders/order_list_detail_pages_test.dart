@@ -8,7 +8,10 @@ import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_
 import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
 import 'package:smart_drone_delivery/data/models/paged_result.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
+import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
+import 'package:smart_drone_delivery/domain/entities/delivery_map_snapshot.dart';
+import 'package:smart_drone_delivery/domain/repositories/delivery_map_repository.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
 import 'package:smart_drone_delivery/routes/route_paths.dart';
@@ -82,6 +85,42 @@ class _FakeOrderService extends DeliveryOrderApiService {
       _detail;
 }
 
+class _FakeDeliveryMapRepository implements DeliveryMapRepository {
+  @override
+  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async =>
+      DeliveryMapSnapshot(
+        orderId: 'order-1',
+        trackingNumber: 'TRACK-1',
+        status: DeliveryMapOrderStatus.inTransit,
+        originStation: MapStationPoint(
+          id: 'origin-1',
+          name: 'Origin Hub',
+          latitude: 10.7769,
+          longitude: 106.7009,
+        ),
+        destinationStation: MapStationPoint(
+          id: 'destination-1',
+          name: 'Destination Hub',
+          latitude: 10.8506,
+          longitude: 106.7719,
+        ),
+        estimatedDeliveryTime: null,
+        lastPosition: DroneMapTelemetry(
+          latitude: 10.8012,
+          longitude: 106.7311,
+          altitudeMeters: 80,
+          speedMps: 11.5,
+          batteryPercentage: 71,
+          timestamp: DateTime.utc(2026, 11, 4, 8, 10),
+        ),
+        telemetryStale: false,
+      );
+
+  @override
+  Stream<DeliveryMapUpdate> watchOrderMap(String orderId) =>
+      Stream<DeliveryMapUpdate>.empty();
+}
+
 Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1;
@@ -106,7 +145,12 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        deliveryMapRepositoryProvider.overrideWithValue(
+          _FakeDeliveryMapRepository(),
+        ),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -198,8 +242,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Books'), findsOneWidget);
-    expect(find.text('Origin Hub'), findsOneWidget);
-    expect(find.text('Destination Hub'), findsOneWidget);
+    expect(find.text('Origin Hub'), findsNWidgets(2));
+    expect(find.text('Destination Hub'), findsNWidgets(2));
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('1 Main Street'), findsOneWidget);
     expect(find.text('Mai Tran'), findsOneWidget);
@@ -213,5 +257,29 @@ void main() {
       tester.getTopLeft(find.text('— → PENDING')).dy,
       lessThan(tester.getTopLeft(find.text('APPROVED → IN_TRANSIT')).dy),
     );
+  });
+
+  testWidgets('shows delivery map and telemetry for in-transit details', (
+    tester,
+  ) async {
+    await _pumpOrders(tester, _FakeOrderService());
+    await tester.tap(find.text('TRACK-1'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('delivery-map-origin-marker')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delivery-map-destination-marker')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delivery-map-drone-marker')),
+      findsOneWidget,
+    );
+    expect(find.text('Speed'), findsOneWidget);
+    expect(find.text('11.5 m/s'), findsOneWidget);
+    expect(find.text('Battery'), findsOneWidget);
   });
 }
