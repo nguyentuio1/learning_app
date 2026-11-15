@@ -29,10 +29,11 @@ DeliveryMapSnapshot _snapshot({
   DroneMapTelemetry? position,
   bool includePosition = false,
   bool stale = false,
+  DeliveryMapOrderStatus status = DeliveryMapOrderStatus.inTransit,
 }) => DeliveryMapSnapshot(
   orderId: _orderId,
   trackingNumber: 'TRACK-1',
-  status: DeliveryMapOrderStatus.inTransit,
+  status: status,
   originStation: const MapStationPoint(
     id: 'origin',
     name: 'Origin',
@@ -56,17 +57,28 @@ class _FakeDeliveryMapRepository implements DeliveryMapRepository {
   final DeliveryMapSnapshot initialSnapshot;
   final updates = StreamController<DeliveryMapUpdate>.broadcast();
   int snapshotRequests = 0;
-  Completer<DeliveryMapSnapshot>? pendingSnapshot;
+  final pendingSnapshots = <Completer<DeliveryMapSnapshot>>[];
+  final queuedSnapshots = <DeliveryMapSnapshot>[];
+  int activeSnapshotRequests = 0;
+  int maximumConcurrentSnapshotRequests = 0;
+  bool get hasStreamListener => updates.hasListener;
 
   @override
-  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) {
+  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async {
     snapshotRequests++;
-    final pending = pendingSnapshot;
-    if (pending != null) {
-      pendingSnapshot = null;
-      return pending.future;
+    activeSnapshotRequests++;
+    if (activeSnapshotRequests > maximumConcurrentSnapshotRequests) {
+      maximumConcurrentSnapshotRequests = activeSnapshotRequests;
     }
-    return Future.value(initialSnapshot);
+    try {
+      if (pendingSnapshots.isNotEmpty) {
+        return await pendingSnapshots.removeAt(0).future;
+      }
+      if (queuedSnapshots.isNotEmpty) return queuedSnapshots.removeAt(0);
+      return initialSnapshot;
+    } finally {
+      activeSnapshotRequests--;
+    }
   }
 
   @override
@@ -200,7 +212,7 @@ void main() {
     expect(repository.snapshotRequests, 2);
 
     final pendingSnapshot = Completer<DeliveryMapSnapshot>();
-    repository.pendingSnapshot = pendingSnapshot;
+    repository.pendingSnapshots.add(pendingSnapshot);
     repository.emit(
       const DeliveryMapUpdate(type: DeliveryMapUpdateType.reconnecting),
     );
@@ -233,6 +245,9 @@ void main() {
     expect(repository.snapshotRequests, 4);
     await tester.pump(const Duration(seconds: 5));
     expect(repository.snapshotRequests, 4);
+    subscription.close();
+    container.dispose();
+    await tester.pump();
   });
 
   testWidgets('cancels the polling timer when the provider is disposed', (
@@ -255,5 +270,211 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     expect(repository.snapshotRequests, 1);
     container.dispose();
+  });
+
+  testWidgets(
+    'refreshes idle connected telemetry and marks aged position events stale',
+    (tester) async {
+      final now = DateTime.now().toUtc();
+      final freshPosition = DroneMapTelemetry(
+        latitude: 10.8,
+        longitude: 106.7,
+        altitudeMeters: 80,
+        speedMps: 11,
+        batteryPercentage: 70,
+        timestamp: now.subtract(const Duration(seconds: 10)),
+      );
+      final repository =
+          _FakeDeliveryMapRepository(
+              _snapshot(position: freshPosition, includePosition: true),
+            )
+            ..queuedSnapshots.addAll([
+              _snapshot(position: freshPosition, includePosition: true),
+              _snapshot(position: freshPosition, includePosition: true),
+              _snapshot(stale: true),
+            ]);
+      final container = ProviderContainer(
+        overrides: [
+          deliveryMapRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        deliveryMapControllerProvider(_orderId),
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      await container.read(deliveryMapControllerProvider(_orderId).future);
+
+      repository.emit(
+        const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+      );
+      await tester.pump();
+      expect(repository.snapshotRequests, 2);
+
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(repository.snapshotRequests, 3);
+      expect(
+        container
+            .read(deliveryMapControllerProvider(_orderId))
+            .requireValue
+            .snapshot
+            .telemetryStale,
+        isTrue,
+      );
+
+      final agedPosition = DroneMapTelemetry(
+        latitude: 10.81,
+        longitude: 106.71,
+        altitudeMeters: 82,
+        speedMps: 12,
+        batteryPercentage: 69,
+        timestamp: DateTime.now().toUtc().subtract(const Duration(seconds: 61)),
+      );
+      repository.emit(
+        DeliveryMapUpdate(
+          type: DeliveryMapUpdateType.position,
+          position: agedPosition,
+        ),
+      );
+      await tester.pump();
+      final current = container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot;
+      expect(current.lastPosition?.timestamp, agedPosition.timestamp);
+      expect(current.telemetryStale, isTrue);
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
+    'queues mission refresh behind an in-flight snapshot without overlap',
+    (tester) async {
+      final repository = _FakeDeliveryMapRepository(
+        _snapshot(includePosition: true),
+      );
+      final firstPending = Completer<DeliveryMapSnapshot>();
+      final secondPending = Completer<DeliveryMapSnapshot>();
+      final container = ProviderContainer(
+        overrides: [
+          deliveryMapRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        deliveryMapControllerProvider(_orderId),
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      await container.read(deliveryMapControllerProvider(_orderId).future);
+
+      repository.pendingSnapshots.add(firstPending);
+      repository.emit(
+        const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+      );
+      await tester.pump();
+      expect(repository.snapshotRequests, 2);
+      repository.pendingSnapshots.add(secondPending);
+      repository.emit(
+        const DeliveryMapUpdate(
+          type: DeliveryMapUpdateType.statusChanged,
+          orderId: _orderId,
+        ),
+      );
+      await tester.pump();
+      expect(repository.snapshotRequests, 2);
+
+      firstPending.complete(_snapshot(includePosition: true));
+      await tester.pump();
+      await tester.pump();
+      expect(repository.snapshotRequests, 3);
+      expect(repository.maximumConcurrentSnapshotRequests, 1);
+
+      secondPending.complete(_snapshot(stale: true));
+      await tester.pump();
+      await tester.pump();
+      final result = container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot;
+      expect(result.lastPosition, isNull);
+      expect(result.telemetryStale, isTrue);
+      expect(repository.maximumConcurrentSnapshotRequests, 1);
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    },
+  );
+
+  testWidgets('keeps a newer stream position over a slow older HTTP snapshot', (
+    tester,
+  ) async {
+    final repository = _FakeDeliveryMapRepository(
+      _snapshot(includePosition: true),
+    );
+    final pending = Completer<DeliveryMapSnapshot>();
+    final container = ProviderContainer(
+      overrides: [deliveryMapRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      deliveryMapControllerProvider(_orderId),
+      (_, _) {},
+    );
+    addTearDown(subscription.close);
+    await container.read(deliveryMapControllerProvider(_orderId).future);
+
+    repository.pendingSnapshots.add(pending);
+    repository.emit(
+      const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+    );
+    await tester.pump();
+    repository.emit(
+      DeliveryMapUpdate(
+        type: DeliveryMapUpdateType.position,
+        position: _newPosition,
+      ),
+    );
+    await tester.pump();
+    pending.complete(_snapshot(includePosition: true));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot
+          .lastPosition
+          ?.timestamp,
+      _newPosition.timestamp,
+    );
+    subscription.close();
+    container.dispose();
+    await tester.pump();
+  });
+
+  testWidgets('does not open the stream after disposal during initial GET', (
+    tester,
+  ) async {
+    final repository = _FakeDeliveryMapRepository(_snapshot());
+    final pending = Completer<DeliveryMapSnapshot>();
+    repository.pendingSnapshots.add(pending);
+    final container = ProviderContainer(
+      overrides: [deliveryMapRepositoryProvider.overrideWithValue(repository)],
+    );
+    container.listen(deliveryMapControllerProvider(_orderId), (_, _) {});
+    await tester.pump();
+    expect(repository.snapshotRequests, 1);
+
+    container.dispose();
+    pending.complete(_snapshot());
+    await tester.pump();
+    await tester.pump();
+    expect(repository.hasStreamListener, isFalse);
   });
 }
