@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/error/api_exception.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
+import '../../../data/models/station_operation_models.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
 import '../../../routes/route_paths.dart';
 import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
+import 'confirm_delivery_page.dart';
 import 'my_orders_provider.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
@@ -90,6 +92,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
+        if (order.status == 'ARRIVED') _arrivedBanner(detail),
         if (order.status == 'FAILED') _failureBanner(detail),
         _detail('Tracking number', order.trackingNumber ?? order.id),
         _detail('Status', order.status),
@@ -187,6 +190,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               detail.statusLogs[index],
               index < detail.statusLogs.length - 1,
             ),
+        if (order.status == 'ARRIVED')
+          FilledButton.icon(
+            key: const Key('enter-pickup-code-button'),
+            onPressed: () => _openConfirmDelivery(order),
+            icon: const Icon(Icons.vpn_key_outlined),
+            label: const Text('Enter pickup code'),
+          ),
         if (order.status == 'PENDING')
           FilledButton.icon(
             onPressed: () => _editOrder(order),
@@ -244,6 +254,51 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       ],
     ),
   );
+
+  Widget _arrivedBanner(DeliveryOrderDetailResponseDto detail) {
+    final stationName =
+        detail.destinationStation?.name ??
+        detail.destinationStation?.stationCode ??
+        detail.destinationStationId;
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Arrived at $stationName',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Your package has landed. Enter the pickup code to complete delivery.',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _failureBanner(DeliveryOrderDetailResponseDto detail) {
     final failureLogs = detail.statusLogs
@@ -316,6 +371,32 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     } finally {
       _cancelSheetOpen = false;
     }
+  }
+
+  Future<void> _openConfirmDelivery(DeliveryOrder order) async {
+    final router = GoRouter.maybeOf(context);
+    ConfirmPickupResponse? result;
+    if (router != null) {
+      result = await context.push<ConfirmPickupResponse>(
+        RoutePaths.customerOrderConfirmDeliveryFor(order.id),
+        extra: order,
+      );
+    } else {
+      result = await Navigator.of(context).push<ConfirmPickupResponse>(
+        MaterialPageRoute<ConfirmPickupResponse>(
+          builder: (_) =>
+              ConfirmDeliveryPage(orderId: order.id, initialOrder: order),
+        ),
+      );
+    }
+    if (!mounted) return;
+    if (result != null) {
+      setState(() {
+        _localOrder = _withStatus(order, result!.status);
+      });
+    }
+    ref.invalidate(orderDetailProvider(widget.detailId));
+    ref.invalidate(myOrdersProvider);
   }
 
   Future<void> _editOrder(DeliveryOrder order) async {

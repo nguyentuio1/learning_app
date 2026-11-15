@@ -1,0 +1,496 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:smart_drone_delivery/core/error/api_exception.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_dto.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
+import 'package:smart_drone_delivery/data/models/paged_result.dart';
+import 'package:smart_drone_delivery/data/models/station_operation_models.dart';
+import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
+import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/confirm_delivery_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/delivery_confirmation_controller.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
+import 'package:smart_drone_delivery/routes/route_paths.dart';
+
+const _arrivedOrderId = 'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33';
+
+const _arrivedOrder = DeliveryOrder(
+  id: _arrivedOrderId,
+  recipientName: 'Tran Quoc Bao',
+  recipientPhone: '0912345678',
+  originStationId: '7d2e5a90-1b4c-4f38-a6d1-9c8e0b3f5a44',
+  destinationStationId: 'a1c3e5f7-2b4d-4a6c-8e0f-1b3d5f7a9c21',
+  status: 'ARRIVED',
+  trackingNumber: 'DD-202611-0012',
+);
+
+DeliveryOrderDetailResponseDto _buildDetail({String status = 'ARRIVED'}) =>
+    DeliveryOrderDetailResponseDto.fromJson({
+      'id': _arrivedOrderId,
+      'trackingNumber': 'DD-202611-0012',
+      'recipientName': 'Tran Quoc Bao',
+      'recipientPhone': '0912345678',
+      'originStationId': '7d2e5a90-1b4c-4f38-a6d1-9c8e0b3f5a44',
+      'destinationStationId': 'a1c3e5f7-2b4d-4a6c-8e0f-1b3d5f7a9c21',
+      'status': status,
+      'package': {'packageName': 'Lab sample kit', 'weightGram': 1200},
+      'originStation': {'stationCode': 'HCM-01', 'name': 'District 1 Hub'},
+      'destinationStation': {'stationCode': 'HCM-02', 'name': 'Thu Duc Hub'},
+      'statusLogs': [
+        {
+          'fromStatus': 'IN_TRANSIT',
+          'toStatus': status,
+          'remarks': 'Landed at destination station',
+          'createdAt': '2026-11-15T08:20:00Z',
+        },
+      ],
+    });
+
+final _confirmResponse = ConfirmPickupResponse.fromJson({
+  'orderId': _arrivedOrderId,
+  'trackingNumber': 'DD-202611-0012',
+  'status': 'DELIVERED',
+  'actualDeliveryTime': '2026-11-15T08:30:00Z',
+  'slotId': 'b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10',
+  'slotReleased': true,
+});
+
+class _FakeDeliveryOrderService extends DeliveryOrderApiService {
+  _FakeDeliveryOrderService({
+    DeliveryOrderDetailResponseDto? detail,
+    ConfirmPickupResponse? confirmResponse,
+  }) : detail = detail ?? _buildDetail(),
+       confirmResponse = confirmResponse ?? _confirmResponse,
+       super(Dio());
+
+  DeliveryOrderDetailResponseDto detail;
+  ConfirmPickupResponse confirmResponse;
+  ApiException? detailError;
+  ApiException? confirmError;
+  int detailLoadCount = 0;
+  String? lastConfirmedOrderId;
+  ConfirmDeliveryRequest? lastConfirmRequest;
+
+  @override
+  Future<PagedResult<DeliveryOrder>> getOrders(
+    DeliveryOrderFilterParams params,
+  ) async {
+    return PagedResult(
+      items: const [_arrivedOrder],
+      page: 1,
+      pageSize: 20,
+      totalCount: 1,
+      totalPages: 1,
+    );
+  }
+
+  @override
+  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async {
+    detailLoadCount++;
+    if (detailError != null) {
+      throw detailError!;
+    }
+    return detail;
+  }
+
+  @override
+  Future<ConfirmPickupResponse> confirmDelivery(
+    String id,
+    ConfirmDeliveryRequest request,
+  ) async {
+    lastConfirmedOrderId = id;
+    lastConfirmRequest = request;
+    if (confirmError != null) {
+      throw confirmError!;
+    }
+    detail = _buildDetail(status: 'DELIVERED');
+    return confirmResponse;
+  }
+}
+
+Future<void> _pumpWithRouter(
+  WidgetTester tester,
+  _FakeDeliveryOrderService service, {
+  String initialLocation = '/customer/orders/$_arrivedOrderId',
+}) async {
+  tester.view.physicalSize = const Size(800, 1800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final router = GoRouter(
+    initialLocation: initialLocation,
+    routes: [
+      GoRoute(
+        path: RoutePaths.customerOrders,
+        builder: (_, _) => const MyOrdersPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.customerOrderDetails,
+        builder: (_, state) => OrderDetailPage(
+          orderId: state.pathParameters['orderId'],
+          order: state.extra is DeliveryOrder
+              ? state.extra as DeliveryOrder
+              : null,
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.customerOrderConfirmDelivery,
+        builder: (_, state) => ConfirmDeliveryPage(
+          orderId: state.pathParameters['orderId'] ?? '',
+          initialOrder: state.extra is DeliveryOrder
+              ? state.extra as DeliveryOrder
+              : null,
+        ),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      child: MaterialApp.router(routerConfig: router),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  group('DeliveryConfirmationController', () {
+    late _FakeDeliveryOrderService fakeService;
+
+    setUp(() {
+      fakeService = _FakeDeliveryOrderService();
+    });
+
+    test('rejects malformed codes and non-ARRIVED orders without calling API', () async {
+      final container = ProviderContainer(
+        overrides: [
+          deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      final notifier = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
+      );
+
+      final malformed = await notifier.confirmDelivery(
+        secureCode: '12345',
+        currentOrderStatus: 'ARRIVED',
+      );
+      expect(malformed, false);
+      expect(
+        container
+            .read(deliveryConfirmationControllerProvider(_arrivedOrderId))
+            .errorMessage,
+        'Pickup code must be exactly 6 digits.',
+      );
+      expect(fakeService.lastConfirmRequest, isNull);
+
+      final wrongStatus = await notifier.confirmDelivery(
+        secureCode: '593284',
+        currentOrderStatus: 'IN_TRANSIT',
+      );
+      expect(wrongStatus, false);
+      expect(
+        container
+            .read(deliveryConfirmationControllerProvider(_arrivedOrderId))
+            .errorMessage,
+        'Only arrived orders can be confirmed for delivery.',
+      );
+      expect(fakeService.lastConfirmRequest, isNull);
+    });
+
+    test(
+      'surfaces 400 attemptsRemaining and 423 lockout with 0 attempts remaining',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final notifier = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
+        );
+
+        fakeService.confirmError = const ApiException(
+          message: 'Invalid pickup code.',
+          statusCode: 400,
+          attemptsRemaining: 2,
+        );
+        final res400 = await notifier.confirmDelivery(
+          secureCode: '000000',
+          currentOrderStatus: 'ARRIVED',
+        );
+        expect(res400, false);
+        var state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.remainingAttempts, 2);
+        expect(state.isLocked, false);
+
+        final lockExpiry = DateTime.now().toUtc().add(
+          const Duration(minutes: 10),
+        );
+        fakeService.confirmError = ApiException(
+          message: 'Too many wrong codes. Try again later.',
+          statusCode: 423,
+          retryAfterSeconds: 600,
+          lockoutExpiresAt: lockExpiry,
+        );
+        final res423 = await notifier.confirmDelivery(
+          secureCode: '111111',
+          currentOrderStatus: 'ARRIVED',
+        );
+        expect(res423, false);
+        state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.isLocked, true);
+        expect(state.remainingAttempts, 0);
+        expect(state.lockoutSecondsRemaining, 600);
+        expect(state.lockoutExpiresAt, lockExpiry);
+
+        // Locked state prevents further API calls
+        fakeService.lastConfirmRequest = null;
+        final whileLocked = await notifier.confirmDelivery(
+          secureCode: '593284',
+          currentOrderStatus: 'ARRIVED',
+        );
+        expect(whileLocked, false);
+        expect(fakeService.lastConfirmRequest, isNull);
+      },
+    );
+
+    test(
+      'marks requiresOrderRefresh on 409 Conflict and network errors, and accessLost on 403/404',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final notifier = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
+        );
+
+        fakeService.confirmError = const ApiException(
+          message: 'Order already confirmed.',
+          statusCode: 409,
+        );
+        await notifier.confirmDelivery(
+          secureCode: '593284',
+          currentOrderStatus: 'ARRIVED',
+        );
+        var state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.requiresOrderRefresh, true);
+        expect(state.errorMessage, 'Order already confirmed.');
+
+        fakeService.confirmError = const ApiException(
+          message: 'Network problem.',
+          isNetwork: true,
+        );
+        await notifier.confirmDelivery(
+          secureCode: '593284',
+          currentOrderStatus: 'ARRIVED',
+        );
+        state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.requiresOrderRefresh, true);
+        expect(state.errorMessage, contains('Connection lost'));
+
+        fakeService.confirmError = const ApiException(
+          message: 'Order not found or unavailable to your account.',
+          statusCode: 404,
+          code: 'MSG-P-CO-25',
+        );
+        await notifier.confirmDelivery(
+          secureCode: '593284',
+          currentOrderStatus: 'ARRIVED',
+        );
+        state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.accessLost, true);
+      },
+    );
+  });
+
+  group('Delivery Confirmation Screens (C08 -> C11/C12 -> C13)', () {
+    testWidgets(
+      'navigates from ARRIVED OrderDetailPage to ConfirmDeliveryPage, enters code via keypad, and completes delivery',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        await _pumpWithRouter(tester, service);
+
+        // C08: Arrived banner and Enter pickup code button on OrderDetailPage
+        expect(find.textContaining('Arrived at Thu Duc Hub'), findsOneWidget);
+        expect(
+          find.byKey(const Key('enter-pickup-code-button')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('enter-pickup-code-button')));
+        await tester.pumpAndSettle();
+
+        // C11: Confirm delivery screen
+        expect(find.text('Enter the pickup code'), findsOneWidget);
+        expect(
+          find.textContaining('DD-202611-0012 · HCM-02 · Thu Duc Hub'),
+          findsOneWidget,
+        );
+
+        // Tap digits 5-9-3-2-8-4 on keypad
+        for (final digit in ['5', '9', '3', '2', '8', '4']) {
+          await tester.tap(find.byKey(Key('keypad-digit-$digit')));
+          await tester.pump();
+        }
+
+        final submitButton = tester.widget<FilledButton>(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        expect(submitButton.onPressed, isNotNull);
+
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(service.lastConfirmedOrderId, _arrivedOrderId);
+        expect(service.lastConfirmRequest?.pickupSecureCode, '593284');
+
+        // C13: Delivery Completed screen
+        expect(find.text('Delivered'), findsOneWidget);
+        expect(
+          find.textContaining('Order DD-202611-0012 confirmed at'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Thank you for using SmartDroneDelivery.'),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('back-to-orders-button')), findsOneWidget);
+        expect(
+          find.byKey(const Key('view-order-history-button')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows remaining attempts on 400 and disables confirmation on 423 lockout',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation:
+              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+        );
+
+        // 400 wrong code with 2 tries left
+        service.confirmError = const ApiException(
+          message: 'Invalid pickup code.',
+          statusCode: 400,
+          attemptsRemaining: 2,
+        );
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '000000',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Invalid pickup code.'), findsOneWidget);
+        expect(
+          find.textContaining('Wrong code. 2 tries left.'),
+          findsOneWidget,
+        );
+
+        // 423 Locked with Retry-After = 600
+        service.confirmError = ApiException(
+          message: 'Too many wrong codes. Try again later.',
+          statusCode: 423,
+          retryAfterSeconds: 600,
+          lockoutExpiresAt: DateTime.now().toUtc().add(
+            const Duration(minutes: 10),
+          ),
+        );
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '111111',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Attempts remaining: 0.'), findsOneWidget);
+        expect(find.textContaining('Retry after 600s.'), findsOneWidget);
+
+        final submitButton = tester.widget<FilledButton>(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        expect(submitButton.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'shows ineligible state when order is not ARRIVED and hides protected data on 404 access loss',
+      (tester) async {
+        final service = _FakeDeliveryOrderService(
+          detail: _buildDetail(status: 'IN_TRANSIT'),
+        );
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation:
+              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+        );
+
+        expect(
+          find.text('Order not ready for confirmation'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('currently IN_TRANSIT'), findsOneWidget);
+        expect(find.byKey(const Key('pickup-secure-code-input')), findsNothing);
+      },
+    );
+  });
+}

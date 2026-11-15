@@ -11,6 +11,12 @@ abstract final class RoutePaths {
   static const customerPackagesEdit = '/customer/packages/edit';
   static const customerOrders = '/customer/orders';
   static const customerOrderDetails = '/customer/orders/:orderId';
+  static const customerOrderConfirmDelivery =
+      '/customer/orders/:orderId/confirm-delivery';
+  static String customerOrderDetailsFor(String orderId) =>
+      '/customer/orders/$orderId';
+  static String customerOrderConfirmDeliveryFor(String orderId) =>
+      '/customer/orders/$orderId/confirm-delivery';
   static const customerOrdersCreate = '/customer/orders/create';
   static const customerOrdersReview = '/customer/orders/create/review';
   static const customerOrderSubmitted = '/customer/orders/create/submitted';
