@@ -2,7 +2,7 @@
 
 **Task:** [LA-341](https://hungndemail.atlassian.net/browse/LA-341). **Consumers:** web, Customer/Operator mobile and acceptance tests. Paths below include `/api`; a client whose base URL already ends in `/api` must not add that prefix again.
 
-This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend branches below. Analytics/external shapes are implementation proposals for client mocks and backend review; their business-policy decisions are explicitly listed in section 7. A document merge does not deploy an endpoint or approve those policies.
+This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend branches below. LA-153 implements the analytics proposal on its story branch; metric/business acceptance is still separate. External shapes remain implementation proposals for client mocks and backend review; policy decisions are explicitly listed in section 7. A document merge does not deploy an endpoint or approve those policies.
 
 Machine-readable HTTP schemas: [sprint-6-openapi.json](sprint-6-openapi.json). SignalR is described in section 3 because its invocation/event protocol is not a normal REST operation.
 
@@ -13,7 +13,7 @@ Machine-readable HTTP schemas: [sprint-6-openapi.json](sprint-6-openapi.json). S
 | Tracking + map data, LA-35/36 | LA-143; web LA-144/147; mobile LA-145/148; tests LA-146/149 | Implemented in `story/LA-35-realtime-delivery-tracking`, [PR #184](https://github.com/nguyentuio1/learning_app/pull/184). Not yet integrated into `develop` while other story tasks remain open. |
 | Customer confirmation, LA-37 | LA-150; mobile LA-151; tests LA-152 | Implemented in `story/LA-37-secure-delivery-confirmation` through [PR #186](https://github.com/nguyentuio1/learning_app/pull/186). Use that story branch after merge, not an older `develop` checkout. |
 | Operator confirmation | Existing LA-125/126/127 | Available on `develop`; existing [station contract](station-api.md) section 4.4. |
-| Dashboard/reports, LA-38 | LA-153; web LA-154; tests LA-155 | Planned; mock the proposed schemas in section 5. No analytics route exists on the current `develop`. |
+| Dashboard/reports, LA-38 | LA-153; web LA-154; tests LA-155 | Backend implemented by LA-153 on `feature/LA-153-dashboard-reports-api`, targeting `story/LA-38-dashboard-reports`. Schema matches section 5; metric/business acceptance remains pending. No analytics route exists on `develop` until this story is integrated. |
 | External integration, LA-39 | LA-156; tests LA-157 | Planned; mock section 6. API-key provisioning and versioned routes are not implemented yet. |
 
 Check the linked PR/branch before trying a new endpoint. A `404` from an older branch does not prove an authorization or client defect. Merge completed stories into `develop` promptly after review and CI; do not merge an incomplete story just to expose its backend.
@@ -131,13 +131,13 @@ The shared durable counter locks for ten minutes after three wrong codes across 
 - `POST /api/landing-stations/{stationId}/operations/validate-code`: advisory validation only, same authorization/counter; returns `{ isValid, attemptsRemaining, isLocked, lockoutExpiresAt }` under [station-api.md](station-api.md). A validation success does **not** mean DELIVERED or release a slot.
 - Customer self-service and operator-assisted confirmation serialize on the same order: one can succeed; the other receives `409` after completion.
 
-## 5. Dashboard and reports - proposed for LA-153/154/155
+## 5. Dashboard and reports - LA-153/154/155
 
-These URLs/DTOs are supplied now for mocks; no implementation is claimed. Metric/business decisions in section 7 remain proposed pending acceptance.
+The LA-153 backend implements these URLs/DTOs on the branch listed above. Clients can use that backend or the same mock schemas. Metric/business decisions in section 7 remain proposed pending acceptance; implementation and passing technical tests do not claim business approval.
 
 ### 5.1 GET /api/analytics/dashboard?fromDate=2026-11-01&toDate=2026-11-30
 
-Auth proposal: active `MANAGER` only, matching the analytics design; ADMIN access is not inferred. Both dates are required `YYYY-MM-DD`, inclusive calendar days in fixed reporting timezone `Asia/Ho_Chi_Minh` (UTC+07:00). Reject reversed/malformed/missing dates, more than 366 inclusive days, unrepresentable next-day boundaries and unknown filters with `400` plus field errors. No silent default period, timezone switch, station/status/fleet filter or export parameter is defined in this version.
+Auth: active `MANAGER` only, matching the analytics design; ADMIN access is not inferred. Both dates are required `YYYY-MM-DD`, inclusive calendar days in fixed reporting timezone `Asia/Ho_Chi_Minh` (UTC+07:00). Reject reversed/malformed/missing dates, more than 366 inclusive days, unrepresentable UTC boundaries, repeated parameters and unknown filters with `400` plus field errors. Query names are case-sensitive. No silent default period, timezone switch, station/status/fleet filter or export parameter is defined in this version.
 
 `200` proposed `DashboardResult` example (all fields required; percentages/minutes explicitly nullable):
 
@@ -247,7 +247,7 @@ Versioning proposal: publish these routes as external version `v1`; retain curre
 |---|---|
 | Tracking DTOs, selected-order hub, expiry/revocation, null/stale rules | Implemented/checked against LA-143, commit `62e5692`, PR #184. |
 | Customer confirmation and shared operator OTP budget | Implemented/checked against LA-150, commit `529bbf0`, PR #186. |
-| Analytics URLs/schema, fixed Vietnam timezone, required dates and 366-day maximum | LA-341 implementation proposal; leader/module owner must accept before LA-153 is represented as approved behavior. |
+| Analytics URLs/schema, fixed Vietnam timezone, required dates and 366-day maximum | Implemented technically by LA-153 against the LA-341 proposal; leader/module owner must accept before it is represented as approved business behavior. |
 | Created-date/current-status cohort, success denominator, departure-to-confirmation average and station throughput | Existing LA-240/UA section 7.1 candidates retained explicitly; require business acceptance before metric acceptance. Historical occupancy/status-at-period-end is outside this proposal. |
 | API-key provisioning/scope/expiry/limits and v1 external routes | LA-341 proposal for LA-156; provisioning persistence, rate limiting and Swagger are future implementation work, not features delivered by this document. |
 
