@@ -74,6 +74,7 @@ class DeliveryConfirmationController
   final String orderId;
   Timer? _lockoutTimer;
   int _refreshGeneration = 0;
+  bool _awaitingFreshRead = false;
 
   @override
   DeliveryConfirmationState build() {
@@ -83,6 +84,7 @@ class DeliveryConfirmationController
       (previous, next) {
         if (next.isLoading || next.isRefreshing) return;
         if (next.hasError) {
+          _awaitingFreshRead = false;
           final error = next.error;
           if (error != null && isAccessDeniedError(error)) {
             _cancelLockoutTimer();
@@ -97,7 +99,8 @@ class DeliveryConfirmationController
           }
           return;
         }
-        if (next.hasValue && state.requiresOrderRefresh) {
+        if (next.hasValue && state.requiresOrderRefresh && _awaitingFreshRead) {
+          _awaitingFreshRead = false;
           final detail = next.requireValue;
           if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
             state = state.copyWith(requiresOrderRefresh: false);
@@ -170,16 +173,29 @@ class DeliveryConfirmationController
 
   Future<bool> refreshOrderEligibility() async {
     final generation = ++_refreshGeneration;
+    _awaitingFreshRead = true;
     state = state.copyWith(requiresOrderRefresh: true);
+    ref.invalidate(orderDetailProvider(orderId));
     ref.invalidate(myOrdersProvider);
 
-    await ref.read(orderDetailProvider(orderId).notifier).refresh();
-    if (!ref.mounted || generation != _refreshGeneration) return false;
-
-    final currentAsync = ref.read(orderDetailProvider(orderId));
-    if (currentAsync.hasError) {
-      final error = currentAsync.error;
-      if (error != null && isAccessDeniedError(error)) {
+    try {
+      final detail = await ref.read(orderDetailProvider(orderId).future);
+      if (!ref.mounted || generation != _refreshGeneration) return false;
+      _awaitingFreshRead = false;
+      if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
+        state = state.copyWith(requiresOrderRefresh: false);
+        return true;
+      }
+      state = state.copyWith(
+        requiresOrderRefresh: false,
+        errorMessage:
+            'Order ${detail.trackingNumber ?? detail.id} is currently ${detail.status}. Only ARRIVED orders can be confirmed for delivery.',
+      );
+      return false;
+    } catch (error) {
+      if (!ref.mounted || generation != _refreshGeneration) return false;
+      _awaitingFreshRead = false;
+      if (isAccessDeniedError(error)) {
         _cancelLockoutTimer();
         state = state.copyWith(
           isSubmitting: false,
@@ -194,24 +210,6 @@ class DeliveryConfirmationController
       state = state.copyWith(requiresOrderRefresh: true);
       return false;
     }
-
-    if (currentAsync.hasValue &&
-        !currentAsync.isLoading &&
-        !currentAsync.isRefreshing) {
-      final detail = currentAsync.requireValue;
-      if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
-        state = state.copyWith(requiresOrderRefresh: false);
-        return true;
-      }
-      state = state.copyWith(
-        requiresOrderRefresh: false,
-        errorMessage:
-            'Order ${detail.trackingNumber ?? detail.id} is currently ${detail.status}. Only ARRIVED orders can be confirmed for delivery.',
-      );
-      return false;
-    }
-
-    return false;
   }
 
   Future<bool> confirmDelivery({
