@@ -7,9 +7,13 @@ import '../../domain/repositories/delivery_map_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../datasources/remote/delivery_map_remote_data_source.dart';
 import '../datasources/remote/delivery_map_signalr_service.dart';
+import '../../domain/repositories/tracking_repository.dart';
+import '../datasources/remote/tracking_remote_data_source.dart';
+import '../datasources/remote/tracking_signalr_service.dart';
 import '../repositories/auth_repository_impl.dart';
 import '../repositories/delivery_map_repository_impl.dart';
 import '../repositories/profile_repository_impl.dart';
+import '../repositories/tracking_repository_impl.dart';
 
 /// Nơi duy nhất nối interface (domain) -> implementation (data).
 /// Test / flavor: `authRepositoryProvider.overrideWithValue(Fake())`.
@@ -48,3 +52,19 @@ final deliveryMapRepositoryProvider = Provider<DeliveryMapRepository>((ref) {
     ),
   );
 }, name: 'deliveryMapRepository');
+final trackingSignalRServiceProvider = Provider<TrackingSignalRService>((ref) {
+  final service = TrackingSignalRService(
+    networkConfig: ref.watch(networkConfigProvider),
+    tokenStorage: ref.watch(tokenStorageProvider),
+  );
+  ref.onDispose(() => service.dispose());
+  return service;
+}, name: 'trackingSignalRService');
+
+final trackingRepositoryProvider = Provider<TrackingRepository>(
+  (ref) => TrackingRepositoryImpl(
+    TrackingRemoteDataSource(ref.watch(dioProvider)),
+    ref.watch(trackingSignalRServiceProvider),
+  ),
+  name: 'trackingRepository',
+);

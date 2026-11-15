@@ -79,7 +79,11 @@ it('validates date boundaries and forbids start date after end date', async () =
   const throughInput = screen.getByLabelText('Created through')
 
   fireEvent.change(fromInput, { target: { value: '2026-11-20' } })
+  fireEvent.keyDown(fromInput, { key: 'Enter', code: 'Enter' })
+  fireEvent.blur(fromInput)
   fireEvent.change(throughInput, { target: { value: '2026-11-10' } })
+  fireEvent.keyDown(throughInput, { key: 'Enter', code: 'Enter' })
+  fireEvent.blur(throughInput)
 
   await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
   expect(await screen.findByText('End date must not be before start date.')).toBeInTheDocument()
@@ -99,7 +103,11 @@ it('applies filters and resets to default values', async () => {
   const throughInput = screen.getByLabelText('Created through')
 
   fireEvent.change(fromInput, { target: { value: '2026-11-01' } })
+  fireEvent.keyDown(fromInput, { key: 'Enter', code: 'Enter' })
+  fireEvent.blur(fromInput)
   fireEvent.change(throughInput, { target: { value: '2026-11-15' } })
+  fireEvent.keyDown(throughInput, { key: 'Enter', code: 'Enter' })
+  fireEvent.blur(throughInput)
 
   await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
 

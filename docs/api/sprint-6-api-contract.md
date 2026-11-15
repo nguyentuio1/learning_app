@@ -2,7 +2,7 @@
 
 **Task:** [LA-341](https://hungndemail.atlassian.net/browse/LA-341). **Consumers:** web, Customer/Operator mobile and acceptance tests. Paths below include `/api`; a client whose base URL already ends in `/api` must not add that prefix again.
 
-This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend branches below. Analytics/external shapes are implementation proposals for client mocks and backend review; their business-policy decisions are explicitly listed in section 7. A document merge does not deploy an endpoint or approve those policies.
+This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend branches below. LA-153 implements the analytics proposal on its story branch; metric/business acceptance is still separate. External shapes remain implementation proposals for client mocks and backend review; policy decisions are explicitly listed in section 7. A document merge does not deploy an endpoint or approve those policies.
 
 Machine-readable HTTP schemas: [sprint-6-openapi.json](sprint-6-openapi.json). SignalR is described in section 3 because its invocation/event protocol is not a normal REST operation.
 
@@ -13,8 +13,8 @@ Machine-readable HTTP schemas: [sprint-6-openapi.json](sprint-6-openapi.json). S
 | Tracking + map data, LA-35/36 | LA-143; web LA-144/147; mobile LA-145/148; tests LA-146/149 | Implemented in `story/LA-35-realtime-delivery-tracking`, [PR #184](https://github.com/nguyentuio1/learning_app/pull/184). Not yet integrated into `develop` while other story tasks remain open. |
 | Customer confirmation, LA-37 | LA-150; mobile LA-151; tests LA-152 | Implemented in `story/LA-37-secure-delivery-confirmation` through [PR #186](https://github.com/nguyentuio1/learning_app/pull/186). Use that story branch after merge, not an older `develop` checkout. |
 | Operator confirmation | Existing LA-125/126/127 | Available on `develop`; existing [station contract](station-api.md) section 4.4. |
-| Dashboard/reports, LA-38 | LA-153; web LA-154; tests LA-155 | Planned; mock the proposed schemas in section 5. No analytics route exists on the current `develop`. |
-| External integration, LA-39 | LA-156; tests LA-157 | Planned; mock section 6. API-key provisioning and versioned routes are not implemented yet. |
+| Dashboard/reports, LA-38 | LA-153; web LA-154; tests LA-155 | Integrated into `develop` through [PR #202](https://github.com/nguyentuio1/learning_app/pull/202). Backend and web UI follow section 5; metric/business acceptance remains distinct from code integration. |
+| External integration, LA-39 | LA-156; tests LA-157 | Backend and tests implemented on `story/LA-39-external-integration`, with integration into `develop` tracked by [PR #203](https://github.com/nguyentuio1/learning_app/pull/203). Provisioning and v1 routes follow section 6; business/operational acceptance remains distinct from code integration. |
 
 Check the linked PR/branch before trying a new endpoint. A `404` from an older branch does not prove an authorization or client defect. Merge completed stories into `develop` promptly after review and CI; do not merge an incomplete story just to expose its backend.
 
@@ -131,13 +131,13 @@ The shared durable counter locks for ten minutes after three wrong codes across 
 - `POST /api/landing-stations/{stationId}/operations/validate-code`: advisory validation only, same authorization/counter; returns `{ isValid, attemptsRemaining, isLocked, lockoutExpiresAt }` under [station-api.md](station-api.md). A validation success does **not** mean DELIVERED or release a slot.
 - Customer self-service and operator-assisted confirmation serialize on the same order: one can succeed; the other receives `409` after completion.
 
-## 5. Dashboard and reports - proposed for LA-153/154/155
+## 5. Dashboard and reports - LA-153/154/155
 
-These URLs/DTOs are supplied now for mocks; no implementation is claimed. Metric/business decisions in section 7 remain proposed pending acceptance.
+The LA-153 backend implements these URLs/DTOs on the branch listed above. Clients can use that backend or the same mock schemas. Metric/business decisions in section 7 remain proposed pending acceptance; implementation and passing technical tests do not claim business approval.
 
 ### 5.1 GET /api/analytics/dashboard?fromDate=2026-11-01&toDate=2026-11-30
 
-Auth proposal: active `MANAGER` only, matching the analytics design; ADMIN access is not inferred. Both dates are required `YYYY-MM-DD`, inclusive calendar days in fixed reporting timezone `Asia/Ho_Chi_Minh` (UTC+07:00). Reject reversed/malformed/missing dates, more than 366 inclusive days, unrepresentable next-day boundaries and unknown filters with `400` plus field errors. No silent default period, timezone switch, station/status/fleet filter or export parameter is defined in this version.
+Auth: active `MANAGER` only, matching the analytics design; ADMIN access is not inferred. Both dates are required `YYYY-MM-DD`, inclusive calendar days in fixed reporting timezone `Asia/Ho_Chi_Minh` (UTC+07:00). Reject reversed/malformed/missing dates, more than 366 inclusive days, unrepresentable UTC boundaries, repeated parameters and unknown filters with `400` plus field errors. Query names are case-sensitive. No silent default period, timezone switch, station/status/fleet filter or export parameter is defined in this version.
 
 `200` proposed `DashboardResult` example (all fields required; percentages/minutes explicitly nullable):
 
@@ -182,19 +182,20 @@ Each row has required `orderId` (UUID), `trackingNumber`, `status`, `originStati
 
 Dashboard and report use the same cohort/formulas. Separate requests may see later committed states; label their returned period/read time and do not claim they are a historical immutable report. Ignore superseded responses when the user changes dates.
 
-## 6. Versioned external integration - proposed for LA-156/157
+## 6. Versioned external integration - LA-156/157
 
-These routes and key lifecycle are not yet implemented. They are a proposed bounded contract for external order creation and HTTP tracking under FR-34/BR-INT-01/02.
+LA-156 implements these routes and key lifecycle on the feature/story branch listed above, under FR-34/BR-INT-01/02. The candidate key/scope/rate policies below are implemented for technical review; this does not assert separate business acceptance or completion of LA-157.
 
 ### 6.1 API-key authentication and lifecycle
 
 - External routes use `X-API-Key: <opaqueKey>`, not a first-party bearer token. Proposed keys contain at least 32 cryptographically random bytes; store a hash and compare safely. Return plaintext only on creation, never in GET/list/logs.
 - Each key is bound server-side to one ACTIVE `CUSTOMER`, named scopes and an expiry. Clients cannot supply/override `customerId` or assume admin rights. Recheck key revocation/expiry and persisted customer eligibility per request.
 - Scopes: `orders:create` for creation; `orders:read` for reading/tracking that bound customer's orders. A valid key with insufficient scope or ineligible bound account returns `403`; missing/unknown/revoked/expired key returns `401`. Another customer's package/address/order is `404`.
-- Proposed limit: 60 requests/minute/key, with at most 10 creates/minute/key; excess returns `429` with integer `Retry-After` seconds. Limits need business/operational acceptance before implementation.
+- Candidate limit: 60 requests/minute/key, with at most 10 creates/minute/key; excess returns `429` with integer `Retry-After` seconds. Business/operational acceptance remains separate from the technical implementation below.
+- LA-156 enforces these candidate limits using separate fixed windows for the total budget and create budget. GET and POST share only the total budget, regardless of request order or URL casing. Windows start on first use and limits are per process; multiple backend instances need a shared limiter before claiming a cluster-wide budget. There is no request queue.
 - Do not send both `X-API-Key` and a bearer Authorization header to external routes; proposed response is `400` for ambiguous credentials. A key does not authenticate first-party `/api/...` or the SignalR hub.
 
-Provisioning proposal, bearer-authenticated active `ADMIN` only:
+Implemented provisioning, bearer-authenticated active `ADMIN` only:
 
 | Endpoint | Request / response |
 |---|---|
@@ -202,7 +203,7 @@ Provisioning proposal, bearer-authenticated active `ADMIN` only:
 | `GET /api/admin/integration-keys?customerId=<uuid>` | Unpaged metadata array with the same fields except **no `apiKey` or hash**; optional customer filter, empty result `[]`. |
 | `DELETE /api/admin/integration-keys/{id}` | Revoke immediately; `204` for an existing key, including an already revoked key; `404` unknown ID. Preserve metadata/audit history. |
 
-Name is trimmed, required and at most 100 characters. Scopes must be a nonempty unique subset of the two defined values; expiry is required UTC and in the future; customer must exist and be ACTIVE with role CUSTOMER. Unknown fields/scopes or invalid values return `400`; an ineligible target customer is `409`. Rotation means create a replacement key and explicitly revoke the old key; no hidden overlap or rotate endpoint is implied. Audit provisioning/revocation without storing the plaintext key.
+Name is trimmed, required and at most 100 characters. Scopes must be a nonempty unique subset of the two defined values; expiry is required UTC ending in `Z` and in the future; customer must exist and be ACTIVE with role CUSTOMER. Unknown fields/scopes or invalid values return `400`; an ineligible target customer is `409`. Rotation means create a replacement key and explicitly revoke the old key; no hidden overlap or rotate endpoint is implied. Provision/revoke audit and key changes commit atomically; an audit failure rolls back the key change. Only a SHA-256 hash of the 256-bit random secret is stored. Creation responses use `Cache-Control: no-store`.
 
 ### 6.2 POST /api/v1/delivery-orders
 
@@ -239,7 +240,11 @@ Auth: eligible key with `orders:read`, owning customer's order only. `200` `Exte
 
 Auth/scope/ownership identical to 6.3. `200` uses exactly `TrackingSnapshot` from section 3.1, including null/stale/current-mission semantics. Poll no faster than every 5 seconds and honor `429`/`Retry-After`. External keys cannot subscribe to the first-party SignalR hub. Errors: `400`, `401`, `403`, `404`, `429`.
 
-Versioning proposal: publish these routes as external version `v1`; retain current field/status meanings within v1. A breaking request/response or ownership-policy change requires a reviewed new major API version. External Swagger/OpenAPI documentation must expose these routes and `X-API-Key`, and clearly separate admin provisioning from externally callable operations.
+These routes use external version `v1`; retain current field/status meanings within v1. A breaking request/response or ownership-policy change requires a reviewed new major API version. On the matching backend branch, `/swagger/v1/swagger.json` and `/swagger` expose the external routes with `X-API-Key` security and admin provisioning with bearer security. The Swagger document name `v1` also contains existing first-party endpoints; only `/api/v1/...` paths are the external versioned interface.
+
+Shared reader: LA-156 includes LA-143's non-HTTP tracking DTO/service with an additional strict-customer read entry point. External reads always constrain `CustomerId`, including when a role changes during a request. It does not import the first-party tracking controller, hub, worker or UI; a successful external HTTP tracking request does not mean LA-35 is integrated. When merging LA-35 later, retain this entry point and one DI registration for the shared service.
+
+Smoke flow for consumers: obtain an ADMIN bearer token, provision a key for an existing ACTIVE CUSTOMER, then call external create/read/tracking with only that key header. Supply package/station/optional address IDs from that customer's first-party workflow. Save the creation code securely; later reads do not recover it. Test missing/wrong scopes and revocation, then revoke the smoke-test key. A `404` on an older `develop` still means the story backend is unavailable there.
 
 ## 7. Decisions and acceptance handoff
 
@@ -247,9 +252,9 @@ Versioning proposal: publish these routes as external version `v1`; retain curre
 |---|---|
 | Tracking DTOs, selected-order hub, expiry/revocation, null/stale rules | Implemented/checked against LA-143, commit `62e5692`, PR #184. |
 | Customer confirmation and shared operator OTP budget | Implemented/checked against LA-150, commit `529bbf0`, PR #186. |
-| Analytics URLs/schema, fixed Vietnam timezone, required dates and 366-day maximum | LA-341 implementation proposal; leader/module owner must accept before LA-153 is represented as approved behavior. |
+| Analytics URLs/schema, fixed Vietnam timezone, required dates and 366-day maximum | Implemented technically by LA-153 against the LA-341 proposal; leader/module owner must accept before it is represented as approved business behavior. |
 | Created-date/current-status cohort, success denominator, departure-to-confirmation average and station throughput | Existing LA-240/UA section 7.1 candidates retained explicitly; require business acceptance before metric acceptance. Historical occupancy/status-at-period-end is outside this proposal. |
-| API-key provisioning/scope/expiry/limits and v1 external routes | LA-341 proposal for LA-156; provisioning persistence, rate limiting and Swagger are future implementation work, not features delivered by this document. |
+| API-key provisioning/scope/expiry/limits and v1 external routes | Implemented technically by LA-156 against the LA-341 proposal, including migration, atomic audits, process-local rate limits and generated Swagger. Business/operational acceptance and LA-157 are separate. |
 
 Teammates can build mocks against these exact field names now. Backend implementation must follow the accepted contract or change this document and its schemas in the same reviewed PR; do not silently rename fields. Before reporting a UI integrated, run it against the corresponding story/backend branch, not only mock fixtures.
 

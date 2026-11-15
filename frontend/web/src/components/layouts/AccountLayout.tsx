@@ -35,6 +35,7 @@ const operationIcons: Record<string, Parameters<typeof AccountIcon>[0]['name']> 
   '/drones': 'drone',
   '/stations': 'route',
   '/station-availability': 'activity',
+  '/delivery-tracking': 'activity',
   '/station-slots': 'grid',
   '/dispatcher/scheduling': 'schedule',
   '/dispatcher/failures': 'alert',

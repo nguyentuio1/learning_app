@@ -14,7 +14,10 @@ import 'package:smart_drone_delivery/domain/entities/delivery_map_snapshot.dart'
 import 'package:smart_drone_delivery/domain/repositories/delivery_map_repository.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/tracking/order_tracking_page.dart';
 import 'package:smart_drone_delivery/routes/route_paths.dart';
+
+import '../../../support/fake_tracking_repository.dart';
 
 const _order = DeliveryOrder(
   id: 'order-1',
@@ -67,6 +70,10 @@ class _FakeOrderService extends DeliveryOrderApiService {
   final requests = <DeliveryOrderFilterParams>[];
 
   @override
+  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
+      _detail;
+
+  @override
   Future<PagedResult<DeliveryOrder>> getOrders(
     DeliveryOrderFilterParams params,
   ) async {
@@ -79,10 +86,6 @@ class _FakeOrderService extends DeliveryOrderApiService {
       totalPages: orders.isEmpty ? 0 : 1,
     );
   }
-
-  @override
-  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
-      _detail;
 }
 
 class _FakeDeliveryMapRepository implements DeliveryMapRepository {
@@ -121,17 +124,26 @@ class _FakeDeliveryMapRepository implements DeliveryMapRepository {
       Stream<DeliveryMapUpdate>.empty();
 }
 
-Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
+Future<void> _pumpOrders(
+  WidgetTester tester,
+  _FakeOrderService service, {
+  String initialLocation = RoutePaths.customerOrders,
+}) async {
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final router = GoRouter(
-    initialLocation: RoutePaths.customerOrders,
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: RoutePaths.customerOrders,
         builder: (_, _) => const MyOrdersPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.customerOrderTracking,
+        builder: (_, state) =>
+            OrderTrackingPage(orderId: state.pathParameters['orderId'] ?? ''),
       ),
       GoRoute(
         path: RoutePaths.customerOrderDetails,
@@ -143,6 +155,8 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
     ],
   );
   addTearDown(router.dispose);
+  final trackingRepository = FakeTrackingRepository();
+  addTearDown(trackingRepository.close);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -150,6 +164,7 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
         deliveryMapRepositoryProvider.overrideWithValue(
           _FakeDeliveryMapRepository(),
         ),
+        trackingRepositoryProvider.overrideWithValue(trackingRepository),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -234,12 +249,23 @@ void main() {
     expect(service.requests.last.toDate, isNull);
   });
 
-  testWidgets('opens detail and renders ordered status history', (
-    tester,
-  ) async {
+  testWidgets('opens tracking from an order card', (tester) async {
     await _pumpOrders(tester, _FakeOrderService());
     await tester.tap(find.text('TRACK-1'));
     await tester.pumpAndSettle();
+
+    expect(find.text('Delivery tracking'), findsOneWidget);
+    expect(find.text('DD-202611-0012'), findsOneWidget);
+  });
+
+  testWidgets('opens full order details directly with chronological history', (
+    tester,
+  ) async {
+    await _pumpOrders(
+      tester,
+      _FakeOrderService(),
+      initialLocation: RoutePaths.customerOrderDetailsFor('order-1'),
+    );
 
     expect(find.text('Books'), findsOneWidget);
     expect(find.text('Origin Hub'), findsNWidgets(2));
@@ -262,9 +288,11 @@ void main() {
   testWidgets('shows delivery map and telemetry for in-transit details', (
     tester,
   ) async {
-    await _pumpOrders(tester, _FakeOrderService());
-    await tester.tap(find.text('TRACK-1'));
-    await tester.pumpAndSettle();
+    await _pumpOrders(
+      tester,
+      _FakeOrderService(),
+      initialLocation: RoutePaths.customerOrderDetailsFor('order-1'),
+    );
 
     expect(
       find.byKey(const ValueKey('delivery-map-origin-marker')),

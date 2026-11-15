@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import axios from 'axios'
 import { Alert, Button, Form, Input, Modal, Select, Table } from 'antd'
+import { CalendarDayPicker } from '../../components/CalendarPicker'
 import { OperationsPage, ResourceState } from '../operations/OperationsUi'
 import { useResource } from '../operations/useResource'
 import { operationError, uncertainMutation, validationFields } from '../operations/feedback'
@@ -65,8 +66,8 @@ export function ApprovalQueuePage() {
       <Form form={filterForm} layout="vertical" className="operations-filters" onFinish={filter} disabled={saving}>
         <Form.Item name="originStationId" label="Origin station"><Select allowClear showSearch optionFilterProp="label" placeholder="All origins" loading={stations.loading} options={stationOptions} /></Form.Item>
         <Form.Item name="destinationStationId" label="Destination station"><Select allowClear showSearch optionFilterProp="label" placeholder="All destinations" loading={stations.loading} options={stationOptions} /></Form.Item>
-        <Form.Item name="from" label="Created from"><Input type="date" /></Form.Item>
-        <Form.Item name="through" label="Created through"><Input type="date" /></Form.Item>
+        <Form.Item name="from" label="Created from"><CalendarDayPicker /></Form.Item>
+        <Form.Item name="through" label="Created through"><CalendarDayPicker /></Form.Item>
         <Button type="primary" htmlType="submit">Apply filters</Button>
         <Button onClick={() => { filterForm.resetFields(); setFilters({ page: 1, pageSize: 20 }) }}>Reset</Button>
       </Form>

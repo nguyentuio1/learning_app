@@ -17,6 +17,7 @@ import '../presentation/customer/orders/my_orders_page.dart';
 import '../presentation/customer/orders/order_detail_page.dart';
 import '../presentation/customer/orders/order_submitted_page.dart';
 import '../presentation/customer/orders/review_order_page.dart';
+import '../presentation/customer/tracking/order_tracking_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
@@ -166,6 +167,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ? EditDeliveryOrderPage(order: order)
                 : const Scaffold(body: Center(child: Text('Order not found.')));
           },
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderTracking,
+          builder: (_, state) =>
+              OrderTrackingPage(orderId: state.pathParameters['orderId'] ?? ''),
         ),
         GoRoute(
           path: RoutePaths.customerOrderDetails,
