@@ -34,10 +34,10 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
   bool _disposed = false;
   bool _snapshotRequestInFlight = false;
   bool _queuedRefresh = false;
-  bool _queuedMissionBoundary = false;
   bool _signalrConnected = false;
   DroneMapTelemetry? _latestStreamPosition;
-  int _streamGeneration = 0;
+  int _missionGeneration = 0;
+  int _latestStreamGeneration = -1;
 
   @override
   Future<DeliveryMapViewState> build() async {
@@ -72,7 +72,23 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
         if (position != null) _onPositionUpdated(position);
       case DeliveryMapUpdateType.statusChanged:
         if (update.orderId == _currentOrderId) {
-          unawaited(_refreshSnapshot(isMissionBoundary: true));
+          _missionGeneration++;
+          _latestStreamPosition = null;
+          _latestStreamGeneration = -1;
+          final current = state.asData?.value;
+          if (current != null) {
+            state = AsyncData(
+              DeliveryMapViewState(
+                snapshot: _copyWithTelemetry(
+                  current.snapshot,
+                  lastPosition: null,
+                  telemetryStale: current.snapshot.telemetryStale,
+                ),
+                liveUnavailable: current.liveUnavailable,
+              ),
+            );
+          }
+          unawaited(_refreshSnapshot());
         }
       case DeliveryMapUpdateType.connected:
         _signalrConnected = true;
@@ -107,15 +123,15 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
       return;
     }
     if (latestStreamPosition != null &&
+        _latestStreamGeneration == _missionGeneration &&
         !position.timestamp.isAfter(latestStreamPosition.timestamp)) {
       return;
     }
 
     _latestStreamPosition = position;
+    _latestStreamGeneration = _missionGeneration;
     _scheduleIdleRefresh();
-    final isAged =
-        DateTime.now().toUtc().difference(position.timestamp.toUtc()) >
-        const Duration(seconds: 60);
+    final isAged = _isPositionAged(position);
     state = AsyncData(
       DeliveryMapViewState(
         snapshot: current.snapshot.copyWith(
@@ -168,30 +184,22 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
     }
   }
 
-  Future<void> _refreshSnapshot({bool isMissionBoundary = false}) async {
+  Future<void> _refreshSnapshot() async {
     if (_disposed || !ref.mounted) return;
-    if (isMissionBoundary) {
-      _streamGeneration++;
-      _latestStreamPosition = null;
-    }
     if (_snapshotRequestInFlight) {
       _queuedRefresh = true;
-      _queuedMissionBoundary = _queuedMissionBoundary || isMissionBoundary;
       return;
     }
     _snapshotRequestInFlight = true;
-    final requestGeneration = _streamGeneration;
+    final requestGeneration = _missionGeneration;
     try {
       final response = await GetDeliveryMapSnapshotUseCase(
         ref.read(deliveryMapRepositoryProvider),
       )(_currentOrderId);
       if (_disposed || !ref.mounted) return;
-      if (requestGeneration != _streamGeneration) return;
+      if (requestGeneration != _missionGeneration) return;
 
-      final snapshot = _snapshotForRefresh(
-        response,
-        isMissionBoundary: isMissionBoundary,
-      );
+      final snapshot = _snapshotForRefresh(response);
       final current = state.asData?.value;
       state = AsyncData(
         DeliveryMapViewState(
@@ -212,9 +220,9 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
           _idleRefreshTimer = null;
           _signalrConnected = false;
           _queuedRefresh = false;
-          _queuedMissionBoundary = false;
           _latestStreamPosition = null;
-          _streamGeneration++;
+          _latestStreamGeneration = -1;
+          _missionGeneration++;
           unawaited(_updates?.cancel() ?? Future<void>.value());
           _updates = null;
         }
@@ -223,42 +231,59 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
       _snapshotRequestInFlight = false;
       if (!_disposed && ref.mounted && _queuedRefresh) {
         _queuedRefresh = false;
-        final nextBoundary = _queuedMissionBoundary;
-        _queuedMissionBoundary = false;
-        unawaited(_refreshSnapshot(isMissionBoundary: nextBoundary));
+        unawaited(_refreshSnapshot());
       }
     }
   }
 
-  DeliveryMapSnapshot _snapshotForRefresh(
-    DeliveryMapSnapshot snapshot, {
-    required bool isMissionBoundary,
-  }) {
-    if (snapshot.status != DeliveryMapOrderStatus.inTransit ||
-        snapshot.lastPosition == null) {
+  DeliveryMapSnapshot _snapshotForRefresh(DeliveryMapSnapshot snapshot) {
+    if (snapshot.status != DeliveryMapOrderStatus.inTransit) {
+      _latestStreamPosition = null;
+      _latestStreamGeneration = -1;
       return _copyWithTelemetry(
         snapshot,
         lastPosition: null,
-        telemetryStale: snapshot.status == DeliveryMapOrderStatus.inTransit,
+        telemetryStale: snapshot.telemetryStale,
       );
     }
 
-    if (isMissionBoundary) return snapshot;
-
-    final latest = _latestStreamPosition;
-    if (latest != null &&
-        latest.timestamp.isAfter(snapshot.lastPosition!.timestamp)) {
-      final isAged =
-          DateTime.now().toUtc().difference(latest.timestamp.toUtc()) >
-          const Duration(seconds: 60);
+    final latest = _latestStreamGeneration == _missionGeneration
+        ? _latestStreamPosition
+        : null;
+    if (snapshot.lastPosition == null) {
+      if (latest == null) {
+        return _copyWithTelemetry(
+          snapshot,
+          lastPosition: null,
+          telemetryStale: snapshot.telemetryStale,
+        );
+      }
       return _copyWithTelemetry(
         snapshot,
         lastPosition: latest,
-        telemetryStale: isAged,
+        telemetryStale: _isPositionAged(latest),
       );
     }
-    return snapshot;
+
+    if (latest != null &&
+        latest.timestamp.isAfter(snapshot.lastPosition!.timestamp)) {
+      return _copyWithTelemetry(
+        snapshot,
+        lastPosition: latest,
+        telemetryStale: _isPositionAged(latest),
+      );
+    }
+    return _copyWithTelemetry(
+      snapshot,
+      lastPosition: snapshot.lastPosition,
+      telemetryStale:
+          snapshot.telemetryStale || _isPositionAged(snapshot.lastPosition!),
+    );
   }
+
+  bool _isPositionAged(DroneMapTelemetry position) =>
+      DateTime.now().toUtc().difference(position.timestamp.toUtc()) >
+      const Duration(seconds: 60);
 
   DeliveryMapSnapshot _copyWithTelemetry(
     DeliveryMapSnapshot snapshot, {

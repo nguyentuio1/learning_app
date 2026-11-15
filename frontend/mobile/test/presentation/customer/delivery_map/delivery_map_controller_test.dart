@@ -24,6 +24,22 @@ final _newPosition = DroneMapTelemetry(
   batteryPercentage: 69,
   timestamp: DateTime.utc(2026, 11, 15, 8, 1),
 );
+final _oldMissionPosition = DroneMapTelemetry(
+  latitude: 10.79,
+  longitude: 106.69,
+  altitudeMeters: 75,
+  speedMps: 9,
+  batteryPercentage: 72,
+  timestamp: DateTime.utc(2026, 11, 15, 7, 50),
+);
+final _boundarySnapshotPosition = DroneMapTelemetry(
+  latitude: 10.8,
+  longitude: 106.7,
+  altitudeMeters: 79,
+  speedMps: 10,
+  batteryPercentage: 71,
+  timestamp: DateTime.utc(2026, 11, 15, 8),
+);
 
 DeliveryMapSnapshot _snapshot({
   DroneMapTelemetry? position,
@@ -477,4 +493,135 @@ void main() {
     await tester.pump();
     expect(repository.hasStreamListener, isFalse);
   });
+
+  testWidgets(
+    'preserves server stale authority for null and slow-device timestamps',
+    (tester) async {
+      final futurePosition = DroneMapTelemetry(
+        latitude: 10.81,
+        longitude: 106.71,
+        altitudeMeters: 82,
+        speedMps: 12,
+        batteryPercentage: 69,
+        timestamp: DateTime.now().toUtc().add(const Duration(seconds: 61)),
+      );
+      final repository = _FakeDeliveryMapRepository(_snapshot(stale: false))
+        ..queuedSnapshots.addAll([
+          _snapshot(stale: false),
+          _snapshot(stale: false),
+          _snapshot(
+            position: futurePosition,
+            includePosition: true,
+            stale: true,
+          ),
+        ]);
+      final container = ProviderContainer(
+        overrides: [
+          deliveryMapRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      final subscription = container.listen(
+        deliveryMapControllerProvider(_orderId),
+        (_, _) {},
+      );
+      await container.read(deliveryMapControllerProvider(_orderId).future);
+
+      final initial = container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot;
+      expect(initial.lastPosition, isNull);
+      expect(initial.telemetryStale, isFalse);
+
+      repository.emit(
+        const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+      );
+      await tester.pump();
+      await tester.pump();
+      final nullPositionSnapshot = container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot;
+      expect(nullPositionSnapshot.lastPosition, isNull);
+      expect(nullPositionSnapshot.telemetryStale, isFalse);
+
+      repository.emit(
+        const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+      );
+      await tester.pump();
+      final refreshed = container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot;
+      expect(refreshed.lastPosition, futurePosition);
+      expect(refreshed.telemetryStale, isTrue);
+
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
+    'keeps post-boundary stream position over an older StatusChanged response',
+    (tester) async {
+      final repository = _FakeDeliveryMapRepository(
+        _snapshot(position: _oldMissionPosition, includePosition: true),
+      );
+      final pending = Completer<DeliveryMapSnapshot>();
+      final container = ProviderContainer(
+        overrides: [
+          deliveryMapRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      final subscription = container.listen(
+        deliveryMapControllerProvider(_orderId),
+        (_, _) {},
+      );
+      await container.read(deliveryMapControllerProvider(_orderId).future);
+
+      repository.pendingSnapshots.add(pending);
+      repository.emit(
+        const DeliveryMapUpdate(
+          type: DeliveryMapUpdateType.statusChanged,
+          orderId: _orderId,
+        ),
+      );
+      await tester.pump();
+      expect(
+        container
+            .read(deliveryMapControllerProvider(_orderId))
+            .requireValue
+            .snapshot
+            .lastPosition,
+        isNull,
+      );
+
+      repository.emit(
+        DeliveryMapUpdate(
+          type: DeliveryMapUpdateType.position,
+          position: _newPosition,
+        ),
+      );
+      await tester.pump();
+      pending.complete(
+        _snapshot(position: _boundarySnapshotPosition, includePosition: true),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        container
+            .read(deliveryMapControllerProvider(_orderId))
+            .requireValue
+            .snapshot
+            .lastPosition
+            ?.timestamp,
+        _newPosition.timestamp,
+      );
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    },
+  );
 }
