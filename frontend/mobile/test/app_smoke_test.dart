@@ -4,6 +4,7 @@ import 'package:smart_drone_delivery/app/providers.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/models/landing_station.dart';
 import 'package:smart_drone_delivery/data/providers/landing_station_providers.dart';
+import 'package:smart_drone_delivery/data/providers/notification_providers.dart';
 import 'package:smart_drone_delivery/core/theme/app_theme.dart';
 import 'package:smart_drone_delivery/data/services/landing_station_api_service.dart';
 import 'package:smart_drone_delivery/presentation/auth/login_page.dart';
@@ -39,6 +40,7 @@ Future<void> _pump(
         tokenStorageProvider.overrideWithValue(storage),
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
         userStorageProvider.overrideWithValue(InMemoryUserStorage()),
+        unreadNotificationsCountProvider.overrideWith((ref) async => 0),
         ...extra,
       ],
       child: const App(),
@@ -121,6 +123,7 @@ void main() {
             ),
           ),
           userStorageProvider.overrideWithValue(InMemoryUserStorage()),
+        unreadNotificationsCountProvider.overrideWith((ref) async => 0),
         ],
         child: const App(),
       ),
