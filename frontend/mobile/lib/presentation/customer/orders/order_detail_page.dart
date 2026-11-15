@@ -90,6 +90,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
+        if (order.status == 'FAILED') _failureBanner(detail),
         _detail('Tracking number', order.trackingNumber ?? order.id),
         _detail('Status', order.status),
         _detail('Recipient', order.recipientName),
@@ -243,6 +244,48 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       ],
     ),
   );
+
+  Widget _failureBanner(DeliveryOrderDetailResponseDto detail) {
+    final failureLogs = detail.statusLogs
+        .where((log) => log.toStatus == 'FAILED')
+        .toList();
+    final failureLog = failureLogs.isEmpty ? null : failureLogs.last;
+    final reason = failureLog?.remarks?.trim();
+    return Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delivery failed',
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(color: Theme.of(context).colorScheme.error),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    reason == null || reason.isEmpty
+                        ? 'See status history for details.'
+                        : reason,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _detail(String label, String value) => Padding(
     padding: const EdgeInsets.only(bottom: 16),

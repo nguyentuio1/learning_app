@@ -26,10 +26,35 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<DeliveryFailureEpisode> DeliveryFailureEpisodes => Set<DeliveryFailureEpisode>();
+    public DbSet<FailureHandlingEvent> FailureHandlingEvents => Set<FailureHandlingEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<DeliveryFailureEpisode>(entity =>
+        {
+            entity.ToTable("delivery_failure_episodes");
+            entity.HasKey(e => e.FailureLogId);
+            entity.Property(e => e.FailureLogId).ValueGeneratedNever();
+            entity.Property(e => e.FailureType).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.Source).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.OriginalReason).HasMaxLength(500);
+            entity.HasOne(e => e.FailureLog).WithOne(l => l.FailureEpisode)
+                .HasForeignKey<DeliveryFailureEpisode>(e => e.FailureLogId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<FailureHandlingEvent>(entity =>
+        {
+            entity.ToTable("failure_handling_events");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Action).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.HasIndex(e => new { e.FailureLogId, e.CreatedAt, e.Id });
+            entity.HasOne(e => e.FailureLog).WithMany(l => l.HandlingEvents)
+                .HasForeignKey(e => e.FailureLogId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Actor).WithMany().HasForeignKey(e => e.PerformedBy).OnDelete(DeleteBehavior.SetNull);
+        });
 
         // 1. Role
         modelBuilder.Entity<Role>(entity =>
@@ -324,6 +349,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EntityName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.EntityId).HasMaxLength(100).IsRequired();
             entity.Property(e => e.IpAddress).HasMaxLength(50);
+            entity.Property(e => e.Reason).HasMaxLength(500);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("now()");
 
             entity.HasOne(e => e.User)

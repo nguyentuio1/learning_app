@@ -121,6 +121,9 @@ public interface IStationOperationService
     Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request);
     Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
     Task<ValidateSecureCodeResponseDto> ValidateCodeAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
+    Task<IReadOnlyList<ExpiredParcelDto>> ListExpiredParcelsAsync(
+        Guid userId, Guid stationId, CancellationToken cancellationToken = default);
+    Task<ClearExpiredParcelResponseDto> ClearExpiredParcelAsync(Guid userId, Guid stationId, ClearExpiredParcelRequest request, CancellationToken cancellationToken = default);
 }
 
 public partial class StationOperationService : IStationOperationService
@@ -291,7 +294,8 @@ public partial class StationOperationService : IStationOperationService
 
             var now = DateTime.UtcNow;
             await MissionResources.AbortPlannedAsync(_db, order, now);
-            await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
+            var failedLog = await _transitions.StageAsync(order, "APPROVED", "FAILED", userId, reason, now);
+            FailureRecording.Record(_db, failedLog, "UNKNOWN", "INTAKE_REJECTION");
             order.CancelReason = reason;
 
             _db.AuditLogs.Add(new AuditLog
@@ -674,7 +678,7 @@ public partial class StationOperationService : IStationOperationService
 
     private async Task AuthorizeStationOperatorAsync(Guid userId, Guid stationId)
     {
-        var caller = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId)
+        var caller = await _db.Users.AsNoTracking().Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new ApiException(StatusCodes.Status401Unauthorized, "Missing, invalid or expired token.");
 
         if (caller.Status != "ACTIVE")

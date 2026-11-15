@@ -68,3 +68,27 @@ public record ValidateSecureCodeResponseDto(
     int AttemptsRemaining,
     bool IsLocked,
     DateTime? LockoutExpiresAt);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public class ClearExpiredParcelRequest
+{
+    public Guid? SlotId { get; set; }
+    public string? Reason { get; set; }
+}
+
+public record ClearExpiredParcelResponseDto(
+    Guid OrderId,
+    string TrackingNumber,
+    Guid SlotId,
+    string SlotStatus,
+    DateTime ClearedAt);
+
+public record ExpiredParcelDto(
+    Guid SlotId,
+    int SlotNumber,
+    string TrackingNumber,
+    string OrderStatus,
+    string SlotStatus,
+    string CancelReason,
+    DateTime ArrivedAt,
+    TimeSpan ElapsedDuration);

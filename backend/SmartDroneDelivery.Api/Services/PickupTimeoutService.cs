@@ -90,7 +90,8 @@ public class PickupTimeoutService : IPickupTimeoutService
         if (arrivedAt is null || arrivedAt > cutoff)
             return false;
 
-        await _transitions.StageAsync(order, "ARRIVED", "FAILED", null, LogRemarks, now, ct);
+        var failedLog = await _transitions.StageAsync(order, "ARRIVED", "FAILED", null, LogRemarks, now, ct);
+        FailureRecording.Record(_db, failedLog, "COLLECTION_TIMEOUT", "PICKUP_TIMEOUT");
         order.CancelReason = CancelReason;
 
         _db.AuditLogs.Add(new AuditLog

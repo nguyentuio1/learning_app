@@ -14,7 +14,7 @@ public interface IOrderTransitionWriter
     /// Stages status and log for an existing operation that supplies its own notification and effects.
     /// Relational callers must own a transaction, SaveChanges and commit together, or roll back on failure.
     /// </summary>
-    Task StageAsync(DeliveryOrder order, string expectedFrom, string to, Guid? actorId, string? remarks, DateTime now, CancellationToken ct = default);
+    Task<DeliveryStatusLog> StageAsync(DeliveryOrder order, string expectedFrom, string to, Guid? actorId, string? remarks, DateTime now, CancellationToken ct = default);
 }
 
 public static class OrderStateMachine
@@ -81,7 +81,7 @@ public class OrderTransitionWriter(AppDbContext db) : IOrderTransitionWriter
         }
     }
 
-    public async Task StageAsync(DeliveryOrder order, string expectedFrom, string to, Guid? actorId, string? remarks, DateTime now, CancellationToken ct = default)
+    public async Task<DeliveryStatusLog> StageAsync(DeliveryOrder order, string expectedFrom, string to, Guid? actorId, string? remarks, DateTime now, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         if (!OrderStateMachine.CanTransition(expectedFrom, to) || order.Status != expectedFrom)
@@ -108,7 +108,7 @@ public class OrderTransitionWriter(AppDbContext db) : IOrderTransitionWriter
         }
         order.Status = to;
         order.UpdatedAt = now;
-        db.DeliveryStatusLogs.Add(new DeliveryStatusLog
+        var log = new DeliveryStatusLog
         {
             OrderId = order.Id,
             FromStatus = expectedFrom,
@@ -116,7 +116,9 @@ public class OrderTransitionWriter(AppDbContext db) : IOrderTransitionWriter
             ChangedBy = actorId,
             Remarks = remarks,
             CreatedAt = now
-        });
+        };
+        db.DeliveryStatusLogs.Add(log);
+        return log;
     }
 
     private static ApiException Conflict() => new(StatusCodes.Status409Conflict,

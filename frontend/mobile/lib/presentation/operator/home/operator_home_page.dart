@@ -8,6 +8,7 @@ import '../../../data/models/landing_station.dart';
 import '../../../data/models/station_availability.dart';
 import '../../../data/models/station_detail.dart';
 import '../../../data/models/station_slot.dart';
+import '../expired_parcels/pickup_timeout_alerts_card.dart';
 import '../../../routes/route_paths.dart';
 import 'station_availability_providers.dart';
 
@@ -17,16 +18,25 @@ class OperatorHomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncState = ref.watch(stationAvailabilityNotifierProvider);
+    final roleCode = ref.watch(currentUserProvider)?.roleCode.toUpperCase();
+    final canManageFailures = roleCode == 'DISPATCHER' || roleCode == 'ADMIN';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Station availability'),
         actions: [
+          if (canManageFailures)
+            IconButton(
+              tooltip: 'Failed deliveries',
+              icon: const Icon(Icons.report_gmailerrorred_outlined),
+              onPressed: () => context.push(RoutePaths.operatorFailedOrders),
+            ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.read(stationAvailabilityNotifierProvider.notifier).refresh(),
+            onPressed: () => ref
+                .read(stationAvailabilityNotifierProvider.notifier)
+                .refresh(),
           ),
           IconButton(
             tooltip: 'Profile & Settings',
@@ -88,17 +98,15 @@ class OperatorHomePage extends ConsumerWidget {
                     const SizedBox(height: 16),
                     Text(
                       'No station assigned',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'You do not have an assigned landing station yet. Please contact your administrator to be assigned to a station.',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade700,
-                          ),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: Colors.grey.shade700),
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton.icon(
@@ -171,6 +179,11 @@ class OperatorHomePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
+                if (state.selectedStationId != null) ...[
+                  PickupTimeoutAlertsCard(stationId: state.selectedStationId!),
+                  const SizedBox(height: 12),
+                ],
+
                 // Quick Action: Package Pickup Confirmation (LA-29 / LA-126)
                 FilledButton.icon(
                   key: const Key('operator-pickup-button'),
@@ -189,11 +202,13 @@ class OperatorHomePage extends ConsumerWidget {
                 // Slots Breakdown Grid (O11)
                 _SlotsSection(
                   slots: state.filteredSlots,
-                  totalSlots: availability?.totalSlots ??
+                  totalSlots:
+                      availability?.totalSlots ??
                       detail?.totalSlots ??
                       currentStation?.totalSlots ??
                       0,
-                  emptyCount: availability?.emptySlots ?? detail?.emptySlots ?? 0,
+                  emptyCount:
+                      availability?.emptySlots ?? detail?.emptySlots ?? 0,
                   occupiedCount: availability?.occupiedSlots ?? 0,
                   reservedCount: availability?.reservedSlots ?? 0,
                   errorCount: availability?.errorSlots ?? 0,
@@ -250,22 +265,22 @@ class OperatorHomePage extends ConsumerWidget {
                       children: [
                         Text(
                           'Slot #${slot.slotNumber}',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'ID: ${slot.id}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey.shade600),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
@@ -545,10 +560,7 @@ class _AvailabilityMetricsCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Available capacity',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text('Available capacity', style: theme.textTheme.bodyMedium),
                 Text(
                   '$empty / $total slots empty',
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -631,11 +643,7 @@ class _AvailabilityMetricsCard extends StatelessWidget {
                       isReady: availability.isAvailableForArrival,
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: Colors.grey.shade300,
-                  ),
+                  Container(width: 1, height: 28, color: Colors.grey.shade300),
                   Expanded(
                     child: _ReadinessIndicator(
                       title: 'Departure readiness',
@@ -699,10 +707,7 @@ class _MetricCounterBox extends StatelessWidget {
           ),
           Text(
             sublabel,
-            style: TextStyle(
-              fontSize: 9,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -711,10 +716,7 @@ class _MetricCounterBox extends StatelessWidget {
 }
 
 class _ReadinessIndicator extends StatelessWidget {
-  const _ReadinessIndicator({
-    required this.title,
-    required this.isReady,
-  });
+  const _ReadinessIndicator({required this.title, required this.isReady});
 
   final String title;
   final bool isReady;
@@ -826,8 +828,9 @@ class _SlotsSection extends StatelessWidget {
                       label: Text(f.$2),
                       labelStyle: TextStyle(
                         fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                       onSelected: (_) => onFilterSelected(f.$1),
                     ),
@@ -862,8 +865,10 @@ class _SlotsSection extends StatelessWidget {
                 itemCount: slots.length,
                 itemBuilder: (context, index) {
                   final slot = slots[index];
-                  final (color, icon) =
-                      OperatorHomePage._slotStatusStyle(context, slot.status);
+                  final (color, icon) = OperatorHomePage._slotStatusStyle(
+                    context,
+                    slot.status,
+                  );
 
                   return InkWell(
                     onTap: () => onSlotTapped(slot),
@@ -916,8 +921,8 @@ class _SlotsSection extends StatelessWidget {
                             slot.currentOrderId != null
                                 ? 'Order active'
                                 : slot.currentMissionId != null
-                                    ? 'Mission booked'
-                                    : 'Updated ${slot.lastUpdated.toLocal().toString().split('.').first.split(' ').last}',
+                                ? 'Mission booked'
+                                : 'Updated ${slot.lastUpdated.toLocal().toString().split('.').first.split(' ').last}',
                             style: TextStyle(
                               fontSize: 10,
                               color: Colors.grey.shade700,

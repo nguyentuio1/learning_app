@@ -8,6 +8,7 @@ import '../../../data/models/landing_station.dart';
 import '../../../data/models/station_availability.dart';
 import '../../../data/models/station_detail.dart';
 import '../../../data/models/station_slot.dart';
+import '../../../data/providers/expired_parcel_providers.dart';
 import '../../../data/providers/landing_station_providers.dart';
 
 class StationAvailabilityState {
@@ -180,6 +181,7 @@ class StationAvailabilityNotifier
     if (current == null || current.selectedStationId == null) return;
 
     final stationId = current.selectedStationId!;
+    ref.invalidate(expiredParcelsProvider(stationId));
     final service = ref.read(landingStationApiServiceProvider);
 
     try {
@@ -284,6 +286,7 @@ class StationAvailabilityNotifier
     }
 
     final stationId = current.selectedStationId!;
+    ref.invalidate(expiredParcelsProvider(stationId));
     final service = ref.read(landingStationApiServiceProvider);
 
     state = AsyncData(
