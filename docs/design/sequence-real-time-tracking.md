@@ -4,7 +4,7 @@
 
 **Subtask:** [LA-238 - Sequence diagram for real-time tracking](https://hungndemail.atlassian.net/browse/LA-238)
 
-**Status:** Proposed for review. These diagrams describe the planned tracking flow, not an implemented hub or telemetry API.
+**Status:** The tracking snapshot and authenticated hub are implemented by LA-143. These diagrams retain the logical flow; the API contract section 5.3 records the implementation decisions, including the one-second committed-state publication worker instead of transaction-local publishing calls.
 
 The scope is telemetry intake, SignalR subscription, and position/status updates to a selected order on web and mobile (FR-24, FR-25, UC-07). Delivery confirmation belongs to LA-239; dashboard statistics belong to LA-240. The system coordinates delivery software and does not issue hardware flight commands.
 
@@ -243,19 +243,19 @@ sequenceDiagram
     end
 ```
 
-The 5-second fallback interval comes from API section 5.3. Permit only one in-flight polling request, dispose its timer when leaving the screen, and keep the last successful timestamp visible during transient failures. Reconnection does not imply missed events were replayed. A customer or account that loses access must stop receiving data; how already-connected group memberships are revoked is an open implementation decision below.
+The 5-second fallback interval comes from API section 5.3. Permit only one in-flight polling request, dispose its timer when leaving the screen, and keep the last successful timestamp visible during transient failures. Reconnection does not imply missed events were replayed. A customer or account that loses access must stop receiving data; LA-143 revalidates selected subscriptions before publication and aborts connections that have lost access.
 
 `telemetryStale` is true when the latest sample is older than 60 seconds. Staleness must be reevaluated even when no event arrives, by refreshing server snapshots while the stream is idle. A missing sample shows no marker and a no-telemetry state. A stale sample may be displayed only as the last reported location with a warning, never as a fresh or extrapolated position. No telemetry for 60 seconds does **not** change order, mission, drone or slot status and does not invoke failure handling.
 
 ## 7. Open implementation decisions and verification checklist
 
-The following details are not fixed by the proposed contract and need confirmation during implementation:
+LA-143 resolves the backend decisions below; client recovery and future multi-order/replay work remain bounded by the published contract:
 
-1. Whether the SignalR hub ships in Sprint 5 or Sprint 6. Polling works against the same authorized snapshot API until it exists.
+1. The authenticated hub ships in Sprint 6 under LA-143; five-second HTTP polling remains a client fallback.
 2. `PositionUpdated` currently has no `orderId` or `missionId`. The selected-order flow above is unambiguous; a connection subscribing to several orders needs a reviewed event envelope/correlation rule. Do not silently add fields in implementation.
-3. Duplicated/out-of-order telemetry and ordering across HTTP snapshots and live events. Proposed client behavior is to buffer while refreshing, use sample timestamps for positions and refresh after status changes. The server must define latest-sample ordering and mission identity rules before multi-mission replay is supported.
-4. Revocation of existing subscriptions after token expiry, account deactivation or access change. Handshake and per-subscription checks alone are insufficient for a long-lived connection; implementation must define disconnection/revalidation behavior and verify it prevents further data delivery.
-5. No-sample `telemetryStale` semantics, idle-stream refresh cadence and clock handling. Show no telemetry without fabricating a marker; confirm the boolean behavior for a mission that has never emitted a sample.
+3. Latest mission ordering is creation time then ID descending; its latest sample ordering is timestamp then ID descending. Unchanged/late samples are not republished over a newer current-flight position. Mission replacement signals a snapshot refresh and resets the server position cache. There is no durable replay; clients buffer while refreshing and recover from canonical snapshots.
+4. Token expiry closes the transport. The one-second publication worker rechecks current database account/role/ownership before delivery and aborts rejected subscriptions. Subscription changes and sends share a per-connection gate, and disconnect removes the registry entry. Subscriptions are process-local, so horizontal scaling requires a backplane design.
+5. An in-air mission without samples has `lastPosition: null` and `telemetryStale: true`; outside an in-air delivery the flag is false. Exactly 60 seconds is fresh, strictly older is stale. Clients must still refresh idle streams to update freshness; missing telemetry never fabricates a position or fails the order.
 6. Automatic landing/takeoff thresholds, optional HTTP simulator ingress and any durable live-event replay. These remain the workflow API's open points; no hardware flight command is introduced here.
 
 | Check | Expected result |

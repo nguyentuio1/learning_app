@@ -8,6 +8,7 @@ using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.Middleware;
 using SmartDroneDelivery.Api.Options;
 using SmartDroneDelivery.Api.Services;
+using SmartDroneDelivery.Api.Tracking;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +82,15 @@ builder.Services
         };
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                // Browser SignalR transports cannot always attach the Authorization header.
+                // Never accept query bearer tokens on unrelated API routes.
+                if (context.Request.Path.StartsWithSegments("/hubs/tracking")
+                    && context.Request.Query.TryGetValue("access_token", out var token))
+                    context.Token = token;
+                return Task.CompletedTask;
+            },
             OnChallenge = async context =>
             {
                 context.HandleResponse();
@@ -108,6 +118,11 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddScoped<IDroneService, DroneService>();
 builder.Services.AddScoped<IFlightTelemetryService, FlightTelemetryService>();
+builder.Services.AddScoped<ITrackingService, TrackingService>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<TrackingSubscriptions>();
+builder.Services.AddSingleton<TrackingBroadcaster>();
+builder.Services.AddHostedService<TrackingWorker>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -169,6 +184,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<TrackingHub>("/hubs/tracking", options => options.CloseOnAuthenticationExpiration = true);
 
 app.Run();
 
