@@ -247,6 +247,80 @@ void main() {
     },
   );
 
+  test(
+    'replayed sample preserves server stale flag with a behind device clock',
+    () {
+      fakeAsync((async) {
+        final positionA = TelemetryPosition(
+          latitude: 10.8,
+          longitude: 106.7,
+          altitudeMeters: 80,
+          speedMps: 11,
+          batteryPercentage: 71,
+          timestamp: DateTime.utc(2026, 11, 15, 12),
+        );
+        final deviceClock = positionA.timestamp.subtract(
+          const Duration(seconds: 61),
+        );
+        final repository = FakeTrackingRepository()
+          ..response = trackingSnapshot(
+            position: positionA,
+            telemetryStale: true,
+          );
+        final provider = orderTrackingControllerProvider('order-1');
+        final container = ProviderContainer(
+          overrides: [
+            trackingRepositoryProvider.overrideWithValue(repository),
+            provider.overrideWith(
+              () => OrderTrackingController('order-1', now: () => deviceClock),
+            ),
+          ],
+          retry: (_, _) => null,
+        );
+        final subscription = container.listen(provider, (_, _) {});
+
+        container.read(provider);
+        async.flushMicrotasks();
+        async.elapse(Duration.zero);
+        async.flushMicrotasks();
+
+        repository.emitPosition(positionA);
+        async.flushMicrotasks();
+        expect(
+          container.read(provider).requireValue.snapshot.lastPosition,
+          same(positionA),
+        );
+        expect(
+          container.read(provider).requireValue.snapshot.telemetryStale,
+          isTrue,
+        );
+
+        final positionB = TelemetryPosition(
+          latitude: 10.81,
+          longitude: 106.71,
+          altitudeMeters: 75,
+          speedMps: 10,
+          batteryPercentage: 70,
+          timestamp: positionA.timestamp.add(const Duration(seconds: 1)),
+        );
+        repository.emitPosition(positionB);
+        async.flushMicrotasks();
+        expect(
+          container.read(provider).requireValue.snapshot.lastPosition,
+          same(positionB),
+        );
+        expect(
+          container.read(provider).requireValue.snapshot.telemetryStale,
+          isFalse,
+        );
+
+        subscription.close();
+        container.dispose();
+        repository.close();
+      });
+    },
+  );
+
   test('marks connected idle telemetry stale after 61 seconds and rejects stale samples', () {
     fakeAsync((async) {
       var now = DateTime.utc(2026, 11, 15, 12);

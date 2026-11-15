@@ -142,10 +142,16 @@ class OrderTrackingController extends Notifier<AsyncValue<OrderTrackingState>> {
     if (_disposed || _trackingStopped || !ref.mounted || !state.hasValue) {
       return;
     }
+    final current = state.requireValue;
+    final currentPosition = current.snapshot.lastPosition;
+    if (currentPosition != null &&
+        !position.timestamp.isAfter(currentPosition.timestamp)) {
+      return;
+    }
+
     _latestPosition = position;
     _freshnessTimer?.cancel();
     _freshnessTimer = null;
-    final current = state.requireValue;
     final snapshot = current.snapshot.copyWith(
       lastPosition: position,
       telemetryStale: _isTelemetryStale(
