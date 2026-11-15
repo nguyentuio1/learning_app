@@ -8,6 +8,8 @@ using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.Middleware;
 using SmartDroneDelivery.Api.Options;
 using SmartDroneDelivery.Api.Services;
+using SmartDroneDelivery.Api.Security;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,35 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<AnalyticsQueryService>();
+builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
+builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
+builder.Services.AddScoped<ISchedulingService, SchedulingService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IntegrationKeyService>();
+builder.Services.AddSingleton<IntegrationRateLimits>();
+builder.Services.AddScoped<ITrackingService, TrackingService>();
+builder.Services.AddScoped<FailureService>();
+builder.Services.AddScoped<DeliveryRouteEstimate>();
+builder.Services.AddOptions<DeliveryFlightOptions>()
+    .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
+    .Validate(o => double.IsFinite(o.CruiseSpeedMps) && o.CruiseSpeedMps > 0,
+        "DeliveryFlight:CruiseSpeedMps must be finite and greater than zero.")
+    .Validate(o => o.CruiseSpeedMps >= 0.001,
+        "DeliveryFlight:CruiseSpeedMps must be at least 0.001.")
+    .Validate(o => o.CruiseSpeedMps <= 999.99,
+        "DeliveryFlight:CruiseSpeedMps must be at most 999.99.")
+    .ValidateOnStart();
+builder.Services.AddOptions<DroneSimulatorOptions>()
+    .Bind(builder.Configuration.GetSection(DroneSimulatorOptions.SectionName))
+    .Validate(o => double.IsFinite(o.TickIntervalSeconds) && o.TickIntervalSeconds >= 0.001 && o.TickIntervalSeconds <= (uint.MaxValue - 1d) / 1000,
+        "DroneSimulator:TickIntervalSeconds must be between 0.001 and 4294967.294 seconds.")
+    .Validate(o => o.AltitudeMeters >= 0 && o.AltitudeMeters <= 9999.99m,
+        "DroneSimulator:AltitudeMeters must be between 0 and 9999.99.")
+    .Validate(o => o.HasValidScenarios(), "DroneSimulator scenario offsets must be finite, between 0 and 86400 seconds; telemetry loss requires both offset and a positive duration at most 86400 seconds.")
+    .ValidateOnStart();
+builder.Services.AddScoped<DroneSimulatorService>();
+builder.Services.AddHostedService<DroneSimulatorWorker>();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
 
 builder.Services
@@ -65,7 +96,8 @@ builder.Services
             OnForbidden = context => ApiProblemDetails.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden,
                 "You do not have permission to perform this action.")
         };
-    });
+    })
+    .AddScheme<AuthenticationSchemeOptions, IntegrationKeyAuthenticationHandler>(IntegrationKeyAuthenticationHandler.SchemeName, _ => { });
 // Secure by default: an endpoint without [Authorize] or [AllowAnonymous] still needs a signed-in user.
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
@@ -82,9 +114,13 @@ builder.Services.AddControllers()
         options.InvalidModelStateResponseFactory = ApiProblemDetails.FromModelState);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddScoped<IDroneService, DroneService>();
+builder.Services.AddScoped<IFlightTelemetryService, FlightTelemetryService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.AddSecurityDefinition("IntegrationKey", new OpenApiSecurityScheme {Type=SecuritySchemeType.ApiKey,In=ParameterLocation.Header,Name="X-API-Key",Description="External /api/v1 routes only; create an integration key as ADMIN first. Never send with bearer credentials."});
+    options.OperationFilter<IntegrationSwagger>();
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

@@ -1,0 +1,1852 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LA-341 Sprint 6 API handoff",
+    "version": "0.1.0",
+    "description": "Analytics is integrated into develop through PR #202. Tracking/confirmation and external integration are implemented on their corresponding story branches; external integration into develop is tracked by PR #203. Code integration is not endpoint deployment or business-policy approval. See sprint-6-api-contract.md for availability and client recovery behavior."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5055",
+      "description": "Local backend; use matching story branch for implemented Sprint 6 routes"
+    }
+  ],
+  "paths": {
+    "/api/delivery-orders/{id}/tracking": {
+      "get": {
+        "operationId": "getTrackingSnapshot",
+        "summary": "Owning CUSTOMER or DISPATCHER/MANAGER/ADMIN",
+        "description": "Implemented on the corresponding story branch, not yet integrated into develop. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackingSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or foreign resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/delivery-orders/{id}/confirm-delivery": {
+      "post": {
+        "operationId": "confirmCustomerDelivery",
+        "summary": "Active owning CUSTOMER only",
+        "description": "Implemented on the corresponding story branch, not yet integrated into develop. See sprint-6-api-contract.md for authorization, atomicity and edge-case semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmPickupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Problem"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WrongPickupCode"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or foreign resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current state conflicts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Shared pickup-code lockout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PickupLocked"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until another attempt is eligible",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmDeliveryRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/dashboard": {
+      "get": {
+        "operationId": "getDashboard",
+        "summary": "Active MANAGER; proposed metrics",
+        "description": "Implemented by LA-153 on feature/LA-153-dashboard-reports-api, targeting story/LA-38-dashboard-reports. Business metric/policy acceptance remains pending. See sprint-6-api-contract.md section 5 for definitions and edge cases.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": true,
+            "description": "Inclusive Vietnam calendar date; maximum 366 days, unknown filters rejected.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": true,
+            "description": "Inclusive Vietnam calendar date; maximum 366 days, unknown filters rejected.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "x-business-policy-status": "proposed-pending-acceptance"
+      }
+    },
+    "/api/analytics/reports/deliveries": {
+      "get": {
+        "operationId": "getDeliveryReport",
+        "summary": "Active MANAGER; created-date current-state report",
+        "description": "Implemented by LA-153 on feature/LA-153-dashboard-reports-api, targeting story/LA-38-dashboard-reports. Business metric/policy acceptance remains pending. See sprint-6-api-contract.md section 5 for definitions and edge cases.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": true,
+            "description": "Inclusive Vietnam calendar date; maximum 366 days, unknown filters rejected.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": true,
+            "description": "Inclusive Vietnam calendar date; maximum 366 days, unknown filters rejected.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "x-business-policy-status": "proposed-pending-acceptance"
+      }
+    },
+    "/api/admin/integration-keys": {
+      "post": {
+        "operationId": "createIntegrationKey",
+        "summary": "Active ADMIN; issue one-time secret",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedIntegrationKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current state conflicts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationKey"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listIntegrationKeys",
+        "summary": "Active ADMIN; metadata only",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IntegrationKeyMetadata"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/admin/integration-keys/{id}": {
+      "delete": {
+        "operationId": "revokeIntegrationKey",
+        "summary": "Active ADMIN; preserve audit history",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked (including previously revoked key)"
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or foreign resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/delivery-orders": {
+      "post": {
+        "operationId": "createExternalOrder",
+        "summary": "API key orders:create; bound customer",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedExternalOrder"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "/api/v1/delivery-orders/{createdId}",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or foreign resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Current state conflicts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until another attempt is eligible",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExternalOrder"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/delivery-orders/{id}": {
+      "get": {
+        "operationId": "getExternalOrder",
+        "summary": "API key orders:read; bound customer only",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or foreign resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until another attempt is eligible",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/delivery-orders/{id}/tracking": {
+      "get": {
+        "operationId": "getExternalTracking",
+        "summary": "API key orders:read; poll at most every five seconds",
+        "description": "Implemented by LA-156 on feature/LA-156-external-integration-api, targeting story/LA-39-external-integration. Business/operational acceptance remains separate. Limits are process-local. See sprint-6-api-contract.md section 6 for authorization and recovery semantics.",
+        "x-implementation-status": "implemented-story-branch",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackingSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role, scope or account denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or foreign resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until another attempt is eligible",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "OrderStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "READY_FOR_TAKEOFF",
+          "IN_TRANSIT",
+          "ARRIVED",
+          "DELIVERED",
+          "CANCELLED",
+          "FAILED"
+        ]
+      },
+      "Problem": {
+        "type": "object",
+        "required": [
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "attemptsRemaining": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "lockoutExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "TelemetryPosition": {
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "altitudeMeters",
+          "speedMps",
+          "batteryPercentage",
+          "timestamp"
+        ],
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "altitudeMeters": {
+            "type": "number"
+          },
+          "speedMps": {
+            "type": "number"
+          },
+          "batteryPercentage": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrackingStation": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "latitude",
+          "longitude"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        }
+      },
+      "TrackingSnapshot": {
+        "type": "object",
+        "required": [
+          "orderId",
+          "trackingNumber",
+          "status",
+          "originStation",
+          "destinationStation",
+          "estimatedDeliveryTime",
+          "lastPosition",
+          "telemetryStale"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "originStation": {
+            "$ref": "#/components/schemas/TrackingStation"
+          },
+          "destinationStation": {
+            "$ref": "#/components/schemas/TrackingStation"
+          },
+          "estimatedDeliveryTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastPosition": {
+            "type": "object",
+            "required": [
+              "latitude",
+              "longitude",
+              "altitudeMeters",
+              "speedMps",
+              "batteryPercentage",
+              "timestamp"
+            ],
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "altitudeMeters": {
+                "type": "number"
+              },
+              "speedMps": {
+                "type": "number"
+              },
+              "batteryPercentage": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "nullable": true
+          },
+          "telemetryStale": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ConfirmDeliveryRequest": {
+        "type": "object",
+        "required": [
+          "pickupSecureCode"
+        ],
+        "properties": {
+          "pickupSecureCode": {
+            "type": "string",
+            "description": "Trim before validating exactly six ASCII digits. Malformed input does not consume a guess."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConfirmPickupResponse": {
+        "type": "object",
+        "required": [
+          "orderId",
+          "trackingNumber",
+          "status",
+          "actualDeliveryTime",
+          "slotId",
+          "slotReleased"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DELIVERED"
+            ]
+          },
+          "actualDeliveryTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "slotId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slotReleased": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "PickupLocked": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "lockoutExpiresAt"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              423
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "lockoutExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WrongPickupCode": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "attemptsRemaining"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              400
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "attemptsRemaining": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2
+          }
+        }
+      },
+      "Period": {
+        "type": "object",
+        "required": [
+          "fromDate",
+          "toDate",
+          "timeZone",
+          "startUtc",
+          "endExclusiveUtc",
+          "cohortField"
+        ],
+        "properties": {
+          "fromDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "toDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "Asia/Ho_Chi_Minh"
+            ]
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endExclusiveUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cohortField": {
+            "type": "string",
+            "enum": [
+              "createdAt"
+            ]
+          }
+        }
+      },
+      "StatusCount": {
+        "type": "object",
+        "required": [
+          "status",
+          "count"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SuccessRate": {
+        "type": "object",
+        "required": [
+          "deliveredCount",
+          "failedCount",
+          "eligibleCount",
+          "percent"
+        ],
+        "properties": {
+          "deliveredCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eligibleCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "AverageDelivery": {
+        "type": "object",
+        "required": [
+          "minutes",
+          "sampleCount",
+          "excludedCount"
+        ],
+        "properties": {
+          "minutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "excludedCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "StationUsage": {
+        "type": "object",
+        "required": [
+          "stationId",
+          "stationCode",
+          "stationName",
+          "originOrderCount",
+          "destinationOrderCount",
+          "totalDistinctOrders"
+        ],
+        "properties": {
+          "stationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationCode": {
+            "type": "string"
+          },
+          "stationName": {
+            "type": "string"
+          },
+          "originOrderCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "destinationOrderCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalDistinctOrders": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "DashboardResult": {
+        "type": "object",
+        "required": [
+          "period",
+          "metricDefinition",
+          "asOf",
+          "generatedAt",
+          "totalOrders",
+          "ordersByStatus",
+          "successRate",
+          "averageDelivery",
+          "stationUsageMetric",
+          "stationUsage"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "metricDefinition": {
+            "type": "string",
+            "enum": [
+              "created-current-v1"
+            ]
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalOrders": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ordersByStatus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusCount"
+            },
+            "minItems": 8,
+            "maxItems": 8
+          },
+          "successRate": {
+            "$ref": "#/components/schemas/SuccessRate"
+          },
+          "averageDelivery": {
+            "$ref": "#/components/schemas/AverageDelivery"
+          },
+          "stationUsageMetric": {
+            "type": "string",
+            "enum": [
+              "THROUGHPUT"
+            ]
+          },
+          "stationUsage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationUsage"
+            }
+          }
+        }
+      },
+      "ReportStation": {
+        "type": "object",
+        "required": [
+          "id",
+          "stationCode",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stationCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportRow": {
+        "type": "object",
+        "required": [
+          "orderId",
+          "trackingNumber",
+          "status",
+          "originStation",
+          "destinationStation",
+          "createdAt",
+          "actualDepartureTime",
+          "actualDeliveryTime",
+          "durationMinutes"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "originStation": {
+            "$ref": "#/components/schemas/ReportStation"
+          },
+          "destinationStation": {
+            "$ref": "#/components/schemas/ReportStation"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualDepartureTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualDeliveryTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0
+          }
+        }
+      },
+      "DeliveryReport": {
+        "type": "object",
+        "required": [
+          "period",
+          "metricDefinition",
+          "asOf",
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "metricDefinition": {
+            "type": "string",
+            "enum": [
+              "created-current-v1"
+            ]
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CreateIntegrationKey": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "name",
+          "scopes",
+          "expiresAt"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "orders:create",
+                "orders:read"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "IntegrationKeyMetadata": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "customerId",
+          "scopes",
+          "createdAt",
+          "expiresAt",
+          "revokedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "orders:create",
+                "orders:read"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "CreatedIntegrationKey": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "customerId",
+          "scopes",
+          "createdAt",
+          "expiresAt",
+          "revokedAt",
+          "apiKey"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "orders:create",
+                "orders:read"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "One-time plaintext secret; never returned by list/read."
+          }
+        }
+      },
+      "CreateExternalOrder": {
+        "type": "object",
+        "required": [
+          "packageId",
+          "originStationId",
+          "destinationStationId",
+          "recipientName",
+          "recipientPhone"
+        ],
+        "properties": {
+          "packageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "originStationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "destinationStationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deliveryAddressId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "recipientName": {
+            "type": "string"
+          },
+          "recipientPhone": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatedExternalOrder": {
+        "type": "object",
+        "required": [
+          "id",
+          "trackingNumber",
+          "status",
+          "pickupSecureCode",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING"
+            ]
+          },
+          "pickupSecureCode": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExternalOrder": {
+        "type": "object",
+        "required": [
+          "id",
+          "trackingNumber",
+          "status",
+          "packageId",
+          "originStationId",
+          "destinationStationId",
+          "createdAt",
+          "updatedAt",
+          "estimatedDeliveryTime",
+          "actualDeliveryTime"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "packageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "originStationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "destinationStationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "estimatedDeliveryTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualDeliveryTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      }
+    }
+  },
+  "x-signalr-contract": {
+    "path": "/hubs/tracking",
+    "documentation": "sprint-6-api-contract.md#32-signalr-hubstracking",
+    "invocations": [
+      "Subscribe(orderId)",
+      "Unsubscribe()"
+    ],
+    "events": [
+      "PositionUpdated(TelemetryPosition)",
+      "StatusChanged(OrderDecisionDto)"
+    ],
+    "implementation": "LA-143 story branch"
+  }
+}

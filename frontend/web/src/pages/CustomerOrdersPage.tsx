@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, DatePicker, Form, Input, Select, Table, Tag } from 'antd'
-import dayjs from 'dayjs'
+import { Alert, Button, Form, Input, Select, Table, Tag } from 'antd'
+import { CalendarDayPicker } from '../components/CalendarPicker'
 import { Link } from 'react-router-dom'
 import { OrderReveal } from '../components/orders/OrderReveal'
 import { OrderEmpty } from '../components/orders/OrderEmpty'
@@ -39,8 +39,8 @@ export function CustomerOrdersPage() {
     <OrderReveal><section className="order-panel order-filter-panel" aria-label="Filter orders"><Form form={form} layout="vertical" onFinish={apply}>
       <div className="order-filter-grid"><Form.Item name="searchKeyword" label="Tracking number" rules={[{ max: 50 }]}><Input maxLength={50} placeholder="Search tracking number" allowClear /></Form.Item>
         <Form.Item name="status" label="Status"><Select allowClear placeholder="All statuses" options={orderStatuses.map(value => ({ value, label: orderStatusLabel(value) }))} /></Form.Item>
-        <Form.Item name="fromDate" label="Created from" getValueProps={value => ({ value: value ? dayjs(value) : null })} normalize={value => value?.format('YYYY-MM-DD')}><DatePicker format="YYYY-MM-DD" placeholder="Start date" /></Form.Item>
-        <Form.Item name="toDate" label="Created through" getValueProps={value => ({ value: value ? dayjs(value) : null })} normalize={value => value?.format('YYYY-MM-DD')} dependencies={['fromDate']} rules={[({ getFieldValue }) => ({ validator(_, value) { const from = getFieldValue('fromDate'); return !value || !from || value >= from ? Promise.resolve() : Promise.reject(new Error('End date must not be before start date.')) } })]}><DatePicker format="YYYY-MM-DD" placeholder="End date" /></Form.Item>
+        <Form.Item name="fromDate" label="Created from"><CalendarDayPicker placeholder="Start date" /></Form.Item>
+        <Form.Item name="toDate" label="Created through" dependencies={['fromDate']} rules={[({ getFieldValue }) => ({ validator(_, value) { const from = getFieldValue('fromDate'); return !value || !from || value >= from ? Promise.resolve() : Promise.reject(new Error('End date must not be before start date.')) } })]}><CalendarDayPicker placeholder="End date" /></Form.Item>
       </div><div className="order-actions"><Button htmlType="submit" type="primary">Apply filters</Button><Button onClick={() => { form.resetFields(); apply({}) }}>Reset</Button><Button onClick={() => { setResult(undefined); setAttempt(x => x + 1) }}>Refresh</Button></div>
     </Form></section></OrderReveal>
     {result?.error ? <Alert type="error" showIcon title={result.error} action={<Button onClick={() => { setResult(undefined); setAttempt(x => x + 1) }}>Try again</Button>} /> :

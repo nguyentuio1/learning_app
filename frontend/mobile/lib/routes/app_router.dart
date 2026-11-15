@@ -10,6 +10,7 @@ import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
+import '../presentation/customer/notifications/notifications_list_page.dart';
 import '../presentation/customer/orders/edit_delivery_order_page.dart';
 import '../presentation/customer/orders/create_order_page.dart';
 import '../presentation/customer/orders/my_orders_page.dart';
@@ -19,6 +20,9 @@ import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/expired_parcels/expired_parcel_screen.dart';
+import '../presentation/operator/failures/failed_order_detail_page.dart';
+import '../presentation/operator/failures/failed_orders_page.dart';
 import '../presentation/operator/pickup/package_pickup_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
@@ -45,6 +49,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
+      final roleCode = ref.read(currentUserProvider)?.roleCode.toUpperCase();
+      final canManageFailures = roleCode == 'DISPATCHER' || roleCode == 'ADMIN';
+      if (flavor == AppFlavor.operator &&
+          loc.startsWith(RoutePaths.operatorFailedOrders) &&
+          !canManageFailures) {
+        return RoutePaths.operatorHome;
+      }
       switch (ref.read(authControllerProvider)) {
         case AuthStatus.unknown:
           return loc == RoutePaths.splash ? null : RoutePaths.splash;
@@ -86,6 +97,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.operatorPickup,
           builder: (_, _) => const PackagePickupPage(),
         ),
+        GoRoute(
+          path: RoutePaths.operatorExpiredParcels,
+          builder: (_, state) => ExpiredParcelScreen(
+            stationId: state.pathParameters['stationId']!,
+          ),
+        ),
+        GoRoute(
+          path: RoutePaths.operatorFailedOrders,
+          builder: (_, _) => const FailedOrdersPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.operatorFailedOrderDetail,
+          builder: (_, state) => FailedOrderDetailPage(
+            orderId: state.pathParameters['orderId'] ?? '',
+          ),
+        ),
       ],
       GoRoute(path: RoutePaths.profile, builder: (_, _) => const ProfilePage()),
       GoRoute(
@@ -102,6 +129,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const AddressesListPage(),
         ),
       if (flavor == AppFlavor.customer) ...[
+        GoRoute(
+          path: RoutePaths.customerNotifications,
+          builder: (_, _) => const NotificationsListPage(),
+        ),
         GoRoute(
           path: RoutePaths.customerOrders,
           builder: (_, _) => const MyOrdersPage(),

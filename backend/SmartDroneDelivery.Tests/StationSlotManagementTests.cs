@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SmartDroneDelivery.Api.Entities;
 using SmartDroneDelivery.Api.Security;
 using SmartDroneDelivery.Api.Services;
@@ -397,6 +398,17 @@ public class StationSlotPostgresTests : IClassFixture<PostgresApiFactory>, IDisp
             slotId = slot.Id;
         });
 
+        // Hold the row without changing it so both requests read EMPTY and then
+        // contend on their conditional UPDATE, rather than one reading ERROR.
+        await using var holder = new NpgsqlConnection(_factory.DatabaseConnectionString);
+        await holder.OpenAsync();
+        await using var transaction = await holder.BeginTransactionAsync();
+        await using (var command = new NpgsqlCommand("SELECT \"Id\" FROM station_slots WHERE \"Id\" = @id FOR UPDATE", holder, transaction))
+        {
+            command.Parameters.AddWithValue("id", slotId);
+            await command.ExecuteScalarAsync();
+        }
+
         var t1 = SendAsync(HttpMethod.Put, $"/api/station-slots/{slotId}/status", adminToken, new
         {
             targetStatus = "ERROR",
@@ -409,17 +421,43 @@ public class StationSlotPostgresTests : IClassFixture<PostgresApiFactory>, IDisp
             reason = "Sensor failure."
         });
 
-        var responses = await Task.WhenAll(t1, t2);
-        var codes = responses.Select(r => r.StatusCode).ToList();
-
-        Assert.Contains(HttpStatusCode.OK, codes);
-        Assert.Contains(HttpStatusCode.Conflict, codes);
-
-        await _factory.WithDbAsync(async db =>
+        var bothUpdatesWaiting = false;
+        await using (var monitor = new NpgsqlConnection(_factory.DatabaseConnectionString))
         {
-            var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == slotId.ToString() && a.Action == "SLOT_STATUS_CHANGE");
-            Assert.Equal(1, auditCount);
-        });
+            await monitor.OpenAsync();
+            for (var attempt = 0; attempt < 500 && !t1.IsCompleted && !t2.IsCompleted; attempt++)
+            {
+                await using var command = new NpgsqlCommand("""
+                    SELECT COUNT(*) FROM pg_stat_activity
+                    WHERE datname = current_database() AND wait_event_type = 'Lock'
+                      AND query LIKE 'UPDATE station_slots%'
+                    """, monitor);
+                if ((long)(await command.ExecuteScalarAsync())! == 2)
+                {
+                    bothUpdatesWaiting = true;
+                    break;
+                }
+                await Task.Delay(20);
+            }
+        }
+        await transaction.CommitAsync();
+        var responses = await Task.WhenAll(t1, t2);
+        try
+        {
+            Assert.True(bothUpdatesWaiting, "Both requests must reach their conditional UPDATE while the slot row is locked.");
+            Assert.Single(responses, r => r.StatusCode == HttpStatusCode.OK);
+            Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict);
+            await _factory.WithDbAsync(async db =>
+            {
+                Assert.Equal("ERROR", (await db.StationSlots.FindAsync(slotId))!.Status);
+                var auditCount = await db.AuditLogs.CountAsync(a => a.EntityId == slotId.ToString() && a.Action == "SLOT_STATUS_CHANGE");
+                Assert.Equal(1, auditCount);
+            });
+        }
+        finally
+        {
+            foreach (var response in responses) response.Dispose();
+        }
     }
 
     [PostgresFact]

@@ -12,4 +12,6 @@ public class DeliveryStatusLog
 
     public DeliveryOrder Order { get; set; } = null!;
     public User? ChangedByUser { get; set; }
+    public DeliveryFailureEpisode? FailureEpisode { get; set; }
+    public ICollection<FailureHandlingEvent> HandlingEvents { get; set; } = new List<FailureHandlingEvent>();
 }

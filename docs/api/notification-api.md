@@ -49,7 +49,7 @@ No body. Marks every unread notification of the caller as read. Response `200 OK
 
 ## 3. Delivery channel
 
-Proposed for Sprint 5: **in-app only**. The apps poll `unread-count` when they come to the foreground and every 60 seconds while open, and reload the list when the screen opens. A push channel (SignalR for web, push notification for mobile) is not part of this contract. When it is added, the stored row stays the source and a failed push never undoes a status change. See open point 1.
+Proposed for Sprint 5: **in-app only**. The apps poll `unread-count` when they come to the foreground and every 60 seconds while open, and reload the list when the screen opens. A push channel (SignalR for web, push notification for mobile) is not part of this contract (decided for Sprint 5; deferred to Sprint 6). When it is added, the stored row stays the source and a failed push never undoes a status change. See open point 1.
 
 ## 4. Event types
 
@@ -57,6 +57,6 @@ Proposed for Sprint 5: **in-app only**. The apps poll `unread-count` when they c
 
 ## 5. Open points
 
-1. **Push channel.** In-app polling is proposed for Sprint 5. SignalR or push can follow with the tracking work of Sprint 6. To be confirmed.
+1. **Push channel.** Decided for Sprint 5: in-app polling only (every 60s and on screen load). Real-time push (SignalR / FCM / APNs) deferred to Sprint 6.
 2. **Pickup code in the creation notice.** [customer-order-api.md](customer-order-api.md) section 8 point 5 decided that the creation notice carries the code to the customer only, and noted that the implementation does not do this yet. This API returns `message` unchanged, so that gap is closed on the write side, not here.
 3. **Retention.** No delete endpoint is defined. Proposed: keep notifications; a cleanup rule can be added later.

@@ -35,6 +35,9 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
 {
     public const string ConnectionVariable = "TEST_POSTGRES_CONNECTION";
 
+    /// <summary>Set to 1 to retain unique test databases for local inspection; default/CI still drops them.</summary>
+    public const string KeepDatabasesVariable = "TEST_POSTGRES_KEEP_DATABASES";
+
     /// <summary>Connection string of the server (any database), or null when no server is configured.</summary>
     public static string? ServerConnectionString =>
         Environment.GetEnvironmentVariable(ConnectionVariable) is { Length: > 0 } value ? value : null;
@@ -64,6 +67,9 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?> { ["Seed:DevelopmentData"] = "false" }));
         builder.ConfigureServices(services =>
         {
+            // Manual deterministic simulator ticks must never race the hosted worker.
+            foreach (var descriptor in services.Where(d => d.ImplementationType == typeof(DroneSimulatorWorker)).ToList())
+                services.Remove(descriptor);
             foreach (var descriptor in services
                          .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
                                      || d.ServiceType == typeof(DbContextOptions)).ToList())
@@ -103,6 +109,11 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
         if (!disposing || !_databaseCreated || ServerConnectionString is not { } server) return;
 
         NpgsqlConnection.ClearAllPools();
+        if (Environment.GetEnvironmentVariable(KeepDatabasesVariable) == "1")
+        {
+            _databaseCreated = false;
+            return;
+        }
         using var connection = new NpgsqlConnection(server);
         connection.Open();
         using var command = connection.CreateCommand();

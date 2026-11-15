@@ -143,6 +143,10 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime>("Timestamp")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -219,6 +223,30 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.ToTable("customer_addresses", (string)null);
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryFailureEpisode", b =>
+                {
+                    b.Property<long>("FailureLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FailureType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("OriginalReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("FailureLogId");
+
+                    b.ToTable("delivery_failure_episodes", (string)null);
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -279,6 +307,7 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(30)
@@ -291,6 +320,7 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
@@ -408,11 +438,51 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.ToTable("drones", (string)null);
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FailureHandlingEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("FailureLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("PerformedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformedBy");
+
+                    b.HasIndex("FailureLogId", "CreatedAt", "Id");
+
+                    b.ToTable("failure_handling_events", (string)null);
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FlightMission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid?>("DestinationSlotId")
                         .HasColumnType("uuid");
@@ -421,6 +491,9 @@ namespace SmartDroneDelivery.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("EndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EstimatedArrivalTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FlightStatus")
@@ -432,6 +505,9 @@ namespace SmartDroneDelivery.Api.Migrations
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ScheduledDepartureTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("StartSlotId")
                         .HasColumnType("uuid");
@@ -446,9 +522,13 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.HasIndex("DroneId");
 
                     b.HasIndex("OrderId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_flight_missions_OrderId_Active")
+                        .HasFilter("\"FlightStatus\" IN ('PLANNED', 'IN_AIR')");
 
                     b.HasIndex("StartSlotId");
+
+                    b.HasIndex("OrderId", "CreatedAt");
 
                     b.ToTable("flight_missions", (string)null);
                 });
@@ -493,6 +573,49 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.HasIndex("MissionId", "Timestamp");
 
                     b.ToTable("flight_telemetry_logs", (string)null);
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.IntegrationApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .IsConcurrencyToken()
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string[]>("Scopes")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.ToTable("integration_api_keys", (string)null);
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.LandingStation", b =>
@@ -722,6 +845,52 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.ToTable("roles", (string)null);
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.SimulatorDiversion", b =>
+                {
+                    b.Property<Guid>("MissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AbortLatitude")
+                        .HasPrecision(12, 9)
+                        .HasColumnType("numeric(12,9)");
+
+                    b.Property<decimal>("AbortLongitude")
+                        .HasPrecision(12, 9)
+                        .HasColumnType("numeric(12,9)");
+
+                    b.Property<DateTime>("AbortedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("CruiseSpeedMps")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("LandedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LandingDueAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("LandingLatitude")
+                        .HasPrecision(12, 9)
+                        .HasColumnType("numeric(12,9)");
+
+                    b.Property<decimal?>("LandingLongitude")
+                        .HasPrecision(12, 9)
+                        .HasColumnType("numeric(12,9)");
+
+                    b.Property<Guid?>("LandingStationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("NavigationStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("MissionId");
+
+                    b.HasIndex("LandingStationId");
+
+                    b.ToTable("simulator_diversions", (string)null);
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.StationSlot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -870,6 +1039,17 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryFailureEpisode", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.DeliveryStatusLog", "FailureLog")
+                        .WithOne("FailureEpisode")
+                        .HasForeignKey("SmartDroneDelivery.Api.Entities.DeliveryFailureEpisode", "FailureLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FailureLog");
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryOrder", b =>
                 {
                     b.HasOne("SmartDroneDelivery.Api.Entities.User", "Customer")
@@ -947,6 +1127,24 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.Navigation("CurrentStation");
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FailureHandlingEvent", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.DeliveryStatusLog", "FailureLog")
+                        .WithMany("HandlingEvents")
+                        .HasForeignKey("FailureLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartDroneDelivery.Api.Entities.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("PerformedBy")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("FailureLog");
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.FlightMission", b =>
                 {
                     b.HasOne("SmartDroneDelivery.Api.Entities.StationSlot", "DestinationSlot")
@@ -961,8 +1159,8 @@ namespace SmartDroneDelivery.Api.Migrations
                         .IsRequired();
 
                     b.HasOne("SmartDroneDelivery.Api.Entities.DeliveryOrder", "Order")
-                        .WithOne("FlightMission")
-                        .HasForeignKey("SmartDroneDelivery.Api.Entities.FlightMission", "OrderId")
+                        .WithMany("FlightMissions")
+                        .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -989,6 +1187,17 @@ namespace SmartDroneDelivery.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Mission");
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.IntegrationApiKey", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.User", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.LandingStation", b =>
@@ -1041,6 +1250,24 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.SimulatorDiversion", b =>
+                {
+                    b.HasOne("SmartDroneDelivery.Api.Entities.LandingStation", "LandingStation")
+                        .WithMany()
+                        .HasForeignKey("LandingStationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartDroneDelivery.Api.Entities.FlightMission", "Mission")
+                        .WithOne()
+                        .HasForeignKey("SmartDroneDelivery.Api.Entities.SimulatorDiversion", "MissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LandingStation");
+
+                    b.Navigation("Mission");
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.StationSlot", b =>
                 {
                     b.HasOne("SmartDroneDelivery.Api.Entities.LandingStation", "Station")
@@ -1077,11 +1304,18 @@ namespace SmartDroneDelivery.Api.Migrations
                 {
                     b.Navigation("AiEtaPrediction");
 
-                    b.Navigation("FlightMission");
+                    b.Navigation("FlightMissions");
 
                     b.Navigation("Notifications");
 
                     b.Navigation("StatusLogs");
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryStatusLog", b =>
+                {
+                    b.Navigation("FailureEpisode");
+
+                    b.Navigation("HandlingEvents");
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.Drone", b =>
