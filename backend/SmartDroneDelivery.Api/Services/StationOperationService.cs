@@ -121,6 +121,8 @@ public interface IStationOperationService
     Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request);
     Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
     Task<ValidateSecureCodeResponseDto> ValidateCodeAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
+    Task<IReadOnlyList<ExpiredParcelDto>> ListExpiredParcelsAsync(
+        Guid userId, Guid stationId, CancellationToken cancellationToken = default);
     Task<ClearExpiredParcelResponseDto> ClearExpiredParcelAsync(Guid userId, Guid stationId, ClearExpiredParcelRequest request, CancellationToken cancellationToken = default);
 }
 
