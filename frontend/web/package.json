@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/signalr": "^11.0.0",
     "antd": "^6.6.5",
     "axios": "^1.20.0",
     "dayjs": "^1.11.23",
