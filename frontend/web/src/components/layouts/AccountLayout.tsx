@@ -31,6 +31,7 @@ function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' 
 }
 
 const operationIcons: Record<string, Parameters<typeof AccountIcon>[0]['name']> = {
+  '/delivery-map': 'route',
   '/drones': 'drone',
   '/stations': 'route',
   '/station-availability': 'activity',

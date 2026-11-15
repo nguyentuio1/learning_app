@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ContextType } from 'react'
 import { ConfigProvider } from 'antd'
@@ -24,11 +24,16 @@ beforeEach(() => {
   onAccessError.mockReset()
   mock = new MockAdapter(apiClient)
 })
-afterEach(async () => {
+async function settleAuthReviewUi() {
+  // Unmount/abort requests before draining AntD's uncancelled feedback timers.
+  cleanup()
   await act(async () => {
     await new Promise<void>(resolve => window.setTimeout(resolve, 50))
   })
-  cleanup()
+}
+
+afterEach(async () => {
+  await settleAuthReviewUi()
   mock.restore()
   vi.clearAllTimers()
   vi.useRealTimers()
@@ -62,6 +67,34 @@ function loginApp(role: Role | null, from?: string) {
     </AuthContext.Provider>
   </ConfigProvider>
 }
+
+it('finishes deferred form feedback before the test environment is disposed', async () => {
+  vi.useFakeTimers()
+  try {
+    mock.onPut('/api/users/me/password').reply(() => new Promise(resolve => {
+      setTimeout(() => resolve([401, { detail: 'Current password is incorrect.' }]), 25)
+    }))
+    render(<ConfigProvider theme={{ token: { motion: false } }}>
+      <AuthContext.Provider value={authValue('ADMIN')}>
+        <PasswordSettings onAccessError={onAccessError} />
+      </AuthContext.Provider>
+    </ConfigProvider>)
+    fireEvent.change(screen.getByLabelText('Current password'), { target: { value: 'Current123!' } })
+    fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'Changed123!' } })
+    fireEvent.change(screen.getByLabelText('Confirm new password'), { target: { value: 'Changed123!' } })
+    await act(async () => {
+      fireEvent.submit(screen.getByRole('button', { name: 'Change password' }).closest('form')!)
+    })
+    expect(mock.history.put).toHaveLength(1)
+    const settled = settleAuthReviewUi()
+    await vi.advanceTimersByTimeAsync(50)
+    await settled
+    expect(vi.getTimerCount()).toBe(0)
+  } finally {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  }
+})
 
 it.each(['STATION_OPERATOR'] as const)('shows mobile guidance after %s signs in, including a saved profile destination', async role => {
   render(loginApp(role, '/profile'))

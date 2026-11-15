@@ -6,7 +6,11 @@ import '../../../core/error/api_exception.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/update_delivery_order_dto.dart';
+import '../../../presentation/common/widgets/async_value_view.dart';
 import '../../../routes/route_paths.dart';
+import '../delivery_map/delivery_map_controller.dart';
+import '../delivery_map/delivery_map_telemetry_bar.dart';
+import '../delivery_map/delivery_map_widget.dart';
 import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
 import 'my_orders_provider.dart';
@@ -71,7 +75,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         data: (response) {
           final order = _localOrder ?? _orderFrom(response);
-          return _buildDetails(order, response);
+          final mapState = order.status == 'IN_TRANSIT'
+              ? ref.watch(deliveryMapControllerProvider(order.id))
+              : null;
+          return _buildDetails(order, response, mapState);
         },
       ),
     );
@@ -80,6 +87,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   Widget _buildDetails(
     DeliveryOrder order,
     DeliveryOrderDetailResponseDto detail,
+    AsyncValue<DeliveryMapViewState>? mapState,
   ) {
     final package = detail.package;
     final origin = detail.originStation;
@@ -91,6 +99,28 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       padding: const EdgeInsets.all(24),
       children: [
         if (order.status == 'FAILED') _failureBanner(detail),
+        if (mapState != null) ...[
+          AsyncValueView<DeliveryMapViewState>(
+            value: mapState,
+            onRetry: () =>
+                ref.invalidate(deliveryMapControllerProvider(order.id)),
+            loading: const SizedBox(
+              height: 320,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            data: (map) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DeliveryMapWidget(
+                  snapshot: map.snapshot,
+                  liveUnavailable: map.liveUnavailable,
+                ),
+                DeliveryMapTelemetryBar(snapshot: map.snapshot),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         _detail('Tracking number', order.trackingNumber ?? order.id),
         _detail('Status', order.status),
         _detail('Recipient', order.recipientName),

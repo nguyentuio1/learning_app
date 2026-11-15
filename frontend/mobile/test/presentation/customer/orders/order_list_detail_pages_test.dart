@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_dto.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
 import 'package:smart_drone_delivery/data/models/paged_result.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
+import 'package:smart_drone_delivery/domain/entities/delivery_map_snapshot.dart';
+import 'package:smart_drone_delivery/domain/repositories/delivery_map_repository.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/tracking/order_tracking_page.dart';
@@ -26,11 +29,49 @@ const _order = DeliveryOrder(
   trackingNumber: 'TRACK-1',
 );
 
+final _detail = DeliveryOrderDetailResponseDto.fromJson({
+  'id': 'order-1',
+  'trackingNumber': 'TRACK-1',
+  'recipientName': 'Customer',
+  'recipientPhone': '123456789',
+  'originStationId': 'origin-1',
+  'destinationStationId': 'destination-1',
+  'status': 'IN_TRANSIT',
+  'package': {'packageName': 'Books', 'weightGram': 450},
+  'originStation': {'name': 'Origin Hub'},
+  'destinationStation': {'name': 'Destination Hub'},
+  'deliveryAddress': {
+    'label': 'Home',
+    'contactName': 'Mai Tran',
+    'contactPhone': '555-0100',
+    'addressLine': '1 Main Street',
+  },
+  'aiEtaPrediction': {'predictedDurationMinutes': 24},
+  'statusLogs': [
+    {
+      'fromStatus': 'APPROVED',
+      'toStatus': 'IN_TRANSIT',
+      'remarks': 'Drone departed',
+      'createdAt': '2026-11-04T08:02:00Z',
+    },
+    {
+      'fromStatus': null,
+      'toStatus': 'PENDING',
+      'remarks': 'Order created',
+      'createdAt': '2026-11-04T08:00:00Z',
+    },
+  ],
+});
+
 class _FakeOrderService extends DeliveryOrderApiService {
   _FakeOrderService({this.orders = const [_order]}) : super(Dio());
 
   final List<DeliveryOrder> orders;
   final requests = <DeliveryOrderFilterParams>[];
+
+  @override
+  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
+      _detail;
 
   @override
   Future<PagedResult<DeliveryOrder>> getOrders(
@@ -47,13 +88,53 @@ class _FakeOrderService extends DeliveryOrderApiService {
   }
 }
 
-Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
+class _FakeDeliveryMapRepository implements DeliveryMapRepository {
+  @override
+  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async =>
+      DeliveryMapSnapshot(
+        orderId: 'order-1',
+        trackingNumber: 'TRACK-1',
+        status: DeliveryMapOrderStatus.inTransit,
+        originStation: MapStationPoint(
+          id: 'origin-1',
+          name: 'Origin Hub',
+          latitude: 10.7769,
+          longitude: 106.7009,
+        ),
+        destinationStation: MapStationPoint(
+          id: 'destination-1',
+          name: 'Destination Hub',
+          latitude: 10.8506,
+          longitude: 106.7719,
+        ),
+        estimatedDeliveryTime: null,
+        lastPosition: DroneMapTelemetry(
+          latitude: 10.8012,
+          longitude: 106.7311,
+          altitudeMeters: 80,
+          speedMps: 11.5,
+          batteryPercentage: 71,
+          timestamp: DateTime.utc(2026, 11, 4, 8, 10),
+        ),
+        telemetryStale: false,
+      );
+
+  @override
+  Stream<DeliveryMapUpdate> watchOrderMap(String orderId) =>
+      Stream<DeliveryMapUpdate>.empty();
+}
+
+Future<void> _pumpOrders(
+  WidgetTester tester,
+  _FakeOrderService service, {
+  String initialLocation = RoutePaths.customerOrders,
+}) async {
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final router = GoRouter(
-    initialLocation: RoutePaths.customerOrders,
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: RoutePaths.customerOrders,
@@ -80,6 +161,9 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
     ProviderScope(
       overrides: [
         deliveryOrderApiServiceProvider.overrideWithValue(service),
+        deliveryMapRepositoryProvider.overrideWithValue(
+          _FakeDeliveryMapRepository(),
+        ),
         trackingRepositoryProvider.overrideWithValue(trackingRepository),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -172,5 +256,58 @@ void main() {
 
     expect(find.text('Delivery tracking'), findsOneWidget);
     expect(find.text('DD-202611-0012'), findsOneWidget);
+  });
+
+  testWidgets('opens full order details directly with chronological history', (
+    tester,
+  ) async {
+    await _pumpOrders(
+      tester,
+      _FakeOrderService(),
+      initialLocation: RoutePaths.customerOrderDetailsFor('order-1'),
+    );
+
+    expect(find.text('Books'), findsOneWidget);
+    expect(find.text('Origin Hub'), findsNWidgets(2));
+    expect(find.text('Destination Hub'), findsNWidgets(2));
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('1 Main Street'), findsOneWidget);
+    expect(find.text('Mai Tran'), findsOneWidget);
+    expect(find.text('555-0100'), findsOneWidget);
+    expect(find.text('24 minutes'), findsOneWidget);
+    expect(find.text('— → PENDING'), findsOneWidget);
+    expect(find.text('APPROVED → IN_TRANSIT'), findsOneWidget);
+    expect(find.text('Order created'), findsOneWidget);
+    expect(find.text('Drone departed'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('— → PENDING')).dy,
+      lessThan(tester.getTopLeft(find.text('APPROVED → IN_TRANSIT')).dy),
+    );
+  });
+
+  testWidgets('shows delivery map and telemetry for in-transit details', (
+    tester,
+  ) async {
+    await _pumpOrders(
+      tester,
+      _FakeOrderService(),
+      initialLocation: RoutePaths.customerOrderDetailsFor('order-1'),
+    );
+
+    expect(
+      find.byKey(const ValueKey('delivery-map-origin-marker')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delivery-map-destination-marker')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delivery-map-drone-marker')),
+      findsOneWidget,
+    );
+    expect(find.text('Speed'), findsOneWidget);
+    expect(find.text('11.5 m/s'), findsOneWidget);
+    expect(find.text('Battery'), findsOneWidget);
   });
 }
