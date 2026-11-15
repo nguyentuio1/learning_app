@@ -73,6 +73,7 @@ class _FakeDeliveryOrderService extends DeliveryOrderApiService {
   DeliveryOrderDetailResponseDto detail;
   ConfirmPickupResponse confirmResponse;
   ApiException? detailError;
+  final List<ApiException> detailErrorQueue = [];
   ApiException? confirmError;
   Completer<DeliveryOrderDetailResponseDto>? nextDetailCompleter;
   bool updateDetailToDeliveredOnConfirm = true;
@@ -101,6 +102,9 @@ class _FakeDeliveryOrderService extends DeliveryOrderApiService {
       final completer = nextDetailCompleter!;
       nextDetailCompleter = null;
       return completer.future;
+    }
+    if (detailErrorQueue.isNotEmpty) {
+      throw detailErrorQueue.removeAt(0);
     }
     if (detailError != null) {
       throw detailError!;
@@ -710,6 +714,118 @@ void main() {
           find.text('An active customer account is required.'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'latches accessLost and clears completedConfirmation across 403-to-503 retry sequence without re-exposing tracking data',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation:
+              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '593284',
+        );
+        await tester.pump();
+
+        // POST succeeds, refreshed GET #1 returns 403, automatic retry GET #2+ returns 503
+        service.detailErrorQueue.add(
+          const ApiException(
+            message: 'An active customer account is required.',
+            statusCode: 403,
+          ),
+        );
+        service.detailError = const ApiException(
+          message: 'Temporary server error.',
+          statusCode: 503,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pump();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ConfirmDeliveryPage)),
+        );
+        var state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.completedConfirmation, isNull);
+        expect(state.accessLost, true);
+
+        await tester.pumpAndSettle();
+
+        state = container.read(
+          deliveryConfirmationControllerProvider(_arrivedOrderId),
+        );
+        expect(state.completedConfirmation, isNull);
+        expect(state.accessLost, true);
+        expect(find.textContaining('DD-202611-0012'), findsNothing);
+        expect(
+          find.textContaining('b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10'),
+          findsNothing,
+        );
+        expect(find.text('Delivered'), findsNothing);
+        expect(
+          find.text('An active customer account is required.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'clears completedConfirmation and latches accessLost immediately on 401, 403, and 404 refreshed GET',
+      (tester) async {
+        for (final statusCode in [401, 403, 404]) {
+          final service = _FakeDeliveryOrderService();
+          await _pumpWithRouter(
+            tester,
+            service,
+            initialLocation:
+                RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+          );
+
+          await tester.enterText(
+            find.byKey(const Key('pickup-secure-code-input')),
+            '593284',
+          );
+          await tester.pump();
+
+          service.detailError = ApiException(
+            message: 'Access denied ($statusCode)',
+            statusCode: statusCode,
+            code: statusCode == 404 ? 'MSG-P-CO-25' : null,
+          );
+
+          await tester.tap(
+            find.byKey(const Key('confirm-delivery-submit-button')),
+          );
+          await tester.pump();
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(ConfirmDeliveryPage)),
+          );
+          final state = container.read(
+            deliveryConfirmationControllerProvider(_arrivedOrderId),
+          );
+          expect(state.completedConfirmation, isNull);
+          expect(state.accessLost, true);
+          expect(find.textContaining('DD-202611-0012'), findsNothing);
+          expect(
+            find.textContaining('b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10'),
+            findsNothing,
+          );
+
+          await tester.pumpAndSettle();
+          await tester.pumpWidget(const SizedBox.shrink());
+        }
       },
     );
 

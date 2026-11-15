@@ -82,11 +82,10 @@ class DeliveryConfirmationController
     ref.listen<AsyncValue<DeliveryOrderDetailResponseDto>>(
       orderDetailProvider(orderId),
       (previous, next) {
-        if (next.isLoading || next.isRefreshing) return;
         if (next.hasError) {
-          _awaitingFreshRead = false;
           final error = next.error;
           if (error != null && isAccessDeniedError(error)) {
+            _awaitingFreshRead = false;
             _cancelLockoutTimer();
             state = state.copyWith(
               isSubmitting: false,
@@ -96,18 +95,37 @@ class DeliveryConfirmationController
               requiresOrderRefresh: false,
               errorMessage: accessDeniedMessage(error),
             );
+            return;
           }
+        }
+        if (next.isLoading || next.isRefreshing) return;
+        if (next.hasError) {
+          _awaitingFreshRead = false;
           return;
         }
-        if (next.hasValue && state.requiresOrderRefresh && _awaitingFreshRead) {
-          _awaitingFreshRead = false;
+        if (next.hasValue) {
           final detail = next.requireValue;
-          if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
-            state = state.copyWith(requiresOrderRefresh: false);
+          if (state.accessLost) {
+            state = state.copyWith(accessLost: false, clearError: true);
+          }
+          if (state.requiresOrderRefresh && _awaitingFreshRead) {
+            _awaitingFreshRead = false;
+            if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
+              state = state.copyWith(requiresOrderRefresh: false);
+            }
           }
         }
       },
     );
+    final initialDetail = ref.read(orderDetailProvider(orderId));
+    if (initialDetail.hasError &&
+        initialDetail.error != null &&
+        isAccessDeniedError(initialDetail.error!)) {
+      return DeliveryConfirmationState(
+        accessLost: true,
+        errorMessage: accessDeniedMessage(initialDetail.error!),
+      );
+    }
     return const DeliveryConfirmationState();
   }
 
