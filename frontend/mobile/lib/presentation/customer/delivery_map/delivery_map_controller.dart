@@ -38,6 +38,8 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
   DroneMapTelemetry? _latestStreamPosition;
   int _missionGeneration = 0;
   int _latestStreamGeneration = -1;
+  int _refreshRequestSeq = 0;
+  int _latestStreamSeq = 0;
 
   @override
   Future<DeliveryMapViewState> build() async {
@@ -50,10 +52,11 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
     });
 
     final repository = ref.read(deliveryMapRepositoryProvider);
+    final requestSeq = ++_refreshRequestSeq;
     final snapshot = await GetDeliveryMapSnapshotUseCase(repository)(
       _currentOrderId,
     );
-    if (_disposed || !ref.mounted) {
+    if (_disposed || !ref.mounted || requestSeq != _refreshRequestSeq) {
       return DeliveryMapViewState(snapshot: snapshot);
     }
     _updates = WatchDeliveryMapUseCase(repository)(_currentOrderId).listen(
@@ -130,6 +133,7 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
 
     _latestStreamPosition = position;
     _latestStreamGeneration = _missionGeneration;
+    _latestStreamSeq = _refreshRequestSeq;
     _scheduleIdleRefresh();
     final isAged = _isPositionAged(position);
     state = AsyncData(
@@ -192,6 +196,7 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
     }
     _snapshotRequestInFlight = true;
     final requestGeneration = _missionGeneration;
+    final requestSeq = ++_refreshRequestSeq;
     try {
       final response = await GetDeliveryMapSnapshotUseCase(
         ref.read(deliveryMapRepositoryProvider),
@@ -199,7 +204,7 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
       if (_disposed || !ref.mounted) return;
       if (requestGeneration != _missionGeneration) return;
 
-      final snapshot = _snapshotForRefresh(response);
+      final snapshot = _snapshotForRefresh(response, requestSeq: requestSeq);
       final current = state.asData?.value;
       state = AsyncData(
         DeliveryMapViewState(
@@ -236,10 +241,14 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
     }
   }
 
-  DeliveryMapSnapshot _snapshotForRefresh(DeliveryMapSnapshot snapshot) {
+  DeliveryMapSnapshot _snapshotForRefresh(
+    DeliveryMapSnapshot snapshot, {
+    required int requestSeq,
+  }) {
     if (snapshot.status != DeliveryMapOrderStatus.inTransit) {
       _latestStreamPosition = null;
       _latestStreamGeneration = -1;
+      _latestStreamSeq = 0;
       return _copyWithTelemetry(
         snapshot,
         lastPosition: null,
@@ -247,11 +256,16 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
       );
     }
 
-    final latest = _latestStreamGeneration == _missionGeneration
-        ? _latestStreamPosition
-        : null;
+    final hasInFlightStream =
+        _latestStreamPosition != null &&
+        _latestStreamGeneration == _missionGeneration &&
+        _latestStreamSeq >= requestSeq;
+    final latest = hasInFlightStream ? _latestStreamPosition : null;
     if (snapshot.lastPosition == null) {
       if (latest == null) {
+        _latestStreamPosition = null;
+        _latestStreamGeneration = -1;
+        _latestStreamSeq = 0;
         return _copyWithTelemetry(
           snapshot,
           lastPosition: null,
@@ -273,6 +287,9 @@ class DeliveryMapController extends AsyncNotifier<DeliveryMapViewState> {
         telemetryStale: _isPositionAged(latest),
       );
     }
+    _latestStreamPosition = snapshot.lastPosition;
+    _latestStreamGeneration = _missionGeneration;
+    _latestStreamSeq = requestSeq - 1;
     return _copyWithTelemetry(
       snapshot,
       lastPosition: snapshot.lastPosition,

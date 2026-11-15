@@ -624,4 +624,64 @@ void main() {
       await tester.pump();
     },
   );
+
+  testWidgets(
+    'respects canonical null after reconnect when StatusChanged was missed',
+    (tester) async {
+      final repository = _FakeDeliveryMapRepository(
+        _snapshot(position: _oldMissionPosition, includePosition: true),
+      );
+      final pending = Completer<DeliveryMapSnapshot>();
+      final container = ProviderContainer(
+        overrides: [
+          deliveryMapRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      final subscription = container.listen(
+        deliveryMapControllerProvider(_orderId),
+        (_, _) {},
+      );
+      await container.read(deliveryMapControllerProvider(_orderId).future);
+
+      repository.emit(
+        DeliveryMapUpdate(
+          type: DeliveryMapUpdateType.position,
+          position: _boundarySnapshotPosition,
+        ),
+      );
+      await tester.pump();
+      expect(
+        container
+            .read(deliveryMapControllerProvider(_orderId))
+            .requireValue
+            .snapshot
+            .lastPosition,
+        _boundarySnapshotPosition,
+      );
+
+      repository.emit(
+        const DeliveryMapUpdate(type: DeliveryMapUpdateType.reconnecting),
+      );
+      repository.pendingSnapshots.add(pending);
+      repository.emit(
+        const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+      );
+      await tester.pump();
+      expect(repository.snapshotRequests, 2);
+
+      pending.complete(_snapshot(stale: false));
+      await tester.pump();
+      await tester.pump();
+      final snapshot = container
+          .read(deliveryMapControllerProvider(_orderId))
+          .requireValue
+          .snapshot;
+      expect(snapshot.lastPosition, isNull);
+      expect(snapshot.telemetryStale, isFalse);
+
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    },
+  );
 }
