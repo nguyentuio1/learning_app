@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/error/api_exception.dart';
 import '../../../data/providers/repository_providers.dart';
 import '../../../domain/entities/telemetry_position.dart';
 import '../../../domain/entities/tracking_snapshot.dart';
@@ -29,39 +30,55 @@ class OrderTrackingState {
   );
 }
 
-class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
-  OrderTrackingController(this._orderId);
+class OrderTrackingController extends Notifier<AsyncValue<OrderTrackingState>> {
+  OrderTrackingController(this._orderId, {DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
   final String _orderId;
+  final DateTime Function() _now;
   TrackingRepository? _repository;
   Timer? _pollingTimer;
+  Timer? _freshnessTimer;
   StreamSubscription<TelemetryPosition>? _positionSubscription;
   StreamSubscription<TrackingStatusUpdate>? _statusSubscription;
   StreamSubscription<bool>? _connectionSubscription;
   TelemetryPosition? _latestPosition;
   bool _pollInFlight = false;
   bool _disposed = false;
+  bool _trackingStopped = false;
   int _snapshotRequestId = 0;
 
   @override
-  Future<OrderTrackingState> build() async {
+  AsyncValue<OrderTrackingState> build() {
     _disposed = false;
+    _trackingStopped = false;
     _latestPosition = null;
     ref.onDispose(_dispose);
+    unawaited(_loadInitialSnapshot());
+    return const AsyncLoading();
+  }
 
-    final snapshot = await GetTrackingSnapshotUseCase(
-      ref.read(trackingRepositoryProvider),
-    )(_orderId);
-    if (!ref.mounted) {
-      return OrderTrackingState(snapshot: snapshot, isReconnecting: false);
+  Future<void> _loadInitialSnapshot() async {
+    try {
+      final snapshot = await GetTrackingSnapshotUseCase(
+        ref.read(trackingRepositoryProvider),
+      )(_orderId);
+      if (!ref.mounted || _disposed) return;
+      final repository = ref.read(trackingRepositoryProvider);
+      _repository = repository;
+      _listenForUpdates(repository);
+      state = AsyncData(
+        OrderTrackingState(
+          snapshot: _normalizeSnapshot(snapshot),
+          isReconnecting: true,
+        ),
+      );
+      Timer.run(() => unawaited(_subscribe()));
+    } catch (error, stackTrace) {
+      if (!ref.mounted || _disposed) return;
+      if (_isProtectedAccessError(error)) _stopTracking();
+      state = AsyncError(error, stackTrace);
     }
-
-    final repository = ref.read(trackingRepositoryProvider);
-    _repository = repository;
-    _listenForUpdates(repository);
-    final result = OrderTrackingState(snapshot: snapshot, isReconnecting: true);
-    Timer.run(() => unawaited(_subscribe()));
-    return result;
   }
 
   Future<void> retry() async {
@@ -71,20 +88,27 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
         ref.read(trackingRepositoryProvider),
       )(_orderId);
       if (!ref.mounted || _disposed) return;
+      _trackingStopped = false;
       state = AsyncData(
-        OrderTrackingState(snapshot: snapshot, isReconnecting: true),
+        OrderTrackingState(
+          snapshot: _normalizeSnapshot(snapshot),
+          isReconnecting: true,
+        ),
       );
       _repository ??= ref.read(trackingRepositoryProvider);
       _listenForUpdates(_repository!);
       unawaited(_subscribe());
     } catch (error, stackTrace) {
       if (!ref.mounted || _disposed) return;
+      if (_isProtectedAccessError(error)) {
+        _stopTracking();
+      }
       state = AsyncError(error, stackTrace);
     }
   }
 
   void _listenForUpdates(TrackingRepository repository) {
-    if (_positionSubscription != null) return;
+    if (_trackingStopped || _positionSubscription != null) return;
     _positionSubscription = repository.positions.listen(
       _onPositionUpdated,
       onError: (Object error, StackTrace stackTrace) =>
@@ -103,7 +127,7 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
   }
 
   Future<void> _subscribe() async {
-    if (_disposed || !ref.mounted) return;
+    if (_disposed || _trackingStopped || !ref.mounted) return;
     _setReconnecting(true);
     try {
       final repository = _repository;
@@ -115,30 +139,43 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
   }
 
   void _onPositionUpdated(TelemetryPosition position) {
-    if (_disposed || !ref.mounted || !state.hasValue) return;
+    if (_disposed || _trackingStopped || !ref.mounted || !state.hasValue) {
+      return;
+    }
     _latestPosition = position;
+    _freshnessTimer?.cancel();
+    _freshnessTimer = null;
     final current = state.requireValue;
-    state = AsyncData(
-      current.copyWith(
-        snapshot: current.snapshot.copyWith(
-          lastPosition: position,
-          telemetryStale: false,
-        ),
+    final snapshot = current.snapshot.copyWith(
+      lastPosition: position,
+      telemetryStale: _isTelemetryStale(
+        current.snapshot.status,
+        position,
+        _now().toUtc(),
       ),
     );
+    state = AsyncData(current.copyWith(snapshot: snapshot));
+    _scheduleFreshnessTimer(snapshot);
   }
 
   void _onStatusChanged(TrackingStatusUpdate update) {
-    if (_disposed || !ref.mounted || update.orderId != _orderId) return;
+    if (_disposed ||
+        _trackingStopped ||
+        !ref.mounted ||
+        update.orderId != _orderId) {
+      return;
+    }
     unawaited(_refreshSnapshot());
   }
 
   void _onConnectionStateChanged(bool connected) {
-    if (_disposed || !ref.mounted) return;
+    if (_disposed || _trackingStopped || !ref.mounted) return;
     if (connected) {
       _pollingTimer?.cancel();
       _pollingTimer = null;
       _setReconnecting(false);
+      final current = state.value;
+      if (current != null) _scheduleFreshnessTimer(current.snapshot);
       unawaited(_refreshSnapshot());
       return;
     }
@@ -150,7 +187,9 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
   }
 
   Future<void> _pollSnapshot() async {
-    if (_pollInFlight || _disposed || !ref.mounted) return;
+    if (_pollInFlight || _disposed || _trackingStopped || !ref.mounted) {
+      return;
+    }
     _pollInFlight = true;
     try {
       await _refreshSnapshot();
@@ -160,7 +199,7 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
   }
 
   Future<void> _refreshSnapshot() async {
-    if (_disposed || !ref.mounted) return;
+    if (_disposed || _trackingStopped || !ref.mounted) return;
     final requestId = ++_snapshotRequestId;
     try {
       var snapshot = await GetTrackingSnapshotUseCase(_repository!)(_orderId);
@@ -168,31 +207,38 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
 
       final latestPosition = _latestPosition;
       final serverPosition = snapshot.lastPosition;
-      if (snapshot.status == DeliveryTrackingStatus.inTransit &&
+      if (serverPosition == null) {
+        _latestPosition = null;
+      } else if (snapshot.status == DeliveryTrackingStatus.inTransit &&
           latestPosition != null &&
-          (serverPosition == null ||
-              latestPosition.timestamp.isAfter(serverPosition.timestamp))) {
-        snapshot = snapshot.copyWith(
-          lastPosition: latestPosition,
-          telemetryStale: false,
-        );
+          latestPosition.timestamp.isAfter(serverPosition.timestamp)) {
+        snapshot = snapshot.copyWith(lastPosition: latestPosition);
+      } else {
+        _latestPosition = serverPosition;
       }
 
+      snapshot = _normalizeSnapshot(snapshot);
       final current = state.value;
       if (current != null) {
         state = AsyncData(current.copyWith(snapshot: snapshot));
       }
+      _scheduleFreshnessTimer(snapshot);
     } catch (error, stackTrace) {
-      if (!_disposed && ref.mounted) {
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stackTrace,
-            library: 'order tracking',
-            context: ErrorDescription('while refreshing a tracking snapshot'),
-          ),
-        );
+      if (_disposed || !ref.mounted) return;
+      if (_isProtectedAccessError(error)) {
+        _stopTracking();
+        state = AsyncError(error, stackTrace);
+        return;
       }
+      if (requestId != _snapshotRequestId) return;
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'order tracking',
+          context: ErrorDescription('while refreshing a tracking snapshot'),
+        ),
+      );
     }
   }
 
@@ -203,7 +249,7 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
   }
 
   void _reportStreamError(Object error, StackTrace stackTrace) {
-    if (_disposed) return;
+    if (_disposed || _trackingStopped) return;
     FlutterError.reportError(
       FlutterErrorDetails(
         exception: error,
@@ -217,14 +263,120 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
 
   void _dispose() {
     _disposed = true;
-    _pollingTimer?.cancel();
-    _pollingTimer = null;
-    _positionSubscription?.cancel();
-    _statusSubscription?.cancel();
-    _connectionSubscription?.cancel();
+    _cancelTimers();
+    _cancelSubscriptions();
     final repository = _repository;
     if (repository != null) {
       unawaited(_unsubscribe(repository));
+    }
+  }
+
+  TrackingSnapshot _normalizeSnapshot(TrackingSnapshot snapshot) {
+    final position = snapshot.lastPosition;
+    if (snapshot.status != DeliveryTrackingStatus.inTransit ||
+        position == null) {
+      _latestPosition = null;
+    } else {
+      final latest = _latestPosition;
+      if (latest == null || !latest.timestamp.isAfter(position.timestamp)) {
+        _latestPosition = position;
+      }
+    }
+    return snapshot.copyWith(
+      telemetryStale: _isTelemetryStale(
+        snapshot.status,
+        position,
+        _now().toUtc(),
+      ),
+    );
+  }
+
+  bool _isTelemetryStale(
+    DeliveryTrackingStatus status,
+    TelemetryPosition? position,
+    DateTime now,
+  ) {
+    if (status != DeliveryTrackingStatus.inTransit) return false;
+    if (position == null) return true;
+    return now.difference(position.timestamp.toUtc()) >
+        const Duration(seconds: 60);
+  }
+
+  void _scheduleFreshnessTimer(TrackingSnapshot snapshot) {
+    _freshnessTimer?.cancel();
+    _freshnessTimer = null;
+    if (_disposed ||
+        _trackingStopped ||
+        snapshot.status != DeliveryTrackingStatus.inTransit ||
+        snapshot.lastPosition == null ||
+        snapshot.telemetryStale) {
+      return;
+    }
+
+    final deadline = snapshot.lastPosition!.timestamp.toUtc().add(
+      const Duration(seconds: 60, milliseconds: 1),
+    );
+    final delay = deadline.difference(_now().toUtc());
+    _freshnessTimer = Timer(
+      delay.isNegative ? Duration.zero : delay,
+      _onFreshnessDeadline,
+    );
+  }
+
+  void _onFreshnessDeadline() {
+    _freshnessTimer = null;
+    if (_disposed || _trackingStopped || !ref.mounted || !state.hasValue) {
+      return;
+    }
+    final current = state.requireValue;
+    final snapshot = current.snapshot;
+    final stale = _isTelemetryStale(
+      snapshot.status,
+      snapshot.lastPosition,
+      _now().toUtc(),
+    );
+    if (snapshot.telemetryStale != stale) {
+      state = AsyncData(
+        current.copyWith(snapshot: snapshot.copyWith(telemetryStale: stale)),
+      );
+    }
+    if (!stale) _scheduleFreshnessTimer(snapshot);
+  }
+
+  bool _isProtectedAccessError(Object error) =>
+      error is ApiException &&
+      (error.statusCode == 401 ||
+          error.statusCode == 403 ||
+          error.statusCode == 404);
+
+  void _stopTracking() {
+    if (_trackingStopped) return;
+    _trackingStopped = true;
+    _snapshotRequestId++;
+    _cancelTimers();
+    _cancelSubscriptions();
+    final repository = _repository;
+    if (repository != null) unawaited(_unsubscribe(repository));
+  }
+
+  void _cancelTimers() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    _freshnessTimer?.cancel();
+    _freshnessTimer = null;
+  }
+
+  void _cancelSubscriptions() {
+    final subscriptions = [
+      _positionSubscription,
+      _statusSubscription,
+      _connectionSubscription,
+    ];
+    _positionSubscription = null;
+    _statusSubscription = null;
+    _connectionSubscription = null;
+    for (final subscription in subscriptions) {
+      if (subscription != null) unawaited(subscription.cancel());
     }
   }
 
@@ -244,8 +396,8 @@ class OrderTrackingController extends AsyncNotifier<OrderTrackingState> {
   }
 }
 
-final orderTrackingControllerProvider = AsyncNotifierProvider.autoDispose
-    .family<OrderTrackingController, OrderTrackingState, String>(
+final orderTrackingControllerProvider = NotifierProvider.autoDispose
+    .family<OrderTrackingController, AsyncValue<OrderTrackingState>, String>(
       OrderTrackingController.new,
       name: 'orderTrackingController',
     );

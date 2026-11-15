@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
+import 'package:smart_drone_delivery/domain/entities/telemetry_position.dart';
 import 'package:smart_drone_delivery/domain/entities/tracking_snapshot.dart';
 import 'package:smart_drone_delivery/presentation/customer/tracking/order_tracking_page.dart';
 
@@ -109,7 +110,17 @@ void main() {
     await _pumpPage(tester, repository);
 
     expect(find.text('Live position stale (>60s)'), findsOneWidget);
-    repository.emitPosition(trackingSnapshot().lastPosition!);
+    final oldPosition = trackingSnapshot().lastPosition!;
+    repository.emitPosition(
+      TelemetryPosition(
+        latitude: oldPosition.latitude,
+        longitude: oldPosition.longitude,
+        altitudeMeters: oldPosition.altitudeMeters,
+        speedMps: oldPosition.speedMps,
+        batteryPercentage: oldPosition.batteryPercentage,
+        timestamp: DateTime.now().toUtc(),
+      ),
+    );
     await tester.pump();
     await tester.pump();
 
