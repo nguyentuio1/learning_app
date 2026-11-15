@@ -163,12 +163,7 @@ class _NotificationCard extends ConsumerWidget {
                 .markAsRead(item.id);
           }
           if (item.orderId != null && item.orderId!.isNotEmpty) {
-            context.push(
-              RoutePaths.customerOrderDetails.replaceFirst(
-                ':orderId',
-                item.orderId!,
-              ),
-            );
+            context.push(RoutePaths.customerOrderTrackingFor(item.orderId!));
           }
         },
         child: Padding(
@@ -231,10 +226,7 @@ class _NotificationCard extends ConsumerWidget {
                     FilledButton.tonal(
                       onPressed: () {
                         context.push(
-                          RoutePaths.customerOrderDetails.replaceFirst(
-                            ':orderId',
-                            item.orderId!,
-                          ),
+                          RoutePaths.customerOrderTrackingFor(item.orderId!),
                         );
                       },
                       child: const Text('View order'),
