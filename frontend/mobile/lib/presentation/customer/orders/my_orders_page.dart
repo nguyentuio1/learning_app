@@ -277,10 +277,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
 
   Future<void> _openOrder(DeliveryOrder order) async {
     await context.push(
-      RoutePaths.customerOrderDetails.replaceFirst(
-        ':orderId',
-        Uri.encodeComponent(order.id),
-      ),
+      RoutePaths.customerOrderTrackingFor(order.id),
       extra: order,
     );
     if (!mounted) return;
