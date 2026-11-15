@@ -1,0 +1,42 @@
+.smartdrone-calendar-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.smartdrone-calendar-popup .smartdrone-calendar-panel {
+  border: 1px solid #c5d3bc;
+  border-radius: 12px;
+  box-shadow: 0 14px 36px #1e4f3c26;
+  overflow: hidden;
+}
+
+.smartdrone-calendar-popup .ant-picker-header,
+.smartdrone-calendar-popup .ant-picker-footer {
+  background: #f4f7ee;
+}
+
+.smartdrone-calendar-popup .ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: #a47d30;
+}
+
+@media (max-width: 520px) {
+  .smartdrone-calendar-popup .ant-picker-datetime-panel {
+    flex-direction: column;
+  }
+
+  .smartdrone-calendar-popup .ant-picker-datetime-panel .ant-picker-time-panel {
+    border-inline-start: 0;
+    border-block-start: 1px solid #e2e9da;
+  }
+
+  .smartdrone-calendar-popup .ant-picker-time-panel .ant-picker-content {
+    max-height: 108px;
+  }
+}
+
+@media (max-height: 520px) {
+  .smartdrone-calendar-popup .smartdrone-calendar-panel {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
