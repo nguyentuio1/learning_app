@@ -2,6 +2,10 @@
 .tracking-feature .tracking-toolbar p{margin:7px 0 0;font-size:12px;color:#72806e;line-height:1.7}
 .tracking-feature .tracking-kicker{font-size:10px;letter-spacing:1.8px;font-weight:650;color:#657c56}
 .tracking-feature .tracking-search{display:grid;gap:9px;max-width:520px;font-size:13px;color:#405b43;margin-bottom:24px}
+.tracking-feature .tracking-search .ant-input-affix-wrapper { background:#fffffc; }
+.tracking-feature .tracking-empty { display:grid; justify-items:center; gap:14px; text-align:center; color:#617167; }
+.tracking-feature .tracking-empty p { margin:0; line-height:1.7; }
+.tracking-feature .tracking-empty-inset { padding:20px 16px; background:#f0f5e9; border-radius:10px; }
 .tracking-feature .tracking-transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;color:#74816f;font-size:11px}
 .tracking-feature .tracking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
 .tracking-feature .tracking-card{border:1px solid #cddcc5;border-radius:14px;background:#fffffc;padding:26px;box-shadow:0 4px 18px #203d3105;min-width:0}

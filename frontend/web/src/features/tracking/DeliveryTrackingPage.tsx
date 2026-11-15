@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Empty, Input, Progress, Tag } from 'antd'
+import { Alert, Button, Input, Progress, Tag } from 'antd'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { OperationsPage, ResourceState } from '../operations/OperationsUi'
@@ -42,10 +42,10 @@ function ActiveDeliveries() {
   const visible = resource.data?.filter(order => `${order.trackingNumber} ${order.droneSerialNumber}`.toLowerCase().includes(search.toLowerCase().trim()))
   return <>
     <div className="tracking-toolbar"><div><span className="tracking-kicker">FLIGHT OPERATIONS</span><p>Updates every 5 seconds while this tab is visible.</p></div><Button onClick={resource.reload} loading={resource.refreshing}>Refresh deliveries</Button></div>
-    <label className="tracking-search">Find a delivery<Input.Search allowClear value={search} onChange={event => setSearch(event.target.value)} placeholder="Tracking number or drone serial number" /></label>
+    <label className="tracking-search">Find a delivery<Input allowClear value={search} onChange={event => setSearch(event.target.value)} placeholder="Tracking number or drone serial number" /></label>
     <ResourceState loading={resource.loading} error={resource.error} retry={resource.reload} />
     {resource.error && resource.data && <p className="tracking-muted">Showing the last received list. Its availability may have changed.</p>}
-    {visible?.length === 0 && <div className="tracking-card"><Empty description={search.trim() ? 'No active deliveries match your search.' : 'No active deliveries right now.'} />{search.trim() && <Button onClick={() => setSearch('')}>Clear search</Button>}</div>}
+    {visible?.length === 0 && <div className="tracking-card tracking-empty"><p>{search.trim() ? 'No active deliveries match your search.' : 'No active deliveries right now.'}</p>{search.trim() && <Button onClick={() => setSearch('')}>Clear search</Button>}</div>}
     <div className="tracking-list">{visible?.map(order => {
       const stale = order.telemetryStale || oldSample(order.lastTelemetryAt, now)
       return <article className="tracking-card tracking-flight" key={order.orderId}>
@@ -82,7 +82,7 @@ function TrackingDetail({ id }: { id: string }) {
       </section>
       {stale && <Alert type="warning" showIcon title="Position is out of date" description="The last reported position is older than 60 seconds or marked stale by the service. It is not a live position; a telemetry gap does not mean this delivery has failed." />}
       <div className="tracking-detail-grid"><section className="tracking-card"><div className="tracking-card-heading"><h2>{fresh ? 'Latest flight position' : 'Last reported position'}</h2><Tag color={fresh ? 'green' : 'default'}>{fresh ? 'Recent sample' : 'Not live'}</Tag></div>
-        {position ? <><dl className="tracking-facts"><div><dt>Latitude</dt><dd>{position.latitude.toFixed(6)}°</dd></div><div><dt>Longitude</dt><dd>{position.longitude.toFixed(6)}°</dd></div><div><dt>Reported at</dt><dd>{date(position.timestamp)}</dd></div></dl><p className="tracking-muted">Coordinates are reported by the delivery service. No position is estimated between updates.</p></> : <Empty description={stopped ? 'No live position: this delivery is not in transit.' : 'No position has been reported yet.'} />}
+        {position ? <><dl className="tracking-facts"><div><dt>Latitude</dt><dd>{position.latitude.toFixed(6)}°</dd></div><div><dt>Longitude</dt><dd>{position.longitude.toFixed(6)}°</dd></div><div><dt>Reported at</dt><dd>{date(position.timestamp)}</dd></div></dl><p className="tracking-muted">Coordinates are reported by the delivery service. No position is estimated between updates.</p></> : <div className="tracking-empty tracking-empty-inset"><p>{stopped ? 'No live position: this delivery is not in transit.' : 'No position has been reported yet.'}</p></div>}
       </section><section className="tracking-card"><h2>Flight readings</h2>{position ? <>
         <dl className="tracking-readings"><div><dt>Altitude</dt><dd>{Number.isFinite(position.altitudeMeters) && position.altitudeMeters >= 0 ? `${position.altitudeMeters} m` : 'Not available'}</dd></div><div><dt>Speed</dt><dd>{Number.isFinite(position.speedMps) && position.speedMps >= 0 ? `${position.speedMps} m/s` : 'Not available'}</dd></div></dl>
         <div className="tracking-battery"><span>Battery · reported sample</span>{Number.isFinite(position.batteryPercentage) && position.batteryPercentage >= 0 && position.batteryPercentage <= 100 ? <Progress percent={position.batteryPercentage} strokeColor="#4a704b"/> : <p>Not available</p>}</div>
