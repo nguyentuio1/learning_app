@@ -171,25 +171,15 @@ class DeliveryConfirmationController
   Future<bool> refreshOrderEligibility() async {
     final generation = ++_refreshGeneration;
     state = state.copyWith(requiresOrderRefresh: true);
-    ref.invalidate(orderDetailProvider(orderId));
     ref.invalidate(myOrdersProvider);
 
-    try {
-      final detail = await ref.read(orderDetailProvider(orderId).future);
-      if (!ref.mounted || generation != _refreshGeneration) return false;
-      if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
-        state = state.copyWith(requiresOrderRefresh: false);
-        return true;
-      }
-      state = state.copyWith(
-        requiresOrderRefresh: false,
-        errorMessage:
-            'Order ${detail.trackingNumber ?? detail.id} is currently ${detail.status}. Only ARRIVED orders can be confirmed for delivery.',
-      );
-      return false;
-    } catch (error) {
-      if (!ref.mounted || generation != _refreshGeneration) return false;
-      if (isAccessDeniedError(error)) {
+    await ref.read(orderDetailProvider(orderId).notifier).refresh();
+    if (!ref.mounted || generation != _refreshGeneration) return false;
+
+    final currentAsync = ref.read(orderDetailProvider(orderId));
+    if (currentAsync.hasError) {
+      final error = currentAsync.error;
+      if (error != null && isAccessDeniedError(error)) {
         _cancelLockoutTimer();
         state = state.copyWith(
           isSubmitting: false,
@@ -204,6 +194,24 @@ class DeliveryConfirmationController
       state = state.copyWith(requiresOrderRefresh: true);
       return false;
     }
+
+    if (currentAsync.hasValue &&
+        !currentAsync.isLoading &&
+        !currentAsync.isRefreshing) {
+      final detail = currentAsync.requireValue;
+      if (detail.status == 'ARRIVED' || detail.status == 'DELIVERED') {
+        state = state.copyWith(requiresOrderRefresh: false);
+        return true;
+      }
+      state = state.copyWith(
+        requiresOrderRefresh: false,
+        errorMessage:
+            'Order ${detail.trackingNumber ?? detail.id} is currently ${detail.status}. Only ARRIVED orders can be confirmed for delivery.',
+      );
+      return false;
+    }
+
+    return false;
   }
 
   Future<bool> confirmDelivery({

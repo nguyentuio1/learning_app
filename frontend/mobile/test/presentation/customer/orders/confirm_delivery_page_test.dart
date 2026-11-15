@@ -630,12 +630,11 @@ void main() {
         );
 
         // If the refresh GET fails, preserve the block
-        pendingRefresh.completeError(
-          const ApiException(
-            message: 'Temporary server error.',
-            statusCode: 503,
-          ),
+        service.detailError = const ApiException(
+          message: 'Temporary server error.',
+          statusCode: 503,
         );
+        pendingRefresh.completeError(service.detailError!);
         await tester.pumpAndSettle();
 
         expect(
