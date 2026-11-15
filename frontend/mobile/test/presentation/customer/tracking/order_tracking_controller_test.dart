@@ -131,7 +131,7 @@ void main() {
   );
 
   test(
-    'keeps server null position canonical after a live sample and resnapshot',
+    'keeps server null position and stale flag canonical after resnapshot',
     () async {
       final repository = FakeTrackingRepository();
       final container = ProviderContainer(
@@ -179,7 +179,71 @@ void main() {
 
       final snapshot = container.read(provider).requireValue.snapshot;
       expect(snapshot.lastPosition, isNull);
-      expect(snapshot.telemetryStale, isTrue);
+      expect(snapshot.telemetryStale, isFalse);
+
+      repository.response = trackingSnapshot(
+        status: DeliveryTrackingStatus.inTransit,
+        includePosition: false,
+        telemetryStale: true,
+      );
+      repository.emitStatus(
+        TrackingStatusUpdate(
+          orderId: 'order-1',
+          trackingNumber: 'DD-202611-0012',
+          status: DeliveryTrackingStatus.inTransit,
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final staleSnapshot = container.read(provider).requireValue.snapshot;
+      expect(staleSnapshot.lastPosition, isNull);
+      expect(staleSnapshot.telemetryStale, isTrue);
+    },
+  );
+
+  test(
+    'preserves server stale flag when device clock is 61 seconds behind',
+    () {
+      fakeAsync((async) {
+        final deviceClock = DateTime.utc(2026, 11, 15, 11, 58, 59);
+        final repository = FakeTrackingRepository()
+          ..response = trackingSnapshot(
+            position: TelemetryPosition(
+              latitude: 10.8,
+              longitude: 106.7,
+              altitudeMeters: 80,
+              speedMps: 11,
+              batteryPercentage: 71,
+              timestamp: DateTime.utc(2026, 11, 15, 12),
+            ),
+            telemetryStale: true,
+          );
+        final provider = orderTrackingControllerProvider('order-1');
+        final container = ProviderContainer(
+          overrides: [
+            trackingRepositoryProvider.overrideWithValue(repository),
+            provider.overrideWith(
+              () => OrderTrackingController('order-1', now: () => deviceClock),
+            ),
+          ],
+          retry: (_, _) => null,
+        );
+        final subscription = container.listen(provider, (_, _) {});
+
+        container.read(provider);
+        async.flushMicrotasks();
+        async.elapse(Duration.zero);
+        async.flushMicrotasks();
+
+        final snapshot = container.read(provider).requireValue.snapshot;
+        expect(snapshot.lastPosition, isNotNull);
+        expect(snapshot.telemetryStale, isTrue);
+
+        subscription.close();
+        container.dispose();
+        repository.close();
+      });
     },
   );
 

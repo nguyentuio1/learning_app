@@ -207,17 +207,22 @@ class OrderTrackingController extends Notifier<AsyncValue<OrderTrackingState>> {
 
       final latestPosition = _latestPosition;
       final serverPosition = snapshot.lastPosition;
+      var positionFromStream = false;
       if (serverPosition == null) {
         _latestPosition = null;
       } else if (snapshot.status == DeliveryTrackingStatus.inTransit &&
           latestPosition != null &&
           latestPosition.timestamp.isAfter(serverPosition.timestamp)) {
         snapshot = snapshot.copyWith(lastPosition: latestPosition);
+        positionFromStream = true;
       } else {
         _latestPosition = serverPosition;
       }
 
-      snapshot = _normalizeSnapshot(snapshot);
+      snapshot = _normalizeSnapshot(
+        snapshot,
+        positionFromStream: positionFromStream,
+      );
       final current = state.value;
       if (current != null) {
         state = AsyncData(current.copyWith(snapshot: snapshot));
@@ -271,7 +276,10 @@ class OrderTrackingController extends Notifier<AsyncValue<OrderTrackingState>> {
     }
   }
 
-  TrackingSnapshot _normalizeSnapshot(TrackingSnapshot snapshot) {
+  TrackingSnapshot _normalizeSnapshot(
+    TrackingSnapshot snapshot, {
+    bool positionFromStream = false,
+  }) {
     final position = snapshot.lastPosition;
     if (snapshot.status != DeliveryTrackingStatus.inTransit ||
         position == null) {
@@ -282,14 +290,19 @@ class OrderTrackingController extends Notifier<AsyncValue<OrderTrackingState>> {
         _latestPosition = position;
       }
     }
-    return snapshot.copyWith(
-      telemetryStale: _isTelemetryStale(
-        snapshot.status,
-        position,
-        _now().toUtc(),
-      ),
-    );
+    final telemetryStale = switch (position) {
+      null => snapshot.telemetryStale,
+      _ when snapshot.status != DeliveryTrackingStatus.inTransit => false,
+      _ =>
+        (positionFromStream ? false : snapshot.telemetryStale) ||
+            _isPositionAged(position),
+    };
+    return snapshot.copyWith(telemetryStale: telemetryStale);
   }
+
+  bool _isPositionAged(TelemetryPosition position) =>
+      _now().toUtc().difference(position.timestamp.toUtc()) >
+      const Duration(seconds: 60);
 
   bool _isTelemetryStale(
     DeliveryTrackingStatus status,
