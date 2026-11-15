@@ -10,6 +10,9 @@ public class FlightMission
     public string FlightStatus { get; set; } = "PLANNED";
     public DateTime? StartTime { get; set; }
     public DateTime? EndTime { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ScheduledDepartureTime { get; set; }
+    public DateTime? EstimatedArrivalTime { get; set; }
 
     public DeliveryOrder Order { get; set; } = null!;
     public Drone Drone { get; set; } = null!;

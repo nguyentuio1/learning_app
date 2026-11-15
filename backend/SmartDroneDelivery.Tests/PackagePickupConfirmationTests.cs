@@ -94,7 +94,7 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             Status = "OPERATIONAL",
             OperatorId = destOpId
         };
-        var destSlot = new StationSlot { Id = Guid.NewGuid(), StationId = dest.Id, SlotNumber = 1, Status = initialStatus == "ARRIVED" ? "OCCUPIED" : "EMPTY" };
+        var destSlot = new StationSlot { Id = Guid.NewGuid(), StationId = dest.Id, SlotNumber = 1, Status = initialStatus == "ARRIVED" ? "OCCUPIED" : "RESERVED" };
 
         var pkg = new Package
         {
@@ -117,7 +117,9 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             RecipientName = "Le Thi Huong",
             RecipientPhone = "0909123456",
             PickupSecureCode = "654321",
-            Status = initialStatus
+            Status = initialStatus,
+            ScheduledDepartureTime = DateTime.UtcNow.AddHours(2),
+            EstimatedDeliveryTime = DateTime.UtcNow.AddHours(2).AddMinutes(10)
         };
 
         var drone = new Drone
@@ -126,14 +128,16 @@ public class PackagePickupConfirmationTests : IClassFixture<AuthApiFactory>
             ModelName = "Carrier X",
             MaxPayloadGram = 2500,
             MaxFlightRangeKm = 30,
-            BatteryCapacityMah = 18000
+            BatteryCapacityMah = 18000,
+            CurrentStationId = origin.Id,
+            Status = initialStatus == "ARRIVED" ? "CHARGING" : "ASSIGNED"
         };
 
         var mission = new FlightMission
         {
             Order = order,
             Drone = drone,
-            StartSlot = originSlot,
+            StartSlot = initialStatus == "ARRIVED" ? originSlot : null,
             DestinationSlot = destSlot,
             FlightStatus = initialStatus == "ARRIVED" ? "COMPLETED" : "PLANNED"
         };
@@ -901,12 +905,16 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
         var dest = new LandingStation { Id = Guid.NewGuid(), StationCode = $"PG-DST-APR-{n}", Name = "Dst", Address = "Dst Addr", Latitude = 10.8m, Longitude = 106.8m, TotalSlots = 2, Status = "OPERATIONAL", OperatorId = destOpId };
         var originSlot = new StationSlot { Id = Guid.NewGuid(), StationId = origin.Id, SlotNumber = 1, Status = "EMPTY" };
         var pkg = new Package { SenderId = customerId, PackageName = "Package", WeightGram = 500, LengthCm = 10, WidthCm = 10, HeightCm = 10 };
-        var order = new DeliveryOrder { TrackingNumber = $"PG-TRK-APR-{n}", CustomerId = customerId, Package = pkg, OriginStationId = origin.Id, DestinationStationId = dest.Id, RecipientName = "Recipient", RecipientPhone = "0900000000", PickupSecureCode = "123456", Status = "APPROVED" };
+        var order = new DeliveryOrder { TrackingNumber = $"PG-TRK-APR-{n}", CustomerId = customerId, Package = pkg, OriginStationId = origin.Id, DestinationStationId = dest.Id, RecipientName = "Recipient", RecipientPhone = "0900000000", PickupSecureCode = "123456", Status = "APPROVED", ScheduledDepartureTime = DateTime.UtcNow.AddHours(2), EstimatedDeliveryTime = DateTime.UtcNow.AddHours(2).AddMinutes(10) };
 
+        var destinationSlot = new StationSlot { StationId = dest.Id, SlotNumber = 1, Status = "RESERVED" };
+        var drone = new Drone { SerialNumber = $"PG-APR-DRN-{n}", ModelName = "Carrier", MaxPayloadGram = 3000, MaxFlightRangeKm = 30, Status = "ASSIGNED", CurrentStationId = origin.Id };
+        var mission = new FlightMission { Order = order, Drone = drone, DestinationSlot = destinationSlot };
         await _factory.WithDbAsync(async db =>
         {
             db.LandingStations.AddRange(origin, dest);
-            db.StationSlots.Add(originSlot);
+            db.StationSlots.AddRange(originSlot, destinationSlot);
+            db.FlightMissions.Add(mission);
             db.Packages.Add(pkg);
             db.DeliveryOrders.Add(order);
             await db.SaveChangesAsync();

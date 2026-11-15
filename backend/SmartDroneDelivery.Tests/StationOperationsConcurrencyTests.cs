@@ -211,12 +211,17 @@ public class StationOperationsConcurrencyTests : IClassFixture<PostgresApiFactor
         {
             TrackingNumber = $"DD-OC-{n:D5}", CustomerId = customerId, Package = package,
             OriginStationId = origin.Id, DestinationStationId = dest.Id, RecipientName = "R",
-            RecipientPhone = "0909000000", PickupSecureCode = "123456", Status = "APPROVED"
+            RecipientPhone = "0909000000", PickupSecureCode = "123456", Status = "APPROVED",
+            ScheduledDepartureTime = DateTime.UtcNow.AddHours(2), EstimatedDeliveryTime = DateTime.UtcNow.AddHours(2).AddMinutes(10)
         };
+        var destinationSlot = new StationSlot { StationId = dest.Id, SlotNumber = 1, Status = "RESERVED" };
+        var drone = new Drone { SerialNumber = $"ORIGIN-DRN-{n}", ModelName = "Carrier", MaxPayloadGram = 3000, MaxFlightRangeKm = 30, Status = "ASSIGNED", CurrentStationId = origin.Id };
+        var mission = new FlightMission { Order = order, Drone = drone, DestinationSlot = destinationSlot };
         await _factory.WithDbAsync(async db =>
         {
             db.LandingStations.AddRange(origin, dest);
-            db.StationSlots.Add(slot);
+            db.StationSlots.AddRange(slot, destinationSlot);
+            db.FlightMissions.Add(mission);
             db.DeliveryOrders.Add(order);
             await db.SaveChangesAsync();
         });

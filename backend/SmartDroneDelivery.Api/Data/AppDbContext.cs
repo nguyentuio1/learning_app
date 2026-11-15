@@ -224,10 +224,15 @@ public class AppDbContext : DbContext
             entity.ToTable("flight_missions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FlightStatus).HasMaxLength(30).HasDefaultValue("PLANNED");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(e => e.OrderId).IsUnique()
+                .HasFilter("\"FlightStatus\" IN ('PLANNED', 'IN_AIR')")
+                .HasDatabaseName("IX_flight_missions_OrderId_Active");
+            entity.HasIndex(e => new { e.OrderId, e.CreatedAt });
 
             entity.HasOne(e => e.Order)
-                .WithOne(o => o.FlightMission)
-                .HasForeignKey<FlightMission>(e => e.OrderId)
+                .WithMany(o => o.FlightMissions)
+                .HasForeignKey(e => e.OrderId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Drone)

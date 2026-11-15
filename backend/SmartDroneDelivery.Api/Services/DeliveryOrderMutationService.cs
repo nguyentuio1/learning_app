@@ -121,18 +121,18 @@ public class DeliveryOrderMutationService : IDeliveryOrderMutationService
         if (trimmedReason.Length > 500)
             throw FieldError("cancellationReason", "Cancellation reason must be at most 500 characters.");
 
-        var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId)
-            ?? throw new ApiException(StatusCodes.Status404NotFound, "Delivery order not found.");
-
-        if (order.Status is not ("PENDING" or "APPROVED"))
-            throw CannotCancelStatus();
-
+        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
+        var order = _db.Database.IsNpgsql()
+            ? (await _db.DeliveryOrders.FromSqlInterpolated($"SELECT * FROM delivery_orders WHERE \"Id\" = {orderId} FOR UPDATE").ToListAsync()).SingleOrDefault()
+            : await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.Id == orderId);
+        if (order is null || order.CustomerId != customerId)
+            throw new ApiException(StatusCodes.Status404NotFound, "Delivery order not found.");
+        if (order.Status is not ("PENDING" or "APPROVED")) throw CannotCancelStatus();
         var previousStatus = order.Status;
         var now = DateTime.UtcNow;
-
-        await using var tx = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync() : null;
         try
         {
+            await MissionResources.AbortPlannedAsync(_db, order, now);
             await _transitions.StageAsync(order, previousStatus, "CANCELLED", customerId, trimmedReason, now);
             order.CancelReason = trimmedReason;
 
