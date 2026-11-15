@@ -1,6 +1,7 @@
 import { Alert, Button, Form, Input, Select, Table } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
+import { CalendarDayPicker } from '../../components/CalendarPicker'
 import { useResource } from '../operations/useResource'
 import { ResourceState, StatusTag } from '../operations/OperationsUi'
 import { stationApi } from '../stations/stationApi'
@@ -40,10 +41,10 @@ export function ApprovedOrders({ data, loading, error, reload, filters, onFilter
       <Form.Item name="assignmentStatus" label="Drone assignment"><Select allowClear placeholder="All assignments" options={[{ value: 'UNASSIGNED', label: 'Not assigned' }, { value: 'ASSIGNED', label: 'Assigned' }]} /></Form.Item>
       <Form.Item name="originStationId" label="Origin"><Select allowClear showSearch optionFilterProp="label" placeholder="All origins" options={options} loading={stations.loading} /></Form.Item>
       <Form.Item name="destinationStationId" label="Destination"><Select allowClear showSearch optionFilterProp="label" placeholder="All destinations" options={options} loading={stations.loading} /></Form.Item>
-      <Form.Item name="from" label="Created from"><Input type="date" /></Form.Item>
-      <Form.Item name="through" label="Created through"><Input type="date" /></Form.Item>
-      <Form.Item name="departureFrom" label="Departure from"><Input type="date" /></Form.Item>
-      <Form.Item name="departureThrough" label="Departure through"><Input type="date" /></Form.Item>
+      <Form.Item name="from" label="Created from"><CalendarDayPicker /></Form.Item>
+      <Form.Item name="through" label="Created through"><CalendarDayPicker /></Form.Item>
+      <Form.Item name="departureFrom" label="Departure from"><CalendarDayPicker /></Form.Item>
+      <Form.Item name="departureThrough" label="Departure through"><CalendarDayPicker /></Form.Item>
       <Button type="primary" htmlType="submit">Apply filters</Button>
       <Button onClick={() => { form.setFieldsValue({ searchKeyword: undefined, assignmentStatus: undefined, originStationId: undefined, destinationStationId: undefined, from: undefined, through: undefined, departureFrom: undefined, departureThrough: undefined }); onFilter({ page: 1, pageSize: 20 }) }}>Reset</Button>
     </Form>

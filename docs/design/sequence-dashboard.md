@@ -6,6 +6,8 @@
 
 **Status:** Proposed for review. Dashboard endpoints and metric definitions are not confirmed API contracts or implemented behavior.
 
+**LA-153 implementation update:** [LA-341 API handoff](../api/sprint-6-api-contract.md), section 5, now defines the HTTP routes/DTOs. LA-153 implements them on its feature/story branch using SQL aggregates and repeatable-read snapshots; see the availability table before selecting a backend checkout. The original diagrams below retain their proposed design context. Technical implementation and test results do not approve the candidate business formulas or complete LA-154/LA-155.
+
 This document shows how the Logistics Manager's web portal requests, filters and receives delivery statistics (FR-28, UC-19). It covers the four required measures: orders by status, success rate, average delivery time and station usage. It does not implement analytics, exports, AI insights or operational actions.
 
 ## 1. Sources and design decisions

@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
 import axios from 'axios'
-import { Alert, Button, DatePicker, Form, Modal, Radio, Timeline } from 'antd'
+import { Alert, Button, Form, Modal, Radio, Timeline } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
+import { CalendarPicker } from '../../components/CalendarPicker'
 import { OperationsPage, ResourceState, StatusTag } from '../operations/OperationsUi'
 import { operationError, uncertainMutation, validationFields } from '../operations/feedback'
 import { useResource } from '../operations/useResource'
@@ -98,7 +99,7 @@ function ScheduleForm({ order, disabled, onBusy, onSaved, onError }: MutationPro
   }
   return <section className="operations-panel"><h2>01 · Schedule departure</h2><p>Choose a time at least 15 minutes from now. Times are shown in your local timezone.</p>
     <Form form={form} layout="vertical" onFinish={save} disabled={disabled} initialValues={{ departure: order.scheduledDepartureTime ? dayjs(order.scheduledDepartureTime) : undefined }}>
-      <Form.Item name="departure" label="Scheduled departure" rules={[{ required: true, message: 'Choose a departure time.' }]}><DatePicker showTime format="YYYY-MM-DD HH:mm" /></Form.Item>
+      <Form.Item name="departure" label="Scheduled departure" rules={[{ required: true, message: 'Choose a departure time.' }]}><CalendarPicker showTime /></Form.Item>
       <Button type="primary" htmlType="submit" disabled={disabled} loading={saving}>Save departure</Button>
     </Form>
   </section>

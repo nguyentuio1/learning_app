@@ -1,6 +1,7 @@
 import { Alert, Button, Form, Input, Select, Table } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
+import { CalendarDayPicker } from '../../components/CalendarPicker'
 import { useResource } from '../operations/useResource'
 import { ResourceState, StatusTag } from '../operations/OperationsUi'
 import { stationApi } from '../stations/stationApi'
@@ -34,8 +35,8 @@ export function FailedOrders({ data, loading, error, reload, filters, onFilter }
       <Form.Item name="failureType" label="Failure type"><Select allowClear placeholder="All failure types" options={failureTypeOptions} /></Form.Item>
       <Form.Item name="originStationId" label="Origin"><Select allowClear showSearch optionFilterProp="label" placeholder="All origins" options={options} loading={stations.loading} /></Form.Item>
       <Form.Item name="destinationStationId" label="Destination"><Select allowClear showSearch optionFilterProp="label" placeholder="All destinations" options={options} loading={stations.loading} /></Form.Item>
-      <Form.Item name="from" label="Failed from"><Input type="date" /></Form.Item>
-      <Form.Item name="through" label="Failed through"><Input type="date" /></Form.Item>
+      <Form.Item name="from" label="Failed from"><CalendarDayPicker /></Form.Item>
+      <Form.Item name="through" label="Failed through"><CalendarDayPicker /></Form.Item>
       <Button type="primary" htmlType="submit">Apply filters</Button>
       <Button onClick={() => { form.setFieldsValue({ searchKeyword: undefined, resolutionStatus: 'UNRESOLVED', failureType: undefined, originStationId: undefined, destinationStationId: undefined, from: undefined, through: undefined }); onFilter({ page: 1, pageSize: 20, resolutionStatus: 'UNRESOLVED' }) }}>Reset</Button>
     </Form>

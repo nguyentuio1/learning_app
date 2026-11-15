@@ -9,6 +9,7 @@ public interface ITrackingService
 {
     Task<string> AuthorizeViewerAsync(Guid userId, CancellationToken ct = default);
     Task<TrackingRead> GetAsync(Guid userId, Guid orderId, CancellationToken ct = default);
+    Task<TrackingRead> GetForCustomerAsync(Guid userId, Guid orderId, CancellationToken ct = default);
 }
 
 public class TrackingService(AppDbContext db, TimeProvider clock) : ITrackingService
@@ -24,11 +25,18 @@ public class TrackingService(AppDbContext db, TimeProvider clock) : ITrackingSer
         return user.Role;
     }
 
-    public async Task<TrackingRead> GetAsync(Guid userId, Guid orderId, CancellationToken ct = default)
+    public Task<TrackingRead> GetAsync(Guid userId, Guid orderId, CancellationToken ct = default) => ReadAsync(userId, orderId, false, ct);
+
+    // External integrations never inherit staff-wide visibility, even after a concurrent role change.
+    public Task<TrackingRead> GetForCustomerAsync(Guid userId, Guid orderId, CancellationToken ct = default) => ReadAsync(userId, orderId, true, ct);
+
+    private async Task<TrackingRead> ReadAsync(Guid userId, Guid orderId, bool customerOnly, CancellationToken ct)
     {
         var role = await AuthorizeViewerAsync(userId, ct);
+        if (customerOnly && role != AppRoles.Customer)
+            throw new ApiException(403, "An active CUSTOMER account is required.");
         var row = await db.DeliveryOrders.AsNoTracking()
-            .Where(o => o.Id == orderId && (role != AppRoles.Customer || o.CustomerId == userId))
+            .Where(o => o.Id == orderId && ((!customerOnly && role != AppRoles.Customer) || o.CustomerId == userId))
             .Select(o => new {
                 o.Id, o.TrackingNumber, o.Status, o.EstimatedDeliveryTime, o.UpdatedAt,
                 Origin = new TrackingStation(o.OriginStation.Id, o.OriginStation.Name,

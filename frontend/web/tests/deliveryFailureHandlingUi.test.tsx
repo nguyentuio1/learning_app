@@ -152,7 +152,11 @@ it('validates date boundaries on queue filter', async () => {
   const throughInput = screen.getByLabelText('Failed through')
 
   fireEvent.change(fromInput, { target: { value: '2026-11-25' } })
+  fireEvent.keyDown(fromInput, { key: 'Enter', code: 'Enter' })
+  fireEvent.blur(fromInput)
   fireEvent.change(throughInput, { target: { value: '2026-11-05' } })
+  fireEvent.keyDown(throughInput, { key: 'Enter', code: 'Enter' })
+  fireEvent.blur(throughInput)
 
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
   expect(await screen.findByText('End date must not be before start date.')).toBeInTheDocument()
