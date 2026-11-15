@@ -25,6 +25,7 @@ const CustomerAddressesPage = lazy(() => import('../pages/CustomerAddressesPage'
 const CustomerAddressFormPage = lazy(() => import('../pages/CustomerAddressFormPage').then(module => ({ default: module.CustomerAddressFormPage })))
 const CustomerPackagesPage = lazy(() => import('../pages/CustomerPackagesPage').then(module => ({ default: module.CustomerPackagesPage })))
 const CustomerPackageFormPage = lazy(() => import('../pages/CustomerPackageFormPage').then(module => ({ default: module.CustomerPackageFormPage })))
+const CustomerNotificationsPage = lazy(() => import('../pages/CustomerNotificationsPage').then(module => ({ default: module.CustomerNotificationsPage })))
 
 export function AppRouter() {
   return (
@@ -39,6 +40,7 @@ export function AppRouter() {
             <Route path="/orders/:id/manage" element={<ManageCustomerOrderPage />} />
             <Route path="/orders/:id/edit" element={<EditCustomerOrderPage />} />
             <Route path="/orders/new" element={<CreateDeliveryOrderPage />} />
+            <Route path="/notifications" element={<CustomerNotificationsPage />} />
           </Route>
         </Route>
         <Route element={<RequireAuth roles={['ADMIN']} />}>
