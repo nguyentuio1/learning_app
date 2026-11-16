@@ -31,6 +31,7 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
     final orders = ref.watch(failedOrdersProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Failed deliveries'),
         actions: [
@@ -147,6 +148,7 @@ class _FailedOrdersPageState extends ConsumerState<FailedOrdersPage> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => _LoadError(
                 message: errorMessage(error),
+                isNetwork: isNetworkError(error),
                 onRetry: () => ref.invalidate(failedOrdersProvider),
               ),
               data: (page) => page.items.isEmpty
@@ -289,26 +291,33 @@ class _FailedOrderCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
                 children: [
-                  Expanded(
-                    child: Text(
-                      order.trackingNumber,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  Text(
+                    order.trackingNumber,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  _StatusBadge(
-                    key: Key('order-status-${order.orderId}'),
-                    label: order.status,
-                    color: _orderStatusColor(theme, order.status),
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusBadge(
-                    key: Key('failure-type-${order.orderId}'),
-                    label: order.failureType,
-                    color: _failureTypeColor,
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _StatusBadge(
+                        key: Key('order-status-${order.orderId}'),
+                        label: order.status,
+                        color: _orderStatusColor(theme, order.status),
+                      ),
+                      _StatusBadge(
+                        key: Key('failure-type-${order.orderId}'),
+                        label: order.failureType,
+                        color: _failureTypeColor,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -354,23 +363,26 @@ class _Pagination extends StatelessWidget {
   final ValueChanged<int> onPageChanged;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      IconButton(
-        tooltip: 'Previous page',
-        onPressed: query.page > 1 ? () => onPageChanged(query.page - 1) : null,
-        icon: const Icon(Icons.chevron_left),
-      ),
-      Text(
-        'Page ${page.page} of ${page.totalPages} · ${page.totalCount} orders',
-      ),
-      IconButton(
-        tooltip: 'Next page',
-        onPressed: page.hasMore ? () => onPageChanged(query.page + 1) : null,
-        icon: const Icon(Icons.chevron_right),
-      ),
-    ],
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          tooltip: 'Previous page',
+          onPressed: query.page > 1 ? () => onPageChanged(query.page - 1) : null,
+          icon: const Icon(Icons.chevron_left),
+        ),
+        Text(
+          'Page ${page.page} of ${page.totalPages} · ${page.totalCount} orders',
+        ),
+        IconButton(
+          tooltip: 'Next page',
+          onPressed: page.hasMore ? () => onPageChanged(query.page + 1) : null,
+          icon: const Icon(Icons.chevron_right),
+        ),
+      ],
+    ),
   );
 }
 
@@ -401,48 +413,68 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'No failed deliveries found.',
-            key: Key('failed-orders-empty'),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            key: const Key('reset-failure-filters'),
-            onPressed: onReset,
-            child: const Text('Reset Filters'),
-          ),
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'No failed deliveries found.',
+              key: Key('failed-orders-empty'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              key: const Key('reset-failure-filters'),
+              onPressed: onReset,
+              child: const Text('Reset Filters'),
+            ),
+          ],
+        ),
       ),
     ),
   );
 }
 
 class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
+  const _LoadError({
+    required this.message,
+    required this.onRetry,
+    this.isNetwork = false,
+  });
 
   final String message;
   final VoidCallback onRetry;
+  final bool isNetwork;
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isNetwork ? Icons.wifi_off_rounded : Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(120, 48),
+              ),
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     ),
   );
