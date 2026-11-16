@@ -134,6 +134,7 @@ Future<void> _pumpWithRouter(
   WidgetTester tester,
   _FakeDeliveryOrderService service, {
   String initialLocation = '/customer/orders/$_arrivedOrderId',
+  DateTime Function()? now,
 }) async {
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1;
@@ -171,7 +172,13 @@ Future<void> _pumpWithRouter(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        if (now != null)
+          deliveryConfirmationControllerProvider(_arrivedOrderId).overrideWith(
+            () => DeliveryConfirmationController(_arrivedOrderId, now: now),
+          ),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -440,12 +447,14 @@ void main() {
       'shows remaining attempts on 400 and disables confirmation on 423 lockout',
       (tester) async {
         final service = _FakeDeliveryOrderService();
+        var currentTime = DateTime.utc(2026, 11, 16, 10);
         await _pumpWithRouter(
           tester,
           service,
           initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
             _arrivedOrderId,
           ),
+          now: () => currentTime,
         );
 
         // 400 wrong code with 2 tries left
@@ -491,9 +500,7 @@ void main() {
           message: 'Too many wrong codes. Try again later.',
           statusCode: 423,
           retryAfterSeconds: 600,
-          lockoutExpiresAt: DateTime.now().toUtc().add(
-            const Duration(minutes: 10),
-          ),
+          lockoutExpiresAt: currentTime.add(const Duration(minutes: 10)),
         );
         await tester.enterText(
           find.byKey(const Key('pickup-secure-code-input')),
@@ -528,6 +535,7 @@ void main() {
               .onPressed,
           isNull,
         );
+        currentTime = currentTime.add(const Duration(seconds: 1));
         await tester.pump(const Duration(seconds: 1));
         expect(
           find.text('Too many attempts. Try again after 09:59.'),
@@ -540,12 +548,14 @@ void main() {
       'unlocks form and re-enables submission automatically when 423 lockout expires',
       (tester) async {
         final service = _FakeDeliveryOrderService();
+        var currentTime = DateTime.utc(2026, 11, 16, 10);
         await _pumpWithRouter(
           tester,
           service,
           initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
             _arrivedOrderId,
           ),
+          now: () => currentTime,
         );
 
         // Return 423 Locked with a 2-second lockout
@@ -553,9 +563,7 @@ void main() {
           message: 'Too many wrong codes. Try again later.',
           statusCode: 423,
           retryAfterSeconds: 2,
-          lockoutExpiresAt: DateTime.now().toUtc().add(
-            const Duration(seconds: 2),
-          ),
+          lockoutExpiresAt: currentTime.add(const Duration(seconds: 2)),
         );
 
         await tester.enterText(
@@ -588,6 +596,7 @@ void main() {
 
         // Advance past the 2-second lockout without leaving the route
         service.confirmError = null;
+        currentTime = currentTime.add(const Duration(seconds: 3));
         await tester.pump(const Duration(seconds: 3));
 
         expect(
@@ -613,6 +622,124 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Delivered'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'recomputes a 3-strike lockout from its absolute expiry on app resume',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        final start = DateTime.utc(2026, 11, 16, 10);
+        var currentTime = start;
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
+          now: () => currentTime,
+        );
+
+        Future<void> submitWrongCode({
+          required ApiException error,
+          required String code,
+        }) async {
+          service.confirmError = error;
+          await tester.enterText(
+            find.byKey(const Key('pickup-secure-code-input')),
+            code,
+          );
+          await tester.pump();
+          await tester.tap(
+            find.byKey(const Key('confirm-delivery-submit-button')),
+          );
+          await tester.pump();
+        }
+
+        await submitWrongCode(
+          error: const ApiException(
+            message: 'Invalid pickup code.',
+            statusCode: 400,
+            attemptsRemaining: 2,
+          ),
+          code: '000001',
+        );
+        await submitWrongCode(
+          error: const ApiException(
+            message: 'Invalid pickup code.',
+            statusCode: 400,
+            attemptsRemaining: 1,
+          ),
+          code: '000002',
+        );
+        final deadline = start.add(const Duration(minutes: 10));
+        await submitWrongCode(
+          error: ApiException(
+            message: 'Too many wrong codes. Try again later.',
+            statusCode: 423,
+            retryAfterSeconds: 600,
+            lockoutExpiresAt: deadline,
+          ),
+          code: '000003',
+        );
+
+        expect(service.confirmCallCount, 3);
+        expect(
+          find.text('Too many attempts. Try again after 10:00.'),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('keypad-digit-1')))
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        currentTime = deadline.add(const Duration(seconds: 1));
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
+        expect(
+          find.text('Too many attempts. Try again after 10:00.'),
+          findsNothing,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('pickup-secure-code-input')),
+              )
+              .enabled,
+          isTrue,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('keypad-digit-1')))
+              .onPressed,
+          isNotNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNotNull,
+        );
       },
     );
 

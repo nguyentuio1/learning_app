@@ -67,9 +67,11 @@ class DeliveryConfirmationState {
 
 class DeliveryConfirmationController
     extends Notifier<DeliveryConfirmationState> {
-  DeliveryConfirmationController(this.orderId);
+  DeliveryConfirmationController(this.orderId, {DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
   final String orderId;
+  final DateTime Function() _now;
   Timer? _lockoutTimer;
   int _refreshGeneration = 0;
   bool _awaitingFreshRead = false;
@@ -154,6 +156,24 @@ class DeliveryConfirmationController
     _lockoutTimer = null;
   }
 
+  void refreshLockoutCountdown() {
+    final deadline = state.lockoutExpiresAt;
+    if (!state.isLocked || deadline == null) return;
+
+    final remainingMilliseconds = deadline
+        .difference(_now().toUtc())
+        .inMilliseconds;
+    final remainingSeconds = remainingMilliseconds <= 0
+        ? 0
+        : (remainingMilliseconds / 1000).ceil();
+    if (remainingSeconds == 0) {
+      _cancelLockoutTimer();
+      state = state.copyWith(clearLockout: true, clearError: true);
+    } else if (remainingSeconds != state.lockoutSecondsRemaining) {
+      state = state.copyWith(lockoutSecondsRemaining: remainingSeconds);
+    }
+  }
+
   void _scheduleLockoutExpiry() {
     _cancelLockoutTimer();
     _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -161,14 +181,9 @@ class DeliveryConfirmationController
         timer.cancel();
         return;
       }
-      final remaining = state.lockoutSecondsRemaining ?? 1;
-      if (remaining <= 1) {
-        _cancelLockoutTimer();
-        state = state.copyWith(clearLockout: true, clearError: true);
-      } else {
-        state = state.copyWith(lockoutSecondsRemaining: remaining - 1);
-      }
+      refreshLockoutCountdown();
     });
+    refreshLockoutCountdown();
   }
 
   Future<bool> refreshOrderEligibility() async {
@@ -313,22 +328,15 @@ class DeliveryConfirmationController
           e.statusCode == 423 ||
           e.lockoutExpiresAt != null ||
           e.retryAfterSeconds != null;
-      final expiresAt = e.lockoutExpiresAt;
-      int? lockoutSeconds = e.retryAfterSeconds;
-      if (expiresAt != null) {
-        final diffMs = expiresAt
-            .difference(DateTime.now().toUtc())
-            .inMilliseconds;
-        final expiresInSeconds = diffMs > 0 ? (diffMs / 1000).ceil() : 0;
-        if (lockoutSeconds == null || expiresInSeconds < lockoutSeconds) {
-          lockoutSeconds = expiresInSeconds;
-        }
-      }
-      if (lockoutSeconds == null && e.statusCode == 423) {
-        lockoutSeconds = 600;
-      }
 
       if (locked) {
+        final lockoutSeconds =
+            e.retryAfterSeconds ?? (e.statusCode == 423 ? 600 : null);
+        final expiresAt =
+            e.lockoutExpiresAt ??
+            (lockoutSeconds == null
+                ? null
+                : _now().toUtc().add(Duration(seconds: lockoutSeconds)));
         state = state.copyWith(
           isSubmitting: false,
           errorMessage: e.message,

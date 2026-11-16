@@ -40,39 +40,45 @@ class CustomerHomePage extends ConsumerWidget {
         ],
       ),
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Customer app'),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => context.go(RoutePaths.customerAddresses),
-              icon: const Icon(Icons.location_on_outlined),
-              label: const Text('Manage addresses'),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Customer app'),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => context.go(RoutePaths.customerAddresses),
+                  icon: const Icon(Icons.location_on_outlined),
+                  label: const Text('Manage addresses'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => context.go(RoutePaths.customerPackages),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('Manage packages'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => context.go(RoutePaths.customerOrders),
+                  icon: const Icon(Icons.local_shipping_outlined),
+                  label: const Text('My orders'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => context.go(RoutePaths.customerNotifications),
+                  icon: const Icon(Icons.notifications_active_outlined),
+                  label: Text(
+                    unreadCount > 0
+                        ? 'Notifications ($unreadCount unread)'
+                        : 'Notifications',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => context.go(RoutePaths.customerPackages),
-              icon: const Icon(Icons.inventory_2_outlined),
-              label: const Text('Manage packages'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => context.go(RoutePaths.customerOrders),
-              icon: const Icon(Icons.local_shipping_outlined),
-              label: const Text('My orders'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => context.go(RoutePaths.customerNotifications),
-              icon: const Icon(Icons.notifications_active_outlined),
-              label: Text(
-                unreadCount > 0
-                    ? 'Notifications ($unreadCount unread)'
-                    : 'Notifications',
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
