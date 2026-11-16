@@ -68,11 +68,13 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     });
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Change Password'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Center(
             child: ConstrainedBox(

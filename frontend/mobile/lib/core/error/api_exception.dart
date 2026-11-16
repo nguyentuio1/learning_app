@@ -62,15 +62,16 @@ class ApiException implements Exception {
             attemptsRemaining = (data['attemptsRemaining'] as num).toInt();
           }
           if (data['lockoutExpiresAt'] is String) {
-            lockoutExpiresAt =
-                DateTime.tryParse(data['lockoutExpiresAt'] as String);
+            lockoutExpiresAt = DateTime.tryParse(
+              data['lockoutExpiresAt'] as String,
+            );
           }
           if (retryAfterSeconds == null && data['retryAfterSeconds'] is num) {
             retryAfterSeconds = (data['retryAfterSeconds'] as num).toInt();
           }
         }
         return ApiException(
-          message: msg ?? 'Something went wrong. Please try again.',
+          message: msg ?? _fallbackMessageForStatus(e.response?.statusCode),
           statusCode: e.response?.statusCode,
           code: code,
           attemptsRemaining: attemptsRemaining,
@@ -82,4 +83,21 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'ApiException($statusCode, $message)';
+}
+
+String _fallbackMessageForStatus(int? statusCode) {
+  switch (statusCode) {
+    case 401:
+      return 'Missing, invalid or expired token.';
+    case 403:
+      return 'You do not have permission to perform this action.';
+    case 404:
+      return 'The requested resource was not found.';
+    case 409:
+      return 'This item has changed. Reload it before continuing.';
+    case 423:
+      return 'Too many wrong codes. Try again later.';
+    default:
+      return 'Something went wrong. Please try again.';
+  }
 }

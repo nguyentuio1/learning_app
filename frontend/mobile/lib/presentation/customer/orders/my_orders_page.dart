@@ -6,6 +6,7 @@ import '../../../core/error/api_exception.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_filter_params.dart';
 import '../../../routes/route_paths.dart';
+import '../../common/widgets/empty_state_view.dart';
 import 'my_orders_provider.dart';
 
 class MyOrdersPage extends ConsumerStatefulWidget {
@@ -40,6 +41,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     final filters = ref.watch(deliveryOrderFilterParamsProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('My orders'),
         leading: IconButton(
@@ -91,6 +93,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
               alignment: Alignment.centerLeft,
               child: Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
                     key: const Key('order-date-range-button'),
@@ -159,7 +162,7 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(
-                      height: 240,
+                      height: 280,
                       child: _LoadError(
                         message: _listErrorMessage(error),
                         onRetry: () => ref.invalidate(myOrdersProvider),
@@ -182,7 +185,13 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         children: const [
-          SizedBox(height: 240, child: Center(child: Text('No orders found.'))),
+          SizedBox(
+            height: 280,
+            child: EmptyStateView(
+              title: 'No orders found.',
+              icon: Icons.inventory_2_outlined,
+            ),
+          ),
         ],
       );
     }
@@ -223,7 +232,11 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: Text('${order.recipientName} · ${order.status}'),
+            subtitle: Text(
+              '${order.recipientName} · ${order.status}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _openOrder(order),
           ),
@@ -293,13 +306,31 @@ class _LoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(message, textAlign: TextAlign.center),
-        const SizedBox(height: 12),
-        FilledButton(onPressed: onRetry, child: const Text('Retry')),
-      ],
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 40,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(120, 48),
+              ),
+              onPressed: onRetry,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
