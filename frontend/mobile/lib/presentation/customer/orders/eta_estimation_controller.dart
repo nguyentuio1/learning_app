@@ -487,11 +487,9 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
     final future = _performRefresh();
     _inFlightRefresh = future;
     future.whenComplete(() {
-      Future<void>.delayed(Duration.zero, () {
-        if (identical(_inFlightRefresh, future)) {
-          _inFlightRefresh = null;
-        }
-      });
+      if (identical(_inFlightRefresh, future)) {
+        _inFlightRefresh = null;
+      }
     });
     return future;
   }

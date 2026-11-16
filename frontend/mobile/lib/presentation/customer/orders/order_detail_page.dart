@@ -86,34 +86,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           final mapState = isNonTerminal
               ? ref.watch(deliveryMapControllerProvider(order.id))
               : null;
-          if (mapState != null && mapState.hasValue) {
-            final mapSnapshot = mapState.requireValue.snapshot;
-            final etaState = ref.read(
-              etaEstimationControllerProvider(order.id),
-            );
-            final currentEta =
-                etaState.estimate?.estimatedDeliveryTime?.toUtc() ??
-                response.estimatedDeliveryTime?.toUtc();
-            final reportedEta = mapSnapshot.estimatedDeliveryTime?.toUtc();
-            final etaChanged =
-                reportedEta != null &&
-                (currentEta == null || !currentEta.isAtSameMomentAs(reportedEta));
-            final staleChanged =
-                mapSnapshot.telemetryStale != etaState.telemetryStale;
-            if (etaChanged || staleChanged) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                ref
-                    .read(etaEstimationControllerProvider(order.id).notifier)
-                    .onExternalStatusObserved(
-                      etaState.lastObservedStatus ?? response.status,
-                      updatedEstimatedDeliveryTime:
-                          mapSnapshot.estimatedDeliveryTime,
-                      telemetryStale: mapSnapshot.telemetryStale,
-                    );
-              });
-            }
-          }
           return _buildDetails(order, response, mapState);
         },
       ),
