@@ -8,6 +8,8 @@ import '../../../data/models/landing_station.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 import '../../../routes/route_paths.dart';
 import 'create_order_notifier.dart';
+import 'eta_estimation_controller.dart';
+import 'widgets/eta_estimation_card.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
   const CreateOrderPage({super.key});
@@ -42,6 +44,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final packages = ref.watch(orderPackagesProvider);
     final stations = ref.watch(orderStationsProvider);
     final addresses = ref.watch(orderAddressesProvider);
+    final routePreview = ref.watch(routeEtaPreviewProvider);
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Create delivery order')),
@@ -199,6 +202,10 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                     : 'Phone number must be 9 to 11 digits.';
               },
             ),
+            if (routePreview != null) ...[
+              const SizedBox(height: 16),
+              RouteEtaPreviewCard(preview: routePreview),
+            ],
             if (state.error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),

@@ -12,11 +12,17 @@ public class DeliveryRouteEstimate(AppDbContext db, IOptions<DeliveryFlightOptio
 {
     public async Task<RouteEstimate> GetAsync(DeliveryOrder order, CancellationToken ct = default)
     {
-        // No AI producer exists yet. A positive stored estimate is authoritative until
-        // route edits explicitly invalidate it; approval/scheduling timestamps do not.
+        // Legacy unstamped rows preserve their original full-route interpretation.
+        // Producer-stamped rows must match the current route/package inputs.
         var prediction = await db.AiEtaPredictions.AsNoTracking().SingleOrDefaultAsync(p => p.OrderId == order.Id, ct);
         if (prediction is { CalculatedDistanceKm: > 0, PredictedDurationMinutes: > 0 })
-            return new(prediction.CalculatedDistanceKm, prediction.PredictedDurationMinutes);
+        {
+            if (prediction.InputFingerprint is null)
+                return new(prediction.CalculatedDistanceKm, prediction.PredictedDurationMinutes);
+            var current = await EtaPredictionInputs.ReadAsync(db, order.Id, options.Value.CruiseSpeedMps, ct);
+            if (current is not null && EtaPredictionInputs.Matches(current, prediction))
+                return new(prediction.CalculatedDistanceKm, prediction.PredictedDurationMinutes);
+        }
         var stations = await db.LandingStations.AsNoTracking()
             .Where(s => s.Id == order.OriginStationId || s.Id == order.DestinationStationId).ToListAsync(ct);
         var origin = stations.Single(s => s.Id == order.OriginStationId);
