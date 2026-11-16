@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartDroneDelivery.Api.Data;
 using SmartDroneDelivery.Api.DTOs;
 using SmartDroneDelivery.Api.Entities;
+using SmartDroneDelivery.Api.Security;
 
 namespace SmartDroneDelivery.Api.Services;
 
@@ -99,6 +100,7 @@ public class DeliveryOrderQueryService : IDeliveryOrderQueryService
             .Include(o => o.DestinationStation)
             .Include(o => o.DeliveryAddress)
             .Include(o => o.StatusLogs)
+            .Include(o => o.AiEtaPrediction)
             .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Delivery order not found.");
 
@@ -130,7 +132,7 @@ public class DeliveryOrderQueryService : IDeliveryOrderQueryService
             order.ActualDepartureTime,
             order.EstimatedDeliveryTime,
             order.ActualDeliveryTime,
-            null,
+            AiEtaPredictionDto.From(order.AiEtaPrediction),
             logs,
             Utc(order.CreatedAt),
             Utc(order.UpdatedAt));
@@ -138,11 +140,14 @@ public class DeliveryOrderQueryService : IDeliveryOrderQueryService
 
     private async Task EnsureActiveCustomerAsync(Guid customerId)
     {
-        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == customerId)
+        var user = await _db.Users.AsNoTracking().Where(u => u.Id == customerId)
+            .Select(u => new { u.Status, Role = u.Role.Code }).FirstOrDefaultAsync()
             ?? throw new ApiException(StatusCodes.Status401Unauthorized, "Missing, invalid or expired token.");
 
         if (user.Status != "ACTIVE")
             throw new ApiException(StatusCodes.Status403Forbidden, "This account is not active.");
+        if (user.Role != AppRoles.Customer)
+            throw new ApiException(StatusCodes.Status403Forbidden, "An active CUSTOMER account is required.");
     }
 
     private static void ValidateFilterQuery(DeliveryOrderFilterQuery query)
