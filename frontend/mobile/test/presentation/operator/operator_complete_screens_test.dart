@@ -122,7 +122,7 @@ void main() {
     longitude: 106.70,
     status: 'OPERATIONAL',
     totalSlots: 3,
-    emptySlots: 1,
+    availableSlots: 1,
   );
 
   final availability = StationAvailability(
