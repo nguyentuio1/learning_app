@@ -7,6 +7,9 @@ import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/eta_estimation_model.dart';
 import '../../../data/models/landing_station.dart';
 import '../../../data/providers/delivery_order_providers.dart';
+import '../../../data/providers/repository_providers.dart';
+import '../../../domain/entities/delivery_map_snapshot.dart';
+import '../delivery_map/delivery_map_controller.dart';
 import 'create_order_notifier.dart';
 import 'my_orders_provider.dart';
 
@@ -59,12 +62,99 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
   final String orderId;
   final DateTime Function() _now;
   Timer? _freshnessTimer;
+  Timer? _countdownTimer;
   DeliveryOrderDetailResponseDto? _lastDetail;
+  DateTime? _lastCanonicalEstimatedDeliveryTime;
+  String? _lastCanonicalStatus;
+  DateTime? _externalEstimatedDeliveryTime;
+  Future<bool>? _inFlightRefresh;
   int _refreshGeneration = 0;
 
   @override
   EtaEstimationState build() {
-    ref.onDispose(_cancelFreshnessTimer);
+    ref.onDispose(_cancelTimers);
+
+    final trackingSub = ref
+        .read(trackingRepositoryProvider)
+        .statusUpdates
+        .listen((update) {
+          if (update.orderId == orderId && !state.accessLost) {
+            onExternalStatusObserved(
+              update.status.apiValue,
+              forceRefresh: true,
+            );
+          }
+        });
+    ref.onDispose(() => unawaited(trackingSub.cancel()));
+
+    ref.listen<AsyncValue<DeliveryMapViewState>>(
+      deliveryMapControllerProvider(orderId),
+      (previous, next) {
+        if (state.accessLost) return;
+        if (!next.hasValue || next.isLoading || next.isRefreshing) return;
+        final nextView = next.requireValue;
+        final nextSnapshot = nextView.snapshot;
+        final mapStatus = _mapOrderStatusToString(nextSnapshot.status);
+        final prevView = (previous != null && previous.hasValue)
+            ? previous.value
+            : null;
+
+        final currentEta =
+            state.estimate?.estimatedDeliveryTime?.toUtc() ??
+            _lastDetail?.estimatedDeliveryTime?.toUtc();
+        final nextEta = nextSnapshot.estimatedDeliveryTime?.toUtc();
+        final etaChanged =
+            nextEta != null &&
+            (currentEta == null || !currentEta.isAtSameMomentAs(nextEta));
+        final staleChanged =
+            nextSnapshot.telemetryStale != state.telemetryStale;
+
+        if (prevView == null) {
+          if (etaChanged || staleChanged) {
+            onExternalStatusObserved(
+              state.lastObservedStatus ?? mapStatus,
+              updatedEstimatedDeliveryTime: nextSnapshot.estimatedDeliveryTime,
+              telemetryStale: nextSnapshot.telemetryStale,
+              forceRefresh: etaChanged,
+            );
+          }
+          return;
+        }
+
+        final prevSnapshot = prevView.snapshot;
+        final mapStatusChanged = prevSnapshot.status != nextSnapshot.status;
+        final isPositionOnlyUpdate =
+            nextSnapshot.lastPosition != null &&
+            !identical(prevSnapshot.lastPosition, nextSnapshot.lastPosition) &&
+            !mapStatusChanged &&
+            !etaChanged;
+        final isDisconnectOnlyUpdate =
+            nextView.liveUnavailable &&
+            !prevView.liveUnavailable &&
+            !mapStatusChanged &&
+            !etaChanged;
+
+        if (isPositionOnlyUpdate || isDisconnectOnlyUpdate) {
+          if (staleChanged) {
+            onExternalStatusObserved(
+              state.lastObservedStatus ?? mapStatus,
+              updatedEstimatedDeliveryTime: nextSnapshot.estimatedDeliveryTime,
+              telemetryStale: nextSnapshot.telemetryStale,
+            );
+          }
+          return;
+        }
+
+        onExternalStatusObserved(
+          mapStatusChanged
+              ? mapStatus
+              : (state.lastObservedStatus ?? mapStatus),
+          updatedEstimatedDeliveryTime: nextSnapshot.estimatedDeliveryTime,
+          telemetryStale: nextSnapshot.telemetryStale,
+          forceRefresh: true,
+        );
+      },
+    );
 
     ref.listen<AsyncValue<DeliveryOrderDetailResponseDto>>(
       orderDetailProvider(orderId),
@@ -72,8 +162,9 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
         if (next.hasError) {
           final error = next.error;
           if (error != null && isAccessDeniedError(error)) {
-            _cancelFreshnessTimer();
+            _cancelTimers();
             _lastDetail = null;
+            _externalEstimatedDeliveryTime = null;
             state = state.copyWith(
               clearEstimate: true,
               isLoading: false,
@@ -101,7 +192,7 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
 
         if (next.hasValue) {
           final detail = next.requireValue;
-          _applyDetail(detail, telemetryStale: state.telemetryStale);
+          _applyCanonicalDetail(detail, telemetryStale: state.telemetryStale);
         }
       },
     );
@@ -130,10 +221,10 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
         !initialAsync.hasError) {
       final detail = initialAsync.requireValue;
       _lastDetail = detail;
-      final estimate = OrderEtaEstimate.fromOrderDetail(
-        detail,
-        now: _now(),
-      );
+      _lastCanonicalEstimatedDeliveryTime = detail.estimatedDeliveryTime
+          ?.toUtc();
+      _lastCanonicalStatus = detail.status.trim().toUpperCase();
+      final estimate = OrderEtaEstimate.fromOrderDetail(detail, now: _now());
       _scheduleFreshnessDeadline(estimate);
       return EtaEstimationState(
         estimate: estimate,
@@ -143,6 +234,19 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
 
     return const EtaEstimationState(isLoading: true);
   }
+
+  static String _mapOrderStatusToString(DeliveryMapOrderStatus status) =>
+      switch (status) {
+        DeliveryMapOrderStatus.pending => 'PENDING',
+        DeliveryMapOrderStatus.approved => 'APPROVED',
+        DeliveryMapOrderStatus.readyForTakeoff => 'READY_FOR_TAKEOFF',
+        DeliveryMapOrderStatus.inTransit => 'IN_TRANSIT',
+        DeliveryMapOrderStatus.arrived => 'ARRIVED',
+        DeliveryMapOrderStatus.delivered => 'DELIVERED',
+        DeliveryMapOrderStatus.cancelled => 'CANCELLED',
+        DeliveryMapOrderStatus.failed => 'FAILED',
+        DeliveryMapOrderStatus.unknown => 'IN_TRANSIT',
+      };
 
   static bool isAccessDeniedError(Object error) {
     if (error is ApiException) {
@@ -176,6 +280,39 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
     return 'Unable to load ETA estimate. Please try again.';
   }
 
+  void _applyCanonicalDetail(
+    DeliveryOrderDetailResponseDto detail, {
+    required bool telemetryStale,
+  }) {
+    final detailEta = detail.estimatedDeliveryTime?.toUtc();
+    final detailStatus = detail.status.trim().toUpperCase();
+    final canonicalChanged =
+        detailEta != _lastCanonicalEstimatedDeliveryTime ||
+        detailStatus != _lastCanonicalStatus;
+
+    _lastCanonicalEstimatedDeliveryTime = detailEta;
+    _lastCanonicalStatus = detailStatus;
+
+    if (canonicalChanged) {
+      _externalEstimatedDeliveryTime = null;
+    }
+
+    final effectiveEta =
+        (!canonicalChanged && _externalEstimatedDeliveryTime != null)
+        ? _externalEstimatedDeliveryTime
+        : detail.estimatedDeliveryTime;
+
+    final effectiveDetail = effectiveEta != detail.estimatedDeliveryTime
+        ? _withDetailOverrides(
+            detail,
+            status: detail.status,
+            estimatedDeliveryTime: effectiveEta,
+          )
+        : detail;
+
+    _applyDetail(effectiveDetail, telemetryStale: telemetryStale);
+  }
+
   void _applyDetail(
     DeliveryOrderDetailResponseDto detail, {
     required bool telemetryStale,
@@ -197,27 +334,84 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
     );
   }
 
-  void _cancelFreshnessTimer() {
+  DeliveryOrderDetailResponseDto _withDetailOverrides(
+    DeliveryOrderDetailResponseDto base, {
+    required String status,
+    required DateTime? estimatedDeliveryTime,
+  }) => DeliveryOrderDetailResponseDto(
+    id: base.id,
+    trackingNumber: base.trackingNumber,
+    recipientName: base.recipientName,
+    recipientPhone: base.recipientPhone,
+    originStationId: base.originStationId,
+    destinationStationId: base.destinationStationId,
+    status: status,
+    statusLogs: base.statusLogs,
+    packageId: base.packageId,
+    deliveryAddressId: base.deliveryAddressId,
+    cancelReason: base.cancelReason,
+    createdAt: base.createdAt,
+    updatedAt: base.updatedAt,
+    scheduledDepartureTime: base.scheduledDepartureTime,
+    actualDepartureTime: base.actualDepartureTime,
+    estimatedDeliveryTime: estimatedDeliveryTime,
+    actualDeliveryTime: base.actualDeliveryTime,
+    package: base.package,
+    originStation: base.originStation,
+    destinationStation: base.destinationStation,
+    deliveryAddress: base.deliveryAddress,
+    aiEtaPrediction: base.aiEtaPrediction,
+  );
+
+  void _cancelTimers() {
     _freshnessTimer?.cancel();
     _freshnessTimer = null;
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
   }
 
   void _scheduleFreshnessDeadline(OrderEtaEstimate estimate) {
-    _cancelFreshnessTimer();
+    _cancelTimers();
     final estimatedArrival = estimate.estimatedDeliveryTime;
     if (!estimate.isLiveEstimateActive || estimatedArrival == null) {
       return;
     }
 
-    final nowUtc = _now().toUtc();
+    final scheduledAtUtc = _now().toUtc();
     final deadline = estimatedArrival.toUtc().add(
       const Duration(milliseconds: 50),
     );
-    final delay = deadline.difference(nowUtc);
+    final delay = deadline.difference(scheduledAtUtc);
+
+    _countdownTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (!ref.mounted || state.accessLost) {
+        timer.cancel();
+        return;
+      }
+      final detail = _lastDetail;
+      if (detail == null) return;
+      final wallNow = _now().toUtc();
+      final simulatedNow = scheduledAtUtc.add(Duration(minutes: timer.tick));
+      final effectiveNow = wallNow.isAfter(simulatedNow)
+          ? wallNow
+          : simulatedNow;
+      final recomputed = OrderEtaEstimate.fromOrderDetail(
+        detail,
+        now: effectiveNow,
+        telemetryStale: state.telemetryStale,
+      );
+      state = state.copyWith(estimate: recomputed);
+      if (!recomputed.isLiveEstimateActive) {
+        timer.cancel();
+      }
+    });
+
     _freshnessTimer = Timer(
       delay.isNegative ? const Duration(milliseconds: 1) : delay,
       () {
         _freshnessTimer = null;
+        _countdownTimer?.cancel();
+        _countdownTimer = null;
         if (!ref.mounted || state.accessLost) return;
         final detail = _lastDetail;
         if (detail != null) {
@@ -237,11 +431,12 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
   }
 
   /// Called when an external source (such as SignalR status updates or map/tracking state)
-  /// observes an order status change or telemetry freshness change.
+  /// observes an order status change, ETA correction, or telemetry freshness change.
   void onExternalStatusObserved(
     String newStatus, {
     DateTime? updatedEstimatedDeliveryTime,
     bool? telemetryStale,
+    bool forceRefresh = false,
   }) {
     if (state.accessLost) return;
     final normalizedStatus = newStatus.trim().toUpperCase();
@@ -251,44 +446,53 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
     final nextTelemetryStale = telemetryStale ?? state.telemetryStale;
     final staleChanged = nextTelemetryStale != state.telemetryStale;
 
+    final normalizedEta = updatedEstimatedDeliveryTime?.toUtc();
+    final currentEta =
+        state.estimate?.estimatedDeliveryTime?.toUtc() ??
+        _lastDetail?.estimatedDeliveryTime?.toUtc();
+    final etaChanged =
+        normalizedEta != null &&
+        (currentEta == null || !currentEta.isAtSameMomentAs(normalizedEta));
+
+    if (etaChanged) {
+      _externalEstimatedDeliveryTime = normalizedEta;
+    }
+
     final currentDetail = _lastDetail;
-    if (currentDetail != null && (statusChanged || staleChanged)) {
-      final syntheticDetail = DeliveryOrderDetailResponseDto(
-        id: currentDetail.id,
-        trackingNumber: currentDetail.trackingNumber,
-        recipientName: currentDetail.recipientName,
-        recipientPhone: currentDetail.recipientPhone,
-        originStationId: currentDetail.originStationId,
-        destinationStationId: currentDetail.destinationStationId,
+    if (currentDetail != null &&
+        (statusChanged || staleChanged || etaChanged)) {
+      final syntheticDetail = _withDetailOverrides(
+        currentDetail,
         status: normalizedStatus,
-        statusLogs: currentDetail.statusLogs,
-        packageId: currentDetail.packageId,
-        deliveryAddressId: currentDetail.deliveryAddressId,
-        cancelReason: currentDetail.cancelReason,
-        createdAt: currentDetail.createdAt,
-        updatedAt: currentDetail.updatedAt,
-        scheduledDepartureTime: currentDetail.scheduledDepartureTime,
-        actualDepartureTime: currentDetail.actualDepartureTime,
         estimatedDeliveryTime:
-            updatedEstimatedDeliveryTime ?? currentDetail.estimatedDeliveryTime,
-        actualDeliveryTime: currentDetail.actualDeliveryTime,
-        package: currentDetail.package,
-        originStation: currentDetail.originStation,
-        destinationStation: currentDetail.destinationStation,
-        deliveryAddress: currentDetail.deliveryAddress,
-        aiEtaPrediction: currentDetail.aiEtaPrediction,
+            normalizedEta ?? currentDetail.estimatedDeliveryTime,
       );
       _applyDetail(syntheticDetail, telemetryStale: nextTelemetryStale);
     } else if (staleChanged) {
       state = state.copyWith(telemetryStale: nextTelemetryStale);
     }
 
-    if (statusChanged) {
+    if (statusChanged || etaChanged || forceRefresh) {
       unawaited(refreshEta());
     }
   }
 
-  Future<bool> refreshEta() async {
+  Future<bool> refreshEta() {
+    final existing = _inFlightRefresh;
+    if (existing != null) return existing;
+    final future = _performRefresh();
+    _inFlightRefresh = future;
+    future.whenComplete(() {
+      Future<void>.delayed(Duration.zero, () {
+        if (identical(_inFlightRefresh, future)) {
+          _inFlightRefresh = null;
+        }
+      });
+    });
+    return future;
+  }
+
+  Future<bool> _performRefresh() async {
     final generation = ++_refreshGeneration;
     if (!state.accessLost) {
       state = state.copyWith(
@@ -302,13 +506,14 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
     try {
       final detail = await ref.read(orderDetailProvider(orderId).future);
       if (!ref.mounted || generation != _refreshGeneration) return false;
-      _applyDetail(detail, telemetryStale: state.telemetryStale);
+      _applyCanonicalDetail(detail, telemetryStale: state.telemetryStale);
       return true;
     } catch (error) {
       if (!ref.mounted || generation != _refreshGeneration) return false;
       if (isAccessDeniedError(error)) {
-        _cancelFreshnessTimer();
+        _cancelTimers();
         _lastDetail = null;
+        _externalEstimatedDeliveryTime = null;
         state = state.copyWith(
           clearEstimate: true,
           isLoading: false,

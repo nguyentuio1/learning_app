@@ -77,33 +77,34 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         data: (response) {
           final order = _localOrder ?? _orderFrom(response);
-          final mapState = order.status == 'IN_TRANSIT'
+          final isNonTerminal =
+              order.status != 'DELIVERED' &&
+              order.status != 'CANCELLED' &&
+              order.status != 'FAILED';
+          final mapState = isNonTerminal
               ? ref.watch(deliveryMapControllerProvider(order.id))
               : null;
           if (mapState != null && mapState.hasValue) {
             final mapSnapshot = mapState.requireValue.snapshot;
-            final mapStatus = switch (mapSnapshot.status.name) {
-              'pending' => 'PENDING',
-              'approved' => 'APPROVED',
-              'readyForTakeoff' => 'READY_FOR_TAKEOFF',
-              'inTransit' => 'IN_TRANSIT',
-              'arrived' => 'ARRIVED',
-              'delivered' => 'DELIVERED',
-              'cancelled' => 'CANCELLED',
-              'failed' => 'FAILED',
-              _ => order.status,
-            };
-            if (mapStatus != response.status ||
-                mapSnapshot.telemetryStale !=
-                    ref
-                        .read(etaEstimationControllerProvider(order.id))
-                        .telemetryStale) {
+            final etaState = ref.read(
+              etaEstimationControllerProvider(order.id),
+            );
+            final currentEta =
+                etaState.estimate?.estimatedDeliveryTime?.toUtc() ??
+                response.estimatedDeliveryTime?.toUtc();
+            final reportedEta = mapSnapshot.estimatedDeliveryTime?.toUtc();
+            final etaChanged =
+                reportedEta != null &&
+                (currentEta == null || !currentEta.isAtSameMomentAs(reportedEta));
+            final staleChanged =
+                mapSnapshot.telemetryStale != etaState.telemetryStale;
+            if (etaChanged || staleChanged) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 ref
                     .read(etaEstimationControllerProvider(order.id).notifier)
                     .onExternalStatusObserved(
-                      mapStatus,
+                      etaState.lastObservedStatus ?? response.status,
                       updatedEstimatedDeliveryTime:
                           mapSnapshot.estimatedDeliveryTime,
                       telemetryStale: mapSnapshot.telemetryStale,
@@ -131,7 +132,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       padding: const EdgeInsets.all(24),
       children: [
         if (order.status == 'FAILED') _failureBanner(detail),
-        if (mapState != null) ...[
+        if (order.status == 'IN_TRANSIT' && mapState != null) ...[
           AsyncValueView<DeliveryMapViewState>(
             value: mapState,
             onRetry: () =>

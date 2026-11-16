@@ -104,7 +104,43 @@ class _FakeEtaOrderService extends DeliveryOrderApiService {
 }
 
 class _FakeDeliveryMapRepository implements DeliveryMapRepository {
+  _FakeDeliveryMapRepository({
+    DeliveryMapOrderStatus status = DeliveryMapOrderStatus.inTransit,
+    DateTime? estimatedDeliveryTime,
+    bool telemetryStale = false,
+  }) : snapshot = _buildMapSnapshot(
+         status: status,
+         estimatedDeliveryTime: estimatedDeliveryTime,
+         telemetryStale: telemetryStale,
+       );
+
   final _controller = StreamController<DeliveryMapUpdate>.broadcast();
+  DeliveryMapSnapshot snapshot;
+
+  static DeliveryMapSnapshot _buildMapSnapshot({
+    DeliveryMapOrderStatus status = DeliveryMapOrderStatus.inTransit,
+    DateTime? estimatedDeliveryTime,
+    bool telemetryStale = false,
+  }) => DeliveryMapSnapshot(
+    orderId: _orderId,
+    trackingNumber: 'DD-202611-0401',
+    status: status,
+    originStation: const MapStationPoint(
+      id: _originStationId,
+      name: 'QTSC Campus Hub',
+      latitude: 10.8538,
+      longitude: 106.6278,
+    ),
+    destinationStation: const MapStationPoint(
+      id: _destinationStationId,
+      name: 'SHTP Lab Station',
+      latitude: 10.8411,
+      longitude: 106.8099,
+    ),
+    estimatedDeliveryTime: estimatedDeliveryTime,
+    lastPosition: null,
+    telemetryStale: telemetryStale,
+  );
 
   void emitStatusChanged(String orderId) {
     _controller.add(
@@ -115,30 +151,16 @@ class _FakeDeliveryMapRepository implements DeliveryMapRepository {
     );
   }
 
+  void emitConnected() {
+    _controller.add(
+      const DeliveryMapUpdate(type: DeliveryMapUpdateType.connected),
+    );
+  }
+
   Future<void> close() => _controller.close();
 
   @override
-  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async =>
-      const DeliveryMapSnapshot(
-        orderId: _orderId,
-        trackingNumber: 'DD-202611-0401',
-        status: DeliveryMapOrderStatus.inTransit,
-        originStation: MapStationPoint(
-          id: _originStationId,
-          name: 'QTSC Campus Hub',
-          latitude: 10.8538,
-          longitude: 106.6278,
-        ),
-        destinationStation: MapStationPoint(
-          id: _destinationStationId,
-          name: 'SHTP Lab Station',
-          latitude: 10.8411,
-          longitude: 106.8099,
-        ),
-        estimatedDeliveryTime: null,
-        lastPosition: null,
-        telemetryStale: false,
-      );
+  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async => snapshot;
 
   @override
   Stream<DeliveryMapUpdate> watchOrderMap(String orderId) => _controller.stream;
@@ -309,27 +331,23 @@ void main() {
 
   group('EtaEstimationController and Screens (LA-40 / LA-160)', () {
     testWidgets(
-      'displays ETA estimate on OrderDetailPage and updates when order status changes',
+      'displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events',
       (tester) async {
         tester.view.physicalSize = const Size(900, 1900);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
 
-        final futureEta = DateTime.now().toUtc().add(
-          const Duration(minutes: 15),
-        );
         final service = _FakeEtaOrderService(
           initialDetail: _buildDetail(
-            status: 'APPROVED',
-            distanceKm: 3.4,
-            durationMinutes: 14,
-            weather: 'Clear sky',
-            confidence: 0.92,
-            estimatedDeliveryTime: futureEta,
+            status: 'PENDING',
+            includePrediction: false,
+            estimatedDeliveryTime: null,
           ),
         );
-        final mapRepo = _FakeDeliveryMapRepository();
+        final mapRepo = _FakeDeliveryMapRepository(
+          status: DeliveryMapOrderStatus.pending,
+        );
         addTearDown(mapRepo.close);
 
         await tester.pumpWidget(
@@ -346,14 +364,31 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('eta-estimation-card')), findsOneWidget);
+        expect(find.text('Waiting for approval'), findsOneWidget);
+
+        // Transition PENDING -> APPROVED via real repository StatusChanged event
+        final approvedEta = DateTime.now().toUtc().add(
+          const Duration(minutes: 15),
+        );
+        service.detail = _buildDetail(
+          status: 'APPROVED',
+          distanceKm: 3.4,
+          durationMinutes: 14,
+          weather: 'Clear sky',
+          confidence: 0.92,
+          estimatedDeliveryTime: approvedEta,
+        );
+        mapRepo.emitStatusChanged(_orderId);
+        await tester.pumpAndSettle();
+
         expect(find.text('Live estimate'), findsOneWidget);
         expect(find.text('3.4 km'), findsOneWidget);
         expect(find.text('14 minutes'), findsOneWidget);
         expect(find.text('Clear sky'), findsOneWidget);
         expect(find.text('92% (0.92)'), findsOneWidget);
 
-        // Simulate order status changing to IN_TRANSIT with updated AI ETA prediction
-        final updatedEta = DateTime.now().toUtc().add(
+        // Transition APPROVED -> IN_TRANSIT via real repository StatusChanged event
+        final inTransitEta = DateTime.now().toUtc().add(
           const Duration(minutes: 9),
         );
         service.detail = _buildDetail(
@@ -362,15 +397,9 @@ void main() {
           durationMinutes: 9,
           weather: 'Moderate wind',
           confidence: 0.87,
-          estimatedDeliveryTime: updatedEta,
+          estimatedDeliveryTime: inTransitEta,
         );
-
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(OrderDetailPage)),
-        );
-        container
-            .read(etaEstimationControllerProvider(_orderId).notifier)
-            .onExternalStatusObserved('IN_TRANSIT');
+        mapRepo.emitStatusChanged(_orderId);
         await tester.pumpAndSettle();
 
         expect(find.text('2.1 km'), findsOneWidget);
@@ -378,18 +407,16 @@ void main() {
         expect(find.text('Moderate wind'), findsOneWidget);
         expect(find.text('87% (0.87)'), findsOneWidget);
 
-        // Simulate order status changing to ARRIVED -> stops live countdown
+        // Transition IN_TRANSIT -> ARRIVED via real repository StatusChanged event
         service.detail = _buildDetail(
           status: 'ARRIVED',
           distanceKm: 2.1,
           durationMinutes: 9,
           weather: 'Moderate wind',
           confidence: 0.87,
-          estimatedDeliveryTime: updatedEta,
+          estimatedDeliveryTime: inTransitEta,
         );
-        container
-            .read(etaEstimationControllerProvider(_orderId).notifier)
-            .onExternalStatusObserved('ARRIVED');
+        mapRepo.emitStatusChanged(_orderId);
         await tester.pumpAndSettle();
 
         expect(find.text('Arrived at station'), findsOneWidget);
@@ -397,21 +424,126 @@ void main() {
           find.textContaining('awaiting recipient pickup confirmation'),
           findsOneWidget,
         );
+
+        // Transition ARRIVED -> DELIVERED via real repository StatusChanged event
+        final deliveredTime = DateTime.now().toUtc();
+        service.detail = _buildDetail(
+          status: 'DELIVERED',
+          distanceKm: 2.1,
+          durationMinutes: 9,
+          weather: 'Moderate wind',
+          confidence: 0.87,
+          estimatedDeliveryTime: inTransitEta,
+          actualDeliveryTime: deliveredTime,
+        );
+        mapRepo.emitStatusChanged(_orderId);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Completed'), findsOneWidget);
+        expect(
+          find.textContaining('Delivery completed'),
+          findsOneWidget,
+        );
       },
     );
 
     testWidgets(
-      'transitions live ETA to Estimate stale automatically when estimatedDeliveryTime expires',
+      'detects corrected estimatedDeliveryTime while remaining IN_TRANSIT and fresh via both screen map refresh and direct notifier call',
       (tester) async {
-        final shortFutureEta = DateTime.now().toUtc().add(
-          const Duration(seconds: 2),
+        tester.view.physicalSize = const Size(900, 1900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final etaPlus15 = DateTime.now().toUtc().add(
+          const Duration(minutes: 15),
+        );
+        final service = _FakeEtaOrderService(
+          initialDetail: _buildDetail(
+            status: 'IN_TRANSIT',
+            distanceKm: 3.4,
+            durationMinutes: 15,
+            weather: 'Clear sky',
+            confidence: 0.92,
+            estimatedDeliveryTime: etaPlus15,
+          ),
+        );
+        final mapRepo = _FakeDeliveryMapRepository(
+          status: DeliveryMapOrderStatus.inTransit,
+          estimatedDeliveryTime: etaPlus15,
+        );
+        addTearDown(mapRepo.close);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              deliveryOrderApiServiceProvider.overrideWithValue(service),
+              deliveryMapRepositoryProvider.overrideWithValue(mapRepo),
+            ],
+            child: const MaterialApp(
+              home: OrderDetailPage(orderId: _orderId),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('(in 15 min)'), findsOneWidget);
+
+        // Canonical map refresh corrects ETA from +15 to +25 minutes while status remains IN_TRANSIT and fresh
+        final etaPlus25 = DateTime.now().toUtc().add(
+          const Duration(minutes: 25),
+        );
+        mapRepo.snapshot = _FakeDeliveryMapRepository._buildMapSnapshot(
+          status: DeliveryMapOrderStatus.inTransit,
+          estimatedDeliveryTime: etaPlus25,
+        );
+        service.detail = _buildDetail(
+          status: 'IN_TRANSIT',
+          distanceKm: 3.4,
+          durationMinutes: 25,
+          weather: 'Headwind',
+          confidence: 0.85,
+          estimatedDeliveryTime: etaPlus25,
+        );
+        mapRepo.emitConnected();
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('(in 25 min)'), findsOneWidget);
+        expect(find.text('25 minutes'), findsOneWidget);
+
+        // Direct notifier call correcting ETA to +35 minutes while status and telemetryStale remain unchanged
+        final etaPlus35 = DateTime.now().toUtc().add(
+          const Duration(minutes: 35),
+        );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(OrderDetailPage)),
+        );
+        container
+            .read(etaEstimationControllerProvider(_orderId).notifier)
+            .onExternalStatusObserved(
+              'IN_TRANSIT',
+              updatedEstimatedDeliveryTime: etaPlus35,
+            );
+        await tester.pumpAndSettle();
+
+        final state = container.read(etaEstimationControllerProvider(_orderId));
+        expect(state.estimate?.remainingMinutes, 35);
+        expect(find.textContaining('(in 35 min)'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'updates relative countdown as time advances and transitions live ETA to Estimate stale when estimatedDeliveryTime expires',
+      (tester) async {
+        final futureEta15 = DateTime.now().toUtc().add(
+          const Duration(minutes: 15),
         );
         final service = _FakeEtaOrderService(
           initialDetail: _buildDetail(
             status: 'IN_TRANSIT',
             distanceKm: 1.5,
-            durationMinutes: 5,
-            estimatedDeliveryTime: shortFutureEta,
+            durationMinutes: 15,
+            estimatedDeliveryTime: futureEta15,
           ),
         );
         final mapRepo = _FakeDeliveryMapRepository();
@@ -431,9 +563,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Live estimate'), findsOneWidget);
+        expect(find.textContaining('(in 15 min)'), findsOneWidget);
 
-        // Advance clock past the estimated arrival deadline
-        await tester.pump(const Duration(seconds: 3));
+        // Advance clock by 5 minutes -> countdown updates from 15 min to 10 min
+        await tester.pump(const Duration(minutes: 5));
+        await tester.pump();
+        expect(find.textContaining('(in 10 min)'), findsOneWidget);
+
+        // Advance clock past the remaining 10 minutes -> transitions to Estimate stale
+        await tester.pump(const Duration(minutes: 11));
         await tester.pump();
 
         expect(find.text('Estimate stale'), findsOneWidget);
