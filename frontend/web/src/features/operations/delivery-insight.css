@@ -1,0 +1,60 @@
+.insight-picker {
+  display: grid;
+  gap: 16px;
+  max-width: 34rem;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.insight-panel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.insight-arrival {
+  border-left: 4px solid #d5aa58;
+  background: #f4f7ee;
+}
+
+.insight-time {
+  display: block;
+  margin: 14px 0 6px;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  color: #1e4f3c;
+}
+
+.insight-summary-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+}
+
+.insight-timestamp {
+  color: #617167;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 700px) {
+  .insight-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+.insight-link,
+.insight-link:visited {
+  color: #356044;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.insight-link:hover {
+  color: #1e4f3c;
+  text-decoration: underline;
+}
