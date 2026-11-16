@@ -16,7 +16,10 @@ class NotificationsListPage extends ConsumerWidget {
     final notificationsAsync = ref.watch(customerNotificationsProvider);
     final onlyUnread = ref.watch(notificationsFilterProvider);
 
-    ref.listen<AsyncValue<void>>(notificationActionsNotifierProvider, (_, next) {
+    ref.listen<AsyncValue<void>>(notificationActionsNotifierProvider, (
+      _,
+      next,
+    ) {
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Operation failed: ${next.error}')),
@@ -136,8 +139,10 @@ class NotificationsListPage extends ConsumerWidget {
                                 : OutlinedButton(
                                     onPressed: () {
                                       ref
-                                          .read(customerNotificationsProvider
-                                              .notifier)
+                                          .read(
+                                            customerNotificationsProvider
+                                                .notifier,
+                                          )
                                           .loadMore();
                                     },
                                     child: const Text('Load more'),
@@ -170,7 +175,8 @@ class _NotificationCard extends ConsumerWidget {
       elevation: item.isRead ? 0 : 2,
       color: item.isRead
           ? Theme.of(context).cardColor
-          : Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.15),
+          : Theme.of(context).colorScheme.primaryContainer
+                .withValues(alpha: 0.15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -188,7 +194,7 @@ class _NotificationCard extends ConsumerWidget {
                 .markAsRead(item.id);
           }
           if (item.orderId != null && item.orderId!.isNotEmpty) {
-            context.push(RoutePaths.customerOrderTrackingFor(item.orderId!));
+            context.push(RoutePaths.customerOrderDetailsFor(item.orderId!));
           }
         },
         child: Padding(
@@ -214,26 +220,22 @@ class _NotificationCard extends ConsumerWidget {
                     child: Text(
                       item.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: item.isRead
-                                ? FontWeight.w500
-                                : FontWeight.bold,
-                          ),
+                        fontWeight: item.isRead
+                            ? FontWeight.w500
+                            : FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _formatDate(item.createdAt),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: Colors.grey.shade600),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                item.message,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(item.message, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
@@ -246,7 +248,9 @@ class _NotificationCard extends ConsumerWidget {
                       TextButton(
                         onPressed: () {
                           ref
-                              .read(notificationActionsNotifierProvider.notifier)
+                              .read(
+                                notificationActionsNotifierProvider.notifier,
+                              )
                               .markAsRead(item.id);
                         },
                         child: const Text('Mark as read'),
@@ -255,7 +259,7 @@ class _NotificationCard extends ConsumerWidget {
                       FilledButton.tonal(
                         onPressed: () {
                           context.push(
-                            RoutePaths.customerOrderTrackingFor(item.orderId!),
+                            RoutePaths.customerOrderDetailsFor(item.orderId!),
                           );
                         },
                         child: const Text('View order'),

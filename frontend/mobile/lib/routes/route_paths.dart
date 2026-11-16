@@ -12,6 +12,8 @@ abstract final class RoutePaths {
   static const customerOrders = '/customer/orders';
   static const customerOrderTracking = '/customer/orders/tracking/:orderId';
   static const customerOrderDetails = '/customer/orders/:orderId';
+  static const customerOrderHistory = '/customer/orders/:orderId/history';
+  static const customerAssistant = '/customer/assistant';
   static const customerOrderConfirmDelivery =
       '/customer/orders/:orderId/confirm-delivery';
   static String customerOrderConfirmDeliveryFor(String orderId) =>
@@ -31,11 +33,28 @@ abstract final class RoutePaths {
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const changePassword = '/profile/change-password';
+  static const themeSettings = '/profile/theme';
 
   static String customerOrderTrackingFor(String orderId) =>
       '/customer/orders/tracking/${Uri.encodeComponent(orderId)}';
   static String customerOrderDetailsFor(String orderId) =>
       '/customer/orders/${Uri.encodeComponent(orderId)}';
+  static String customerOrderHistoryFor(String orderId) =>
+      '/customer/orders/${Uri.encodeComponent(orderId)}/history';
+  static String customerAssistantFor({
+    String? orderId,
+    String? trackingNumber,
+  }) {
+    final query = <String, String>{
+      if (orderId != null && orderId.isNotEmpty) 'orderId': orderId,
+      if (trackingNumber != null && trackingNumber.isNotEmpty)
+        'trackingNumber': trackingNumber,
+    };
+    return Uri(
+      path: customerAssistant,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
 
   static String operatorExpiredParcelsFor(String stationId) =>
       '/operator/expired-parcels/$stationId';

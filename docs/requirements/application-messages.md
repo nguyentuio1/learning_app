@@ -253,7 +253,7 @@ Placeholders: {resource}/{action} use allowlisted human-readable labels; {tracki
 | MSG-P-GEN-02 | Unable to load {resource}. Please try again. | Error loading list/detail; all read functions | Web/mobile; retain filters and offer Retry |
 | MSG-P-GEN-03 | Unable to save {resource}. Your changes were not saved. | Error mutation failure known not saved | Web/mobile; retain draft |
 | MSG-P-GEN-04 | The request timed out. Check the latest status before trying again. | Error unknown mutation outcome | Web/mobile; reload status to avoid duplicate actions |
-| MSG-P-GEN-05 | No {resource} found. | Empty successful query | Web/mobile; clear filters/create if allowed |
+| MSG-P-GEN-05 | No {resource} found. / No order history found. | Empty successful query, including empty C10 order history | Web/mobile; clear filters/create if allowed; C10 uses the exact text “No order history found.” |
 | MSG-P-GEN-06 | {field} is required. | Validation missing/blank field | Inline; focus field |
 | MSG-P-GEN-07 | {field} must be at most {max} characters. | Validation length | Inline; correct input |
 | MSG-P-GEN-08 | Enter a valid {field}. | Validation format/type | Inline; correct input |
@@ -321,7 +321,7 @@ Placeholders: {resource}/{action} use allowlisted human-readable labels; {tracki
 | MSG-P-LS-13 | Complete the package safety checklist before confirming. | Validation LS:F-06 | Operator mobile inline |
 | MSG-P-LS-14 | Delivery confirmed successfully. | Success LS:F-07 | Customer/operator mobile; actual completion recorded |
 | MSG-P-LS-15 | The pickup code is incorrect. Please try again. | Validation LS:F-07 | Customer/operator mobile; never echo correct code |
-| MSG-P-LS-16 | Too many attempts. Try again after {time}. | Lockout LS:F-07 if policy approved | Mobile; server-derived retry time |
+| MSG-P-LS-16 | Too many attempts. Try again after {time}. | HTTP 423 Locked after 3 wrong pickup OTP attempts (LS:F-07); Retry-After: 600 seconds / 10 minutes | Customer mobile C11–C12; disable keypad and confirm while the server-derived countdown runs |
 | MSG-P-LS-17 | This order is not ready for delivery confirmation. | Conflict LS:F-07 state not ARRIVED | Mobile; reload |
 | MSG-P-LS-18 | The collection period has expired. Contact station staff. | Warning LS:F-08 | Customer/operator mobile; timeout policy pending |
 | MSG-P-UA-01 | No deliveries match the selected period. | Empty UA:F-13/14 | Manager web; adjust dates |
