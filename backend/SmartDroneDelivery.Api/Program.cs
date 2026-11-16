@@ -55,6 +55,15 @@ builder.Services.AddSingleton<IntegrationRateLimits>();
 builder.Services.AddScoped<ITrackingService, TrackingService>();
 builder.Services.AddScoped<FailureService>();
 builder.Services.AddScoped<DeliveryRouteEstimate>();
+builder.Services.AddScoped<DeliverySummaryFacts>();
+builder.Services.AddScoped<DeliverySummaryService>();
+builder.Services.AddSingleton<AiGenerationSlots>();
+builder.Services.AddOptions<DeliverySummaryOptions>()
+    .Bind(builder.Configuration.GetSection(DeliverySummaryOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "DeliverySummary requires a loopback URL, model and immutable revision when enabled.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<ISummaryModelGateway, LocalSummaryModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
     .Validate(o => double.IsFinite(o.CruiseSpeedMps) && o.CruiseSpeedMps > 0,
