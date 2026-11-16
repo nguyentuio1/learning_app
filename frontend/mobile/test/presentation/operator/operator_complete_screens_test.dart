@@ -126,6 +126,19 @@ class _StubAuthController extends AuthController {
   AuthStatus build() => AuthStatus.authenticated;
 }
 
+class _StubCurrentUserController extends CurrentUserController {
+  @override
+  User? build() => User(
+        id: 'op-1',
+        email: 'op@example.com',
+        fullName: 'Operator One',
+        phoneNumber: '0900000001',
+        roleCode: 'StationOperator',
+        status: 'ACTIVE',
+        createdAt: DateTime.utc(2026, 11, 1),
+      );
+}
+
 class _StubCustomerNotificationsNotifier
     extends CustomerNotificationsNotifier {
   _StubCustomerNotificationsNotifier(this._items);
@@ -668,14 +681,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(AppConfig.operator()),
           authControllerProvider.overrideWith(_StubAuthController.new),
-          currentUserProvider.overrideWithValue(
-            const User(
-              id: 'op-1',
-              email: 'op@example.com',
-              fullName: 'Operator One',
-              roleCode: 'StationOperator',
-            ),
-          ),
+          currentUserProvider.overrideWith(_StubCurrentUserController.new),
           landingStationApiServiceProvider.overrideWithValue(fakeStationApi),
           stationAvailabilityNotifierProvider.overrideWith(() => stubNotifier),
           expiredParcelsProvider.overrideWith(
