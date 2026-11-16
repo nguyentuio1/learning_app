@@ -55,6 +55,7 @@ public class TrackingAcceptanceTests(AuthApiFactory factory) : IClassFixture<Aut
         Assert.Equal(10.8231m, json.GetProperty("destinationStation").GetProperty("latitude").GetDecimal());
         Assert.Equal(106.6297m, json.GetProperty("destinationStation").GetProperty("longitude").GetDecimal());
         Assert.Equal(DateTimeKind.Utc, json.GetProperty("estimatedDeliveryTime").GetDateTime().Kind);
+        Assert.Equal(eta, json.GetProperty("estimatedDeliveryTime").GetDateTime());
     }
 
     [Fact]
@@ -103,13 +104,15 @@ public class TrackingAcceptanceTests(AuthApiFactory factory) : IClassFixture<Aut
 
     [Theory]
     [InlineData("PENDING")]
+    [InlineData("APPROVED")]
+    [InlineData("READY_FOR_TAKEOFF")]
     [InlineData("DELIVERED")]
     [InlineData("CANCELLED")]
-    [InlineData("EXPIRED")]
+    [InlineData("FAILED")]
     public async Task Non_in_transit_orders_hide_last_position_and_are_not_marked_stale(string orderStatus)
     {
         var helper = new TrackingApiTests(factory);
-        var data = await helper.SeedAsync("COMPLETED", orderStatus, sample: true);
+        var data = await helper.SeedAsync("IN_AIR", orderStatus, sample: true);
 
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", helper.Token(data.Owner));
