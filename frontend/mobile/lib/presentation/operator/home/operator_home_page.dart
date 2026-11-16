@@ -7,7 +7,10 @@ import '../../../core/session/auth_controller.dart';
 import '../../../data/models/landing_station.dart';
 import '../../../data/models/station_availability.dart';
 import '../../../data/models/station_detail.dart';
+import '../../../data/models/station_operation_models.dart';
 import '../../../data/models/station_slot.dart';
+import '../../../data/providers/landing_station_providers.dart';
+import '../../../data/providers/notification_providers.dart';
 import '../expired_parcels/pickup_timeout_alerts_card.dart';
 import '../../../routes/route_paths.dart';
 import 'station_availability_providers.dart';
@@ -20,6 +23,7 @@ class OperatorHomePage extends ConsumerWidget {
     final asyncState = ref.watch(stationAvailabilityNotifierProvider);
     final roleCode = ref.watch(currentUserProvider)?.roleCode.toUpperCase();
     final canManageFailures = roleCode == 'DISPATCHER' || roleCode == 'ADMIN';
+    final unreadCount = ref.watch(unreadNotificationsCountProvider).value ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -31,6 +35,16 @@ class OperatorHomePage extends ConsumerWidget {
               icon: const Icon(Icons.report_gmailerrorred_outlined),
               onPressed: () => context.push(RoutePaths.operatorFailedOrders),
             ),
+          IconButton(
+            key: const Key('operator-notifications-button'),
+            tooltip: 'Notifications',
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text('$unreadCount'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => context.push(RoutePaths.customerNotifications),
+          ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
@@ -184,12 +198,29 @@ class OperatorHomePage extends ConsumerWidget {
                   const SizedBox(height: 12),
                 ],
 
-                // Quick Action: Package Pickup Confirmation (LA-29 / LA-126)
-                FilledButton.icon(
-                  key: const Key('operator-pickup-button'),
-                  onPressed: () => context.push(RoutePaths.operatorPickup),
-                  icon: const Icon(Icons.mark_email_read_outlined),
-                  label: const Text('Confirm Package Pickup'),
+                // Quick Actions: Origin Package Intake & Destination Pickup
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const Key('operator-intake-button'),
+                        onPressed: () =>
+                            context.push(RoutePaths.operatorIntake),
+                        icon: const Icon(Icons.inventory_2_outlined),
+                        label: const Text('Origin Intake'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        key: const Key('operator-pickup-button'),
+                        onPressed: () =>
+                            context.push(RoutePaths.operatorPickup),
+                        icon: const Icon(Icons.mark_email_read_outlined),
+                        label: const Text('Confirm Pickup'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 
@@ -233,109 +264,7 @@ class OperatorHomePage extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        final (color, icon) = _slotStatusStyle(context, slot.status);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: color.withOpacity(0.15),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Slot #${slot.slotNumber}',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'ID: ${slot.id}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      slot.status,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-              _DetailRow(
-                label: 'Status',
-                value: slot.status,
-                icon: Icons.info_outline,
-              ),
-              const SizedBox(height: 12),
-              _DetailRow(
-                label: 'Last Updated',
-                value: slot.lastUpdated.toLocal().toString().split('.').first,
-                icon: Icons.access_time,
-              ),
-              if (slot.currentOrderId != null) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Current Order ID',
-                  value: slot.currentOrderId!,
-                  icon: Icons.inventory_2_outlined,
-                ),
-              ],
-              if (slot.currentMissionId != null) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Flight Mission ID',
-                  value: slot.currentMissionId!,
-                  icon: Icons.flight_outlined,
-                ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Close'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => _SlotDetailsModalBody(slot: slot),
     );
   }
 
@@ -974,6 +903,220 @@ class _DetailRow extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SlotDetailsModalBody extends ConsumerStatefulWidget {
+  const _SlotDetailsModalBody({required this.slot});
+
+  final StationSlot slot;
+
+  @override
+  ConsumerState<_SlotDetailsModalBody> createState() =>
+      _SlotDetailsModalBodyState();
+}
+
+class _SlotDetailsModalBodyState extends ConsumerState<_SlotDetailsModalBody> {
+  final _reasonController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  bool get _canToggle =>
+      widget.slot.status == 'EMPTY' || widget.slot.status == 'ERROR';
+
+  String get _targetStatus =>
+      widget.slot.status == 'EMPTY' ? 'ERROR' : 'EMPTY';
+
+  Future<void> _toggleStatus() async {
+    setState(() {
+      _isSubmitting = true;
+      _errorText = null;
+    });
+    try {
+      final api = ref.read(landingStationApiServiceProvider);
+      await api.updateSlotStatus(
+        slotId: widget.slot.id,
+        request: UpdateSlotStatusRequest(
+          targetStatus: _targetStatus,
+          reason: _reasonController.text,
+        ),
+      );
+      await ref.read(stationAvailabilityNotifierProvider.notifier).refresh();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _errorText = errorMessage(error);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slot = widget.slot;
+    final (color, icon) = OperatorHomePage._slotStatusStyle(context, slot.status);
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 20, 24, 32 + bottomInset),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withOpacity(0.15),
+                  child: Icon(icon, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Slot #${slot.slotNumber}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'ID: ${slot.id}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    slot.status,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 32),
+            _DetailRow(
+              label: 'Status',
+              value: slot.status,
+              icon: Icons.info_outline,
+            ),
+            const SizedBox(height: 12),
+            _DetailRow(
+              label: 'Last Updated',
+              value: slot.lastUpdated.toLocal().toString().split('.').first,
+              icon: Icons.access_time,
+            ),
+            if (slot.currentOrderId != null) ...[
+              const SizedBox(height: 12),
+              _DetailRow(
+                label: 'Current Order ID',
+                value: slot.currentOrderId!,
+                icon: Icons.inventory_2_outlined,
+              ),
+            ],
+            if (slot.currentMissionId != null) ...[
+              const SizedBox(height: 12),
+              _DetailRow(
+                label: 'Flight Mission ID',
+                value: slot.currentMissionId!,
+                icon: Icons.flight_outlined,
+              ),
+            ],
+            if (_canToggle) ...[
+              const Divider(height: 28),
+              TextField(
+                key: const Key('slot-status-reason-input'),
+                controller: _reasonController,
+                decoration: InputDecoration(
+                  labelText: slot.status == 'EMPTY'
+                      ? 'Maintenance reason (optional)'
+                      : 'Resolution note (optional)',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _errorText!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('slot-status-toggle-button'),
+                  onPressed: _isSubmitting ? null : _toggleStatus,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          slot.status == 'EMPTY'
+                              ? Icons.build_outlined
+                              : Icons.check_circle_outline,
+                        ),
+                  label: Text(
+                    slot.status == 'EMPTY'
+                        ? 'Mark Maintenance (ERROR)'
+                        : 'Restore Operational (EMPTY)',
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _isSubmitting
+                    ? null
+                    : () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

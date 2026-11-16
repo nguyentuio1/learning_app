@@ -1,108 +1,80 @@
 # Station Operator User Flow - SmartDroneDelivery
 
-Screen flow for the Station Operator interface (mobile tablet or station kiosk terminal). It covers landing station availability monitoring, slot status management, origin package intake, and destination package pickup confirmation with secure code verification.
+Updated for **LA-170** (Completed Station Operator Mobile Screens) and aligned with the implemented Flutter routes, widgets, and backend APIs.
 
-The flow uses the Station Operator use cases in [use-cases.md](../../requirements/use-cases.md) (`UC-16`, `UC-17`, `UC-18`, `UC-08`), the lifecycle and failure rules in [business-processes.md](../business-processes.md), and the landing station and slot models in [erd.md](../../architecture/erd.md).
+---
 
 ## User flow
 
 ```mermaid
-flowchart TB
-    Start((Start)) --> Open["Open operator tablet app"]
-    Open --> Login["Log in"]
-    Login --> Credentials{"Credentials valid?"}
-    Credentials -->|no| Error["Show login error"]
-    Error --> Login
-    Credentials -->|yes| Dashboard["Station Operator dashboard<br/>current station overview and activity"]
+flowchart TD
+    Start([Open Operator Mobile App]) --> Login["O01: Station Operator Login"]
+    Login --> AuthCheck{Role = StationOperator?}
+    AuthCheck -- No --> RoleDenied["Show role-mismatch error"] --> Login
+    AuthCheck -- Yes --> Dashboard["O11: Station Availability & Slots<br/>(OperatorHomePage)"]
 
-    %% Section 1: Station Slots & Availability
-    Dashboard --> SlotsView["Station slots & availability"]
-    SlotsView --> SlotGrid["View slot grid<br/>EMPTY, OCCUPIED, RESERVED, ERROR"]
-    SlotGrid --> SelectSlot["Select a slot"]
-    SelectSlot --> SlotState{"Current slot status"}
-    
-    SlotState -->|EMPTY| ToggleError["Mark slot for maintenance<br/>set status ERROR"]
-    SlotState -->|ERROR| ClearError["Complete maintenance<br/>set status EMPTY"]
-    SlotState -->|RESERVED or OCCUPIED| SlotConflict["Slot in use or booked<br/>cannot set to ERROR directly"]
-    SlotConflict --> ConflictChoice{"Action needed?"}
-    ConflictChoice -->|notify dispatcher| AlertDispatcher["Raise reroute alert to Dispatcher"]
-    ConflictChoice -->|back| SlotGrid
-    AlertDispatcher --> SlotGrid
-    ToggleError --> UpdateSlot["System updates slot in database<br/>and broadcasts via SignalR"]
-    ClearError --> UpdateSlot
-    UpdateSlot --> SlotGrid
-    SlotGrid --> Dashboard
+    Dashboard --> AlertsBanner["Pickup Timeout Alerts Card<br/>(LA-337)"]
+    AlertsBanner --> ExpiredScreen["O13: Expired Parcels Screen<br/>(clear-expired-parcel)"]
+    ExpiredScreen --> Dashboard
 
-    %% Section 2: Origin Package Intake (UC-18)
-    Dashboard --> Intake["Origin package intake"]
-    Intake --> ScanPackage["Scan tracking number or QR code"]
-    ScanPackage --> LookupOrder{"Order found and status APPROVED?"}
-    LookupOrder -->|no| OrderNotFound["Show error: order not approved<br/>or invalid tracking number"]
-    OrderNotFound --> Intake
-    LookupOrder -->|yes| Inspect["Physical inspection & station scale<br/>weigh and measure package"]
-    Inspect --> LimitsValid{"Weight & dimensions within drone limits<br/>and non-hazardous?"}
-    LimitsValid -->|no| RejectIntake["Reject handover with reason<br/>system logs intake failure"]
-    RejectIntake --> Intake
-    LimitsValid -->|yes| AssignSlot["Select assigned origin slot<br/>status EMPTY"]
-    AssignSlot --> LoadDrone["Load package into drone bay / slot"]
-    LoadDrone --> ConfirmPickup["Confirm package pickup in app"]
-    ConfirmPickup --> SaveIntake["System updates order: READY_FOR_TAKEOFF<br/>slot: OCCUPIED, drone: ASSIGNED<br/>notifies customer and flight dispatcher"]
-    SaveIntake --> Dashboard
+    Dashboard --> NotifBell["Notifications Bell Badge"]
+    NotifBell --> Notifications["O15: Notifications List<br/>(NotificationsListPage)"]
+    Notifications --> Dashboard
 
-    %% Section 3: Destination Package Pickup Confirmation (UC-08, UC-18)
-    Dashboard --> DeliveryPickup["Destination package pickup"]
-    DeliveryPickup --> EnterCode["Enter recipient secure code<br/>or scan pickup QR"]
-    EnterCode --> CheckOrder{"Order at station<br/>with status ARRIVED?"}
-    CheckOrder -->|no| ArrivalErr["Show error: order not arrived<br/>or already completed"]
-    ArrivalErr --> DeliveryPickup
-    CheckOrder -->|yes| CheckLockout{"Verification locked?<br/>too many failed attempts"}
-    CheckLockout -->|yes| LockoutMsg["Show error: locked for 10 minutes<br/>due to 3 failed attempts"]
-    LockoutMsg --> DeliveryPickup
-    CheckLockout -->|no| VerifyCode{"Entered code matches<br/>order.secure_code?"}
-    
-    VerifyCode -->|no| IncFailed["Increment failed attempt counter"]
-    IncFailed --> MaxAttempts{"Failed attempts >= 3?"}
-    MaxAttempts -->|yes| LockCode["Lock verification for 10 minutes<br/>send security alert to customer"]
-    MaxAttempts -->|no| RetryPrompt["Show error: invalid secure code<br/>display remaining attempts"]
-    LockCode --> DeliveryPickup
-    RetryPrompt --> EnterCode
+    Dashboard --> ProfileBtn["Profile & Settings"]
+    ProfileBtn --> Profile["O16: Profile / Change Password / Sign Out"]
+    Profile --> Dashboard
 
-    VerifyCode -->|yes| UnlockLocker["System sends unlock signal<br/>or operator opens slot compartment"]
-    UnlockLocker --> Handover["Hand package to recipient<br/>recipient verifies parcel"]
-    Handover --> ConfirmDelivery["Confirm pickup handover in app"]
-    ConfirmDelivery --> FinalizeDelivery["System updates order: DELIVERED<br/>records actual delivery time<br/>releases slot: EMPTY<br/>drone: IDLE or CHARGING<br/>notifies customer"]
-    FinalizeDelivery --> Dashboard
+    Dashboard --> SlotTap["Tap Slot Tile"]
+    SlotTap --> SlotModal["O12: Slot Details Bottom Sheet"]
+    SlotModal --> CanToggle{Status is EMPTY or ERROR?}
+    CanToggle -- Yes --> ToggleSlot["PUT /api/station-slots/{id}/status<br/>EMPTY ↔ ERROR (+ optional reason)"]
+    ToggleSlot --> Dashboard
+    CanToggle -- No --> Dashboard
 
-    %% Logout
-    Dashboard --> Logout["Log out"]
-    Logout --> End((End))
+    Dashboard --> IntakeBtn["Tap 'Origin Intake'"]
+    IntakeBtn --> IntakeLookup["O07: Origin Package Intake<br/>(PackageIntakePage)<br/>GET .../operations/orders/{trackingNumber}"]
+    IntakeLookup --> IntakeEligible{ORIGIN & APPROVED?}
+    IntakeEligible -- No --> IntakeBlocked["Show ineligible status banner"] --> IntakeLookup
+    IntakeEligible -- Yes --> InspectParcel["Select EMPTY slot, enter measured<br/>weight/dimensions & visual check"]
+    InspectParcel --> IntakeDecision{Accept or Reject?}
+    IntakeDecision -- "Confirm Intake" --> IntakeConfirm["O08a: POST .../operations/intake<br/>Status -> IN_ORIGIN_STATION"]
+    IntakeDecision -- "Reject Parcel" --> IntakeReject["O08b: POST .../operations/intake-reject<br/>Status -> REJECTED"]
+    IntakeConfirm --> Dashboard
+    IntakeReject --> Dashboard
+
+    Dashboard --> PickupBtn["Tap 'Confirm Pickup'"]
+    PickupBtn --> PickupLookup["O09: Package Pickup Confirmation<br/>(PackagePickupPage)<br/>GET .../operations/orders/{trackingNumber}"]
+    PickupLookup --> PickupEligible{DESTINATION & ARRIVED?}
+    PickupEligible -- No --> PickupBlocked["Show ineligible status banner"] --> PickupLookup
+    PickupEligible -- Yes --> VerifyCode["Enter 6-digit Pickup Secure Code<br/>POST .../operations/pickup"]
+    VerifyCode --> CodeValid{Code valid?}
+    CodeValid -- No --> RetryOrLock["Decrement remainingAttempts<br/>or show lockout countdown"] --> VerifyCode
+    CodeValid -- Yes --> PickupDone["O10: Pickup Confirmed<br/>Status -> COMPLETED, Slot -> EMPTY"]
+    PickupDone --> Dashboard
 ```
+
+---
 
 ## Main screens and decisions
 
-| Screen or decision | Purpose | Related use case |
+| Screen / Component | Flutter Implementation | Backend API / Behavior |
 |---|---|---|
-| Station Operator dashboard | Central hub displaying landing station status, slot occupancy and incoming/outgoing tasks | UC-16, UC-17 |
-| Station slots & availability | Grid view displaying all slots with status `EMPTY`, `OCCUPIED`, `RESERVED` or `ERROR` | UC-16, UC-17 |
-| Slot maintenance toggle | Switch slot between `EMPTY` and `ERROR` for cleaning, sensor testing or mechanical repair | UC-16 |
-| Origin package intake | Search or scan an approved delivery order when a customer drops off a parcel | UC-18 |
-| Physical inspection & limits | Verify physical package weight and dimensions against drone limits and hazardous item rules | UC-18 |
-| Confirm package pickup | Confirm parcel custody at origin, moving order to `READY_FOR_TAKEOFF` and slot to `OCCUPIED` | UC-18 |
-| Destination package pickup | Search parcel and initiate delivery handover when recipient arrives at destination station | UC-08, UC-18 |
-| Secure code verification | Validate 6-digit secure code against `order.secure_code` with brute-force lockout defense | UC-08 |
-| Confirm delivery handover | Release package to recipient, moving order to `DELIVERED` and freeing slot to `EMPTY` | UC-08, UC-18 |
+| **O01** Operator Login | `LoginPage` (`AppFlavor.operator`) | `POST /api/auth/login` (requires `StationOperator` / authorized role). |
+| **O11** Station Availability | `OperatorHomePage` (`/operator`) | `GET /api/landing-stations`, `GET /api/landing-stations/{id}/availability`, `GET /api/landing-stations/{id}`. Filter slots by `ALL`, `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR`. |
+| **O12** Slot Status Toggle | `_SlotDetailsModalBody` in `OperatorHomePage` | `PUT /api/station-slots/{id}/status` toggles `EMPTY ↔ ERROR` with optional reason; `RESERVED`/`OCCUPIED` return `409 Conflict`. |
+| **O07 / O08** Origin Package Intake | `PackageIntakePage` (`/operator/intake`) | `GET /api/landing-stations/{stationId}/operations/orders/{trackingNumber}`, `POST .../intake`, `POST .../intake-reject`. |
+| **O09 / O10** Destination Pickup | `PackagePickupPage` (`/operator/pickup`) | `GET /api/landing-stations/{stationId}/operations/orders/{trackingNumber}`, `POST .../pickup` with 6-digit secure code & lockout handling. |
+| **O13** Expired Parcels | `PickupTimeoutAlertsCard` & `ExpiredParcelScreen` (`/operator/expired-parcels/:stationId`) | `GET .../expired-parcels` and `POST .../clear-expired-parcel`. |
+| **O15** Notifications | `NotificationsListPage` (`/customer/notifications`, shared route) | `GET /api/notifications` and unread badge count on `OperatorHomePage`. |
+| **O16** Profile & Session | `ProfilePage`, `EditProfilePage`, `ChangePasswordPage` | Manage operator profile, password, and sign out. |
+
+---
 
 ## Flow rules
 
-- The Station Operator operates the assigned landing station and manages physical package handling at the pads.
-- Slot status transitions:
-  - An `EMPTY` slot can be put into `ERROR` for maintenance and returned to `EMPTY` once operational.
-  - Slots with status `RESERVED` or `OCCUPIED` cannot be placed into maintenance without rerouting the scheduled drone or retrieving the stored parcel.
-- Origin intake rules:
-  - Only orders in `APPROVED` status can be received at the origin station.
-  - Packages exceeding drone weight or size limits, or containing prohibited/hazardous goods, must be rejected with the reason logged.
-  - Confirming intake sets order status to `READY_FOR_TAKEOFF`, slot to `OCCUPIED`, drone to `ASSIGNED`, and notifies both the customer and dispatcher.
-- Destination pickup rules:
-  - Only orders in `ARRIVED` status at the operator's station can be completed.
-  - Entering an incorrect secure code increments a failure counter; reaching 3 consecutive failures locks code entry for 10 minutes (`423 Locked`) to protect against unauthorized collection.
-  - Successful pickup sets order status to `DELIVERED`, records the timestamp, frees the destination slot to `EMPTY`, and sets the drone to `IDLE` or `CHARGING`.
+- **Origin Intake (`UC-16` / `LA-170`):** Only `ORIGIN` orders in `APPROVED` status can be accepted into an `EMPTY` slot (`POST .../intake` -> `IN_ORIGIN_STATION`) or rejected with a mandatory reason (`POST .../intake-reject` -> `REJECTED`).
+- **Destination Pickup (`UC-17` / `LA-29` / `LA-126`):** Only `DESTINATION` orders in `ARRIVED` status can be released with the customer's 6-digit secure code; repeated invalid attempts trigger temporary lockout feedback.
+- **Slot Maintenance (`UC-18` / `LA-170`):** Operators can mark `EMPTY` slots as `ERROR` (maintenance) and restore `ERROR` slots to `EMPTY` from the slot detail bottom sheet; `RESERVED` or `OCCUPIED` slots cannot be toggled manually.
+- **Pickup Timeout Clearing (`LA-337`):** `OperatorHomePage` surfaces timed-out `ARRIVED` parcels via `PickupTimeoutAlertsCard` so operators can clear expired parcels and release slots.
+- **Notifications (`UC-08` / `LA-170`):** `OperatorHomePage` displays an unread notification badge in the app bar and opens `NotificationsListPage` for operational alerts.

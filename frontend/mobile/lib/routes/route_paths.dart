@@ -22,6 +22,7 @@ abstract final class RoutePaths {
   static const customerOrdersEdit = '/customer/orders/edit';
   static const customerNotifications = '/customer/notifications';
   static const operatorHome = '/operator';
+  static const operatorIntake = '/operator/intake';
   static const operatorPickup = '/operator/pickup';
   static const operatorExpiredParcels = '/operator/expired-parcels/:stationId';
   static const operatorFailedOrders = '/operator/failed-orders';

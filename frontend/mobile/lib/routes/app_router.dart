@@ -22,6 +22,7 @@ import '../presentation/customer/tracking/order_tracking_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/intake/package_intake_page.dart';
 import '../presentation/operator/expired_parcels/expired_parcel_screen.dart';
 import '../presentation/operator/failures/failed_order_detail_page.dart';
 import '../presentation/operator/failures/failed_orders_page.dart';
@@ -96,6 +97,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const OperatorHomePage(),
         ),
         GoRoute(
+          path: RoutePaths.operatorIntake,
+          builder: (_, _) => const PackageIntakePage(),
+        ),
+        GoRoute(
           path: RoutePaths.operatorPickup,
           builder: (_, _) => const PackagePickupPage(),
         ),
@@ -130,11 +135,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.customerAddresses,
           builder: (_, _) => const AddressesListPage(),
         ),
+      GoRoute(
+        path: RoutePaths.customerNotifications,
+        builder: (_, _) => const NotificationsListPage(),
+      ),
       if (flavor == AppFlavor.customer) ...[
-        GoRoute(
-          path: RoutePaths.customerNotifications,
-          builder: (_, _) => const NotificationsListPage(),
-        ),
         GoRoute(
           path: RoutePaths.customerOrders,
           builder: (_, _) => const MyOrdersPage(),
