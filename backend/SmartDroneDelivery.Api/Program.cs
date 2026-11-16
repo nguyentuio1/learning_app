@@ -37,6 +37,14 @@ builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
 builder.Services.AddScoped<DeliveryEtaQueryService>();
+builder.Services.AddScoped<EtaPredictionService>();
+builder.Services.AddOptions<EtaPredictionOptions>()
+    .Bind(builder.Configuration.GetSection(EtaPredictionOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "EtaPrediction requires bounded batches/intervals, a loopback model endpoint and an explicit model revision when enabled.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<IEtaModelGateway, LocalEtaModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHostedService<EtaPredictionWorker>();
 builder.Services.AddScoped<AnalyticsQueryService>();
 builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
 builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
