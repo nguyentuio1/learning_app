@@ -137,6 +137,23 @@ public class EtaPredictionPipelineTests(AuthApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task Mission_history_prevents_rewriting_operational_prediction()
+    {
+        await factory.WithDbAsync(async db =>
+        {
+            var id = await EtaPipelineData.SeedAsync(db, "APPROVED");
+            db.FlightMissions.Add(new FlightMission { OrderId = id, FlightStatus = "ABORTED",
+                Drone = new Drone { SerialNumber = $"H-{Guid.NewGuid():N}", ModelName = "Test carrier", Status = "MAINTENANCE" } });
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            var model = new TestEtaModel();
+            Assert.Equal(EtaPredictionOutcome.Ineligible, await Service(db, model).RecalculateAsync(id));
+            Assert.Equal(0, model.Calls);
+            Assert.False(await db.AiEtaPredictions.AnyAsync(p => p.OrderId == id));
+        });
+    }
+
+    [Fact]
     public async Task Invalid_legacy_coordinates_are_not_sent_to_model()
     {
         await factory.WithDbAsync(async db =>
