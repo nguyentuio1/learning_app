@@ -132,6 +132,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   final AiAssistantContext initialContext;
   int _sessionsGeneration = 0;
   int _messagesGeneration = 0;
+  int _sendGeneration = 0;
 
   @override
   AiAssistantState build() {
@@ -182,6 +183,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   void _handleAccessLost(Object error) {
     _sessionsGeneration++;
     _messagesGeneration++;
+    _sendGeneration++;
     state = AiAssistantState(
       accessLost: true,
       errorMessage: accessDeniedMessage(error),
@@ -229,6 +231,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
   Future<bool> selectSession(String sessionId, {String? title}) async {
     if (state.accessLost) return false;
+    _sendGeneration++;
     state = state.copyWith(
       activeSessionId: sessionId,
       activeSessionTitle: title,
@@ -237,6 +240,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       messagesPage: 1,
       messagesTotalCount: 0,
       hasMoreMessages: false,
+      isSending: false,
       clearError: true,
       uncertainSendPendingRecovery: false,
     );
@@ -310,6 +314,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   void startNewConversation() {
     if (state.accessLost) return;
     _messagesGeneration++;
+    _sendGeneration++;
     state = state.copyWith(
       clearActiveSession: true,
       messages: const [],
@@ -317,6 +322,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       messagesTotalCount: 0,
       hasMoreMessages: false,
       isLoadingMessages: false,
+      isSending: false,
       clearError: true,
       uncertainSendPendingRecovery: false,
     );
@@ -341,7 +347,11 @@ class AiAssistantController extends Notifier<AiAssistantState> {
   }
 
   Future<bool> sendMessage(String rawText) async {
-    if (state.accessLost || state.isSending) return false;
+    if (state.accessLost ||
+        state.isSending ||
+        state.uncertainSendPendingRecovery) {
+      return false;
+    }
 
     final trimmed = rawText.trim();
     final runeCount = trimmed.runes.length;
@@ -356,6 +366,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       return false;
     }
 
+    final sendGeneration = ++_sendGeneration;
     state = state.copyWith(
       isSending: true,
       clearError: true,
@@ -372,7 +383,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       final response = await ref
           .read(aiAssistantApiServiceProvider)
           .sendMessage(request);
-      if (!ref.mounted) return false;
+      if (!ref.mounted || sendGeneration != _sendGeneration) return false;
 
       if (response.outcome == AiAssistantOutcome.answered) {
         final userMsg = AiAssistantMessage(
@@ -414,16 +425,16 @@ class AiAssistantController extends Notifier<AiAssistantState> {
       );
       return true;
     } catch (error) {
-      if (!ref.mounted) return false;
+      if (!ref.mounted || sendGeneration != _sendGeneration) return false;
       if (isAccessDeniedError(error)) {
         _handleAccessLost(error);
         return false;
       }
 
-      final isUncertain =
-          error is ApiException &&
-          (error.isNetwork ||
-              (error.statusCode != null && error.statusCode! >= 500));
+      final isUncertain = error is ApiException
+          ? (error.isNetwork ||
+              (error.statusCode != null && error.statusCode! >= 500))
+          : true;
 
       state = state.copyWith(
         isSending: false,

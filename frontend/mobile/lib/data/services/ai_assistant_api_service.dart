@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../../core/error/api_exception.dart';
 import '../../core/network/error_interceptor.dart';
+import '../../core/network/logging_interceptor.dart';
 import '../models/ai_assistant_models.dart';
 
 class AiAssistantApiService {
@@ -12,6 +13,9 @@ class AiAssistantApiService {
 
   static const int maxMessageRunes = 2000;
   static const int defaultPageSize = 20;
+  static final Options _noBodyLogOptions = Options(
+    extra: const {AppLogInterceptor.suppressBodyLogKey: true},
+  );
 
   Future<AiAssistantSessionsPage> getSessions({
     int page = 1,
@@ -21,6 +25,7 @@ class AiAssistantApiService {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.aiAssistantSessions,
         queryParameters: {'page': page, 'pageSize': pageSize},
+        options: _noBodyLogOptions,
       );
       if (response.data is! Map) {
         throw const FormatException('Expected sessions page object.');
@@ -42,6 +47,7 @@ class AiAssistantApiService {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.aiAssistantSessionMessages(sessionId),
         queryParameters: {'page': page, 'pageSize': pageSize},
+        options: _noBodyLogOptions,
       );
       if (response.data is! Map) {
         throw const FormatException('Expected messages page object.');
@@ -80,6 +86,7 @@ class AiAssistantApiService {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.aiAssistantMessages,
         data: normalizedRequest.toJson(),
+        options: _noBodyLogOptions,
       );
       if (response.data is! Map) {
         throw const FormatException('Expected assistant response object.');

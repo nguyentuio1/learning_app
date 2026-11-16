@@ -82,7 +82,9 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
 
     final theme = Theme.of(context);
     final trimmedInput = _inputController.text.trim();
-    final canSend = trimmedInput.isNotEmpty && !state.isSending;
+    final canSend = trimmedInput.isNotEmpty &&
+        !state.isSending &&
+        !state.uncertainSendPendingRecovery;
 
     return Scaffold(
       appBar: AppBar(
@@ -195,7 +197,8 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                     for (final suggestion in _suggestions)
                       ActionChip(
                         label: Text(suggestion),
-                        onPressed: state.isSending
+                        onPressed: state.isSending ||
+                                state.uncertainSendPendingRecovery
                             ? null
                             : () => _submitText(notifier, suggestion),
                       ),

@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
+import 'package:smart_drone_delivery/core/network/logging_interceptor.dart';
 import 'package:smart_drone_delivery/data/models/ai_assistant_models.dart';
 import 'package:smart_drone_delivery/data/providers/ai_assistant_providers.dart';
 import 'package:smart_drone_delivery/data/services/ai_assistant_api_service.dart';
 import 'package:smart_drone_delivery/presentation/customer/assistant/ai_assistant_controller.dart';
 import 'package:smart_drone_delivery/presentation/customer/assistant/customer_assistant_page.dart';
+
+import '../../../support/fake_http_adapter.dart';
 
 const _sessionId1 = '83ec4120-6388-426f-80a7-c8b627998d32';
 const _orderId1 = 'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33';
@@ -44,6 +49,7 @@ class _FakeAiAssistantApiService extends AiAssistantApiService {
   Object? messagesError;
   Object? sendError;
   AiAssistantSendResponse? nextSendResponse;
+  Completer<AiAssistantSendResponse>? pendingSendCompleter;
   int sendCallCount = 0;
   int getSessionsCallCount = 0;
   int getMessagesCallCount = 0;
@@ -88,6 +94,9 @@ class _FakeAiAssistantApiService extends AiAssistantApiService {
   ) async {
     sendCallCount++;
     lastSendRequest = request;
+    if (pendingSendCompleter != null) {
+      return pendingSendCompleter!.future;
+    }
     if (sendError != null) throw sendError!;
     return nextSendResponse ??
         AiAssistantSendResponse(
@@ -364,5 +373,268 @@ void main() {
         );
       },
     );
+  });
+
+  group('LA-167 review regressions', () {
+    const sessionId2 = '94fd5231-7499-437a-91b8-d9c738009e43';
+
+    test('ignores stale POST completion after switching sessions', () async {
+      final service = _FakeAiAssistantApiService();
+      service.messagesBySession[sessionId2] = [
+        AiAssistantMessage(
+          id: 'm-b-1',
+          senderType: 'BOT',
+          messageText: 'Session B message',
+          createdAt: DateTime.utc(2026, 11, 16, 9),
+        ),
+      ];
+      final completer = Completer<AiAssistantSendResponse>();
+      service.pendingSendCompleter = completer;
+
+      final container = ProviderContainer(
+        overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+
+      const ctx = AiAssistantContext(sessionId: _sessionId1);
+      final notifier = container.read(aiAssistantControllerProvider(ctx).notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      final sendFuture = notifier.sendMessage('Question for A');
+      await notifier.selectSession(sessionId2, title: 'Session B');
+
+      completer.complete(
+        AiAssistantSendResponse(
+          outcome: AiAssistantOutcome.answered,
+          sessionId: _sessionId1,
+          userMessageId: 'm-a-u',
+          reply: AiAssistantMessage(
+            id: 'm-a-b',
+            senderType: 'BOT',
+            messageText: 'Late reply from A',
+            createdAt: DateTime.utc(2026, 11, 16, 9, 5),
+          ),
+        ),
+      );
+      final result = await sendFuture;
+      expect(result, isFalse);
+
+      final state = container.read(aiAssistantControllerProvider(ctx));
+      expect(state.activeSessionId, sessionId2);
+      expect(state.messages.map((m) => m.messageText), ['Session B message']);
+      expect(state.isSending, isFalse);
+    });
+
+    test('ignores stale POST completion after starting New chat', () async {
+      final service = _FakeAiAssistantApiService();
+      final completer = Completer<AiAssistantSendResponse>();
+      service.pendingSendCompleter = completer;
+
+      final container = ProviderContainer(
+        overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+
+      const ctx = AiAssistantContext(sessionId: _sessionId1);
+      final notifier = container.read(aiAssistantControllerProvider(ctx).notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      final sendFuture = notifier.sendMessage('Question for A');
+      notifier.startNewConversation();
+
+      completer.complete(
+        AiAssistantSendResponse(
+          outcome: AiAssistantOutcome.answered,
+          sessionId: _sessionId1,
+          userMessageId: 'm-a-u',
+          reply: AiAssistantMessage(
+            id: 'm-a-b',
+            senderType: 'BOT',
+            messageText: 'Late reply from A',
+            createdAt: DateTime.utc(2026, 11, 16, 9, 5),
+          ),
+        ),
+      );
+      expect(await sendFuture, isFalse);
+
+      final state = container.read(aiAssistantControllerProvider(ctx));
+      expect(state.activeSessionId, isNull);
+      expect(state.messages, isEmpty);
+      expect(state.isSending, isFalse);
+    });
+
+    test('ignores stale POST completion after concurrent 403 accessLost',
+        () async {
+      final service = _FakeAiAssistantApiService();
+      final completer = Completer<AiAssistantSendResponse>();
+      service.pendingSendCompleter = completer;
+
+      final container = ProviderContainer(
+        overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+
+      const ctx = AiAssistantContext(sessionId: _sessionId1);
+      final notifier = container.read(aiAssistantControllerProvider(ctx).notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      final sendFuture = notifier.sendMessage('Question before 403');
+      service.messagesError = const ApiException(
+        message: 'Forbidden',
+        statusCode: 403,
+      );
+      await notifier.loadMessages(_sessionId1);
+      expect(container.read(aiAssistantControllerProvider(ctx)).accessLost,
+          isTrue);
+
+      completer.complete(
+        AiAssistantSendResponse(
+          outcome: AiAssistantOutcome.answered,
+          sessionId: _sessionId1,
+          userMessageId: 'm-a-u',
+          reply: AiAssistantMessage(
+            id: 'm-a-b',
+            senderType: 'BOT',
+            messageText: 'Should be ignored',
+            createdAt: DateTime.utc(2026, 11, 16, 9, 5),
+          ),
+        ),
+      );
+      expect(await sendFuture, isFalse);
+
+      final state = container.read(aiAssistantControllerProvider(ctx));
+      expect(state.accessLost, isTrue);
+      expect(state.messages, isEmpty);
+    });
+
+    testWidgets(
+        'marks malformed 2xx POST as uncertain and blocks sends until recovery',
+        (tester) async {
+      final service = _FakeAiAssistantApiService()
+        ..sendError = const FormatException('Malformed 2xx body');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+          child: const MaterialApp(
+            home: CustomerAssistantPage(sessionId: _sessionId1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('assistant-message-input')),
+        'First question',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('assistant-send-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('assistant-recover-button')), findsOneWidget);
+      expect(service.sendCallCount, 1);
+
+      // Send button & suggestion chips must be disabled while recovery is pending
+      final sendBtn = tester.widget<IconButton>(
+        find.byKey(const Key('assistant-send-button')),
+      );
+      expect(sendBtn.onPressed, isNull);
+      final chip = tester.widget<ActionChip>(find.byType(ActionChip).first);
+      expect(chip.onPressed, isNull);
+
+      // Controller must also reject a direct second send before recovery
+      final element = tester.element(find.byType(CustomerAssistantPage));
+      final container = ProviderScope.containerOf(element);
+      final notifier = container.read(
+        aiAssistantControllerProvider(
+          const AiAssistantContext(sessionId: _sessionId1),
+        ).notifier,
+      );
+      expect(await notifier.sendMessage('Second question'), isFalse);
+      expect(service.sendCallCount, 1);
+
+      // Recover via Reload history -> clears uncertain flag and re-enables chips
+      await tester.tap(find.byKey(const Key('assistant-recover-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('assistant-recover-button')), findsNothing);
+      final chipAfter = tester.widget<ActionChip>(
+        find.byType(ActionChip).first,
+      );
+      expect(chipAfter.onPressed, isNotNull);
+    });
+
+    test('suppresses request/response/error bodies in shared AppLogInterceptor',
+        () async {
+      final logs = <String>[];
+      final adapter = FakeHttpAdapter((options) async {
+        final path = options.uri.path;
+        if (options.method == 'POST' && path.endsWith('/ai-assistant/messages')) {
+          return FakeResponse.json({
+            'outcome': 'ANSWERED',
+            'sessionId': _sessionId1,
+            'userMessageId': 'u1',
+            'reply': {
+              'id': 'b1',
+              'senderType': 'BOT',
+              'messageText': 'SECRET-REPLY-ADDRESS-999',
+              'createdAt': '2026-11-16T09:00:00Z',
+            },
+          });
+        }
+        if (options.method == 'GET' && path.endsWith('/ai-assistant/sessions')) {
+          return FakeResponse.json({
+            'items': [
+              {
+                'id': _sessionId1,
+                'sessionTitle': 'SECRET-TITLE-888',
+                'createdAt': '2026-11-16T08:00:00Z',
+              },
+            ],
+            'page': 1,
+            'pageSize': 20,
+            'totalCount': 1,
+          });
+        }
+        if (path.contains('/messages')) {
+          return FakeResponse.json({
+            'sessionId': _sessionId1,
+            'items': [
+              {
+                'id': 'u1',
+                'senderType': 'USER',
+                'messageText': 'SECRET-HISTORY-CODE-777',
+                'createdAt': '2026-11-16T08:05:00Z',
+              },
+            ],
+            'page': 1,
+            'pageSize': 20,
+            'totalCount': 1,
+          });
+        }
+        return FakeResponse.json({'detail': 'unexpected'}, statusCode: 400);
+      });
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test/api'))
+        ..httpClientAdapter = adapter
+        ..interceptors.add(AppLogInterceptor(logger: logs.add));
+
+      final api = AiAssistantApiService(dio);
+      await api.sendMessage(
+        const AiAssistantSendRequest(
+          sessionId: _sessionId1,
+          message: 'My pickup code is SECRET-INPUT-123456',
+        ),
+      );
+      await api.getSessions();
+      await api.getSessionMessages(_sessionId1);
+
+      final combined = logs.join('\n');
+      expect(combined, isNotEmpty);
+      expect(combined, isNot(contains('SECRET-INPUT-123456')));
+      expect(combined, isNot(contains('SECRET-REPLY-ADDRESS-999')));
+      expect(combined, isNot(contains('SECRET-TITLE-888')));
+      expect(combined, isNot(contains('SECRET-HISTORY-CODE-777')));
+    });
   });
 }
