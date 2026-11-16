@@ -134,6 +134,7 @@ Future<void> _pumpWithRouter(
   WidgetTester tester,
   _FakeDeliveryOrderService service, {
   String initialLocation = '/customer/orders/$_arrivedOrderId',
+  DateTime Function()? now,
 }) async {
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1;
@@ -171,7 +172,13 @@ Future<void> _pumpWithRouter(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        if (now != null)
+          deliveryConfirmationControllerProvider(_arrivedOrderId).overrideWith(
+            () => DeliveryConfirmationController(_arrivedOrderId, now: now),
+          ),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -234,151 +241,145 @@ void main() {
       },
     );
 
-    test(
-      'surfaces 400 attemptsRemaining and 423 lockout with 0 attempts remaining',
-      () async {
-        final container = ProviderContainer(
-          overrides: [
-            deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
-          ],
-        );
-        addTearDown(container.dispose);
+    test('surfaces 400 attemptsRemaining and 423 lockout with 0 attempts remaining', () async {
+      final container = ProviderContainer(
+        overrides: [
+          deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        final sub = container.listen(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-          (_, _) {},
-        );
-        addTearDown(sub.close);
+      final sub = container.listen(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
 
-        final notifier = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
-        );
+      final notifier = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
+      );
 
-        fakeService.confirmError = const ApiException(
-          message: 'Invalid pickup code.',
-          statusCode: 400,
-          attemptsRemaining: 2,
-        );
-        final res400 = await notifier.confirmDelivery(
-          secureCode: '000000',
-          currentOrderStatus: 'ARRIVED',
-        );
-        expect(res400, false);
-        var state = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-        );
-        expect(state.remainingAttempts, 2);
-        expect(state.isLocked, false);
+      fakeService.confirmError = const ApiException(
+        message: 'Invalid pickup code.',
+        statusCode: 400,
+        attemptsRemaining: 2,
+      );
+      final res400 = await notifier.confirmDelivery(
+        secureCode: '000000',
+        currentOrderStatus: 'ARRIVED',
+      );
+      expect(res400, false);
+      var state = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+      );
+      expect(state.remainingAttempts, 2);
+      expect(state.isLocked, false);
 
-        final lockExpiry = DateTime.now().toUtc().add(
-          const Duration(minutes: 10),
-        );
-        fakeService.confirmError = ApiException(
-          message: 'Too many wrong codes. Try again later.',
-          statusCode: 423,
-          retryAfterSeconds: 600,
-          lockoutExpiresAt: lockExpiry,
-        );
-        final res423 = await notifier.confirmDelivery(
-          secureCode: '111111',
-          currentOrderStatus: 'ARRIVED',
-        );
-        expect(res423, false);
-        state = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-        );
-        expect(state.isLocked, true);
-        expect(state.remainingAttempts, 0);
-        expect(state.lockoutSecondsRemaining, 600);
-        expect(state.lockoutExpiresAt, lockExpiry);
+      final lockExpiry = DateTime.now().toUtc().add(
+        const Duration(minutes: 10),
+      );
+      fakeService.confirmError = ApiException(
+        message: 'Too many wrong codes. Try again later.',
+        statusCode: 423,
+        retryAfterSeconds: 600,
+        lockoutExpiresAt: lockExpiry,
+      );
+      final res423 = await notifier.confirmDelivery(
+        secureCode: '111111',
+        currentOrderStatus: 'ARRIVED',
+      );
+      expect(res423, false);
+      state = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+      );
+      expect(state.isLocked, true);
+      expect(state.remainingAttempts, 0);
+      expect(state.lockoutSecondsRemaining, 600);
+      expect(state.lockoutExpiresAt, lockExpiry);
 
-        // Locked state prevents further API calls
-        fakeService.lastConfirmRequest = null;
-        final whileLocked = await notifier.confirmDelivery(
-          secureCode: '593284',
-          currentOrderStatus: 'ARRIVED',
-        );
-        expect(whileLocked, false);
-        expect(fakeService.lastConfirmRequest, isNull);
-      },
-    );
+      // Locked state prevents further API calls
+      fakeService.lastConfirmRequest = null;
+      final whileLocked = await notifier.confirmDelivery(
+        secureCode: '593284',
+        currentOrderStatus: 'ARRIVED',
+      );
+      expect(whileLocked, false);
+      expect(fakeService.lastConfirmRequest, isNull);
+    });
 
-    test(
-      'marks requiresOrderRefresh on 409 Conflict and network errors, and accessLost on 403/404',
-      () async {
-        final container = ProviderContainer(
-          overrides: [
-            deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
-          ],
-        );
-        addTearDown(container.dispose);
+    test('marks requiresOrderRefresh on 409 Conflict and network errors, and accessLost on 403/404', () async {
+      final container = ProviderContainer(
+        overrides: [
+          deliveryOrderApiServiceProvider.overrideWithValue(fakeService),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        final sub = container.listen(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-          (_, _) {},
-        );
-        addTearDown(sub.close);
+      final sub = container.listen(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
 
-        final notifier = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
-        );
+      final notifier = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId).notifier,
+      );
 
-        // Hold the refresh GET open so requiresOrderRefresh stays true until resolved
-        fakeService.nextDetailCompleter =
-            Completer<DeliveryOrderDetailResponseDto>();
-        fakeService.confirmError = const ApiException(
-          message: 'Order already confirmed.',
-          statusCode: 409,
-        );
-        await notifier.confirmDelivery(
-          secureCode: '593284',
-          currentOrderStatus: 'ARRIVED',
-        );
-        var state = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-        );
-        expect(state.requiresOrderRefresh, true);
-        expect(state.errorMessage, 'Order already confirmed.');
+      // Hold the refresh GET open so requiresOrderRefresh stays true until resolved
+      fakeService.nextDetailCompleter =
+          Completer<DeliveryOrderDetailResponseDto>();
+      fakeService.confirmError = const ApiException(
+        message: 'Order already confirmed.',
+        statusCode: 409,
+      );
+      await notifier.confirmDelivery(
+        secureCode: '593284',
+        currentOrderStatus: 'ARRIVED',
+      );
+      var state = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+      );
+      expect(state.requiresOrderRefresh, true);
+      expect(state.errorMessage, 'Order already confirmed.');
 
-        // Clear the refresh gate by completing a successful ARRIVED refresh
-        await notifier.refreshOrderEligibility();
-        state = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-        );
-        expect(state.requiresOrderRefresh, false);
+      // Clear the refresh gate by completing a successful ARRIVED refresh
+      await notifier.refreshOrderEligibility();
+      state = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+      );
+      expect(state.requiresOrderRefresh, false);
 
-        fakeService.nextDetailCompleter =
-            Completer<DeliveryOrderDetailResponseDto>();
-        fakeService.confirmError = const ApiException(
-          message: 'Network problem.',
-          isNetwork: true,
-        );
-        await notifier.confirmDelivery(
-          secureCode: '593284',
-          currentOrderStatus: 'ARRIVED',
-        );
-        state = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-        );
-        expect(state.requiresOrderRefresh, true);
-        expect(state.errorMessage, contains('Connection lost'));
+      fakeService.nextDetailCompleter =
+          Completer<DeliveryOrderDetailResponseDto>();
+      fakeService.confirmError = const ApiException(
+        message: 'Network problem.',
+        isNetwork: true,
+      );
+      await notifier.confirmDelivery(
+        secureCode: '593284',
+        currentOrderStatus: 'ARRIVED',
+      );
+      state = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+      );
+      expect(state.requiresOrderRefresh, true);
+      expect(state.errorMessage, contains('Connection lost'));
 
-        await notifier.refreshOrderEligibility();
-        fakeService.confirmError = const ApiException(
-          message: 'Order not found or unavailable to your account.',
-          statusCode: 404,
-          code: 'MSG-P-CO-25',
-        );
-        await notifier.confirmDelivery(
-          secureCode: '593284',
-          currentOrderStatus: 'ARRIVED',
-        );
-        state = container.read(
-          deliveryConfirmationControllerProvider(_arrivedOrderId),
-        );
-        expect(state.accessLost, true);
-      },
-    );
+      await notifier.refreshOrderEligibility();
+      fakeService.confirmError = const ApiException(
+        message: 'Order not found or unavailable to your account.',
+        statusCode: 404,
+        code: 'MSG-P-CO-25',
+      );
+      await notifier.confirmDelivery(
+        secureCode: '593284',
+        currentOrderStatus: 'ARRIVED',
+      );
+      state = container.read(
+        deliveryConfirmationControllerProvider(_arrivedOrderId),
+      );
+      expect(state.accessLost, true);
+    });
   });
 
   group('Delivery Confirmation Screens (C08 -> C11/C12 -> C13)', () {
@@ -446,11 +447,14 @@ void main() {
       'shows remaining attempts on 400 and disables confirmation on 423 lockout',
       (tester) async {
         final service = _FakeDeliveryOrderService();
+        var currentTime = DateTime.utc(2026, 11, 16, 10);
         await _pumpWithRouter(
           tester,
           service,
-          initialLocation:
-              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
+          now: () => currentTime,
         );
 
         // 400 wrong code with 2 tries left
@@ -475,14 +479,28 @@ void main() {
           findsOneWidget,
         );
 
+        service.confirmError = const ApiException(
+          message: 'Invalid pickup code.',
+          statusCode: 400,
+          attemptsRemaining: 1,
+        );
+        await tester.enterText(
+          find.byKey(const Key('pickup-secure-code-input')),
+          '000001',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('confirm-delivery-submit-button')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Wrong code. 1 try left.'), findsOneWidget);
+
         // 423 Locked with Retry-After = 600
         service.confirmError = ApiException(
           message: 'Too many wrong codes. Try again later.',
           statusCode: 423,
           retryAfterSeconds: 600,
-          lockoutExpiresAt: DateTime.now().toUtc().add(
-            const Duration(minutes: 10),
-          ),
+          lockoutExpiresAt: currentTime.add(const Duration(minutes: 10)),
         );
         await tester.enterText(
           find.byKey(const Key('pickup-secure-code-input')),
@@ -494,13 +512,35 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.textContaining('Attempts remaining: 0.'), findsOneWidget);
-        expect(find.textContaining('Retry after 600s.'), findsOneWidget);
+        expect(
+          find.text('Too many attempts. Try again after 10:00.'),
+          findsOneWidget,
+        );
 
         final submitButton = tester.widget<FilledButton>(
           find.byKey(const Key('confirm-delivery-submit-button')),
         );
         expect(submitButton.onPressed, isNull);
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('pickup-secure-code-input')),
+              )
+              .enabled,
+          false,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('keypad-digit-1')))
+              .onPressed,
+          isNull,
+        );
+        currentTime = currentTime.add(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          find.text('Too many attempts. Try again after 09:59.'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -508,11 +548,14 @@ void main() {
       'unlocks form and re-enables submission automatically when 423 lockout expires',
       (tester) async {
         final service = _FakeDeliveryOrderService();
+        var currentTime = DateTime.utc(2026, 11, 16, 10);
         await _pumpWithRouter(
           tester,
           service,
-          initialLocation:
-              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
+          now: () => currentTime,
         );
 
         // Return 423 Locked with a 2-second lockout
@@ -520,9 +563,7 @@ void main() {
           message: 'Too many wrong codes. Try again later.',
           statusCode: 423,
           retryAfterSeconds: 2,
-          lockoutExpiresAt: DateTime.now().toUtc().add(
-            const Duration(seconds: 2),
-          ),
+          lockoutExpiresAt: currentTime.add(const Duration(seconds: 2)),
         );
 
         await tester.enterText(
@@ -555,6 +596,7 @@ void main() {
 
         // Advance past the 2-second lockout without leaving the route
         service.confirmError = null;
+        currentTime = currentTime.add(const Duration(seconds: 3));
         await tester.pump(const Duration(seconds: 3));
 
         expect(
@@ -584,14 +626,133 @@ void main() {
     );
 
     testWidgets(
+      'recomputes a 3-strike lockout from its absolute expiry on app resume',
+      (tester) async {
+        final service = _FakeDeliveryOrderService();
+        final start = DateTime.utc(2026, 11, 16, 10);
+        var currentTime = start;
+        await _pumpWithRouter(
+          tester,
+          service,
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
+          now: () => currentTime,
+        );
+
+        Future<void> submitWrongCode({
+          required ApiException error,
+          required String code,
+        }) async {
+          service.confirmError = error;
+          await tester.enterText(
+            find.byKey(const Key('pickup-secure-code-input')),
+            code,
+          );
+          await tester.pump();
+          await tester.tap(
+            find.byKey(const Key('confirm-delivery-submit-button')),
+          );
+          await tester.pump();
+        }
+
+        await submitWrongCode(
+          error: const ApiException(
+            message: 'Invalid pickup code.',
+            statusCode: 400,
+            attemptsRemaining: 2,
+          ),
+          code: '000001',
+        );
+        await submitWrongCode(
+          error: const ApiException(
+            message: 'Invalid pickup code.',
+            statusCode: 400,
+            attemptsRemaining: 1,
+          ),
+          code: '000002',
+        );
+        final deadline = start.add(const Duration(minutes: 10));
+        await submitWrongCode(
+          error: ApiException(
+            message: 'Too many wrong codes. Try again later.',
+            statusCode: 423,
+            retryAfterSeconds: 600,
+            lockoutExpiresAt: deadline,
+          ),
+          code: '000003',
+        );
+
+        expect(service.confirmCallCount, 3);
+        expect(
+          find.text('Too many attempts. Try again after 10:00.'),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('keypad-digit-1')))
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        currentTime = deadline.add(const Duration(seconds: 1));
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
+        expect(
+          find.text('Too many attempts. Try again after 10:00.'),
+          findsNothing,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('pickup-secure-code-input')),
+              )
+              .enabled,
+          isTrue,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('keypad-digit-1')))
+              .onPressed,
+          isNotNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('confirm-delivery-submit-button')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+      },
+    );
+
+    testWidgets(
       'gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read',
       (tester) async {
         final service = _FakeDeliveryOrderService();
         await _pumpWithRouter(
           tester,
           service,
-          initialLocation:
-              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
         );
 
         await tester.enterText(
@@ -682,8 +843,9 @@ void main() {
         await _pumpWithRouter(
           tester,
           service,
-          initialLocation:
-              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
         );
 
         await tester.enterText(
@@ -724,8 +886,9 @@ void main() {
         await _pumpWithRouter(
           tester,
           service,
-          initialLocation:
-              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+          initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+            _arrivedOrderId,
+          ),
         );
 
         await tester.enterText(
@@ -788,8 +951,9 @@ void main() {
           await _pumpWithRouter(
             tester,
             service,
-            initialLocation:
-                RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
+            initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+              _arrivedOrderId,
+            ),
           );
 
           await tester.enterText(
@@ -831,26 +995,23 @@ void main() {
       },
     );
 
-    testWidgets(
-      'shows ineligible state when order is not ARRIVED',
-      (tester) async {
-        final service = _FakeDeliveryOrderService(
-          detail: _buildDetail(status: 'IN_TRANSIT'),
-        );
-        await _pumpWithRouter(
-          tester,
-          service,
-          initialLocation:
-              RoutePaths.customerOrderConfirmDeliveryFor(_arrivedOrderId),
-        );
+    testWidgets('shows ineligible state when order is not ARRIVED', (
+      tester,
+    ) async {
+      final service = _FakeDeliveryOrderService(
+        detail: _buildDetail(status: 'IN_TRANSIT'),
+      );
+      await _pumpWithRouter(
+        tester,
+        service,
+        initialLocation: RoutePaths.customerOrderConfirmDeliveryFor(
+          _arrivedOrderId,
+        ),
+      );
 
-        expect(
-          find.text('Order not ready for confirmation'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('currently IN_TRANSIT'), findsOneWidget);
-        expect(find.byKey(const Key('pickup-secure-code-input')), findsNothing);
-      },
-    );
+      expect(find.text('Order not ready for confirmation'), findsOneWidget);
+      expect(find.textContaining('currently IN_TRANSIT'), findsOneWidget);
+      expect(find.byKey(const Key('pickup-secure-code-input')), findsNothing);
+    });
   });
 }

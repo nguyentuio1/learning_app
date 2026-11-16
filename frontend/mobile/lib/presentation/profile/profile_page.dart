@@ -38,7 +38,9 @@ class ProfilePage extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign out'),
-        content: const Text('Are you sure you want to sign out of your account?'),
+        content: const Text(
+          'Are you sure you want to sign out of your account?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -77,8 +79,7 @@ class ProfilePage extends ConsumerWidget {
       body: SafeArea(
         child: AsyncValueView<User>(
           value: profileAsync,
-          onRetry: () =>
-              ref.read(profileControllerProvider.notifier).reload(),
+          onRetry: () => ref.read(profileControllerProvider.notifier).reload(),
           data: (user) => RefreshIndicator(
             onRefresh: () =>
                 ref.read(profileControllerProvider.notifier).reload(),
@@ -105,7 +106,8 @@ class ProfilePage extends ConsumerWidget {
                                 avatarUrl: user.avatarUrl,
                                 name: user.fullName,
                                 radius: 46,
-                                onTap: () => context.push(RoutePaths.editProfile),
+                                onTap: () =>
+                                    context.push(RoutePaths.editProfile),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -128,7 +130,10 @@ class ProfilePage extends ConsumerWidget {
                                 alignment: WrapAlignment.center,
                                 children: [
                                   Chip(
-                                    avatar: const Icon(Icons.badge_outlined, size: 16),
+                                    avatar: const Icon(
+                                      Icons.badge_outlined,
+                                      size: 16,
+                                    ),
                                     label: Text(_formatRole(user.roleCode)),
                                     padding: EdgeInsets.zero,
                                     visualDensity: VisualDensity.compact,
@@ -137,7 +142,8 @@ class ProfilePage extends ConsumerWidget {
                                     avatar: Icon(
                                       Icons.circle,
                                       size: 10,
-                                      color: user.status.toUpperCase() == 'ACTIVE'
+                                      color:
+                                          user.status.toUpperCase() == 'ACTIVE'
                                           ? Colors.green
                                           : Colors.grey,
                                     ),
@@ -164,7 +170,9 @@ class ProfilePage extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Card(
                         elevation: 0,
-                        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                        color: theme.colorScheme.surfaceVariant.withOpacity(
+                          0.35,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -186,11 +194,16 @@ class ProfilePage extends ConsumerWidget {
                               leading: const Icon(Icons.email_outlined),
                               title: const Text('Email Address'),
                               subtitle: Text(user.email),
-                              trailing: const Icon(Icons.lock_outline, size: 18),
+                              trailing: const Icon(
+                                Icons.lock_outline,
+                                size: 18,
+                              ),
                             ),
                             const Divider(height: 1, indent: 56),
                             ListTile(
-                              leading: const Icon(Icons.calendar_today_outlined),
+                              leading: const Icon(
+                                Icons.calendar_today_outlined,
+                              ),
                               title: const Text('Member Since'),
                               subtitle: Text(_formatDate(user.createdAt)),
                             ),
@@ -210,7 +223,9 @@ class ProfilePage extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Card(
                         elevation: 0,
-                        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                        color: theme.colorScheme.surfaceVariant.withOpacity(
+                          0.35,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -219,7 +234,9 @@ class ProfilePage extends ConsumerWidget {
                             ListTile(
                               leading: const Icon(Icons.edit_outlined),
                               title: const Text('Edit Profile'),
-                              subtitle: const Text('Update your name and phone number'),
+                              subtitle: const Text(
+                                'Update your name and phone number',
+                              ),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () => context.push(RoutePaths.editProfile),
                             ),
@@ -227,10 +244,35 @@ class ProfilePage extends ConsumerWidget {
                             ListTile(
                               leading: const Icon(Icons.lock_reset_outlined),
                               title: const Text('Change Password'),
-                              subtitle: const Text('Update your login password'),
+                              subtitle: const Text(
+                                'Update your login password',
+                              ),
                               trailing: const Icon(Icons.chevron_right),
-                              onTap: () => context.push(RoutePaths.changePassword),
+                              onTap: () =>
+                                  context.push(RoutePaths.changePassword),
                             ),
+                            if (user.roleCode.toUpperCase() == 'CUSTOMER') ...[
+                              const Divider(height: 1, indent: 56),
+                              ListTile(
+                                leading: const Icon(Icons.smart_toy_outlined),
+                                title: const Text('AI Assistant'),
+                                subtitle: const Text(
+                                  'Get local delivery guidance',
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () =>
+                                    context.push(RoutePaths.customerAssistant),
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              ListTile(
+                                leading: const Icon(Icons.palette_outlined),
+                                title: const Text('Theme Settings'),
+                                subtitle: const Text('Choose app appearance'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () =>
+                                    context.push(RoutePaths.themeSettings),
+                              ),
+                            ],
                           ],
                         ),
                       ),

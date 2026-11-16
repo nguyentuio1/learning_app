@@ -17,49 +17,84 @@ class AsyncValueView<T> extends StatelessWidget {
     required this.data,
     this.onRetry,
     this.loading,
+    this.isEmpty,
+    this.emptyBuilder,
   });
 
   final AsyncValue<T> value;
   final Widget Function(T data) data;
   final VoidCallback? onRetry;
   final Widget? loading;
+  final bool Function(T data)? isEmpty;
+  final WidgetBuilder? emptyBuilder;
 
   @override
   Widget build(BuildContext context) {
+    if (value.hasError) {
+      return _ErrorView(error: value.error!, onRetry: onRetry);
+    }
+
     return value.when(
-      data: data,
+      skipError: false,
+      data: (d) {
+        if (isEmpty != null && isEmpty!(d) && emptyBuilder != null) {
+          return emptyBuilder!(context);
+        }
+        return data(d);
+      },
       loading: () =>
           loading ?? const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorView(message: errorMessage(e), onRetry: onRetry),
+      error: (e, _) => _ErrorView(error: e, onRetry: onRetry),
     );
   }
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, this.onRetry});
-  final String message;
+  const _ErrorView({required this.error, this.onRetry});
+
+  final Object error;
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 40,
-            color: Theme.of(context).colorScheme.error,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isNetwork = isNetworkError(error);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isNetwork ? Icons.wifi_off_rounded : Icons.error_outline,
+                size: 48,
+                color: colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                errorMessage(error),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(120, 48),
+                  ),
+                  onPressed: onRetry,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center),
-          if (onRetry != null) ...[
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

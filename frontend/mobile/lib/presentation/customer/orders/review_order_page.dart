@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 import '../../../routes/route_paths.dart';
 import 'create_order_notifier.dart';
+import 'eta_estimation_controller.dart';
+import 'widgets/eta_estimation_card.dart';
 
 class ReviewOrderPage extends ConsumerWidget {
   const ReviewOrderPage({super.key});
@@ -13,6 +15,7 @@ class ReviewOrderPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final order = ref.watch(createOrderNotifierProvider);
     final stations = ref.watch(orderStationsProvider);
+    final routePreview = ref.watch(routeEtaPreviewProvider);
     String stationName(String id) => stations.when(
       data: (items) {
         for (final station in items) {
@@ -41,6 +44,10 @@ class ReviewOrderPage extends ConsumerWidget {
           _row('Delivery address', order.address?.addressLine ?? 'None'),
           _row('Recipient name', order.recipientName),
           _row('Recipient phone', order.recipientPhone),
+          if (routePreview != null) ...[
+            const SizedBox(height: 8),
+            RouteEtaPreviewCard(preview: routePreview),
+          ],
           if (order.error != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),

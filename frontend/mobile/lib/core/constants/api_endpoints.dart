@@ -49,4 +49,8 @@ abstract final class ApiEndpoints {
   static const notificationsUnreadCount = '/notifications/unread-count';
   static String notificationRead(String id) => '$notifications/$id/read';
   static const notificationsReadAll = '/notifications/read-all';
+
+  // AI-assisted ETA Estimation (LA-40 / LA-160)
+  static String deliveryOrderById(String id) => '$deliveryOrders/$id';
+  static String deliveryOrderEta(String id) => '$deliveryOrders/$id/eta';
 }
