@@ -26,6 +26,7 @@ public class DeliveryOrderQueryController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<DeliveryOrderDetailDto>> GetById(Guid id)
     {
         return Ok(await _queryService.GetByIdAsync(id, CurrentUserId()));
