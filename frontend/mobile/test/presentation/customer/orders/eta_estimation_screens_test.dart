@@ -88,11 +88,17 @@ class _FakeEtaOrderService extends DeliveryOrderApiService {
   DeliveryOrderDetailResponseDto detail;
   ApiException? detailError;
   final List<ApiException> detailErrorQueue = [];
+  Completer<DeliveryOrderDetailResponseDto>? nextDetailCompleter;
   int detailCallCount = 0;
 
   @override
   Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async {
     detailCallCount++;
+    if (nextDetailCompleter != null) {
+      final completer = nextDetailCompleter!;
+      nextDetailCompleter = null;
+      return completer.future;
+    }
     if (detailErrorQueue.isNotEmpty) {
       throw detailErrorQueue.removeAt(0);
     }
@@ -579,6 +585,91 @@ void main() {
           find.textContaining('previous arrival window has passed'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'preserves newer ARRIVED observation when delayed IN_TRANSIT refresh completes and queues canonical reconciliation',
+      (tester) async {
+        final futureEta = DateTime.now().toUtc().add(
+          const Duration(minutes: 15),
+        );
+        final staleInTransitDetail = _buildDetail(
+          status: 'IN_TRANSIT',
+          distanceKm: 3.4,
+          durationMinutes: 15,
+          weather: 'Clear sky',
+          confidence: 0.92,
+          estimatedDeliveryTime: futureEta,
+        );
+        final service = _FakeEtaOrderService(
+          initialDetail: staleInTransitDetail,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              deliveryOrderApiServiceProvider.overrideWithValue(service),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: EtaEstimationCard(orderId: _orderId)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Live estimate'), findsOneWidget);
+        final initialCalls = service.detailCallCount;
+
+        // Start refresh A whose response is delayed and will resolve with old IN_TRANSIT
+        final delayedRefreshA = Completer<DeliveryOrderDetailResponseDto>();
+        service.nextDetailCompleter = delayedRefreshA;
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(EtaEstimationCard)),
+        );
+        final notifier = container.read(
+          etaEstimationControllerProvider(_orderId).notifier,
+        );
+        unawaited(notifier.refreshEta());
+        await tester.pump();
+        expect(service.detailCallCount, initialCalls + 1);
+
+        // While A is pending, a newer ARRIVED observation arrives
+        service.detail = _buildDetail(
+          status: 'ARRIVED',
+          distanceKm: 3.4,
+          durationMinutes: 15,
+          weather: 'Clear sky',
+          confidence: 0.92,
+          estimatedDeliveryTime: futureEta,
+        );
+        notifier.onExternalStatusObserved('ARRIVED', forceRefresh: true);
+        await tester.pump();
+
+        // State must immediately reflect ARRIVED with no live countdown
+        var state = container.read(etaEstimationControllerProvider(_orderId));
+        expect(
+          state.estimate?.freshnessStatus,
+          EtaFreshnessStatus.arrivedAtDestination,
+        );
+        expect(state.estimate?.remainingMinutes, isNull);
+        expect(find.text('Arrived at station'), findsOneWidget);
+
+        // Now complete delayed request A with the old IN_TRANSIT detail
+        delayedRefreshA.complete(staleInTransitDetail);
+        await tester.pumpAndSettle();
+
+        // Stale request A must NOT revive IN_TRANSIT or live countdown, and queued canonical refresh B must run
+        expect(service.detailCallCount, initialCalls + 2);
+        state = container.read(etaEstimationControllerProvider(_orderId));
+        expect(
+          state.estimate?.freshnessStatus,
+          EtaFreshnessStatus.arrivedAtDestination,
+        );
+        expect(state.estimate?.remainingMinutes, isNull);
+        expect(find.text('Arrived at station'), findsOneWidget);
+        expect(find.text('Live estimate'), findsNothing);
       },
     );
 

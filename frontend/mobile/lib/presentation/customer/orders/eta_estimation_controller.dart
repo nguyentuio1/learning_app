@@ -68,7 +68,10 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
   String? _lastCanonicalStatus;
   DateTime? _externalEstimatedDeliveryTime;
   Future<bool>? _inFlightRefresh;
+  bool _queuedReconciliation = false;
   int _refreshGeneration = 0;
+  int _observationSeq = 0;
+  int _lastAppliedObservationSeq = 0;
 
   @override
   EtaEstimationState build() {
@@ -195,6 +198,10 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
         }
 
         if (next.hasValue) {
+          if (_inFlightRefresh != null ||
+              _observationSeq != _lastAppliedObservationSeq) {
+            return;
+          }
           final detail = next.requireValue;
           _applyCanonicalDetail(detail, telemetryStale: state.telemetryStale);
         }
@@ -462,6 +469,10 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
       _externalEstimatedDeliveryTime = normalizedEta;
     }
 
+    if (statusChanged || etaChanged || forceRefresh) {
+      _observationSeq++;
+    }
+
     final currentDetail = _lastDetail;
     if (currentDetail != null &&
         (statusChanged || staleChanged || etaChanged)) {
@@ -472,8 +483,11 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
             normalizedEta ?? currentDetail.estimatedDeliveryTime,
       );
       _applyDetail(syntheticDetail, telemetryStale: nextTelemetryStale);
-    } else if (staleChanged) {
-      state = state.copyWith(telemetryStale: nextTelemetryStale);
+    } else if (staleChanged || state.lastObservedStatus == null) {
+      state = state.copyWith(
+        telemetryStale: nextTelemetryStale,
+        lastObservedStatus: state.lastObservedStatus ?? normalizedStatus,
+      );
     }
 
     if (statusChanged || etaChanged || forceRefresh) {
@@ -483,19 +497,34 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
 
   Future<bool> refreshEta() {
     final existing = _inFlightRefresh;
-    if (existing != null) return existing;
-    final future = _performRefresh();
-    _inFlightRefresh = future;
-    future.whenComplete(() {
+    if (existing != null) {
+      _queuedReconciliation = true;
+      return existing.then((_) {
+        if (!ref.mounted || state.accessLost) return false;
+        if (_queuedReconciliation) {
+          _queuedReconciliation = false;
+          return refreshEta();
+        }
+        return _inFlightRefresh ?? Future<bool>.value(true);
+      });
+    }
+    late final Future<bool> future;
+    future = _performRefresh().whenComplete(() {
       if (identical(_inFlightRefresh, future)) {
         _inFlightRefresh = null;
       }
+      if (ref.mounted && !state.accessLost && _queuedReconciliation) {
+        _queuedReconciliation = false;
+        unawaited(refreshEta());
+      }
     });
+    _inFlightRefresh = future;
     return future;
   }
 
   Future<bool> _performRefresh() async {
     final generation = ++_refreshGeneration;
+    final startObservationSeq = _observationSeq;
     if (!state.accessLost) {
       state = state.copyWith(
         isLoading: state.estimate == null,
@@ -507,7 +536,12 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
 
     try {
       final detail = await ref.read(orderDetailProvider(orderId).future);
-      if (!ref.mounted || generation != _refreshGeneration) return false;
+      if (!ref.mounted ||
+          generation != _refreshGeneration ||
+          startObservationSeq != _observationSeq) {
+        return false;
+      }
+      _lastAppliedObservationSeq = startObservationSeq;
       _applyCanonicalDetail(detail, telemetryStale: state.telemetryStale);
       return true;
     } catch (error) {
@@ -516,6 +550,7 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
         _cancelTimers();
         _lastDetail = null;
         _externalEstimatedDeliveryTime = null;
+        _queuedReconciliation = false;
         state = state.copyWith(
           clearEstimate: true,
           isLoading: false,
@@ -523,6 +558,9 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
           accessLost: true,
           errorMessage: accessDeniedMessage(error),
         );
+        return false;
+      }
+      if (startObservationSeq != _observationSeq) {
         return false;
       }
       state = state.copyWith(
