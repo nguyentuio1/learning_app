@@ -45,7 +45,7 @@ public record DeliveryOrderDetailDto(
     DateTime? ActualDepartureTime,
     DateTime? EstimatedDeliveryTime,
     DateTime? ActualDeliveryTime,
-    object? AiEtaPrediction,
+    AiEtaPredictionDto? AiEtaPrediction,
     IReadOnlyList<StatusLogDto> StatusLogs,
     DateTime CreatedAt,
     DateTime UpdatedAt);
