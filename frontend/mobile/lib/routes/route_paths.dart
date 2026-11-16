@@ -13,8 +13,6 @@ abstract final class RoutePaths {
   static const customerOrderDetails = '/customer/orders/:orderId';
   static const customerOrderConfirmDelivery =
       '/customer/orders/:orderId/confirm-delivery';
-  static String customerOrderDetailsFor(String orderId) =>
-      '/customer/orders/$orderId';
   static String customerOrderConfirmDeliveryFor(String orderId) =>
       '/customer/orders/$orderId/confirm-delivery';
   static const customerOrdersCreate = '/customer/orders/create';

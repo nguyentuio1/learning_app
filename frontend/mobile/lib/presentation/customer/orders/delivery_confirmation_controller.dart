@@ -177,10 +177,7 @@ class DeliveryConfirmationController
       }
     }
 
-    if (duration == null) {
-      // Lockout timestamp is already in the past and no positive Retry-After was supplied.
-      duration = const Duration(milliseconds: 1);
-    }
+    duration ??= const Duration(milliseconds: 1);
 
     _lockoutTimer = Timer(duration, () {
       _lockoutTimer = null;

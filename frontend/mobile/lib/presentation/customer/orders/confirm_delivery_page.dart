@@ -396,7 +396,9 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop(result);
     } else if (router != null) {
-      context.go(RoutePaths.customerOrderDetailsFor(widget.orderId));
+      context.go(
+        '${RoutePaths.customerOrders}/${Uri.encodeComponent(widget.orderId)}',
+      );
     }
   }
 }
