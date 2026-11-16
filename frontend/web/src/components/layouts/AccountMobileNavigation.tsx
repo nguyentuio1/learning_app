@@ -2,14 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Button, Drawer } from 'antd'
 import './account-mobile-navigation.css'
 
-// Enabled only by features that opt in through their navigation metadata.
 export function AccountMobileNavigation({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 761px)')
-    function onResize() { if (desktop.matches) setOpen(false) }
-    desktop.addEventListener('change', onResize)
-    return () => desktop.removeEventListener('change', onResize)
+    const mobile = window.matchMedia('(max-width: 760px)')
+    function onResize() { if (!mobile.matches) setOpen(false) }
+    mobile.addEventListener('change', onResize)
+    return () => mobile.removeEventListener('change', onResize)
   }, [])
   return <>
     <Button className="account-mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded={open} onClick={() => setOpen(true)}>

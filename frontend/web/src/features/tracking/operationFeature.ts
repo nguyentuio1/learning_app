@@ -3,7 +3,6 @@ import type { OperationFeature } from '../operations/navigation'
 
 const DeliveryTrackingPage = lazy(() => import('./DeliveryTrackingPage').then(module => ({ default: module.DeliveryTrackingPage })))
 export default {
-  mobileMenu: 'drawer',
   path: '/delivery-tracking', label: 'Delivery tracking', roles: ['DISPATCHER', 'MANAGER', 'ADMIN'],
   routes: [
     { path: '/delivery-tracking', Page: DeliveryTrackingPage },
