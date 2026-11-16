@@ -79,7 +79,7 @@ Wireframe conventions: [Mobile Wireframe Conventions](./mobile-wireframe-convent
 
 ## 4. Scope Notes & Validation Remarks
 
-The AI routes `GET /api/delivery-orders/{id}/eta`, `POST /api/delivery-orders/{id}/ai-summary`, `POST /api/ai-assistant/messages`, `GET /api/ai-assistant/sessions`, and `GET /api/ai-assistant/sessions/{id}/messages` are **proposed baseline contracts only; they are not yet implemented or deployed on the backend**. C23 runs in local simulation mode and does not call these endpoints.
+C23 runs in local simulation mode and does not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../../api/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
 
 1. **Asset Type:** All 43 visual assets are static PNG preview images (`C01`–`C27`, `O01`–`O16`). Source vector files (SVG) and design project files (Draw.io / Figma) are managed in design asset repositories.
 2. **Asset Format:** All 43 wireframe screens are provided in `.png` format.
