@@ -330,6 +330,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.CalculatedDistanceKm).HasPrecision(6, 2);
             entity.Property(e => e.WeatherCondition).HasMaxLength(50);
             entity.Property(e => e.ConfidenceScore).HasPrecision(4, 3);
+            entity.Property(e => e.InputFingerprint).HasMaxLength(64);
+            entity.Property(e => e.ModelVersion).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
 
             entity.HasOne(e => e.Order)
