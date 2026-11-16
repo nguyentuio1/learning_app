@@ -397,6 +397,8 @@ void main() {
       addTearDown(container.dispose);
 
       const ctx = AiAssistantContext(sessionId: _sessionId1);
+      final sub = container.listen(aiAssistantControllerProvider(ctx), (_, _) {});
+      addTearDown(sub.close);
       final notifier = container.read(aiAssistantControllerProvider(ctx).notifier);
       await Future<void>.delayed(Duration.zero);
 
@@ -436,6 +438,8 @@ void main() {
       addTearDown(container.dispose);
 
       const ctx = AiAssistantContext(sessionId: _sessionId1);
+      final sub = container.listen(aiAssistantControllerProvider(ctx), (_, _) {});
+      addTearDown(sub.close);
       final notifier = container.read(aiAssistantControllerProvider(ctx).notifier);
       await Future<void>.delayed(Duration.zero);
 
@@ -475,6 +479,8 @@ void main() {
       addTearDown(container.dispose);
 
       const ctx = AiAssistantContext(sessionId: _sessionId1);
+      final sub = container.listen(aiAssistantControllerProvider(ctx), (_, _) {});
+      addTearDown(sub.close);
       final notifier = container.read(aiAssistantControllerProvider(ctx).notifier);
       await Future<void>.delayed(Duration.zero);
 
@@ -535,7 +541,7 @@ void main() {
       expect(service.sendCallCount, 1);
 
       // Send button & suggestion chips must be disabled while recovery is pending
-      final sendBtn = tester.widget<IconButton>(
+      final sendBtn = tester.widget<FilledButton>(
         find.byKey(const Key('assistant-send-button')),
       );
       expect(sendBtn.onPressed, isNull);
