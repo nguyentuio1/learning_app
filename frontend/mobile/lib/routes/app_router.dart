@@ -11,6 +11,7 @@ import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/notifications/notifications_list_page.dart';
+import '../presentation/customer/orders/confirm_delivery_page.dart';
 import '../presentation/customer/orders/edit_delivery_order_page.dart';
 import '../presentation/customer/orders/create_order_page.dart';
 import '../presentation/customer/orders/my_orders_page.dart';
@@ -180,6 +181,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             return OrderDetailPage(
               orderId: state.pathParameters['orderId'],
               order: order is DeliveryOrder ? order : null,
+            );
+          },
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderConfirmDelivery,
+          builder: (_, state) {
+            final order = state.extra;
+            return ConfirmDeliveryPage(
+              orderId: state.pathParameters['orderId'] ?? '',
+              initialOrder: order is DeliveryOrder ? order : null,
             );
           },
         ),

@@ -84,6 +84,18 @@ class ConfirmPickupRequest {
       };
 }
 
+class ConfirmDeliveryRequest {
+  const ConfirmDeliveryRequest({
+    required this.pickupSecureCode,
+  });
+
+  final String pickupSecureCode;
+
+  Map<String, dynamic> toJson() => {
+        'pickupSecureCode': pickupSecureCode.trim(),
+      };
+}
+
 class ConfirmPickupResponse {
   const ConfirmPickupResponse({
     required this.orderId,
@@ -107,9 +119,18 @@ class ConfirmPickupResponse {
         trackingNumber: json['trackingNumber'] as String? ?? '',
         status: json['status'] as String? ?? 'DELIVERED',
         actualDeliveryTime: json['actualDeliveryTime'] != null
-            ? DateTime.parse(json['actualDeliveryTime'] as String)
+            ? DateTime.parse(json['actualDeliveryTime'] as String).toUtc()
             : DateTime.now().toUtc(),
         slotId: json['slotId'] as String? ?? '',
         slotReleased: json['slotReleased'] as bool? ?? false,
       );
+
+  Map<String, dynamic> toJson() => {
+        'orderId': orderId,
+        'trackingNumber': trackingNumber,
+        'status': status,
+        'actualDeliveryTime': actualDeliveryTime.toUtc().toIso8601String(),
+        'slotId': slotId,
+        'slotReleased': slotReleased,
+      };
 }

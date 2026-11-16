@@ -120,6 +120,7 @@ public interface IStationOperationService
     Task<PackageIntakeResponseDto> IntakeAsync(Guid userId, Guid stationId, PackageIntakeRequest request);
     Task<RejectIntakeResponseDto> RejectIntakeAsync(Guid userId, Guid stationId, RejectIntakeRequest request);
     Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
+    Task<PickupVerificationResult> ConfirmDeliveryAsync(Guid userId, Guid orderId, ConfirmDeliveryRequest request);
     Task<ValidateSecureCodeResponseDto> ValidateCodeAsync(Guid userId, Guid stationId, ConfirmPickupRequest request);
     Task<IReadOnlyList<ExpiredParcelDto>> ListExpiredParcelsAsync(
         Guid userId, Guid stationId, CancellationToken cancellationToken = default);
@@ -329,10 +330,10 @@ public partial class StationOperationService : IStationOperationService
         }
     }
 
-    public async Task<PickupVerificationResult> PickupAsync(Guid userId, Guid stationId, ConfirmPickupRequest request)
+    private async Task<PickupVerificationResult> PickupCoreAsync(Guid userId, Guid stationId, ConfirmPickupRequest request, Guid? customerOrderId)
     {
         using var operation = await _transitions.EnterOperationAsync();
-        await AuthorizeStationOperatorAsync(userId, stationId);
+        await AuthorizePickupCallerAsync(userId, stationId, customerOrderId);
 
         var errors = new Dictionary<string, List<string>>();
         var tracking = request.TrackingNumber?.Trim() ?? string.Empty;
@@ -355,6 +356,8 @@ public partial class StationOperationService : IStationOperationService
 
             var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                 ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
+
+            await AuthorizePickupCallerAsync(userId, stationId, customerOrderId, order);
 
             if (order.DestinationStationId != stationId)
                 throw new ApiException(StatusCodes.Status404NotFound, "Order destination is not this station.");
@@ -419,6 +422,9 @@ public partial class StationOperationService : IStationOperationService
             var slot = mission.DestinationSlot;
             await _db.Database.ExecuteSqlInterpolatedAsync(
                 $"SELECT \"Id\" FROM station_slots WHERE \"Id\" = {slot.Id} FOR UPDATE");
+            await _db.Entry(slot).ReloadAsync();
+            if (_db.Entry(slot).State == EntityState.Detached)
+                throw new ApiException(409, "The destination slot no longer holds this parcel.");
 
             if (slot.Status != "OCCUPIED" || !await MissionResources.IsLatestSlotClaimAsync(_db, mission!, slot.Id))
                 throw new ApiException(StatusCodes.Status409Conflict, "The destination slot no longer holds this parcel.");
@@ -474,6 +480,8 @@ public partial class StationOperationService : IStationOperationService
 
             var order = await _db.DeliveryOrders.FirstOrDefaultAsync(o => o.TrackingNumber == tracking)
                 ?? throw new ApiException(StatusCodes.Status404NotFound, "Order not found at this destination station.");
+
+            await AuthorizePickupCallerAsync(userId, stationId, customerOrderId, order);
 
             if (order.DestinationStationId != stationId)
                 throw new ApiException(StatusCodes.Status404NotFound, "Order destination is not this station.");

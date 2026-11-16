@@ -3,12 +3,12 @@
   "info": {
     "title": "LA-341 Sprint 6 API handoff",
     "version": "0.1.0",
-    "description": "Analytics is integrated into develop through PR #202. Tracking/confirmation and external integration are implemented on their corresponding story branches; external integration into develop is tracked by PR #203. Code integration is not endpoint deployment or business-policy approval. See sprint-6-api-contract.md for availability and client recovery behavior."
+    "description": "Implemented tracking, confirmation, analytics and external integration API schemas. See sprint-6-api-contract.md for the corresponding story integrations, availability and client recovery behavior. Code integration is not endpoint deployment or business-policy approval."
   },
   "servers": [
     {
       "url": "http://localhost:5055",
-      "description": "Local backend; use matching story branch for implemented Sprint 6 routes"
+      "description": "Local backend; use a checkout containing the corresponding Sprint 6 story integration"
     }
   ],
   "paths": {
