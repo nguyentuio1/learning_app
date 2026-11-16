@@ -1,10 +1,10 @@
 name: CI
 
-# Every pull request into develop or main has to pass the unit tests of the three projects
+# Every pull request into a shared story, develop or main runs the three project checks
 # (Project Management Plan, LA-327). The job names below are the names to require in the branch ruleset.
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, 'story/**']
 
 permissions:
   contents: read
