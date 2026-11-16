@@ -13,7 +13,9 @@ import '../delivery_map/delivery_map_telemetry_bar.dart';
 import '../delivery_map/delivery_map_widget.dart';
 import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
+import 'eta_estimation_controller.dart';
 import 'my_orders_provider.dart';
+import 'widgets/eta_estimation_card.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   const OrderDetailPage({DeliveryOrder? order, String? orderId, super.key})
@@ -78,6 +80,37 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           final mapState = order.status == 'IN_TRANSIT'
               ? ref.watch(deliveryMapControllerProvider(order.id))
               : null;
+          if (mapState != null && mapState.hasValue) {
+            final mapSnapshot = mapState.requireValue.snapshot;
+            final mapStatus = switch (mapSnapshot.status.name) {
+              'pending' => 'PENDING',
+              'approved' => 'APPROVED',
+              'readyForTakeoff' => 'READY_FOR_TAKEOFF',
+              'inTransit' => 'IN_TRANSIT',
+              'arrived' => 'ARRIVED',
+              'delivered' => 'DELIVERED',
+              'cancelled' => 'CANCELLED',
+              'failed' => 'FAILED',
+              _ => order.status,
+            };
+            if (mapStatus != response.status ||
+                mapSnapshot.telemetryStale !=
+                    ref
+                        .read(etaEstimationControllerProvider(order.id))
+                        .telemetryStale) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ref
+                    .read(etaEstimationControllerProvider(order.id).notifier)
+                    .onExternalStatusObserved(
+                      mapStatus,
+                      updatedEstimatedDeliveryTime:
+                          mapSnapshot.estimatedDeliveryTime,
+                      telemetryStale: mapSnapshot.telemetryStale,
+                    );
+              });
+            }
+          }
           return _buildDetails(order, response, mapState);
         },
       ),
@@ -93,7 +126,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final origin = detail.originStation;
     final destination = detail.destinationStation;
     final address = detail.deliveryAddress;
-    final eta = detail.aiEtaPrediction;
 
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -164,26 +196,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ] else if (order.deliveryAddressId != null) ...[
           _detail('Delivery address', order.deliveryAddressId!),
         ],
-        if (eta != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'AI ETA prediction',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (eta.calculatedDistanceKm != null)
-            _detail('Distance', '${eta.calculatedDistanceKm} km'),
-          if (eta.predictedDurationMinutes != null)
-            _detail(
-              'Predicted duration',
-              '${eta.predictedDurationMinutes} minutes',
-            ),
-          if (eta.weatherCondition != null)
-            _detail('Weather', eta.weatherCondition!),
-          if (eta.confidenceScore != null)
-            _detail('Confidence', '${eta.confidenceScore}'),
-          if (eta.createdAt != null)
-            _detail('Prediction created', _formatTimestamp(eta.createdAt!)),
-        ],
+        const SizedBox(height: 8),
+        EtaEstimationCard(orderId: order.id),
+        const SizedBox(height: 12),
         if (detail.scheduledDepartureTime != null)
           _detail(
             'Scheduled departure',
