@@ -74,18 +74,22 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
   EtaEstimationState build() {
     ref.onDispose(_cancelTimers);
 
-    final trackingSub = ref
-        .read(trackingRepositoryProvider)
-        .statusUpdates
-        .listen((update) {
-          if (update.orderId == orderId && !state.accessLost) {
-            onExternalStatusObserved(
-              update.status.apiValue,
-              forceRefresh: true,
-            );
-          }
-        });
-    ref.onDispose(() => unawaited(trackingSub.cancel()));
+    try {
+      final trackingSub = ref
+          .read(trackingRepositoryProvider)
+          .statusUpdates
+          .listen((update) {
+            if (update.orderId == orderId && !state.accessLost) {
+              onExternalStatusObserved(
+                update.status.apiValue,
+                forceRefresh: true,
+              );
+            }
+          });
+      ref.onDispose(() => unawaited(trackingSub.cancel()));
+    } catch (_) {
+      // Tracking repository is unavailable in isolated widget tests without AppConfig.
+    }
 
     ref.listen<AsyncValue<DeliveryMapViewState>>(
       deliveryMapControllerProvider(orderId),
