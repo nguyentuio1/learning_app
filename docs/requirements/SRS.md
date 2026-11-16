@@ -170,12 +170,13 @@ The requirements are accepted when the team has reviewed this document and the l
 All 22 use cases (`UC-01` to `UC-22`) and their detailed function specifications are traced across:
 - [use-cases.md](use-cases.md) — Actor-by-actor use case catalog (`UC-01`–`UC-22`).
 - [functions-user-management-and-analytics.md](functions-user-management-and-analytics.md) — Auth, RBAC, User Management, Dashboard (`FR-01`–`FR-05`, `FR-28`–`FR-33`).
-- [functions-delivery-workflow.md](functions-delivery-workflow.md) — Customer orders, approval, scheduling, tracking, failure handling (`FR-06`–`FR-19`, `FR-24`–`FR-25`).
+- [Customer & Order functional specification](../design/customer-order-management/functional-specification.md) — Customer saved addresses, package management, and customer delivery order creation/update/cancellation/listing (`FR-06`–`FR-11`).
+- [functions-delivery-workflow.md](functions-delivery-workflow.md) — Delivery approval, order state machine, scheduling, failure handling, and real-time tracking/map (`FR-13`–`FR-19`, `FR-24`–`FR-25`; with `FR-12`, `FR-14`, `FR-32` as supporting notification/audit coverage).
 - [functions-landing-station.md](functions-landing-station.md) — Stations, slots, availability, intake, pickup confirmation (`FR-20`–`FR-23`, `FR-26`–`FR-27`).
 
 ### 8.2 Business Rules & Application Error Messages
 - **Business Rules**: [business-rules.md](business-rules.md) defines domain invariants (`BR-*`), state machine transitions, OTP 3-attempt lockout, payload/range checks, and concurrency rules.
-- **Error & Status Messages**: [application-messages.md](application-messages.md) defines user-facing validation and error messages, mapped to RFC 7807 `ProblemDetails` responses (`400` validation, `401` unauthenticated/invalid key, `403` role/ownership/inactive account, `404` hidden/missing resource, `409` state/uniqueness conflict, `423` OTP lockout, `429` rate limit).
+- **Error & Status Messages**: [application-messages.md](application-messages.md) defines the user-facing validation and operational message catalog (`MSG-AUTH-*`, `MSG-ORD-*`, `MSG-STN-*`, `MSG-WF-*`, `MSG-SYS-*`). Concrete HTTP status and RFC 7807 `ProblemDetails` behavior is governed by the applicable API contracts in Section 8.3: standard `400`/`401`/`403`/`404`/`409` across module contracts, implemented `423 Locked` (`Retry-After`) for station pickup OTP lockout in [station-api.md](../api/station-api.md), implemented `429 Too Many Requests` (`Retry-After`) for external API key rate limiting in [sprint-6-api-contract.md](../api/sprint-6-api-contract.md), and proposed `429` (`Retry-After: 5`) for concurrent per-account AI generation in [sprint-7-api-contract.md](../api/sprint-7-api-contract.md).
 
 ### 8.3 API Contract Cross-Reference
 | Contract Document | Scope |
