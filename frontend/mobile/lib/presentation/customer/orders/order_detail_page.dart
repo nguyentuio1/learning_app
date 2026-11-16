@@ -220,6 +220,24 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               detail.statusLogs[index],
               index < detail.statusLogs.length - 1,
             ),
+        OutlinedButton.icon(
+          key: const Key('view-order-history-button'),
+          onPressed: () =>
+              context.push(RoutePaths.customerOrderHistoryFor(order.id)),
+          icon: const Icon(Icons.history),
+          label: const Text('View Order History'),
+        ),
+        OutlinedButton.icon(
+          key: const Key('ask-ai-assistant-button'),
+          onPressed: () => context.push(
+            RoutePaths.customerAssistantFor(
+              orderId: order.id,
+              trackingNumber: order.trackingNumber,
+            ),
+          ),
+          icon: const Icon(Icons.chat_outlined),
+          label: const Text('Ask AI Assistant'),
+        ),
         if (order.status == 'ARRIVED')
           FilledButton.icon(
             key: const Key('enter-pickup-code-button'),

@@ -96,10 +96,7 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
                 : 'Order not found or unavailable to your account.');
       return Scaffold(
         appBar: AppBar(title: const Text('Confirm delivery')),
-        body: _AccessLostView(
-          message: message,
-          onBackToOrders: _goToOrders,
-        ),
+        body: _AccessLostView(message: message, onBackToOrders: _goToOrders),
       );
     }
 
@@ -143,9 +140,8 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
                   FilledButton(
                     onPressed: () => ref
                         .read(
-                          deliveryConfirmationControllerProvider(
-                            widget.orderId,
-                          ).notifier,
+                          deliveryConfirmationControllerProvider(widget.orderId)
+                              .notifier,
                         )
                         .refreshOrderEligibility(),
                     child: const Text('Retry'),
@@ -181,9 +177,8 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
               errorMessage: state.errorMessage,
               onRefresh: () => ref
                   .read(
-                    deliveryConfirmationControllerProvider(
-                      widget.orderId,
-                    ).notifier,
+                    deliveryConfirmationControllerProvider(widget.orderId)
+                        .notifier,
                   )
                   .refreshOrderEligibility(),
               onBack: () => _viewOrderHistory(null),
@@ -312,9 +307,8 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
               onRefreshOrder: isRefreshPendingOrFailed
                   ? () => ref
                         .read(
-                          deliveryConfirmationControllerProvider(
-                            widget.orderId,
-                          ).notifier,
+                          deliveryConfirmationControllerProvider(widget.orderId)
+                              .notifier,
                         )
                         .refreshOrderEligibility()
                   : null,
@@ -337,9 +331,8 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
                 ? () async {
                     final confirmed = await ref
                         .read(
-                          deliveryConfirmationControllerProvider(
-                            widget.orderId,
-                          ).notifier,
+                          deliveryConfirmationControllerProvider(widget.orderId)
+                              .notifier,
                         )
                         .confirmDelivery(
                           secureCode: _codeController.text,
@@ -418,9 +411,11 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tries = state.remainingAttempts;
-    final message =
-        state.errorMessage ??
-        'Refreshing order status before confirmation can continue.';
+    final message = state.isLocked
+        ? 'Too many attempts. Try again after '
+              '${_formatRemainingTime(state.lockoutSecondsRemaining ?? 0)}.'
+        : state.errorMessage ??
+              'Refreshing order status before confirmation can continue.';
 
     return Container(
       key: const Key('confirm-delivery-error-banner'),
@@ -435,9 +430,7 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
           Row(
             children: [
               Icon(
-                state.isLocked
-                    ? Icons.lock_clock
-                    : Icons.warning_amber_rounded,
+                state.isLocked ? Icons.lock_clock : Icons.warning_amber_rounded,
                 color: theme.colorScheme.onErrorContainer,
               ),
               const SizedBox(width: 10),
@@ -462,23 +455,6 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
               ),
             ),
           ],
-          if (state.isLocked) ...[
-            const SizedBox(height: 6),
-            Text(
-              [
-                'Attempts remaining: 0.',
-                'Too many wrong codes. Confirmation is locked.',
-                if (state.lockoutSecondsRemaining != null)
-                  'Retry after ${state.lockoutSecondsRemaining}s.',
-                if (state.lockoutExpiresAt != null)
-                  'Locked until ${state.lockoutExpiresAt!.toUtc().toIso8601String()}.',
-              ].join(' '),
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.colorScheme.onErrorContainer,
-              ),
-            ),
-          ],
           if (onRefreshOrder != null) ...[
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -491,6 +467,13 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatRemainingTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${remainder.toString().padLeft(2, '0')}';
   }
 }
 
@@ -728,10 +711,7 @@ class _IneligibleOrderView extends StatelessWidget {
 }
 
 class _AccessLostView extends StatelessWidget {
-  const _AccessLostView({
-    required this.message,
-    required this.onBackToOrders,
-  });
+  const _AccessLostView({required this.message, required this.onBackToOrders});
 
   final String message;
   final VoidCallback onBackToOrders;

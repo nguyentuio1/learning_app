@@ -44,27 +44,25 @@ class DeliveryConfirmationState {
     bool clearCompletedConfirmation = false,
     bool? requiresOrderRefresh,
     bool? accessLost,
-  }) =>
-      DeliveryConfirmationState(
-        isSubmitting: isSubmitting ?? this.isSubmitting,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-        remainingAttempts: clearLockout
-            ? null
-            : (remainingAttempts ?? this.remainingAttempts),
-        isLocked: clearLockout ? false : (isLocked ?? this.isLocked),
-        lockoutSecondsRemaining: clearLockout
-            ? null
-            : (lockoutSecondsRemaining ?? this.lockoutSecondsRemaining),
-        lockoutExpiresAt: clearLockout
-            ? null
-            : (lockoutExpiresAt ?? this.lockoutExpiresAt),
-        completedConfirmation: clearCompletedConfirmation
-            ? null
-            : (completedConfirmation ?? this.completedConfirmation),
-        requiresOrderRefresh:
-            requiresOrderRefresh ?? this.requiresOrderRefresh,
-        accessLost: accessLost ?? this.accessLost,
-      );
+  }) => DeliveryConfirmationState(
+    isSubmitting: isSubmitting ?? this.isSubmitting,
+    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    remainingAttempts: clearLockout
+        ? null
+        : (remainingAttempts ?? this.remainingAttempts),
+    isLocked: clearLockout ? false : (isLocked ?? this.isLocked),
+    lockoutSecondsRemaining: clearLockout
+        ? null
+        : (lockoutSecondsRemaining ?? this.lockoutSecondsRemaining),
+    lockoutExpiresAt: clearLockout
+        ? null
+        : (lockoutExpiresAt ?? this.lockoutExpiresAt),
+    completedConfirmation: clearCompletedConfirmation
+        ? null
+        : (completedConfirmation ?? this.completedConfirmation),
+    requiresOrderRefresh: requiresOrderRefresh ?? this.requiresOrderRefresh,
+    accessLost: accessLost ?? this.accessLost,
+  );
 }
 
 class DeliveryConfirmationController
@@ -156,33 +154,20 @@ class DeliveryConfirmationController
     _lockoutTimer = null;
   }
 
-  void _scheduleLockoutExpiry({
-    required DateTime? expiresAt,
-    required int? retryAfterSeconds,
-  }) {
+  void _scheduleLockoutExpiry() {
     _cancelLockoutTimer();
-    final now = DateTime.now().toUtc();
-    Duration? duration;
-
-    if (expiresAt != null) {
-      final diff = expiresAt.difference(now);
-      if (diff > Duration.zero) {
-        duration = diff;
+    _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!ref.mounted) {
+        timer.cancel();
+        return;
       }
-    }
-    if (retryAfterSeconds != null && retryAfterSeconds > 0) {
-      final retryDuration = Duration(seconds: retryAfterSeconds);
-      if (duration == null || retryDuration < duration) {
-        duration = retryDuration;
+      final remaining = state.lockoutSecondsRemaining ?? 1;
+      if (remaining <= 1) {
+        _cancelLockoutTimer();
+        state = state.copyWith(clearLockout: true, clearError: true);
+      } else {
+        state = state.copyWith(lockoutSecondsRemaining: remaining - 1);
       }
-    }
-
-    duration ??= const Duration(milliseconds: 1);
-
-    _lockoutTimer = Timer(duration, () {
-      _lockoutTimer = null;
-      if (!ref.mounted) return;
-      state = state.copyWith(clearLockout: true, clearError: true);
     });
   }
 
@@ -293,8 +278,7 @@ class DeliveryConfirmationController
         state = state.copyWith(
           isSubmitting: false,
           requiresOrderRefresh: true,
-          errorMessage:
-              'Connection lost before confirmation completed. Order status is being refreshed before you retry.',
+          errorMessage: 'Connection lost before confirmation completed. Order status is being refreshed before you retry.',
         );
         unawaited(refreshOrderEligibility());
         return false;
@@ -325,16 +309,23 @@ class DeliveryConfirmationController
         return false;
       }
 
-      final locked = e.statusCode == 423 ||
+      final locked =
+          e.statusCode == 423 ||
           e.lockoutExpiresAt != null ||
           e.retryAfterSeconds != null;
       final expiresAt = e.lockoutExpiresAt;
       int? lockoutSeconds = e.retryAfterSeconds;
-      if (lockoutSeconds == null && expiresAt != null) {
+      if (expiresAt != null) {
         final diffMs = expiresAt
             .difference(DateTime.now().toUtc())
             .inMilliseconds;
-        lockoutSeconds = diffMs > 0 ? (diffMs / 1000).ceil() : 0;
+        final expiresInSeconds = diffMs > 0 ? (diffMs / 1000).ceil() : 0;
+        if (lockoutSeconds == null || expiresInSeconds < lockoutSeconds) {
+          lockoutSeconds = expiresInSeconds;
+        }
+      }
+      if (lockoutSeconds == null && e.statusCode == 423) {
+        lockoutSeconds = 600;
       }
 
       if (locked) {
@@ -346,10 +337,7 @@ class DeliveryConfirmationController
           lockoutSecondsRemaining: lockoutSeconds,
           lockoutExpiresAt: expiresAt,
         );
-        _scheduleLockoutExpiry(
-          expiresAt: expiresAt,
-          retryAfterSeconds: lockoutSeconds,
-        );
+        _scheduleLockoutExpiry();
         return false;
       }
 
