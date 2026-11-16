@@ -10,8 +10,8 @@ interface PollResult<T> {
   blocked?: boolean
 }
 
-// Refresh snapshots on live signals and every five seconds to reevaluate freshness.
-export function useTrackingPoll<T>(load: (signal: AbortSignal) => Promise<T>) {
+// Refresh snapshots on live signals and at the requested interval when the tab is visible.
+export function useTrackingPoll<T>(load: (signal: AbortSignal) => Promise<T>, intervalMs = 5000) {
   const [revision, setRevision] = useState(0)
   const [result, setResult] = useState<PollResult<T>>()
   const refreshRequest = useRef<() => void>(() => {})
@@ -41,7 +41,7 @@ export function useTrackingPoll<T>(load: (signal: AbortSignal) => Promise<T>) {
       } finally {
         if (controller === request) controller = undefined
         if (!disposed && !request.signal.aborted && !stopped && !document.hidden) {
-          timer = setTimeout(run, queued ? 0 : 5000)
+          timer = setTimeout(run, queued ? 0 : intervalMs)
           queued = false
         }
       }
@@ -59,7 +59,7 @@ export function useTrackingPoll<T>(load: (signal: AbortSignal) => Promise<T>) {
     void run()
     document.addEventListener('visibilitychange', visibility)
     return () => { disposed = true; refreshRequest.current = () => {}; clearTimeout(timer); controller?.abort(); document.removeEventListener('visibilitychange', visibility) }
-  }, [load, revision])
+  }, [load, revision, intervalMs])
   const reload = useCallback(() => setRevision(value => value + 1), [])
   const refresh = useCallback(() => refreshRequest.current(), [])
   const current = result?.loader === load ? result : undefined
