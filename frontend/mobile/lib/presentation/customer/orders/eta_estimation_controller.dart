@@ -85,15 +85,7 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
           }
         }
 
-        if (next.isLoading || next.isRefreshing) {
-          if (!state.accessLost) {
-            state = state.copyWith(
-              isLoading: state.estimate == null,
-              isRefreshing: state.estimate != null,
-            );
-          }
-          return;
-        }
+        if (next.isLoading || next.isRefreshing) return;
 
         if (next.hasError) {
           final error = next.error;
@@ -229,9 +221,13 @@ class EtaEstimationController extends Notifier<EtaEstimationState> {
         if (!ref.mounted || state.accessLost) return;
         final detail = _lastDetail;
         if (detail != null) {
+          final currentNow = _now().toUtc();
+          final effectiveNow = currentNow.isBefore(deadline)
+              ? deadline
+              : currentNow;
           final recomputed = OrderEtaEstimate.fromOrderDetail(
             detail,
-            now: _now(),
+            now: effectiveNow,
             telemetryStale: state.telemetryStale,
           );
           state = state.copyWith(estimate: recomputed);
