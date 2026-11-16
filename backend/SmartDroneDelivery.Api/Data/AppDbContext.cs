@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<IntegrationApiKey> IntegrationApiKeys => Set<IntegrationApiKey>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<LandingStation> LandingStations => Set<LandingStation>();
     public DbSet<StationSlot> StationSlots => Set<StationSlot>();
@@ -33,6 +34,18 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<IntegrationApiKey>(entity =>
+        {
+            entity.ToTable("integration_api_keys");
+            entity.HasKey(k => k.Id);
+            entity.Property(k => k.Name).HasMaxLength(100).IsRequired();
+            entity.Property(k => k.KeyHash).HasMaxLength(64).IsRequired();
+            entity.Property(k => k.Scopes).IsRequired();
+            entity.HasIndex(k => k.KeyHash).IsUnique();
+            entity.HasIndex(k => k.CustomerId);
+            entity.HasOne(k => k.Customer).WithMany().HasForeignKey(k => k.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         modelBuilder.Entity<SimulatorDiversion>(entity =>
         {

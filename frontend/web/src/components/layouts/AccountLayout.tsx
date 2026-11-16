@@ -5,6 +5,8 @@ import { useAuth } from '../../hooks/useAuth'
 import { useAccountMotion } from '../../hooks/useAccountMotion'
 import { operationFeatures } from '../../features/operations/navigation'
 import { customerNotificationApi } from '../../services/customerNotificationApi'
+import brandLogo from '../../assets/smartdrone-logo-02.png'
+import { AccountMobileNavigation } from './AccountMobileNavigation'
 import './account-layout.css'
 import './account-motion.css'
 
@@ -29,9 +31,11 @@ function AccountIcon({ name }: { name: 'users' | 'roles' | 'profile' | 'logout' 
 }
 
 const operationIcons: Record<string, Parameters<typeof AccountIcon>[0]['name']> = {
+  '/delivery-map': 'route',
   '/drones': 'drone',
   '/stations': 'route',
   '/station-availability': 'activity',
+  '/delivery-tracking': 'activity',
   '/station-slots': 'grid',
   '/dispatcher/scheduling': 'schedule',
   '/dispatcher/failures': 'alert',
@@ -75,15 +79,9 @@ export function AccountLayout() {
   const initials = auth.user?.fullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SD'
   const operation = operationFeatures.find(feature => pathname === feature.path || pathname.startsWith(feature.path + '/'))
   const section = operation ? operation.label : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/notifications') ? 'Notifications' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
-  return <ConfigProvider theme={{ token: {
-    colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
-    colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
-    controlItemBgHover: '#f1f6eb', controlItemBgActiveHover: '#e6eedc',
-    fontSize: 14, fontWeightStrong: 650, colorTextPlaceholder: '#65776b',
-  } }}><div className="account-layout" ref={motionRef}>
-    <aside className="account-sidebar">
+  const sidebarContent = <>
       <span className="account-nav-marker" aria-hidden="true" />
-      <Link to="/profile" className="account-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m8 24 16-16"/><circle cx="8" cy="24" r="3"/><circle cx="24" cy="8" r="3"/></svg><span>SmartDrone<small>Delivery operations</small></span></Link>
+      <Link to="/profile" className="account-brand"><img className="account-brand-logo" src={brandLogo} alt="" width="40" height="40" /><span>SmartDrone<small>Delivery operations</small></span></Link>
       <nav aria-label="Account navigation"><span className="account-nav-label">WORKSPACE</span>
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/orders" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>My orders</NavLink>}
         {auth.user?.role.code === 'CUSTOMER' && managedOrderId && <NavLink to={`/orders/${managedOrderId}/manage`} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>Manage this order</NavLink>}
@@ -106,8 +104,18 @@ export function AccountLayout() {
         <NavLink to="/profile" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="profile"/>My profile</NavLink>
         <Button type="text" className="account-sign-out" icon={<AccountIcon name="logout"/>} onClick={() => void auth.logout()}>Sign out</Button>
       </div>
+  </>
+  return <ConfigProvider theme={{ token: {
+    colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
+    colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
+    controlItemBgHover: '#f1f6eb', controlItemBgActiveHover: '#e6eedc',
+    fontSize: 14, fontWeightStrong: 650, colorTextPlaceholder: '#65776b',
+  } }}><div className={`account-layout${operation?.mobileMenu === 'drawer' ? ' account-drawer-layout' : ''}`} ref={motionRef}>
+    <aside className="account-sidebar">
+      {sidebarContent}
     </aside>
     <div className="account-workspace"><header className="account-header">
+      {operation?.mobileMenu === 'drawer' && <AccountMobileNavigation key={pathname}>{sidebarContent}</AccountMobileNavigation>}
       <div className="account-breadcrumb"><span>{pathname.startsWith('/admin/') ? 'Administration' : (pathname.startsWith('/addresses') || pathname.startsWith('/packages')) ? 'Delivery details' : 'Account'}</span><span aria-hidden="true">/</span><strong>{section}</strong></div>
       <div className="account-user">
         {isCustomer && (
