@@ -38,8 +38,8 @@ flowchart TD
     IntakeEligible -- No --> IntakeBlocked["Show ineligible status banner"] --> IntakeLookup
     IntakeEligible -- Yes --> InspectParcel["Select EMPTY slot, enter measured<br/>weight/dimensions & visual check"]
     InspectParcel --> IntakeDecision{Accept or Reject?}
-    IntakeDecision -- "Confirm Intake" --> IntakeConfirm["O08a: POST .../operations/intake<br/>Status -> IN_ORIGIN_STATION"]
-    IntakeDecision -- "Reject Parcel" --> IntakeReject["O08b: POST .../operations/intake-reject<br/>Status -> REJECTED"]
+    IntakeDecision -- "Confirm Intake" --> IntakeConfirm["O08a: POST .../operations/intake<br/>Status -> READY_FOR_TAKEOFF"]
+    IntakeDecision -- "Reject Parcel" --> IntakeReject["O08b: POST .../operations/intake-reject<br/>Status -> FAILED"]
     IntakeConfirm --> Dashboard
     IntakeReject --> Dashboard
 
@@ -50,7 +50,7 @@ flowchart TD
     PickupEligible -- Yes --> VerifyCode["Enter 6-digit Pickup Secure Code<br/>POST .../operations/pickup"]
     VerifyCode --> CodeValid{Code valid?}
     CodeValid -- No --> RetryOrLock["Decrement remainingAttempts<br/>or show lockout countdown"] --> VerifyCode
-    CodeValid -- Yes --> PickupDone["O10: Pickup Confirmed<br/>Status -> COMPLETED, Slot -> EMPTY"]
+    CodeValid -- Yes --> PickupDone["O10: Pickup Confirmed<br/>Status -> DELIVERED, Slot -> EMPTY"]
     PickupDone --> Dashboard
 ```
 
@@ -73,7 +73,7 @@ flowchart TD
 
 ## Flow rules
 
-- **Origin Intake (`UC-16` / `LA-170`):** Only `ORIGIN` orders in `APPROVED` status can be accepted into an `EMPTY` slot (`POST .../intake` -> `IN_ORIGIN_STATION`) or rejected with a mandatory reason (`POST .../intake-reject` -> `REJECTED`).
+- **Origin Intake (`UC-16` / `LA-170`):** Only `ORIGIN` orders in `APPROVED` status with a scheduled `PLANNED` mission/assignment enforced by the backend can be accepted into an `EMPTY` slot (`POST .../intake` -> `READY_FOR_TAKEOFF`) or rejected with a mandatory reason (`POST .../intake-reject` -> `FAILED`).
 - **Destination Pickup (`UC-17` / `LA-29` / `LA-126`):** Only `DESTINATION` orders in `ARRIVED` status can be released with the customer's 6-digit secure code; repeated invalid attempts trigger temporary lockout feedback.
 - **Slot Maintenance (`UC-18` / `LA-170`):** Operators can mark `EMPTY` slots as `ERROR` (maintenance) and restore `ERROR` slots to `EMPTY` from the slot detail bottom sheet; `RESERVED` or `OCCUPIED` slots cannot be toggled manually.
 - **Pickup Timeout Clearing (`LA-337`):** `OperatorHomePage` surfaces timed-out `ARRIVED` parcels via `PickupTimeoutAlertsCard` so operators can clear expired parcels and release slots.

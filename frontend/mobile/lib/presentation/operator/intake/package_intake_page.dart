@@ -36,11 +36,23 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
     super.dispose();
   }
 
+  String? _resolveSelectedSlotId(List<StationSlot> emptySlots) {
+    if (emptySlots.isEmpty) return null;
+    if (_selectedSlotId != null &&
+        emptySlots.any((s) => s.id == _selectedSlotId)) {
+      return _selectedSlotId;
+    }
+    return emptySlots.first.id;
+  }
+
   void _prefillFromOrder(
     StationOrderInfo info,
     List<StationSlot> emptySlots,
   ) {
-    if (_prefilledOrderId == info.orderId) return;
+    if (_prefilledOrderId == info.orderId) {
+      _selectedSlotId = _resolveSelectedSlotId(emptySlots);
+      return;
+    }
     _prefilledOrderId = info.orderId;
     _weightController.text =
         StationOrderInfo.formatDecimal(info.declaredWeightGram);
@@ -51,7 +63,7 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
     _heightController.text =
         StationOrderInfo.formatDecimal(info.declaredHeightCm);
     _visualInspectionPassed = true;
-    _selectedSlotId = emptySlots.isNotEmpty ? emptySlots.first.id : null;
+    _selectedSlotId = _resolveSelectedSlotId(emptySlots);
   }
 
   Future<void> _lookup(String stationId) async {
@@ -62,9 +74,12 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
         );
   }
 
-  Future<void> _confirmIntake(String stationId, StationOrderInfo info) async {
+  Future<void> _confirmIntake(
+    String stationId,
+    StationOrderInfo info,
+    String? slotId,
+  ) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final slotId = _selectedSlotId;
     if (slotId == null || slotId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select an empty station slot.')),
@@ -319,11 +334,7 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                             else
                               DropdownButtonFormField<String>(
                                 key: const Key('intake-slot-dropdown'),
-                                value: emptySlots.any(
-                                  (s) => s.id == _selectedSlotId,
-                                )
-                                    ? _selectedSlotId
-                                    : emptySlots.first.id,
+                                value: _resolveSelectedSlotId(emptySlots),
                                 decoration: const InputDecoration(
                                   labelText: 'Assign empty slot',
                                   border: OutlineInputBorder(),
@@ -427,6 +438,7 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                                   : () => _confirmIntake(
                                         stationId,
                                         state.orderInfo!,
+                                        _resolveSelectedSlotId(emptySlots),
                                       ),
                               icon: const Icon(Icons.inventory_outlined),
                               label: const Text('Confirm Intake'),

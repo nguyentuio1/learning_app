@@ -187,7 +187,7 @@ class PackageIntakeResponse {
       PackageIntakeResponse(
         orderId: json['orderId'] as String? ?? '',
         trackingNumber: json['trackingNumber'] as String? ?? '',
-        status: json['status'] as String? ?? 'IN_ORIGIN_STATION',
+        status: json['status'] as String? ?? 'READY_FOR_TAKEOFF',
         slotId: json['slotId'] as String? ?? '',
         slotNumber: (json['slotNumber'] as num?)?.toInt() ?? 0,
         confirmedAt: json['confirmedAt'] != null
@@ -226,7 +226,7 @@ class RejectIntakeResponse {
       RejectIntakeResponse(
         orderId: json['orderId'] as String? ?? '',
         trackingNumber: json['trackingNumber'] as String? ?? '',
-        status: json['status'] as String? ?? 'REJECTED',
+        status: json['status'] as String? ?? 'FAILED',
       );
 }
 
