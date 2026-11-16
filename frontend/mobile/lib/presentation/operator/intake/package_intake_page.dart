@@ -88,39 +88,10 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
   }
 
   Future<void> _showRejectDialog(String stationId, StationOrderInfo info) async {
-    final reasonController = TextEditingController();
     final confirmed = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Reject Package Intake'),
-        content: TextField(
-          key: const Key('intake-reject-reason-input'),
-          controller: reasonController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Rejection reason',
-            hintText: 'e.g. Damaged packaging or weight mismatch',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const Key('intake-reject-confirm-button'),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(dialogContext).colorScheme.error,
-            ),
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(reasonController.text.trim()),
-            child: const Text('Reject Parcel'),
-          ),
-        ],
-      ),
+      builder: (_) => const _RejectIntakeDialog(),
     );
-    reasonController.dispose();
 
     if (confirmed == null || !mounted) return;
     final ok = await ref.read(intakeControllerProvider.notifier).rejectIntake(
@@ -593,6 +564,55 @@ class _ResultCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RejectIntakeDialog extends StatefulWidget {
+  const _RejectIntakeDialog();
+
+  @override
+  State<_RejectIntakeDialog> createState() => _RejectIntakeDialogState();
+}
+
+class _RejectIntakeDialogState extends State<_RejectIntakeDialog> {
+  final _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Reject Package Intake'),
+      content: TextField(
+        key: const Key('intake-reject-reason-input'),
+        controller: _reasonController,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          labelText: 'Rejection reason',
+          hintText: 'e.g. Damaged packaging or weight mismatch',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('intake-reject-confirm-button'),
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: () =>
+              Navigator.of(context).pop(_reasonController.text.trim()),
+          child: const Text('Reject Parcel'),
+        ),
+      ],
     );
   }
 }
