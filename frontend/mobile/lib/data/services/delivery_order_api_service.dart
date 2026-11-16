@@ -9,6 +9,7 @@ import '../models/delivery_order_detail_response_dto.dart';
 import '../models/delivery_order_filter_params.dart';
 import '../models/eta_estimation_model.dart';
 import '../models/paged_result.dart';
+import '../models/station_operation_models.dart';
 import '../models/update_delivery_order_dto.dart';
 
 class DeliveryOrderApiService {
@@ -154,6 +155,56 @@ class DeliveryOrderApiService {
       );
     } on DioException catch (error) {
       throw error.apiException;
+    }
+  }
+
+  Future<ConfirmPickupResponse> confirmDelivery(
+    String id,
+    ConfirmDeliveryRequest request,
+  ) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.confirmDelivery(id),
+        data: request.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException(
+          'Expected a delivery confirmation response object.',
+        );
+      }
+      final json = Map<String, dynamic>.from(response.data as Map);
+      final orderId = json['orderId'] as String?;
+      final trackingNumber = json['trackingNumber'] as String?;
+      final status = json['status'] as String?;
+      final actualDeliveryTime = json['actualDeliveryTime'] as String?;
+      final slotId = json['slotId'] as String?;
+      final slotReleased = json['slotReleased'];
+      if (orderId == null ||
+          orderId.isEmpty ||
+          trackingNumber == null ||
+          trackingNumber.isEmpty ||
+          status == null ||
+          status.isEmpty ||
+          actualDeliveryTime == null ||
+          actualDeliveryTime.isEmpty ||
+          slotId == null ||
+          slotId.isEmpty ||
+          slotReleased is! bool) {
+        throw const FormatException(
+          'Incomplete delivery confirmation response object.',
+        );
+      }
+      return ConfirmPickupResponse.fromJson(json);
+    } on DioException catch (error) {
+      final apiError = error.apiException;
+      if (apiError.statusCode == 404) {
+        throw const ApiException(
+          message: 'Order not found or unavailable to your account.',
+          statusCode: 404,
+          code: 'MSG-P-CO-25',
+        );
+      }
+      throw apiError;
     }
   }
 }

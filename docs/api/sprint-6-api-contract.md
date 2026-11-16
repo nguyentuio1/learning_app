@@ -2,19 +2,19 @@
 
 **Task:** [LA-341](https://hungndemail.atlassian.net/browse/LA-341). **Consumers:** web, Customer/Operator mobile and acceptance tests. Paths below include `/api`; a client whose base URL already ends in `/api` must not add that prefix again.
 
-This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend branches below. LA-153 implements the analytics proposal on its story branch; metric/business acceptance is still separate. External shapes remain implementation proposals for client mocks and backend review; policy decisions are explicitly listed in section 7. A document merge does not deploy an endpoint or approve those policies.
+This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend integrations below. Tracking, map, analytics and external APIs have been integrated into `develop`; customer confirmation is included in the LA-37 integration. Metric/business and operational policy acceptance remain separate, with decisions listed in section 7. A document merge does not deploy an endpoint or approve those policies.
 
 Machine-readable HTTP schemas: [sprint-6-openapi.json](sprint-6-openapi.json). SignalR is described in section 3 because its invocation/event protocol is not a normal REST operation.
 
 ## 1. Availability and task mapping
 
-| Area | Backend / consumers | Availability when this contract was authored |
+| Area | Backend / consumers | Implementation availability |
 |---|---|---|
-| Tracking + map data, LA-35/36 | LA-143; web LA-144/147; mobile LA-145/148; tests LA-146/149 | Implemented in `story/LA-35-realtime-delivery-tracking`, [PR #184](https://github.com/nguyentuio1/learning_app/pull/184). Not yet integrated into `develop` while other story tasks remain open. |
-| Customer confirmation, LA-37 | LA-150; mobile LA-151; tests LA-152 | Implemented in `story/LA-37-secure-delivery-confirmation` through [PR #186](https://github.com/nguyentuio1/learning_app/pull/186). Use that story branch after merge, not an older `develop` checkout. |
+| Tracking + map data, LA-35/36 | LA-143; web LA-144/147; mobile LA-145/148; tests LA-146/149 | Integrated into `develop` through [PR #205](https://github.com/nguyentuio1/learning_app/pull/205) and [PR #206](https://github.com/nguyentuio1/learning_app/pull/206). Deployment remains separate. |
+| Customer confirmation, LA-37 | LA-150; mobile LA-151; tests LA-152 | Backend [PR #186](https://github.com/nguyentuio1/learning_app/pull/186), mobile [PR #193](https://github.com/nguyentuio1/learning_app/pull/193) and testing [PR #199](https://github.com/nguyentuio1/learning_app/pull/199) are included in the LA-37 integration. Use that integration head or a `develop` checkout containing it. |
 | Operator confirmation | Existing LA-125/126/127 | Available on `develop`; existing [station contract](station-api.md) section 4.4. |
 | Dashboard/reports, LA-38 | LA-153; web LA-154; tests LA-155 | Integrated into `develop` through [PR #202](https://github.com/nguyentuio1/learning_app/pull/202). Backend and web UI follow section 5; metric/business acceptance remains distinct from code integration. |
-| External integration, LA-39 | LA-156; tests LA-157 | Backend and tests implemented on `story/LA-39-external-integration`, with integration into `develop` tracked by [PR #203](https://github.com/nguyentuio1/learning_app/pull/203). Provisioning and v1 routes follow section 6; business/operational acceptance remains distinct from code integration. |
+| External integration, LA-39 | LA-156; tests LA-157 | Integrated into `develop` through [PR #203](https://github.com/nguyentuio1/learning_app/pull/203). Provisioning and v1 routes follow section 6; business/operational acceptance remains distinct from code integration. |
 
 Check the linked PR/branch before trying a new endpoint. A `404` from an older branch does not prove an authorization or client defect. Merge completed stories into `develop` promptly after review and CI; do not merge an incomplete story just to expose its backend.
 
