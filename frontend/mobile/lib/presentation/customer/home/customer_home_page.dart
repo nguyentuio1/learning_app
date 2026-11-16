@@ -72,6 +72,13 @@ class CustomerHomePage extends ConsumerWidget {
                     : 'Notifications',
               ),
             ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const Key('home-ai-assistant-button'),
+              onPressed: () => context.push(RoutePaths.customerAssistant),
+              icon: const Icon(Icons.smart_toy_outlined),
+              label: const Text('AI Assistant'),
+            ),
           ],
         ),
       ),
