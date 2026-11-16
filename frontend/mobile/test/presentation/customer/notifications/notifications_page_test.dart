@@ -12,8 +12,8 @@ import 'package:smart_drone_delivery/presentation/customer/notifications/notific
 
 class _FakeNotificationApiService extends NotificationApiService {
   _FakeNotificationApiService({List<NotificationModel>? initial})
-      : items = initial ?? [],
-        super(Dio());
+    : items = initial ?? [],
+      super(Dio());
 
   final List<NotificationModel> items;
   int markAsReadCalls = 0;
@@ -69,10 +69,7 @@ class _FakeNotificationApiService extends NotificationApiService {
     int count = 0;
     for (int i = 0; i < items.length; i++) {
       if (!items[i].isRead) {
-        items[i] = items[i].copyWith(
-          isRead: true,
-          readAt: DateTime.now(),
-        );
+        items[i] = items[i].copyWith(isRead: true, readAt: DateTime.now());
         count++;
       }
     }
@@ -109,12 +106,8 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          notificationApiServiceProvider.overrideWithValue(fakeApi),
-        ],
-        child: const MaterialApp(
-          home: NotificationsListPage(),
-        ),
+        overrides: [notificationApiServiceProvider.overrideWithValue(fakeApi)],
+        child: const MaterialApp(home: NotificationsListPage()),
       ),
     );
 
@@ -151,12 +144,8 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          notificationApiServiceProvider.overrideWithValue(fakeApi),
-        ],
-        child: const MaterialApp(
-          home: NotificationsListPage(),
-        ),
+        overrides: [notificationApiServiceProvider.overrideWithValue(fakeApi)],
+        child: const MaterialApp(home: NotificationsListPage()),
       ),
     );
 
@@ -188,12 +177,8 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          notificationApiServiceProvider.overrideWithValue(fakeApi),
-        ],
-        child: const MaterialApp(
-          home: NotificationsListPage(),
-        ),
+        overrides: [notificationApiServiceProvider.overrideWithValue(fakeApi)],
+        child: const MaterialApp(home: NotificationsListPage()),
       ),
     );
 
@@ -234,75 +219,76 @@ void main() {
     expect(fakeApi.items[50].isRead, isTrue);
   });
 
-  testWidgets('unread badge provider refreshes on app resume and 60s interval', (
-    tester,
-  ) async {
-    final fakeApi = _FakeNotificationApiService(
-      initial: [
+  testWidgets(
+    'unread badge provider refreshes on app resume and 60s interval',
+    (tester) async {
+      final fakeApi = _FakeNotificationApiService(
+        initial: [
+          NotificationModel(
+            id: 'n-1',
+            type: 'ORDER_STATUS_CHANGED',
+            title: 'Initial',
+            message: 'Msg',
+            isRead: false,
+            createdAt: DateTime.now(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationApiServiceProvider.overrideWithValue(fakeApi),
+          ],
+          child: MaterialApp(
+            home: Consumer(
+              builder: (context, ref, _) {
+                final count = ref.watch(unreadNotificationsCountProvider);
+                return Text('unread:${count.value ?? -1}');
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.text('unread:1'), findsOneWidget);
+
+      // Simulate a new notification arriving while app is in background, then resuming
+      fakeApi.items.add(
         NotificationModel(
-          id: 'n-1',
+          id: 'n-2',
           type: 'ORDER_STATUS_CHANGED',
-          title: 'Initial',
-          message: 'Msg',
+          title: 'Second',
+          message: 'Msg 2',
           isRead: false,
           createdAt: DateTime.now(),
         ),
-      ],
-    );
+      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('unread:2'), findsOneWidget);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          notificationApiServiceProvider.overrideWithValue(fakeApi),
-        ],
-        child: MaterialApp(
-          home: Consumer(
-            builder: (context, ref, _) {
-              final count = ref.watch(unreadNotificationsCountProvider);
-              return Text('unread:${count.value ?? -1}');
-            },
-          ),
+      // Simulate a third notification and advance 60 seconds
+      fakeApi.items.add(
+        NotificationModel(
+          id: 'n-3',
+          type: 'ORDER_STATUS_CHANGED',
+          title: 'Third',
+          message: 'Msg 3',
+          isRead: false,
+          createdAt: DateTime.now(),
         ),
-      ),
-    );
+      );
+      await tester.pump(const Duration(seconds: 60));
+      await tester.pumpAndSettle();
+      expect(find.text('unread:3'), findsOneWidget);
 
-    await tester.pumpAndSettle();
-    expect(find.text('unread:1'), findsOneWidget);
-
-    // Simulate a new notification arriving while app is in background, then resuming
-    fakeApi.items.add(
-      NotificationModel(
-        id: 'n-2',
-        type: 'ORDER_STATUS_CHANGED',
-        title: 'Second',
-        message: 'Msg 2',
-        isRead: false,
-        createdAt: DateTime.now(),
-      ),
-    );
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pumpAndSettle();
-    expect(find.text('unread:2'), findsOneWidget);
-
-    // Simulate a third notification and advance 60 seconds
-    fakeApi.items.add(
-      NotificationModel(
-        id: 'n-3',
-        type: 'ORDER_STATUS_CHANGED',
-        title: 'Third',
-        message: 'Msg 3',
-        isRead: false,
-        createdAt: DateTime.now(),
-      ),
-    );
-    await tester.pump(const Duration(seconds: 60));
-    await tester.pumpAndSettle();
-    expect(find.text('unread:3'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
 
   testWidgets(
     'ignores stale loadMore response when filter changes while page 2 is in flight',
@@ -330,9 +316,7 @@ void main() {
           overrides: [
             notificationApiServiceProvider.overrideWithValue(fakeApi),
           ],
-          child: const MaterialApp(
-            home: NotificationsListPage(),
-          ),
+          child: const MaterialApp(home: NotificationsListPage()),
         ),
       );
 

@@ -89,11 +89,11 @@ class AvatarWidget extends StatelessWidget {
   }
 
   Widget _buildInitials(ThemeData theme) => Text(
-        _initials,
-        style: TextStyle(
-          fontSize: radius * 0.75,
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
-      );
+    _initials,
+    style: TextStyle(
+      fontSize: radius * 0.75,
+      fontWeight: FontWeight.bold,
+      color: theme.colorScheme.onPrimaryContainer,
+    ),
+  );
 }

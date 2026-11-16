@@ -44,27 +44,25 @@ class DeliveryConfirmationState {
     bool clearCompletedConfirmation = false,
     bool? requiresOrderRefresh,
     bool? accessLost,
-  }) =>
-      DeliveryConfirmationState(
-        isSubmitting: isSubmitting ?? this.isSubmitting,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-        remainingAttempts: clearLockout
-            ? null
-            : (remainingAttempts ?? this.remainingAttempts),
-        isLocked: clearLockout ? false : (isLocked ?? this.isLocked),
-        lockoutSecondsRemaining: clearLockout
-            ? null
-            : (lockoutSecondsRemaining ?? this.lockoutSecondsRemaining),
-        lockoutExpiresAt: clearLockout
-            ? null
-            : (lockoutExpiresAt ?? this.lockoutExpiresAt),
-        completedConfirmation: clearCompletedConfirmation
-            ? null
-            : (completedConfirmation ?? this.completedConfirmation),
-        requiresOrderRefresh:
-            requiresOrderRefresh ?? this.requiresOrderRefresh,
-        accessLost: accessLost ?? this.accessLost,
-      );
+  }) => DeliveryConfirmationState(
+    isSubmitting: isSubmitting ?? this.isSubmitting,
+    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    remainingAttempts: clearLockout
+        ? null
+        : (remainingAttempts ?? this.remainingAttempts),
+    isLocked: clearLockout ? false : (isLocked ?? this.isLocked),
+    lockoutSecondsRemaining: clearLockout
+        ? null
+        : (lockoutSecondsRemaining ?? this.lockoutSecondsRemaining),
+    lockoutExpiresAt: clearLockout
+        ? null
+        : (lockoutExpiresAt ?? this.lockoutExpiresAt),
+    completedConfirmation: clearCompletedConfirmation
+        ? null
+        : (completedConfirmation ?? this.completedConfirmation),
+    requiresOrderRefresh: requiresOrderRefresh ?? this.requiresOrderRefresh,
+    accessLost: accessLost ?? this.accessLost,
+  );
 }
 
 class DeliveryConfirmationController
@@ -293,8 +291,7 @@ class DeliveryConfirmationController
         state = state.copyWith(
           isSubmitting: false,
           requiresOrderRefresh: true,
-          errorMessage:
-              'Connection lost before confirmation completed. Order status is being refreshed before you retry.',
+          errorMessage: 'Connection lost before confirmation completed. Order status is being refreshed before you retry.',
         );
         unawaited(refreshOrderEligibility());
         return false;
@@ -325,7 +322,8 @@ class DeliveryConfirmationController
         return false;
       }
 
-      final locked = e.statusCode == 423 ||
+      final locked =
+          e.statusCode == 423 ||
           e.lockoutExpiresAt != null ||
           e.retryAfterSeconds != null;
       final expiresAt = e.lockoutExpiresAt;

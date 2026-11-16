@@ -41,8 +41,12 @@ class OrderTrackingPage extends ConsumerWidget {
         onRetry: () => ref.read(provider.notifier).retry(),
         data: (value) => _TrackingContent(
           state: value,
-          onAskAssistant: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('AI Assistant is not available yet.')),
+          onAskAssistant: () => context.push(
+            RoutePaths.customerAiAssistant,
+            extra: <String, String?>{
+              'orderId': value.snapshot.orderId,
+              'trackingNumber': value.snapshot.trackingNumber,
+            },
           ),
           onViewHistory: () => context.push(
             RoutePaths.customerOrderDetailsFor(value.snapshot.orderId),

@@ -34,7 +34,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
 
-    await ref.read(changePasswordControllerProvider.notifier).changePassword(
+    await ref
+        .read(changePasswordControllerProvider.notifier)
+        .changePassword(
           currentPassword: _currentPasswordController.text,
           newPassword: _newPasswordController.text,
         );
@@ -69,9 +71,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('Change Password'),
-      ),
+      appBar: AppBar(title: const Text('Change Password')),
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -87,7 +87,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                     // Guidelines Card
                     Card(
                       elevation: 0,
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+                      color: theme.colorScheme.primaryContainer.withOpacity(
+                        0.4,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(

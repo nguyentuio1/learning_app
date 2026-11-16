@@ -35,7 +35,8 @@ class CustomerHomePage extends ConsumerWidget {
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
           ),
         ],
       ),
@@ -49,6 +50,20 @@ class CustomerHomePage extends ConsumerWidget {
               children: [
                 const Text('Customer app'),
                 const SizedBox(height: 16),
+                // C14 — Create Delivery
+                FilledButton.icon(
+                  key: const Key('home-create-delivery'),
+                  onPressed: () => context.go(RoutePaths.customerOrdersCreate),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Create delivery'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () => context.go(RoutePaths.customerOrders),
+                  icon: const Icon(Icons.local_shipping_outlined),
+                  label: const Text('My orders'),
+                ),
+                const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: () => context.go(RoutePaths.customerAddresses),
                   icon: const Icon(Icons.location_on_outlined),
@@ -61,13 +76,9 @@ class CustomerHomePage extends ConsumerWidget {
                   label: const Text('Manage packages'),
                 ),
                 const SizedBox(height: 12),
+                // C22 — Notifications shortcut
                 FilledButton.icon(
-                  onPressed: () => context.go(RoutePaths.customerOrders),
-                  icon: const Icon(Icons.local_shipping_outlined),
-                  label: const Text('My orders'),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
+                  key: const Key('home-notifications'),
                   onPressed: () => context.go(RoutePaths.customerNotifications),
                   icon: const Icon(Icons.notifications_active_outlined),
                   label: Text(
@@ -75,6 +86,14 @@ class CustomerHomePage extends ConsumerWidget {
                         ? 'Notifications ($unreadCount unread)'
                         : 'Notifications',
                   ),
+                ),
+                const SizedBox(height: 12),
+                // C23 — AI Assistant shortcut
+                OutlinedButton.icon(
+                  key: const Key('home-ai-assistant'),
+                  onPressed: () => context.push(RoutePaths.customerAiAssistant),
+                  icon: const Icon(Icons.smart_toy_outlined),
+                  label: const Text('AI Assistant'),
                 ),
               ],
             ),

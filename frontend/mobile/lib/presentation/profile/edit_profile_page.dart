@@ -61,7 +61,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
 
-    await ref.read(updateProfileControllerProvider.notifier).updateProfile(
+    await ref
+        .read(updateProfileControllerProvider.notifier)
+        .updateProfile(
           fullName: _fullNameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
         );
@@ -81,15 +83,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Future<void> _pickAndUploadAvatar() async {
     final theme = Theme.of(context);
     try {
-      final pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
       if (pickedFile == null || !mounted) return;
 
       // 1. Kiểm tra định dạng: Chỉ chấp nhận JPEG hoặc PNG
       final ext = pickedFile.name.split('.').last.toLowerCase();
       final mime = pickedFile.mimeType?.toLowerCase();
-      final isValidFormat = ext == 'jpg' ||
+      final isValidFormat =
+          ext == 'jpg' ||
           ext == 'jpeg' ||
           ext == 'png' ||
           mime == 'image/jpeg' ||
@@ -120,10 +121,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       // 3. Gọi UploadAvatarController upload lên server
       final avatarUrl = await ref
           .read(uploadAvatarControllerProvider.notifier)
-          .uploadAvatarBytes(
-            bytes: bytes,
-            filename: pickedFile.name,
-          );
+          .uploadAvatarBytes(bytes: bytes, filename: pickedFile.name);
 
       if (!mounted) return;
 
@@ -166,8 +164,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _populateFields();
     final user = ref.watch(profileControllerProvider).value;
     final isSaving = ref.watch(updateProfileControllerProvider).isLoading;
-    final isUploadingAvatar =
-        ref.watch(uploadAvatarControllerProvider).isLoading;
+    final isUploadingAvatar = ref
+        .watch(uploadAvatarControllerProvider)
+        .isLoading;
     final theme = Theme.of(context);
 
     ref.listen<AsyncValue<void>>(updateProfileControllerProvider, (_, next) {
@@ -191,9 +190,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: const Text('Edit Profile')),
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -218,7 +215,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                                 : (user?.fullName ?? 'U'),
                             radius: 50,
                             showEditBadge: !isUploadingAvatar,
-                            onTap: isUploadingAvatar ? null : _pickAndUploadAvatar,
+                            onTap: isUploadingAvatar
+                                ? null
+                                : _pickAndUploadAvatar,
                           ),
                           if (isUploadingAvatar)
                             Container(
@@ -245,13 +244,19 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.photo_camera_outlined, size: 18),
                         label: Text(
-                          isUploadingAvatar ? 'Đang tải lên...' : 'Change photo',
+                          isUploadingAvatar
+                              ? 'Đang tải lên...'
+                              : 'Change photo',
                         ),
-                        onPressed: isUploadingAvatar ? null : _pickAndUploadAvatar,
+                        onPressed: isUploadingAvatar
+                            ? null
+                            : _pickAndUploadAvatar,
                       ),
                     ),
                     const SizedBox(height: 24),

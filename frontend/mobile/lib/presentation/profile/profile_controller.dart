@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers/repository_providers.dart';
@@ -35,9 +36,9 @@ class ProfileController extends AsyncNotifier<User> {
 
 final profileControllerProvider =
     AsyncNotifierProvider<ProfileController, User>(
-  ProfileController.new,
-  name: 'profileController',
-);
+      ProfileController.new,
+      name: 'profileController',
+    );
 
 /// Controller xử lý hành động cập nhật thông tin (Họ tên, SĐT).
 class UpdateProfileController extends AsyncNotifier<void> {
@@ -50,11 +51,9 @@ class UpdateProfileController extends AsyncNotifier<void> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final updatedUser =
-          await ref.read(profileRepositoryProvider).updateProfile(
-                fullName: fullName,
-                phoneNumber: phoneNumber,
-              );
+      final updatedUser = await ref
+          .read(profileRepositoryProvider)
+          .updateProfile(fullName: fullName, phoneNumber: phoneNumber);
       ref.read(profileControllerProvider.notifier).setUser(updatedUser);
     });
   }
@@ -62,9 +61,9 @@ class UpdateProfileController extends AsyncNotifier<void> {
 
 final updateProfileControllerProvider =
     AsyncNotifierProvider.autoDispose<UpdateProfileController, void>(
-  UpdateProfileController.new,
-  name: 'updateProfileController',
-);
+      UpdateProfileController.new,
+      name: 'updateProfileController',
+    );
 
 /// Controller xử lý hành động đổi mật khẩu.
 class ChangePasswordController extends AsyncNotifier<void> {
@@ -77,7 +76,9 @@ class ChangePasswordController extends AsyncNotifier<void> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(profileRepositoryProvider).changePassword(
+      await ref
+          .read(profileRepositoryProvider)
+          .changePassword(
             currentPassword: currentPassword,
             newPassword: newPassword,
           );
@@ -87,9 +88,9 @@ class ChangePasswordController extends AsyncNotifier<void> {
 
 final changePasswordControllerProvider =
     AsyncNotifierProvider.autoDispose<ChangePasswordController, void>(
-  ChangePasswordController.new,
-  name: 'changePasswordController',
-);
+      ChangePasswordController.new,
+      name: 'changePasswordController',
+    );
 
 /// Controller xử lý tải lên avatar.
 class UploadAvatarController extends AsyncNotifier<void> {
@@ -103,10 +104,9 @@ class UploadAvatarController extends AsyncNotifier<void> {
     state = const AsyncLoading();
     String? avatarUrl;
     state = await AsyncValue.guard(() async {
-      avatarUrl = await ref.read(profileRepositoryProvider).uploadAvatar(
-            bytes: bytes,
-            filename: filename,
-          );
+      avatarUrl = await ref
+          .read(profileRepositoryProvider)
+          .uploadAvatar(bytes: bytes, filename: filename);
       if (avatarUrl != null) {
         ref.read(profileControllerProvider.notifier).setAvatarUrl(avatarUrl!);
       }
@@ -117,6 +117,6 @@ class UploadAvatarController extends AsyncNotifier<void> {
 
 final uploadAvatarControllerProvider =
     AsyncNotifierProvider.autoDispose<UploadAvatarController, void>(
-  UploadAvatarController.new,
-  name: 'uploadAvatarController',
-);
+      UploadAvatarController.new,
+      name: 'uploadAvatarController',
+    );

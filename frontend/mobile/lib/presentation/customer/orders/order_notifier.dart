@@ -32,9 +32,7 @@ class OrderNotifier extends AsyncNotifier<void> {
           code: 'MSG-P-CO-17',
         );
       }
-      final operationalStations = await ref.read(
-        orderStationsProvider.future,
-      );
+      final operationalStations = await ref.read(orderStationsProvider.future);
       _validateUpdate(update, originStationId, operationalStations);
       await ref.read(deliveryOrderApiServiceProvider).updateOrder(id, update);
       ref.invalidate(myOrdersProvider);

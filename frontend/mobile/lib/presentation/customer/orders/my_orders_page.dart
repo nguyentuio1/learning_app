@@ -322,9 +322,7 @@ class _LoadError extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(120, 48),
-              ),
+              style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
               onPressed: onRetry,
               child: const Text('Retry'),
             ),

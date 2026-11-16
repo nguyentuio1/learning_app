@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../core/config/app_config.dart';
 import '../core/session/auth_controller.dart';
 import '../data/models/delivery_order.dart';
+import '../data/models/delivery_order_detail_response_dto.dart';
 import '../presentation/auth/login_page.dart';
 import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
+import '../presentation/customer/assistant/ai_assistant_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/notifications/notifications_list_page.dart';
 import '../presentation/customer/orders/confirm_delivery_page.dart';
@@ -16,6 +18,7 @@ import '../presentation/customer/orders/edit_delivery_order_page.dart';
 import '../presentation/customer/orders/create_order_page.dart';
 import '../presentation/customer/orders/my_orders_page.dart';
 import '../presentation/customer/orders/order_detail_page.dart';
+import '../presentation/customer/orders/order_history_page.dart';
 import '../presentation/customer/orders/order_submitted_page.dart';
 import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/tracking/order_tracking_page.dart';
@@ -29,6 +32,7 @@ import '../presentation/operator/pickup/package_pickup_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
 import '../presentation/profile/profile_page.dart';
+import '../presentation/profile/theme_settings_page.dart';
 import 'route_paths.dart';
 
 /// Router theo flavor + chặn truy cập theo trạng thái đăng nhập:
@@ -125,6 +129,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: RoutePaths.changePassword,
         builder: (_, _) => const ChangePasswordPage(),
       ),
+      GoRoute(
+        path: RoutePaths.themeSettings,
+        builder: (_, _) => const ThemeSettingsPage(),
+      ),
       if (flavor == AppFlavor.customer)
         GoRoute(
           path: RoutePaths.customerAddresses,
@@ -134,6 +142,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: RoutePaths.customerNotifications,
           builder: (_, _) => const NotificationsListPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerAiAssistant,
+          builder: (_, state) {
+            final extra = state.extra;
+            final orderId = extra is Map<String, String?>
+                ? extra['orderId']
+                : null;
+            final trackingNumber = extra is Map<String, String?>
+                ? extra['trackingNumber']
+                : null;
+            return AiAssistantPage(
+              orderId: orderId,
+              trackingNumber: trackingNumber,
+            );
+          },
         ),
         GoRoute(
           path: RoutePaths.customerOrders,
@@ -173,6 +197,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.customerOrderTracking,
           builder: (_, state) =>
               OrderTrackingPage(orderId: state.pathParameters['orderId'] ?? ''),
+        ),
+        // Order history must be declared BEFORE the generic :orderId route
+        // so GoRouter matches `/customer/orders/:orderId/history` correctly.
+        GoRoute(
+          path: RoutePaths.customerOrderHistory,
+          builder: (_, state) {
+            final extra = state.extra;
+            final orderId = state.pathParameters['orderId'] ?? '';
+            if (extra is _OrderHistoryArgs) {
+              return OrderHistoryPage(
+                trackingNumber: extra.trackingNumber,
+                statusLogs: extra.statusLogs,
+              );
+            }
+            // Fallback if navigated without args (e.g. deep link)
+            return OrderHistoryPage(
+              trackingNumber: orderId,
+              statusLogs: const [],
+            );
+          },
         ),
         GoRoute(
           path: RoutePaths.customerOrderDetails,
@@ -220,3 +264,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   return router;
 }, name: 'router');
+
+/// Arguments passed as [GoRouterState.extra] when navigating to C10.
+class _OrderHistoryArgs {
+  const _OrderHistoryArgs({
+    required this.trackingNumber,
+    required this.statusLogs,
+  });
+  final String trackingNumber;
+  final List<DeliveryOrderStatusLogDto> statusLogs;
+}
+
+/// Public helper used by callers (OrderDetailPage, OrderTrackingPage) to
+/// navigate to C10 with the correct arguments.
+_OrderHistoryArgs orderHistoryArgs({
+  required String trackingNumber,
+  required List<DeliveryOrderStatusLogDto> statusLogs,
+}) => _OrderHistoryArgs(trackingNumber: trackingNumber, statusLogs: statusLogs);

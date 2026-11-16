@@ -442,128 +442,122 @@ void main() {
     });
   }
 
-  test(
-    'posts only pickupSecureCode to confirm-delivery and parses ConfirmPickupResponse',
-    () async {
-      RequestOptions? captured;
-      final dio = Dio()
-        ..httpClientAdapter = FakeHttpAdapter((options) {
-          captured = options;
+  test('posts only pickupSecureCode to confirm-delivery and parses ConfirmPickupResponse', () async {
+    RequestOptions? captured;
+    final dio = Dio()
+      ..httpClientAdapter = FakeHttpAdapter((options) {
+        captured = options;
+        return jsonBody({
+          'orderId': 'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33',
+          'trackingNumber': 'DD-202611-0012',
+          'status': 'DELIVERED',
+          'actualDeliveryTime': '2026-11-15T08:30:00Z',
+          'slotId': 'b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10',
+          'slotReleased': true,
+        });
+      });
+    final service = DeliveryOrderApiService(dio);
+
+    final result = await service.confirmDelivery(
+      'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33',
+      const ConfirmDeliveryRequest(pickupSecureCode: ' 593284 '),
+    );
+
+    expect(captured?.method, 'POST');
+    expect(
+      captured?.path,
+      '/delivery-orders/e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33/confirm-delivery',
+    );
+    expect(captured?.data, {'pickupSecureCode': '593284'});
+    expect(result.orderId, 'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33');
+    expect(result.trackingNumber, 'DD-202611-0012');
+    expect(result.status, 'DELIVERED');
+    expect(
+      result.actualDeliveryTime,
+      DateTime.parse('2026-11-15T08:30:00Z').toUtc(),
+    );
+    expect(result.slotId, 'b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10');
+    expect(result.slotReleased, true);
+  });
+
+  test('confirmDelivery surfaces 400 attemptsRemaining, 423 lockout, and 404 ownership message', () async {
+    var mode = '400';
+    final dio = Dio()
+      ..httpClientAdapter = FakeHttpAdapter((_) {
+        if (mode == '400') {
           return jsonBody({
-            'orderId': 'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33',
-            'trackingNumber': 'DD-202611-0012',
-            'status': 'DELIVERED',
-            'actualDeliveryTime': '2026-11-15T08:30:00Z',
-            'slotId': 'b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10',
-            'slotReleased': true,
-          });
-        });
-      final service = DeliveryOrderApiService(dio);
+            'type': 'https://httpstatuses.com/400',
+            'title': 'Bad Request',
+            'status': 400,
+            'detail': 'Invalid pickup code.',
+            'attemptsRemaining': 2,
+          }, 400);
+        }
+        if (mode == '423') {
+          return ResponseBody.fromString(
+            '{"type":"https://httpstatuses.com/423",'
+            '"title":"Locked",'
+            '"status":423,'
+            '"detail":"Too many wrong codes. Try again later.",'
+            '"lockoutExpiresAt":"2026-11-15T08:40:00Z"}',
+            423,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+              'retry-after': ['600'],
+            },
+          );
+        }
+        return jsonBody({'title': 'Not Found'}, 404);
+      });
+    final service = DeliveryOrderApiService(dio);
 
-      final result = await service.confirmDelivery(
-        'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33',
-        const ConfirmDeliveryRequest(pickupSecureCode: ' 593284 '),
-      );
+    await expectLater(
+      service.confirmDelivery(
+        'order-1',
+        const ConfirmDeliveryRequest(pickupSecureCode: '000000'),
+      ),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.statusCode, 'statusCode', 400)
+            .having((e) => e.attemptsRemaining, 'attemptsRemaining', 2)
+            .having((e) => e.message, 'message', 'Invalid pickup code.'),
+      ),
+    );
 
-      expect(captured?.method, 'POST');
-      expect(
-        captured?.path,
-        '/delivery-orders/e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33/confirm-delivery',
-      );
-      expect(captured?.data, {'pickupSecureCode': '593284'});
-      expect(result.orderId, 'e8a3d1f4-5b62-4c79-8a0e-2f6b9c1d7e33');
-      expect(result.trackingNumber, 'DD-202611-0012');
-      expect(result.status, 'DELIVERED');
-      expect(
-        result.actualDeliveryTime,
-        DateTime.parse('2026-11-15T08:30:00Z').toUtc(),
-      );
-      expect(result.slotId, 'b2d4f6a8-1c3e-4a5b-9d7f-0e2c4a6b8d10');
-      expect(result.slotReleased, true);
-    },
-  );
+    mode = '423';
+    await expectLater(
+      service.confirmDelivery(
+        'order-1',
+        const ConfirmDeliveryRequest(pickupSecureCode: '000000'),
+      ),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.statusCode, 'statusCode', 423)
+            .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 600)
+            .having(
+              (e) => e.lockoutExpiresAt,
+              'lockoutExpiresAt',
+              DateTime.parse('2026-11-15T08:40:00Z'),
+            ),
+      ),
+    );
 
-  test(
-    'confirmDelivery surfaces 400 attemptsRemaining, 423 lockout, and 404 ownership message',
-    () async {
-      var mode = '400';
-      final dio = Dio()
-        ..httpClientAdapter = FakeHttpAdapter((_) {
-          if (mode == '400') {
-            return jsonBody({
-              'type': 'https://httpstatuses.com/400',
-              'title': 'Bad Request',
-              'status': 400,
-              'detail': 'Invalid pickup code.',
-              'attemptsRemaining': 2,
-            }, 400);
-          }
-          if (mode == '423') {
-            return ResponseBody.fromString(
-              '{"type":"https://httpstatuses.com/423",'
-              '"title":"Locked",'
-              '"status":423,'
-              '"detail":"Too many wrong codes. Try again later.",'
-              '"lockoutExpiresAt":"2026-11-15T08:40:00Z"}',
-              423,
-              headers: {
-                Headers.contentTypeHeader: [Headers.jsonContentType],
-                'retry-after': ['600'],
-              },
-            );
-          }
-          return jsonBody({'title': 'Not Found'}, 404);
-        });
-      final service = DeliveryOrderApiService(dio);
-
-      await expectLater(
-        service.confirmDelivery(
-          'order-1',
-          const ConfirmDeliveryRequest(pickupSecureCode: '000000'),
-        ),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.statusCode, 'statusCode', 400)
-              .having((e) => e.attemptsRemaining, 'attemptsRemaining', 2)
-              .having((e) => e.message, 'message', 'Invalid pickup code.'),
-        ),
-      );
-
-      mode = '423';
-      await expectLater(
-        service.confirmDelivery(
-          'order-1',
-          const ConfirmDeliveryRequest(pickupSecureCode: '000000'),
-        ),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.statusCode, 'statusCode', 423)
-              .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 600)
-              .having(
-                (e) => e.lockoutExpiresAt,
-                'lockoutExpiresAt',
-                DateTime.parse('2026-11-15T08:40:00Z'),
-              ),
-        ),
-      );
-
-      mode = '404';
-      await expectLater(
-        service.confirmDelivery(
-          'foreign-order',
-          const ConfirmDeliveryRequest(pickupSecureCode: '000000'),
-        ),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.statusCode, 'statusCode', 404)
-              .having((e) => e.code, 'code', 'MSG-P-CO-25')
-              .having(
-                (e) => e.message,
-                'message',
-                'Order not found or unavailable to your account.',
-              ),
-        ),
-      );
-    },
-  );
+    mode = '404';
+    await expectLater(
+      service.confirmDelivery(
+        'foreign-order',
+        const ConfirmDeliveryRequest(pickupSecureCode: '000000'),
+      ),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.statusCode, 'statusCode', 404)
+            .having((e) => e.code, 'code', 'MSG-P-CO-25')
+            .having(
+              (e) => e.message,
+              'message',
+              'Order not found or unavailable to your account.',
+            ),
+      ),
+    );
+  });
 }

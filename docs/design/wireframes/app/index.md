@@ -2,7 +2,7 @@
 
 Low-fidelity mobile wireframe previews and user flow documentation for Customer and Station Operator applications.
 
-LA-76 under LA-14 · Mobile only · 43 screens for 2 actors (27 Customer, 16 Station Operator). Built for Flutter mobile platform. This index covers mobile wireframe PNG previews only and does not represent final application implementation.
+LA-76 under LA-14 · Mobile only · 43 screens for 2 actors (27 Customer, 16 Station Operator). Built for Flutter mobile platform. Completed and synchronized in Sprint 7 (LA-169).
 
 Design system reference: [Design System](../../design-system.md)
 
@@ -26,31 +26,31 @@ Wireframe conventions: [Mobile Wireframe Conventions](./mobile-wireframe-convent
 | :--- | :--- | :--- | :--- |
 | **C01** | Login | Account authentication via email & password (UC-01) | [C01-Login.png](./customer/C01-Login.png) |
 | **C02** | Register | New customer account creation and phone verification (UC-01) | [C02-Register.png](./customer/C02-Register.png) |
-| **C03** | Home — Active Deliveries | Dashboard displaying active orders, real-time status summary, and quick actions (UC-03, UC-07) | [C03-Home.png](./customer/C03-Home.png) |
-| **C04** | Home — Empty State | Initial home view when customer has no active deliveries (UC-03) | [C04-Home-Empty.png](./customer/C04-Home-Empty.png) |
+| **C03** | Home — Active Deliveries | Dashboard displaying active orders, real-time status summary, unread notifications, and quick shortcuts to Create Delivery (`C14`), Orders (`C05`), Addresses (`C20`), Packages (`C18`), Notifications (`C22`), and AI Assistant (`C23`) (UC-03, UC-07) | [C03-Home.png](./customer/C03-Home.png) |
+| **C04** | Home — Empty State | Initial home view when customer has no active deliveries, with shortcuts to create order (UC-03) | [C04-Home-Empty.png](./customer/C04-Home-Empty.png) |
 | **C05** | Orders List & Filters | Tabbed view for active, pending, and completed orders with search & status filters (UC-06, UC-07) | [C05-Orders.png](./customer/C05-Orders.png) |
-| **C06** | In-Transit Order Detail | Real-time tracking view showing live map trajectory, ETA, speed, battery, and AI summary (UC-07, UC-20) | [C06-OrderDetails-InTransit.png](./customer/C06-OrderDetails-InTransit.png) |
-| **C07** | Pending Order Detail | Details of order awaiting dispatcher approval with Edit and Cancel options (UC-06) | [C07-OrderDetails-Pending.png](./customer/C07-OrderDetails-Pending.png) |
-| **C08** | Arrived Order & Pickup Code | Arrival state showing assigned station compartment and secure OTP/QR code (UC-08) | [C08-OrderDetails-Arrived.png](./customer/C08-OrderDetails-Arrived.png) |
+| **C06** | In-Transit Order Detail | Real-time tracking view showing live map trajectory, speed, battery, and AI ETA/summary. Provides actions to View Order History (`C10`) and Ask AI Assistant (`C23`) (UC-07, UC-20) | [C06-OrderDetails-InTransit.png](./customer/C06-OrderDetails-InTransit.png) |
+| **C07** | Pending Order Detail | Details of order awaiting dispatcher approval with Edit Order, Cancel Order (`C09`), View Order History (`C10`), and Ask AI Assistant (`C23`) (UC-06) | [C07-OrderDetails-Pending.png](./customer/C07-OrderDetails-Pending.png) |
+| **C08** | Arrived Order & Pickup Code | Arrival state showing destination station info, Enter Pickup Code (`C11`), View Order History (`C10`), and Ask AI Assistant (`C23`) (UC-08) | [C08-OrderDetails-Arrived.png](./customer/C08-OrderDetails-Arrived.png) |
 | **C09** | Cancel Order Sheet | Reason selection modal for cancelling pending or approved orders (UC-06) | [C09-CancelOrder.png](./customer/C09-CancelOrder.png) |
-| **C10** | Order History & Audit Log | Comprehensive lifecycle timeline and audit trail of order events (UC-07, UC-10) | [C10-OrderHistory.png](./customer/C10-OrderHistory.png) |
+| **C10** | Order History & Audit Log | Comprehensive lifecycle timeline stepper and audit trail of order events (`statusLogs`), opened from `C06`/`C07`/`C08` (UC-07, UC-10) | [C10-OrderHistory.png](./customer/C10-OrderHistory.png) |
 | **C11** | Confirm Delivery — Enter OTP | Keypad interface for entering 6-digit compartment pickup code (UC-08) | [C11-ConfirmDelivery.png](./customer/C11-ConfirmDelivery.png) |
-| **C12** | Confirm Delivery — Incorrect OTP | Error state handling invalid secure code entry with retry feedback (UC-08) | [C12-ConfirmDelivery-Wrong.png](./customer/C12-ConfirmDelivery-Wrong.png) |
+| **C12** | Confirm Delivery — Incorrect OTP | Error state handling invalid secure code entry with retry feedback; 3 consecutive failures trigger HTTP 423 Locked with 10-minute lockout (UC-08) | [C12-ConfirmDelivery-Wrong.png](./customer/C12-ConfirmDelivery-Wrong.png) |
 | **C13** | Delivery Completed | Successful pickup confirmation screen with delivery summary and rating option (UC-08) | [C13-Delivered.png](./customer/C13-Delivered.png) |
 | **C14** | Create Delivery | Multi-step form selecting route, package, and station with AI ETA/fee estimation (UC-05, UC-20) | [C14-CreateDelivery.png](./customer/C14-CreateDelivery.png) |
-| **C15** | Create Delivery — Validation Errors | Form validation error state highlighting missing fields or over-weight packages (UC-05) | [C15-CreateDelivery-Errors.png](./customer/C15-CreateDelivery-Errors.png) |
+| **C15** | Create Delivery — Validation Errors | Form validation error state highlighting missing fields or invalid station selection (UC-05) | [C15-CreateDelivery-Errors.png](./customer/C15-CreateDelivery-Errors.png) |
 | **C16** | Review Delivery | Pre-submission confirmation screen reviewing route, price breakdown, and instructions (UC-05) | [C16-ReviewDelivery.png](./customer/C16-ReviewDelivery.png) |
-| **C17** | Order Submitted | Success screen displaying generated tracking code (DD-YYYYMM-NNNN) (UC-05) | [C17-OrderSubmitted.png](./customer/C17-OrderSubmitted.png) |
+| **C17** | Order Submitted | Success screen displaying generated tracking code (`DD-YYYYMM-NNNN`) and initial pickup code (UC-05) | [C17-OrderSubmitted.png](./customer/C17-OrderSubmitted.png) |
 | **C18** | Packages List | Saved package templates list with weight, dimensions, and fragile indicators (UC-04) | [C18-Packages.png](./customer/C18-Packages.png) |
-| **C19** | Add Package | Form to save new package profile with fragile flag and photo attachment (UC-04) | [C19-AddPackage.png](./customer/C19-AddPackage.png) |
+| **C19** | Add / Edit Package | Form to save new or edit existing package profile with fragile flag (UC-04) | [C19-AddPackage.png](./customer/C19-AddPackage.png) |
 | **C20** | Saved Addresses List | Address book managing pickup and dropoff locations (UC-03) | [C20-Addresses.png](./customer/C20-Addresses.png) |
 | **C21** | Add / Edit Address | Address entry form with campus hub selection and location tagging (UC-03) | [C21-AddAddress.png](./customer/C21-AddAddress.png) |
-| **C22** | Notifications | Center displaying status updates, arrivals, and "Mark all as read" feature (UC-10) | [C22-Notifications.png](./customer/C22-Notifications.png) |
-| **C23** | AI Assistant | Conversational interface providing quick delivery query suggestions and support (UC-09) | [C23-Assistant.png](./customer/C23-Assistant.png) |
-| **C24** | Profile & Settings | Main user profile overview, station assignment info, and app preferences (UC-02) | [C24-Profile.png](./customer/C24-Profile.png) |
-| **C25** | Edit Profile | User contact information update form (UC-02) | [C25-EditProfile.png](./customer/C25-EditProfile.png) |
-| **C26** | Change Password | Security form to update account authentication password (UC-01, UC-02) | [C26-ChangePassword.png](./customer/C26-ChangePassword.png) |
-| **C27** | Theme Settings | Appearance preferences selection (Light, Dark, or System Default) (UC-02) | [C27-Theme.png](./customer/C27-Theme.png) |
+| **C22** | Notifications | Center displaying status updates, arrivals, "Mark all as read", and tap-to-navigate directly to corresponding order detail (`C06`/`C07`/`C08`) (UC-10) | [C22-Notifications.png](./customer/C22-Notifications.png) |
+| **C23** | AI Assistant | Conversational interface providing quick delivery suggestions and support, opened from `C03`/`C06`/`C07`/`C08`/`C24`. Operates in local contract preview mode (UC-09) | [C23-Assistant.png](./customer/C23-Assistant.png) |
+| **C24** | Profile & Settings | Main user profile overview with complete navigation to Edit Profile (`C25`), Addresses (`C20`), Change Password (`C26`), Theme Settings (`C27`), Notifications (`C22`), AI Assistant (`C23`), and Logout (`C01`) (UC-02) | [C24-Profile.png](./customer/C24-Profile.png) |
+| **C25** | Edit Profile | User contact information update form (full name, phone number; email read-only) (UC-02) | [C25-EditProfile.png](./customer/C25-EditProfile.png) |
+| **C26** | Change Password | Security form to update account authentication password; redirects to Login upon completion (UC-01, UC-02) | [C26-ChangePassword.png](./customer/C26-ChangePassword.png) |
+| **C27** | Theme Settings | Appearance preferences selection (Light, Dark, or System Default) wired into app ThemeMode (UC-02) | [C27-Theme.png](./customer/C27-Theme.png) |
 
 ---
 
@@ -82,5 +82,5 @@ Wireframe conventions: [Mobile Wireframe Conventions](./mobile-wireframe-convent
 1. **Asset Type:** All 43 visual assets are static PNG preview images (`C01`–`C27`, `O01`–`O16`). Source vector files (SVG) and design project files (Draw.io / Figma) are managed in design asset repositories.
 2. **Asset Format:** All 43 wireframe screens are provided in `.png` format.
 3. **Use Case Mapping:** All screens map directly to Use Cases `UC-01` through `UC-20` specified in system documentation.
-
----
+4. **Proposed AI Endpoints Status:** The AI endpoints (`GET /api/delivery-orders/{id}/eta`, `POST /api/delivery-orders/{id}/ai-summary`, `POST /api/ai-assistant/messages`, `GET /api/ai-assistant/sessions`, `GET /api/ai-assistant/sessions/{id}/messages`) are **proposed baseline contracts only (not yet implemented or deployed on the backend)**. Wireframes `C06`, `C14`, and `C23` illustrate the proposed interaction contracts; in the mobile app, `C23` operates in local simulation mode without making network calls.
+5. **Pickup OTP Lockout Policy:** Entering an incorrect pickup OTP 3 consecutive times on `C11`/`C12` triggers HTTP `423 Locked` with a 10-minute lockout window (`MSG-P-LS-16`).

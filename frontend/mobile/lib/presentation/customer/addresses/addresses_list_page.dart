@@ -48,10 +48,7 @@ class AddressesListPage extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    errorMessage(error),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(errorMessage(error), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   FilledButton(
                     style: FilledButton.styleFrom(

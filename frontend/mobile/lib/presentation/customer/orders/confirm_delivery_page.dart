@@ -90,17 +90,14 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
       final message = state.accessLost && state.errorMessage != null
           ? state.errorMessage!
           : (detailError != null
-                 ? DeliveryConfirmationController.accessDeniedMessage(
-                     detailError,
-                   )
-                 : 'Order not found or unavailable to your account.');
+                ? DeliveryConfirmationController.accessDeniedMessage(
+                    detailError,
+                  )
+                : 'Order not found or unavailable to your account.');
       return Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: AppBar(title: const Text('Confirm delivery')),
-        body: _AccessLostView(
-          message: message,
-          onBackToOrders: _goToOrders,
-        ),
+        body: _AccessLostView(message: message, onBackToOrders: _goToOrders),
       );
     }
 
@@ -190,9 +187,8 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
               errorMessage: state.errorMessage,
               onRefresh: () => ref
                   .read(
-                    deliveryConfirmationControllerProvider(
-                      widget.orderId,
-                    ).notifier,
+                    deliveryConfirmationControllerProvider(widget.orderId)
+                        .notifier,
                   )
                   .refreshOrderEligibility(),
               onBack: () => _viewOrderHistory(null),
@@ -366,7 +362,9 @@ class _ConfirmDeliveryPageState extends ConsumerState<ConfirmDeliveryPage> {
                             );
                         if (!confirmed && mounted) {
                           final latest = ref.read(
-                            deliveryConfirmationControllerProvider(widget.orderId),
+                            deliveryConfirmationControllerProvider(
+                              widget.orderId,
+                            ),
                           );
                           if (latest.remainingAttempts != null &&
                               !latest.isLocked) {
@@ -456,9 +454,7 @@ class _ErrorAndLockoutBanner extends StatelessWidget {
           Row(
             children: [
               Icon(
-                state.isLocked
-                    ? Icons.lock_clock
-                    : Icons.warning_amber_rounded,
+                state.isLocked ? Icons.lock_clock : Icons.warning_amber_rounded,
                 color: theme.colorScheme.onErrorContainer,
               ),
               const SizedBox(width: 10),
@@ -636,7 +632,10 @@ class _DeliveryCompletedView extends StatelessWidget {
               const SizedBox(height: 8),
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(16),
@@ -664,7 +663,8 @@ class _DeliveryCompletedView extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              if (confirmation.slotId.isNotEmpty && confirmation.slotReleased) ...[
+              if (confirmation.slotId.isNotEmpty &&
+                  confirmation.slotReleased) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Slot ${confirmation.slotId} has been released.',
@@ -763,10 +763,7 @@ class _IneligibleOrderView extends StatelessWidget {
 }
 
 class _AccessLostView extends StatelessWidget {
-  const _AccessLostView({
-    required this.message,
-    required this.onBackToOrders,
-  });
+  const _AccessLostView({required this.message, required this.onBackToOrders});
 
   final String message;
   final VoidCallback onBackToOrders;
@@ -790,9 +787,7 @@ class _AccessLostView extends StatelessWidget {
               Text(message, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(140, 48),
-                ),
+                style: FilledButton.styleFrom(minimumSize: const Size(140, 48)),
                 onPressed: onBackToOrders,
                 child: const Text('Back to orders'),
               ),

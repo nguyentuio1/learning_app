@@ -14,9 +14,9 @@ class NotificationsFilterNotifier extends Notifier<bool> {
 
 final notificationsFilterProvider =
     NotifierProvider.autoDispose<NotificationsFilterNotifier, bool>(
-  NotificationsFilterNotifier.new,
-  name: 'notificationsFilter',
-);
+      NotificationsFilterNotifier.new,
+      name: 'notificationsFilter',
+    );
 
 class CustomerNotificationsState {
   const CustomerNotificationsState({
@@ -137,11 +137,11 @@ class CustomerNotificationsNotifier
   }
 }
 
-final customerNotificationsProvider = AsyncNotifierProvider.autoDispose<
-    CustomerNotificationsNotifier, CustomerNotificationsState>(
-  CustomerNotificationsNotifier.new,
-  name: 'customerNotifications',
-);
+final customerNotificationsProvider =
+    AsyncNotifierProvider.autoDispose<
+      CustomerNotificationsNotifier,
+      CustomerNotificationsState
+    >(CustomerNotificationsNotifier.new, name: 'customerNotifications');
 
 class NotificationActionsNotifier extends AsyncNotifier<void> {
   @override
@@ -168,6 +168,6 @@ class NotificationActionsNotifier extends AsyncNotifier<void> {
 
 final notificationActionsNotifierProvider =
     AsyncNotifierProvider<NotificationActionsNotifier, void>(
-  NotificationActionsNotifier.new,
-  name: 'notificationActionsNotifier',
-);
+      NotificationActionsNotifier.new,
+      name: 'notificationActionsNotifier',
+    );

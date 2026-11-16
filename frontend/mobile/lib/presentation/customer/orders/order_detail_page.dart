@@ -13,6 +13,7 @@ import '../../../routes/route_paths.dart';
 import '../delivery_map/delivery_map_controller.dart';
 import '../delivery_map/delivery_map_telemetry_bar.dart';
 import '../delivery_map/delivery_map_widget.dart';
+import '../../../routes/app_router.dart' show orderHistoryArgs;
 import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
 import 'confirm_delivery_page.dart';
@@ -268,6 +269,20 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             label: const Text('Cancel order'),
           ),
         ],
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          key: const Key('view-order-history-button'),
+          onPressed: () => _viewOrderHistory(order, detail),
+          icon: const Icon(Icons.history_outlined),
+          label: const Text('View Order History'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const Key('ask-ai-assistant-button'),
+          onPressed: () => _askAiAssistant(order),
+          icon: const Icon(Icons.smart_toy_outlined),
+          label: const Text('Ask AI Assistant'),
+        ),
       ],
     );
   }
@@ -476,6 +491,29 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       );
     });
     ref.invalidate(orderDetailProvider(widget.detailId));
+  }
+
+  void _viewOrderHistory(
+    DeliveryOrder order,
+    DeliveryOrderDetailResponseDto detail,
+  ) {
+    context.push(
+      RoutePaths.customerOrderHistoryFor(order.id),
+      extra: orderHistoryArgs(
+        trackingNumber: order.trackingNumber ?? order.id,
+        statusLogs: detail.statusLogs,
+      ),
+    );
+  }
+
+  void _askAiAssistant(DeliveryOrder order) {
+    context.push(
+      RoutePaths.customerAiAssistant,
+      extra: <String, String?>{
+        'orderId': order.id,
+        'trackingNumber': order.trackingNumber,
+      },
+    );
   }
 
   String _stationLabel(OrderStationDto? station, String fallbackId) {
