@@ -411,10 +411,7 @@ void main() {
       expect(find.text('3'), findsOneWidget);
 
       // Tap Slot 1 (EMPTY) -> Mark Maintenance (ERROR)
-      await tester.ensureVisible(find.text('Slot 1'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Slot 1'));
-      await tester.pumpAndSettle();
+      await _scrollAndTap(tester, find.text('Slot 1'));
 
       await tester.enterText(
         find.byKey(const Key('slot-status-reason-input')),
@@ -433,10 +430,7 @@ void main() {
       expect(stubNotifier.refreshCalls, 1);
 
       // Tap Slot 2 (ERROR) -> Restore Operational (EMPTY)
-      await tester.ensureVisible(find.text('Slot 2'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Slot 2'));
-      await tester.pumpAndSettle();
+      await _scrollAndTap(tester, find.text('Slot 2'));
 
       await tester.ensureVisible(
         find.byKey(const Key('slot-status-toggle-button')),
@@ -450,10 +444,7 @@ void main() {
       expect(stubNotifier.refreshCalls, 2);
 
       // Tap Slot 3 (OCCUPIED) -> no toggle button
-      await tester.ensureVisible(find.text('Slot 3'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Slot 3'));
-      await tester.pumpAndSettle();
+      await _scrollAndTap(tester, find.text('Slot 3'));
 
       expect(find.byKey(const Key('slot-status-toggle-button')), findsNothing);
     });
