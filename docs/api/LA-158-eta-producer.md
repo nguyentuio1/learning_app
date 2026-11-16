@@ -31,6 +31,8 @@ Default behavior is disabled. Example explicitly showing that default:
 
 Enable only after installing/selecting a local model, pinning its revision and reviewing the model/input/accuracy policy. Configuration accepts intervals 5–3600 seconds and batches 1–100. An enabled configuration with missing model metadata or a non-loopback endpoint fails startup. No provider activation or deployment is performed by this change.
 
+`ModelRevision` is configured metadata stored with a prediction. The adapter does not inspect the running model's digest or prove that a mutable model name resolves to that revision. Before activation, the operator must verify/pin the actual model artifact and record that evidence alongside the configured revision; the stored label alone does not establish immutable identity.
+
 ## Acceptance still separate
 
 Verification on 2026-11-16: **975 passed, zero failed/skipped** in the complete backend suite against local PostgreSQL. Local xUnit collections were run sequentially using RunSettings to avoid CPU-driven wall-clock timeouts; production's 10-second inference deadline is unchanged. Focused tests had independently demonstrated missing behavior, stale scheduling inputs, invalid legacy coordinates and an impossibly short duration before their fixes. All inference tests use a fake model/HTTP handler; no actual model was activated.
