@@ -10,7 +10,12 @@ abstract final class RoutePaths {
   static const customerPackagesAdd = '/customer/packages/add';
   static const customerPackagesEdit = '/customer/packages/edit';
   static const customerOrders = '/customer/orders';
+  static const customerOrderTracking = '/customer/orders/tracking/:orderId';
   static const customerOrderDetails = '/customer/orders/:orderId';
+  static const customerOrderConfirmDelivery =
+      '/customer/orders/:orderId/confirm-delivery';
+  static String customerOrderConfirmDeliveryFor(String orderId) =>
+      '/customer/orders/$orderId/confirm-delivery';
   static const customerOrdersCreate = '/customer/orders/create';
   static const customerOrdersReview = '/customer/orders/create/review';
   static const customerOrderSubmitted = '/customer/orders/create/submitted';
@@ -26,6 +31,11 @@ abstract final class RoutePaths {
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const changePassword = '/profile/change-password';
+
+  static String customerOrderTrackingFor(String orderId) =>
+      '/customer/orders/tracking/${Uri.encodeComponent(orderId)}';
+  static String customerOrderDetailsFor(String orderId) =>
+      '/customer/orders/${Uri.encodeComponent(orderId)}';
 
   static String operatorExpiredParcelsFor(String stationId) =>
       '/operator/expired-parcels/$stationId';

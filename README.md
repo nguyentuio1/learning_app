@@ -158,10 +158,12 @@ A new push to the pull request cancels the run that is still going. A failing ch
 
 ## Documentation
 
+- Sprint 6 API handoff (LA-341): [`docs/api/sprint-6-api-contract.md`](docs/api/sprint-6-api-contract.md) and [OpenAPI schemas](docs/api/sprint-6-openapi.json). Includes branch availability, tracking/SignalR, confirmation, and explicitly proposed analytics/external contracts for mocks.
 - API contracts: [`docs/api/auth-api.md`](docs/api/auth-api.md), [`docs/api/customer-order-api.md`](docs/api/customer-order-api.md), [`docs/api/station-api.md`](docs/api/station-api.md), [`docs/api/drone-api.md`](docs/api/drone-api.md) (the order, station and drone contracts are still marked proposed)
 - Architecture and database: [`docs/architecture/`](docs/architecture/)
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
 - Design diagrams: [`docs/design/`](docs/design/)
+- AI service design (LA-201 / LA-241–244): [ETA](docs/design/sequence-ai-eta-estimation.md), [delivery summary](docs/design/sequence-ai-delivery-summarization.md), [customer assistant](docs/design/sequence-ai-customer-assistant.md), [class diagram](docs/design/class-diagram-ai-services.md) and [specification](docs/design/class-specification-ai-services.md). Proposed Sprint 7 implementation; existing entities are distinguished from future services.
 - Real-time tracking sequence (LA-238): [telemetry intake, SignalR and web/mobile updates](docs/design/sequence-real-time-tracking.md)
 - Dashboard sequence (LA-240): [filtered statistics queries and web results](docs/design/sequence-dashboard.md)
 

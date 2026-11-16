@@ -34,6 +34,10 @@ abstract final class ApiEndpoints {
   static String clearExpiredParcel(String stationId) =>
       '$landingStations/$stationId/operations/clear-expired-parcel';
 
+  // Customer Delivery Confirmation (LA-37 / LA-151)
+  static String confirmDelivery(String id) =>
+      '$deliveryOrders/$id/confirm-delivery';
+
   // Customer Notifications (LA-326)
   static const notifications = '/notifications';
   static const notificationsUnreadCount = '/notifications/unread-count';

@@ -11,12 +11,14 @@ import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/notifications/notifications_list_page.dart';
+import '../presentation/customer/orders/confirm_delivery_page.dart';
 import '../presentation/customer/orders/edit_delivery_order_page.dart';
 import '../presentation/customer/orders/create_order_page.dart';
 import '../presentation/customer/orders/my_orders_page.dart';
 import '../presentation/customer/orders/order_detail_page.dart';
 import '../presentation/customer/orders/order_submitted_page.dart';
 import '../presentation/customer/orders/review_order_page.dart';
+import '../presentation/customer/tracking/order_tracking_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
@@ -168,12 +170,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           },
         ),
         GoRoute(
+          path: RoutePaths.customerOrderTracking,
+          builder: (_, state) =>
+              OrderTrackingPage(orderId: state.pathParameters['orderId'] ?? ''),
+        ),
+        GoRoute(
           path: RoutePaths.customerOrderDetails,
           builder: (_, state) {
             final order = state.extra;
             return OrderDetailPage(
               orderId: state.pathParameters['orderId'],
               order: order is DeliveryOrder ? order : null,
+            );
+          },
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderConfirmDelivery,
+          builder: (_, state) {
+            final order = state.extra;
+            return ConfirmDeliveryPage(
+              orderId: state.pathParameters['orderId'] ?? '',
+              initialOrder: order is DeliveryOrder ? order : null,
             );
           },
         ),

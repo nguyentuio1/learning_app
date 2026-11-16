@@ -8,10 +8,16 @@ import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_
 import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
 import 'package:smart_drone_delivery/data/models/paged_result.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
+import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
+import 'package:smart_drone_delivery/domain/entities/delivery_map_snapshot.dart';
+import 'package:smart_drone_delivery/domain/repositories/delivery_map_repository.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/tracking/order_tracking_page.dart';
 import 'package:smart_drone_delivery/routes/route_paths.dart';
+
+import '../../../support/fake_tracking_repository.dart';
 
 const _order = DeliveryOrder(
   id: 'order-1',
@@ -64,6 +70,10 @@ class _FakeOrderService extends DeliveryOrderApiService {
   final requests = <DeliveryOrderFilterParams>[];
 
   @override
+  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
+      _detail;
+
+  @override
   Future<PagedResult<DeliveryOrder>> getOrders(
     DeliveryOrderFilterParams params,
   ) async {
@@ -76,23 +86,64 @@ class _FakeOrderService extends DeliveryOrderApiService {
       totalPages: orders.isEmpty ? 0 : 1,
     );
   }
-
-  @override
-  Future<DeliveryOrderDetailResponseDto> getOrderDetail(String id) async =>
-      _detail;
 }
 
-Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
+class _FakeDeliveryMapRepository implements DeliveryMapRepository {
+  @override
+  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async =>
+      DeliveryMapSnapshot(
+        orderId: 'order-1',
+        trackingNumber: 'TRACK-1',
+        status: DeliveryMapOrderStatus.inTransit,
+        originStation: MapStationPoint(
+          id: 'origin-1',
+          name: 'Origin Hub',
+          latitude: 10.7769,
+          longitude: 106.7009,
+        ),
+        destinationStation: MapStationPoint(
+          id: 'destination-1',
+          name: 'Destination Hub',
+          latitude: 10.8506,
+          longitude: 106.7719,
+        ),
+        estimatedDeliveryTime: null,
+        lastPosition: DroneMapTelemetry(
+          latitude: 10.8012,
+          longitude: 106.7311,
+          altitudeMeters: 80,
+          speedMps: 11.5,
+          batteryPercentage: 71,
+          timestamp: DateTime.utc(2026, 11, 4, 8, 10),
+        ),
+        telemetryStale: false,
+      );
+
+  @override
+  Stream<DeliveryMapUpdate> watchOrderMap(String orderId) =>
+      Stream<DeliveryMapUpdate>.empty();
+}
+
+Future<void> _pumpOrders(
+  WidgetTester tester,
+  _FakeOrderService service, {
+  String initialLocation = RoutePaths.customerOrders,
+}) async {
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final router = GoRouter(
-    initialLocation: RoutePaths.customerOrders,
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: RoutePaths.customerOrders,
         builder: (_, _) => const MyOrdersPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.customerOrderTracking,
+        builder: (_, state) =>
+            OrderTrackingPage(orderId: state.pathParameters['orderId'] ?? ''),
       ),
       GoRoute(
         path: RoutePaths.customerOrderDetails,
@@ -104,9 +155,17 @@ Future<void> _pumpOrders(WidgetTester tester, _FakeOrderService service) async {
     ],
   );
   addTearDown(router.dispose);
+  final trackingRepository = FakeTrackingRepository();
+  addTearDown(trackingRepository.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [deliveryOrderApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        deliveryMapRepositoryProvider.overrideWithValue(
+          _FakeDeliveryMapRepository(),
+        ),
+        trackingRepositoryProvider.overrideWithValue(trackingRepository),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -190,16 +249,27 @@ void main() {
     expect(service.requests.last.toDate, isNull);
   });
 
-  testWidgets('opens detail and renders ordered status history', (
-    tester,
-  ) async {
+  testWidgets('opens tracking from an order card', (tester) async {
     await _pumpOrders(tester, _FakeOrderService());
     await tester.tap(find.text('TRACK-1'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Delivery tracking'), findsOneWidget);
+    expect(find.text('DD-202611-0012'), findsOneWidget);
+  });
+
+  testWidgets('opens full order details directly with chronological history', (
+    tester,
+  ) async {
+    await _pumpOrders(
+      tester,
+      _FakeOrderService(),
+      initialLocation: RoutePaths.customerOrderDetailsFor('order-1'),
+    );
+
     expect(find.text('Books'), findsOneWidget);
-    expect(find.text('Origin Hub'), findsOneWidget);
-    expect(find.text('Destination Hub'), findsOneWidget);
+    expect(find.text('Origin Hub'), findsNWidgets(2));
+    expect(find.text('Destination Hub'), findsNWidgets(2));
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('1 Main Street'), findsOneWidget);
     expect(find.text('Mai Tran'), findsOneWidget);
@@ -213,5 +283,31 @@ void main() {
       tester.getTopLeft(find.text('— → PENDING')).dy,
       lessThan(tester.getTopLeft(find.text('APPROVED → IN_TRANSIT')).dy),
     );
+  });
+
+  testWidgets('shows delivery map and telemetry for in-transit details', (
+    tester,
+  ) async {
+    await _pumpOrders(
+      tester,
+      _FakeOrderService(),
+      initialLocation: RoutePaths.customerOrderDetailsFor('order-1'),
+    );
+
+    expect(
+      find.byKey(const ValueKey('delivery-map-origin-marker')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delivery-map-destination-marker')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delivery-map-drone-marker')),
+      findsOneWidget,
+    );
+    expect(find.text('Speed'), findsOneWidget);
+    expect(find.text('11.5 m/s'), findsOneWidget);
+    expect(find.text('Battery'), findsOneWidget);
   });
 }
