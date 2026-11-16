@@ -109,6 +109,17 @@ class _StubStationAvailabilityNotifier extends StationAvailabilityNotifier {
   }
 }
 
+Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   const stationId = 'station-1';
   const trackingNumber = 'TRK-2026-0001';
@@ -277,11 +288,10 @@ void main() {
       expect(find.text('Medical Kit'), findsOneWidget);
       expect(find.text('Fragile handling required'), findsOneWidget);
 
-      await tester.ensureVisible(
+      await _scrollAndTap(
+        tester,
         find.byKey(const Key('intake-confirm-button')),
       );
-      await tester.tap(find.byKey(const Key('intake-confirm-button')));
-      await tester.pumpAndSettle();
 
       expect(fakeOps.lastIntakeRequest, isNotNull);
       expect(fakeOps.lastIntakeRequest!.trackingNumber, trackingNumber);
@@ -315,11 +325,10 @@ void main() {
       await tester.tap(find.byKey(const Key('intake-lookup-button')));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(
+      await _scrollAndTap(
+        tester,
         find.byKey(const Key('intake-reject-button')),
       );
-      await tester.tap(find.byKey(const Key('intake-reject-button')));
-      await tester.pumpAndSettle();
 
       await tester.enterText(
         find.byKey(const Key('intake-reject-reason-input')),
@@ -402,14 +411,16 @@ void main() {
       expect(find.text('3'), findsOneWidget);
 
       // Tap Slot #1 (EMPTY) -> Mark Maintenance (ERROR)
-      await tester.ensureVisible(find.text('Slot #1'));
-      await tester.tap(find.text('Slot #1'));
-      await tester.pumpAndSettle();
+      await _scrollAndTap(tester, find.text('Slot #1'));
 
       await tester.enterText(
         find.byKey(const Key('slot-status-reason-input')),
         'Door stuck',
       );
+      await tester.ensureVisible(
+        find.byKey(const Key('slot-status-toggle-button')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('slot-status-toggle-button')));
       await tester.pumpAndSettle();
 
@@ -419,10 +430,12 @@ void main() {
       expect(stubNotifier.refreshCalls, 1);
 
       // Tap Slot #2 (ERROR) -> Restore Operational (EMPTY)
-      await tester.ensureVisible(find.text('Slot #2'));
-      await tester.tap(find.text('Slot #2'));
-      await tester.pumpAndSettle();
+      await _scrollAndTap(tester, find.text('Slot #2'));
 
+      await tester.ensureVisible(
+        find.byKey(const Key('slot-status-toggle-button')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('slot-status-toggle-button')));
       await tester.pumpAndSettle();
 
@@ -431,9 +444,7 @@ void main() {
       expect(stubNotifier.refreshCalls, 2);
 
       // Tap Slot #3 (OCCUPIED) -> no toggle button
-      await tester.ensureVisible(find.text('Slot #3'));
-      await tester.tap(find.text('Slot #3'));
-      await tester.pumpAndSettle();
+      await _scrollAndTap(tester, find.text('Slot #3'));
 
       expect(find.byKey(const Key('slot-status-toggle-button')), findsNothing);
     });
