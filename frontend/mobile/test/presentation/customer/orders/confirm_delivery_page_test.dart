@@ -808,6 +808,7 @@ void main() {
             find.byKey(const Key('confirm-delivery-submit-button')),
           );
           await tester.pump();
+          await tester.pump();
 
           final container = ProviderScope.containerOf(
             tester.element(find.byType(ConfirmDeliveryPage)),
@@ -825,6 +826,7 @@ void main() {
 
           await tester.pumpAndSettle();
           await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
         }
       },
     );
