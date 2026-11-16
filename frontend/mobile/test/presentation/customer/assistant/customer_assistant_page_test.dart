@@ -567,10 +567,10 @@ void main() {
     test('suppresses request/response/error bodies in shared AppLogInterceptor',
         () async {
       final logs = <String>[];
-      final adapter = FakeHttpAdapter((options) async {
+      final adapter = FakeHttpAdapter((options) {
         final path = options.uri.path;
         if (options.method == 'POST' && path.endsWith('/ai-assistant/messages')) {
-          return FakeResponse.json({
+          return jsonBody({
             'outcome': 'ANSWERED',
             'sessionId': _sessionId1,
             'userMessageId': 'u1',
@@ -583,7 +583,7 @@ void main() {
           });
         }
         if (options.method == 'GET' && path.endsWith('/ai-assistant/sessions')) {
-          return FakeResponse.json({
+          return jsonBody({
             'items': [
               {
                 'id': _sessionId1,
@@ -597,7 +597,7 @@ void main() {
           });
         }
         if (path.contains('/messages')) {
-          return FakeResponse.json({
+          return jsonBody({
             'sessionId': _sessionId1,
             'items': [
               {
@@ -612,7 +612,7 @@ void main() {
             'totalCount': 1,
           });
         }
-        return FakeResponse.json({'detail': 'unexpected'}, statusCode: 400);
+        return jsonBody({'detail': 'unexpected'}, 400);
       });
 
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test/api'))

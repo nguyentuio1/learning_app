@@ -441,7 +441,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         uncertainSendPendingRecovery: isUncertain,
         errorMessage: isUncertain
             ? 'Connection interrupted while waiting for reply. Reload history before retrying.'
-            : (error is ApiException && error.message.isNotEmpty
+            : (error.message.isNotEmpty
                   ? error.message
                   : 'Unable to send message. Please try again.'),
       );
