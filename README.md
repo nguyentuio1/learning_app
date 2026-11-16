@@ -159,6 +159,7 @@ A new push to the pull request cancels the run that is still going. A failing ch
 ## Documentation
 
 - Sprint 6 API handoff (LA-341): [`docs/api/sprint-6-api-contract.md`](docs/api/sprint-6-api-contract.md) and [OpenAPI schemas](docs/api/sprint-6-openapi.json). Includes branch availability, tracking/SignalR, confirmation, and explicitly proposed analytics/external contracts for mocks.
+- Sprint 7 AI handoff (LA-342): [`docs/api/sprint-7-api-contract.md`](docs/api/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/sprint-7-openapi.json). Proposed ETA, delivery summary and customer assistant interfaces; implementation, consumer approval and production policy gates are tracked separately.
 - API contracts: [`docs/api/auth-api.md`](docs/api/auth-api.md), [`docs/api/customer-order-api.md`](docs/api/customer-order-api.md), [`docs/api/station-api.md`](docs/api/station-api.md), [`docs/api/drone-api.md`](docs/api/drone-api.md) (the order, station and drone contracts are still marked proposed)
 - Architecture and database: [`docs/architecture/`](docs/architecture/)
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
