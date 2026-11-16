@@ -12,3 +12,12 @@ That run was 973 passed / two failed / zero skipped and is not claimed green. Ra
 The CI workflow now includes `story/**` alongside develop/main, so a subtask PR can get backend/web/mobile checks on its current head without being pointed at develop. Workflow YAML parsed successfully. This does not change branch rules or authorize bypass on teammates' PRs.
 
 Current-head Linux/PostgreSQL 16 CI must pass before the backend checkpoint is merged into LA-40. Fixing this CI blocker does not complete LA-173's remaining full-flow defects or LA-172 end-to-end acceptance.
+# LA-173 web ETA acceptance supplement
+
+The LA-40 integration candidate incorporates `develop` at `894ceab` through a merge commit. Its backend, mobile, web and QA subtasks were reviewed and merged individually. A final review identified missing functional evidence for the web's status-change acceptance path.
+
+`deliveryEtaStatusRefresh.test.tsx` renders the real ETA page, API projection, polling hook and live-update hook. It mocks only the HTTP/SignalR transports, verifies subscription while APPROVED, dispatches the actual registered `StatusChanged` callback, observes another HTTP read and corrected IN_TRANSIT ETA, then verifies ARRIVED clears the countdown. The new case plus the six supplied QA UI cases passed **7/7** locally. This is functional integration evidence, not a live transport/provider/model-quality claim.
+
+The ETA runbook also clarifies that `ModelRevision` is configured metadata; the adapter does not verify the running model digest. Artifact pinning/verification and real-model quality remain activation gates. No model is enabled by this supplement.
+
+Full backend/web/mobile CI on the story PR's current integration head remains required before its `develop` merge. LA-172's complete web/mobile/API flow and outstanding client integration findings remain separate from these verified fixes; LA-173 is not marked fully Done on that basis.

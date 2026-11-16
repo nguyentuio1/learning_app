@@ -7,6 +7,7 @@ import '../models/cancel_delivery_order_dto.dart';
 import '../models/delivery_order.dart';
 import '../models/delivery_order_detail_response_dto.dart';
 import '../models/delivery_order_filter_params.dart';
+import '../models/eta_estimation_model.dart';
 import '../models/paged_result.dart';
 import '../models/station_operation_models.dart';
 import '../models/update_delivery_order_dto.dart';
@@ -84,6 +85,19 @@ class DeliveryOrderApiService {
       }
       throw apiError;
     }
+  }
+
+  Future<OrderEtaEstimate> getOrderEta(
+    String id, {
+    DateTime? now,
+    bool telemetryStale = false,
+  }) async {
+    final detail = await getOrderDetail(id);
+    return OrderEtaEstimate.fromOrderDetail(
+      detail,
+      now: now,
+      telemetryStale: telemetryStale,
+    );
   }
 
   Future<CreateDeliveryOrderResponseDto> createOrder(

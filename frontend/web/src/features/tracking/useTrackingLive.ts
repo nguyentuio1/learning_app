@@ -4,7 +4,7 @@ import { apiBaseURL, session } from '../../services/authSession'
 
 type LiveState = 'connecting' | 'live' | 'reconnecting' | 'polling' | 'paused'
 
-export function useTrackingLive(id: string, refresh: () => void, enabled: boolean) {
+export function useTrackingLive(id: string, refresh: () => void, enabled: boolean, events: 'all' | 'status' = 'all') {
   const [state, setState] = useState<LiveState>('connecting')
   useEffect(() => {
     if (!enabled || !apiBaseURL) return
@@ -25,6 +25,9 @@ export function useTrackingLive(id: string, refresh: () => void, enabled: boolea
       .configureLogging(LogLevel.None)
       .build()
     const active = () => !disposed && !document.hidden && session.getSnapshot().generation === initialGeneration
+    function refreshOnFallback() {
+      if (events === 'all') refresh()
+    }
     async function subscribe() {
       if (!active()) return
       await connection.invoke('Subscribe', id)
@@ -43,7 +46,7 @@ export function useTrackingLive(id: string, refresh: () => void, enabled: boolea
         else await connection.stop()
       } catch (error) {
         if (active()) {
-          setState('polling'); refresh()
+          setState('polling'); refreshOnFallback()
           if (!refreshedToken && typeof error === 'object' && error && 'statusCode' in error && error.statusCode === 401) {
             refreshedToken = true
             try { await session.refresh() } catch { /* HTTP auth flow owns expired-session handling. */ }
@@ -56,18 +59,18 @@ export function useTrackingLive(id: string, refresh: () => void, enabled: boolea
     // PositionUpdated has no order ID. A fresh connection is owned by each selection;
     // events only trigger an authoritative HTTP read, never overwrite another mission.
     const update = () => { if (active()) refresh() }
-    connection.on('PositionUpdated', update)
+    if (events === 'all') connection.on('PositionUpdated', update)
     connection.on('StatusChanged', update)
-    connection.onreconnecting(() => { if (active()) { setState('reconnecting'); refresh() } })
+    connection.onreconnecting(() => { if (active()) { setState('reconnecting'); refreshOnFallback() } })
     connection.onreconnected(async () => {
       try { await subscribe() }
-      catch { if (active()) { setState('polling'); refresh(); await connection.stop(); scheduleStart() } }
+      catch { if (active()) { setState('polling'); refreshOnFallback(); await connection.stop(); scheduleStart() } }
     })
-    connection.onclose(() => { if (active()) { setState('polling'); refresh(); scheduleStart() } })
+    connection.onclose(() => { if (active()) { setState('polling'); refreshOnFallback(); scheduleStart() } })
     function visibility() {
       clearTimeout(timer)
       if (document.hidden) { setState('paused'); void connection.stop() }
-      else { setState('connecting'); refresh(); void start(); scheduleStart() }
+      else { setState('connecting'); refreshOnFallback(); void start(); scheduleStart() }
     }
     void start()
     document.addEventListener('visibilitychange', visibility)
@@ -78,6 +81,6 @@ export function useTrackingLive(id: string, refresh: () => void, enabled: boolea
       // Closing the connection also removes its order subscription on the server.
       void connection.stop()
     }
-  }, [id, refresh, enabled])
+  }, [id, refresh, enabled, events])
   return enabled ? state : 'polling'
 }
