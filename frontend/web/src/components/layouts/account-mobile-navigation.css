@@ -9,13 +9,7 @@
 .account-mobile-menu a{text-decoration:none}
 .account-mobile-menu a:focus-visible{outline:2px solid #c0994b;outline-offset:3px}
 @media(max-width:760px){
-  .account-layout.account-drawer-layout{grid-template-columns:minmax(0,1fr)}
-  .account-drawer-layout>.account-sidebar{display:none}
-  .account-drawer-layout .account-header{position:sticky;top:0;z-index:30;flex-wrap:nowrap;gap:12px;min-height:64px}
-  .account-drawer-layout .account-breadcrumb{gap:8px;min-width:0;flex:1;flex-wrap:wrap}
-  .account-drawer-layout .account-breadcrumb>span{display:none}
-  .account-drawer-layout .account-breadcrumb strong{overflow-wrap:anywhere}
-  .account-drawer-layout .account-mobile-menu-toggle.ant-btn{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:42px;padding:10px;border-radius:10px;border-color:#cbd9c4;background:#f8faf3;color:#1e4f3c}
+  .account-mobile-menu-toggle.ant-btn{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:42px;padding:10px;border-radius:10px;border-color:#cbd9c4;background:#f8faf3;color:#1e4f3c}
 }
 @media(prefers-reduced-motion:reduce){.account-mobile-menu *{animation:none!important;transition:none!important}}
 
