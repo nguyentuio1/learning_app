@@ -124,6 +124,7 @@ public class FullSystemIntegrationTests(SimulatorApiFactory factory) : IClassFix
         });
 
         // 1. Customer creates delivery order -> PENDING
+        var startDateStr = DateTime.UtcNow.AddHours(7).ToString("yyyy-MM-dd");
         Guid orderId;
         string trackingNumber;
         string pickupSecureCode;
@@ -241,15 +242,107 @@ public class FullSystemIntegrationTests(SimulatorApiFactory factory) : IClassFix
             Assert.Equal("EMPTY", dbDestSlot.Status);
         });
 
-        var dateStr = factory.Clock.Now.UtcDateTime.ToString("yyyy-MM-dd");
+        var endDateStr = factory.Clock.Now.UtcDateTime.AddHours(7).ToString("yyyy-MM-dd");
         using (var dashRes = await SendAsync(
                    HttpMethod.Get,
-                   $"/api/analytics/dashboard?fromDate={dateStr}&toDate={dateStr}",
+                   $"/api/analytics/dashboard?fromDate={startDateStr}&toDate={endDateStr}",
                    manager.Token))
         {
             Assert.Equal(HttpStatusCode.OK, dashRes.StatusCode);
             var dashJson = await dashRes.Content.ReadFromJsonAsync<JsonElement>();
             Assert.True(dashJson.GetProperty("successRate").GetProperty("deliveredCount").GetInt32() >= 1);
+        }
+    }
+
+    [Fact]
+    public async Task Analytics_finds_order_created_before_utc_midnight_when_delivered_after_midnight()
+    {
+        var customer = await CreateActorAsync(AppRoles.Customer);
+        var manager = await CreateActorAsync(AppRoles.Manager);
+        var n = Interlocked.Increment(ref _seq);
+        var originStation = new LandingStation
+        {
+            Id = Guid.NewGuid(),
+            StationCode = $"MID-OR-{n:D4}",
+            Name = $"Midnight Origin {n}",
+            Address = "1 Midnight Way",
+            Latitude = 10.7m,
+            Longitude = 106.6m,
+            TotalSlots = 2,
+            Status = "OPERATIONAL"
+        };
+        var destStation = new LandingStation
+        {
+            Id = Guid.NewGuid(),
+            StationCode = $"MID-DE-{n:D4}",
+            Name = $"Midnight Dest {n}",
+            Address = "2 Midnight Way",
+            Latitude = 10.8m,
+            Longitude = 106.7m,
+            TotalSlots = 2,
+            Status = "OPERATIONAL"
+        };
+        var package = new Package
+        {
+            Id = Guid.NewGuid(),
+            SenderId = customer.Id,
+            PackageName = "Midnight Parcel",
+            WeightGram = 300m
+        };
+        // Created at 23:45 (+07:00) on 2026-11-15 (= 16:45 UTC), delivered at 00:25 (+07:00) on 2026-11-16 (= 17:25 UTC).
+        // Also covers UTC midnight boundary when spanned with a two-day range.
+        var createdAt = new DateTime(2026, 11, 15, 16, 45, 0, DateTimeKind.Utc);
+        var deliveredAt = new DateTime(2026, 11, 15, 17, 25, 0, DateTimeKind.Utc);
+        var order = new DeliveryOrder
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customer.Id,
+            PackageId = package.Id,
+            OriginStationId = originStation.Id,
+            DestinationStationId = destStation.Id,
+            TrackingNumber = $"MID-TRK-{n:D5}",
+            RecipientName = "Midnight Recipient",
+            RecipientPhone = "0900000123",
+            PickupSecureCode = "654321",
+            Status = "DELIVERED",
+            CreatedAt = createdAt,
+            ActualDepartureTime = new DateTime(2026, 11, 15, 17, 15, 0, DateTimeKind.Utc),
+            ActualDeliveryTime = deliveredAt
+        };
+
+        await factory.WithDbAsync(async db =>
+        {
+            db.LandingStations.AddRange(originStation, destStation);
+            db.Packages.Add(package);
+            db.DeliveryOrders.Add(order);
+            await db.SaveChangesAsync();
+        });
+
+        // Spanning CreatedAt (2026-11-15) to ActualDeliveryTime (2026-11-16) includes the order
+        using (var spanRes = await SendAsync(
+                   HttpMethod.Get,
+                   "/api/analytics/dashboard?fromDate=2026-11-15&toDate=2026-11-16",
+                   manager.Token))
+        {
+            Assert.Equal(HttpStatusCode.OK, spanRes.StatusCode);
+            var spanJson = await spanRes.Content.ReadFromJsonAsync<JsonElement>();
+            var usage = spanJson.GetProperty("stationUsage").EnumerateArray()
+                .SingleOrDefault(u => u.GetProperty("stationId").GetGuid() == originStation.Id);
+            Assert.NotEqual(JsonValueKind.Undefined, usage.ValueKind);
+            Assert.Equal(1, usage.GetProperty("totalDistinctOrders").GetInt32());
+        }
+
+        // Querying only the completion day (2026-11-16) excludes the order because Analytics filters by CreatedAt
+        using (var endOnlyRes = await SendAsync(
+                   HttpMethod.Get,
+                   "/api/analytics/dashboard?fromDate=2026-11-16&toDate=2026-11-16",
+                   manager.Token))
+        {
+            Assert.Equal(HttpStatusCode.OK, endOnlyRes.StatusCode);
+            var endOnlyJson = await endOnlyRes.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.DoesNotContain(
+                endOnlyJson.GetProperty("stationUsage").EnumerateArray(),
+                u => u.GetProperty("stationId").GetGuid() == originStation.Id);
         }
     }
 
