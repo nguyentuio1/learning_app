@@ -144,6 +144,10 @@ Owned sessions only; page >= 1, pageSize 1–50. Return `{ "items": [{ "id": "<u
 
 Owned session only; identical missing/foreign `404`. Same pagination limits. Return `{ "sessionId": "<uuid>", "items": [{ "id": "1201", "senderType": "USER", "messageText": "...", "createdAt": "<UTC>" }], "page": 1, "pageSize": 20, "totalCount": 2 }`. Global order is `createdAt`, then numeric ID ascending before pagination. IDs remain strings on the wire. An empty owned session returns an empty list. Offset pages are not a frozen snapshot while new messages arrive; deduplicate by ID when refreshing.
 
+### DELETE /api/ai-assistant/sessions/{id} — LA-165 deletion extension
+
+Persisted active CUSTOMER and owned session only. Return `204` after atomically deleting the session and its messages. Unknown/foreign sessions have the same `404`. This operation remains available for existing owned data while generation is disabled. The [LA-165 retention proposal](LA-165-retention-policy-proposal.md) describes the approval/backup/cleanup activation gate; [implementation notes](LA-165-customer-assistant.md) record backend availability separately from rollout and story acceptance.
+
 ## 6. Release checklist
 
 - Correct-site access and Jira ownership verified; LA-342 created after duplicate search. Existing documentation tasks reused with module responsibilities. Publish an explicit Confluence handoff and retain source/version evidence.

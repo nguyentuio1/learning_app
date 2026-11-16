@@ -71,6 +71,19 @@
         }
       }
     },
+    "/api/ai-assistant/sessions/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "delete": {
+        "operationId": "deleteOwnedAssistantSession",
+        "description": "LA-165 deletion extension. Persisted active CUSTOMER only. Delete an owned conversation and its messages atomically; unknown/foreign resources have the same 404. Available for existing owned data while generation is disabled.",
+        "responses": {
+          "204": { "description": "Conversation deleted. Cache-Control: no-store." },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
     "/api/ai-assistant/sessions/{id}/messages": {
       "parameters": [{ "$ref": "#/components/parameters/Id" }],
       "get": {
@@ -127,7 +140,7 @@
         "properties": { "orderId": { "type": "string", "format": "uuid" }, "outcome": { "type": "string", "enum": ["GENERATED", "NO_HISTORY"] }, "text": { "type": "string", "nullable": true, "maxLength": 4000 }, "generatedAt": { "type": "string", "format": "date-time", "nullable": true } }
       },
       "AssistantRequest": {
-        "type": "object", "required": ["sessionId", "orderId", "message"],
+        "type": "object", "additionalProperties": false, "required": ["sessionId", "orderId", "message"],
         "properties": { "sessionId": { "type": "string", "format": "uuid", "nullable": true }, "orderId": { "type": "string", "format": "uuid", "nullable": true }, "message": { "type": "string", "minLength": 1, "description": "Application validation requires 1-2000 Unicode scalar values after trimming; raw body is capped at 32 KiB." } }
       },
       "AssistantReply": {
