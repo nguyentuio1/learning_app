@@ -146,7 +146,7 @@ public class ExternalIntegrationAcceptanceTests
             customerId = customer,
             name = "Warehouse Local Time",
             scopes = new[] { "orders:read" },
-            expiresAt = "2027-01-01T00:00:00+07:00"
+            expiresAt = $"{f.Clock.GetUtcNow().AddDays(30):yyyy-MM-ddTHH:mm:ss}+07:00"
         });
 
         using var content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -155,7 +155,7 @@ public class ExternalIntegrationAcceptanceTests
     }
 
     [Fact]
-    public async Task External_order_create_writes_initial_status_log_and_notification_atomically()
+    public async Task External_order_create_writes_initial_status_log_and_notification()
     {
         using var f = new IntegrationApiFactory();
         using var admin = f.CreateClient();
