@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
-import 'package:smart_drone_delivery/data/models/delivery_order.dart';
 import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_dto.dart';
 import 'package:smart_drone_delivery/data/models/eta_estimation_model.dart';
 import 'package:smart_drone_delivery/data/models/landing_station.dart';
@@ -108,13 +107,18 @@ class _FakeDeliveryMapRepository implements DeliveryMapRepository {
   final _controller = StreamController<DeliveryMapUpdate>.broadcast();
 
   void emitStatusChanged(String orderId) {
-    _controller.add(DeliveryMapUpdate.statusChanged(orderId));
+    _controller.add(
+      DeliveryMapUpdate(
+        type: DeliveryMapUpdateType.statusChanged,
+        orderId: orderId,
+      ),
+    );
   }
 
   Future<void> close() => _controller.close();
 
   @override
-  Future<DeliveryMapSnapshot> getOrderMap(String orderId) async =>
+  Future<DeliveryMapSnapshot> getMapSnapshot(String orderId) async =>
       const DeliveryMapSnapshot(
         orderId: _orderId,
         trackingNumber: 'DD-202611-0401',
