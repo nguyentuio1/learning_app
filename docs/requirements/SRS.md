@@ -38,13 +38,13 @@ The system has four parts: an ASP.NET Core Web API with a PostgreSQL database, a
 
 ### 2.3 Actors
 
-| Actor | Main concerns | Client |
-|---|---|---|
-| Customer | Orders, packages, addresses, tracking, AI assistant | Mobile, web |
-| Dispatcher | Approval, scheduling, drones, failed deliveries | Web |
-| Station Operator | Station slots, package pickup | Mobile, web |
-| Logistics Manager | Dashboard, statistics, reports | Web |
-| System Administrator | Users, roles, audit logs, system health | Web |
+| Actor | Role code | Main concerns | Client |
+|---|---|---|---|
+| Customer | `CUSTOMER` | Orders, packages, addresses, tracking, AI assistant | Mobile, web |
+| Dispatcher | `DISPATCHER` | Approval, scheduling, drones, failed deliveries | Web |
+| Station Operator | `STATION_OPERATOR` | Station slots, package intake, pickup | Mobile, web |
+| Logistics Manager | `MANAGER` | Dashboard, statistics, reports | Web |
+| System Administrator | `ADMIN` | Users, roles, audit logs, stations, integration keys, system health | Web |
 
 ### 2.4 Assumptions and constraints
 - Only lightweight packages are delivered; weight and size must stay within the limits of the assigned drone.
@@ -74,7 +74,7 @@ Priority: **M** = must have, **S** = should have.
 | FR-07 | A customer shall create and update packages with name, weight, dimensions, fragile flag and optional photo | M | UC-04 |
 | FR-08 | A customer shall create a delivery order for a package with origin station, destination station and recipient name and phone | M | UC-05 |
 | FR-09 | The system shall generate a unique tracking number and a secure code for each order and set the initial status to PENDING | M | UC-05 |
-| FR-10 | A customer shall edit an order only before it is approved and shall cancel an order with a reason while cancellation is still allowed | M | UC-06 |
+| FR-10 | A customer shall edit an order only in `PENDING` status and shall cancel an order with a reason while cancellation is allowed (`PENDING` or `APPROVED`) | M | UC-06 |
 | FR-11 | A customer shall list their own orders with filters and view an order with its status history | M | UC-07 |
 | FR-12 | The system shall create a notification for the customer when the order status changes | S | UC-10 |
 
@@ -94,7 +94,7 @@ Priority: **M** = must have, **S** = should have.
 
 | Id | Requirement | Priority | Use case |
 |---|---|---|---|
-| FR-20 | An administrator or operator shall create, update, deactivate and list landing stations with location and operating status | M | UC-16 |
+| FR-20 | An administrator shall create and update landing stations; an administrator or assigned station operator shall update station operating status (`OPERATIONAL`, `MAINTENANCE`, `OFFLINE`); authorized staff shall list stations | M | UC-16 |
 | FR-21 | The system shall manage the slots of each station and their status | M | UC-16 |
 | FR-22 | The system shall show the real-time availability of stations and slots | M | UC-17 |
 | FR-23 | A station operator shall confirm that a package was received at the station | M | UC-18 |
@@ -141,14 +141,14 @@ Priority: **M** = must have, **S** = should have.
 
 ## 5. Data requirements
 
-The data model has 17 entities (migrations in `backend/SmartDroneDelivery.Api/Migrations`):
+The data model has 21 entities (migrations in `backend/SmartDroneDelivery.Api/Migrations` and `AppDbContext.cs`):
 
 | Group | Entities |
 |---|---|
-| Identity | Role, User, RefreshToken, AuditLog |
+| Identity & Integration | Role, User, RefreshToken, AuditLog, IntegrationApiKey |
 | Customer | CustomerAddress, Notification |
-| Delivery | Package, DeliveryOrder, DeliveryStatusLog |
-| Stations and drones | LandingStation, StationSlot, Drone, FlightMission, FlightTelemetryLog |
+| Delivery & Failure Handling | Package, DeliveryOrder, DeliveryStatusLog, DeliveryFailureEpisode, FailureHandlingEvent |
+| Stations, Drones & Simulation | LandingStation, StationSlot, Drone, FlightMission, FlightTelemetryLog, SimulatorDiversion |
 | AI | AiEtaPrediction, AiChatSession, AiChatMessage |
 
 ## 6. Traceability to the delivery plan
@@ -163,3 +163,36 @@ The data model has 17 entities (migrations in `backend/SmartDroneDelivery.Api/Mi
 
 ## 7. Acceptance
 The requirements are accepted when the team has reviewed this document and the leader has approved the pull request that introduces it. Changes after approval go through a new pull request and a Jira issue.
+
+## 8. Consolidated Appendices & Cross-References (LA-253)
+
+### 8.1 Use Cases & Function Specifications
+All 22 use cases (`UC-01` to `UC-22`) and their detailed function specifications are traced across:
+- [use-cases.md](use-cases.md) — Actor-by-actor use case catalog (`UC-01`–`UC-22`).
+- [functions-user-management-and-analytics.md](functions-user-management-and-analytics.md) — Auth, RBAC, User Management, Dashboard (`FR-01`–`FR-05`, `FR-28`–`FR-33`).
+- [functions-delivery-workflow.md](functions-delivery-workflow.md) — Customer orders, approval, scheduling, tracking, failure handling (`FR-06`–`FR-19`, `FR-24`–`FR-25`).
+- [functions-landing-station.md](functions-landing-station.md) — Stations, slots, availability, intake, pickup confirmation (`FR-20`–`FR-23`, `FR-26`–`FR-27`).
+
+### 8.2 Business Rules & Application Error Messages
+- **Business Rules**: [business-rules.md](business-rules.md) defines domain invariants (`BR-*`), state machine transitions, OTP 3-attempt lockout, payload/range checks, and concurrency rules.
+- **Error & Status Messages**: [application-messages.md](application-messages.md) defines user-facing validation and error messages, mapped to RFC 7807 `ProblemDetails` responses (`400` validation, `401` unauthenticated/invalid key, `403` role/ownership/inactive account, `404` hidden/missing resource, `409` state/uniqueness conflict, `423` OTP lockout, `429` rate limit).
+
+### 8.3 API Contract Cross-Reference
+| Contract Document | Scope |
+|---|---|
+| [auth-api.md](../api/auth-api.md) | Registration, JWT login/refresh/logout, profile, password, user/role admin (`FR-01`–`FR-05`, `FR-32`) |
+| [customer-order-api.md](../api/customer-order-api.md) | Saved addresses, packages, customer delivery orders (`FR-06`–`FR-11`) |
+| [station-api.md](../api/station-api.md) | Landing stations, slots, availability, intake & pickup (`FR-20`–`FR-23`, `FR-26`–`FR-27`) |
+| [drone-api.md](../api/drone-api.md) | Drone fleet management (`FR-19`) |
+| [delivery-workflow-api.md](../api/delivery-workflow-api.md) | Approval, state machine, scheduling, failure handling, active deliveries (`FR-13`–`FR-18`) |
+| [notification-api.md](../api/notification-api.md) | Customer notifications (`FR-12`) |
+| [sprint-6-api-contract.md](../api/sprint-6-api-contract.md) | Real-time tracking, delivery map, customer confirmation, dashboard/reports, external v1 API (`FR-24`–`FR-28`, `FR-34`) |
+| [sprint-7-api-contract.md](../api/sprint-7-api-contract.md) | AI ETA estimation, delivery summarization, customer AI assistant (`FR-29`–`FR-31`) |
+
+### 8.4 Verification & Test Evidence Traceability
+- **CI Gates**: [ci.yml](../../.github/workflows/ci.yml) enforces `Backend tests` (including PostgreSQL 16 concurrency/transaction suites), `Web lint, test and build` (ESLint, Vitest, Vite production build), and `Mobile analyze and test` (`flutter analyze --no-fatal-infos`, `flutter test`).
+- **QA Documentation**: Test scope, test plan, module test cases (`FR-01`–`FR-34`), and test execution evidence are consolidated in `docs/testing/` (tracked under `LA-202` / PR #176).
+- **Automated Suites**:
+  - Backend: `backend/SmartDroneDelivery.Tests/` (`Auth*`, `Rbac*`, `DeliveryOrder*`, `LandingStation*`, `StationSlot*`, `Drone*`, `Tracking*`, `DeliveryConfirmation*`, `Analytics*`, `Integration*`).
+  - Web: `frontend/web/tests/` (`accountFlow`, `order*`, `userManagement*`, `landingStation*`, `stationSlot*`, `droneManagement*`, `deliveryApprovalUi`, `deliverySchedulingUi`, `deliveryFailureHandlingUi`, `customerNotificationsUi`, `deliveryMapUi`).
+  - Mobile: `frontend/mobile/test/` (`auth_*`, `order_*`, `notifications_page_test`, `delivery_map_*`, `delivery_confirmation_*`).
