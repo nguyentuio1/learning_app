@@ -1,4 +1,5 @@
 // LA-168: Customer AI assistant acceptance and regression tests
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -51,7 +52,8 @@ public class CustomerAssistantAcceptanceTests(AssistantGenerationFactory factory
         }
 
         // 2. IN_TRANSIT order with future EstimatedDeliveryTime -> reports stored arrival estimate
-        var futureEta = new DateTime(2026, 11, 20, 14, 30, 0, DateTimeKind.Utc);
+        var now = DateTime.UtcNow;
+        var futureEta = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc).AddDays(3);
         await factory.WithDbAsync(async db =>
         {
             var order = await db.DeliveryOrders.SingleAsync(o => o.Id == user.OrderId);
@@ -63,7 +65,7 @@ public class CustomerAssistantAcceptanceTests(AssistantGenerationFactory factory
                 FromStatus = "APPROVED",
                 ToStatus = "IN_TRANSIT",
                 Remarks = "Private operator note 654321",
-                CreatedAt = new DateTime(2026, 11, 16, 8, 0, 0, DateTimeKind.Utc)
+                CreatedAt = now.AddHours(-1)
             });
             await db.SaveChangesAsync();
         });
@@ -74,7 +76,23 @@ public class CustomerAssistantAcceptanceTests(AssistantGenerationFactory factory
             var body = await inTransitEtaRes.Content.ReadFromJsonAsync<JsonElement>();
             var text = body.GetProperty("reply").GetProperty("messageText").GetString()!;
             Assert.Contains("in transit", text);
-            Assert.Contains("2026-11-20 14:30:00 UTC", text);
+            Assert.Contains(futureEta.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture), text);
+        }
+
+        // 2b. IN_TRANSIT order with overdue EstimatedDeliveryTime -> reports estimate passed without fabricating a new arrival
+        await factory.WithDbAsync(async db =>
+        {
+            var order = await db.DeliveryOrders.SingleAsync(o => o.Id == user.OrderId);
+            order.EstimatedDeliveryTime = now.AddMinutes(-10);
+            await db.SaveChangesAsync();
+        });
+
+        using (var overdueEtaRes = await PostMessageAsync(user.Token, "What is the estimated arrival now?", orderId: user.OrderId))
+        {
+            Assert.Equal(HttpStatusCode.OK, overdueEtaRes.StatusCode);
+            var body = await overdueEtaRes.Content.ReadFromJsonAsync<JsonElement>();
+            var text = body.GetProperty("reply").GetProperty("messageText").GetString()!;
+            Assert.Contains("The recorded arrival estimate has passed; a revised estimate is not available.", text);
         }
 
         // 3. History intent -> summarizes chronological events without exposing remarks or pickup codes
