@@ -49,4 +49,8 @@ abstract final class ApiEndpoints {
   static const aiAssistantSessions = '/ai-assistant/sessions';
   static String aiAssistantSessionMessages(String sessionId) =>
       '$aiAssistantSessions/${Uri.encodeComponent(sessionId)}/messages';
+
+  // AI-assisted ETA Estimation (LA-40 / LA-160)
+  static String deliveryOrderById(String id) => '$deliveryOrders/$id';
+  static String deliveryOrderEta(String id) => '$deliveryOrders/$id/eta';
 }

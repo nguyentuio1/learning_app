@@ -37,6 +37,15 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<DeliveryEtaQueryService>();
+builder.Services.AddScoped<EtaPredictionService>();
+builder.Services.AddOptions<EtaPredictionOptions>()
+    .Bind(builder.Configuration.GetSection(EtaPredictionOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "EtaPrediction requires bounded batches/intervals, a loopback model endpoint and an explicit model revision when enabled.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<IEtaModelGateway, LocalEtaModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHostedService<EtaPredictionWorker>();
 builder.Services.AddScoped<AnalyticsQueryService>();
 builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
 builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
@@ -47,6 +56,15 @@ builder.Services.AddSingleton<IntegrationRateLimits>();
 builder.Services.AddScoped<ITrackingService, TrackingService>();
 builder.Services.AddScoped<FailureService>();
 builder.Services.AddScoped<DeliveryRouteEstimate>();
+builder.Services.AddScoped<DeliverySummaryFacts>();
+builder.Services.AddScoped<DeliverySummaryService>();
+builder.Services.AddSingleton<AiGenerationSlots>();
+builder.Services.AddOptions<DeliverySummaryOptions>()
+    .Bind(builder.Configuration.GetSection(DeliverySummaryOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "DeliverySummary requires a loopback URL, model and immutable revision when enabled.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<ISummaryModelGateway, LocalSummaryModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
     .Validate(o => double.IsFinite(o.CruiseSpeedMps) && o.CruiseSpeedMps > 0,

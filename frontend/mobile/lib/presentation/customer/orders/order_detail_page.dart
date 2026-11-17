@@ -16,6 +16,7 @@ import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
 import 'confirm_delivery_page.dart';
 import 'my_orders_provider.dart';
+import 'widgets/eta_estimation_card.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   const OrderDetailPage({DeliveryOrder? order, String? orderId, super.key})
@@ -77,7 +78,11 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ),
         data: (response) {
           final order = _localOrder ?? _orderFrom(response);
-          final mapState = order.status == 'IN_TRANSIT'
+          final isNonTerminal =
+              order.status != 'DELIVERED' &&
+              order.status != 'CANCELLED' &&
+              order.status != 'FAILED';
+          final mapState = isNonTerminal
               ? ref.watch(deliveryMapControllerProvider(order.id))
               : null;
           return _buildDetails(order, response, mapState);
@@ -95,14 +100,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final origin = detail.originStation;
     final destination = detail.destinationStation;
     final address = detail.deliveryAddress;
-    final eta = detail.aiEtaPrediction;
 
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         if (order.status == 'ARRIVED') _arrivedBanner(detail),
         if (order.status == 'FAILED') _failureBanner(detail),
-        if (mapState != null) ...[
+        if (order.status == 'IN_TRANSIT' && mapState != null) ...[
           AsyncValueView<DeliveryMapViewState>(
             value: mapState,
             onRetry: () =>
@@ -167,26 +171,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ] else if (order.deliveryAddressId != null) ...[
           _detail('Delivery address', order.deliveryAddressId!),
         ],
-        if (eta != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'AI ETA prediction',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (eta.calculatedDistanceKm != null)
-            _detail('Distance', '${eta.calculatedDistanceKm} km'),
-          if (eta.predictedDurationMinutes != null)
-            _detail(
-              'Predicted duration',
-              '${eta.predictedDurationMinutes} minutes',
-            ),
-          if (eta.weatherCondition != null)
-            _detail('Weather', eta.weatherCondition!),
-          if (eta.confidenceScore != null)
-            _detail('Confidence', '${eta.confidenceScore}'),
-          if (eta.createdAt != null)
-            _detail('Prediction created', _formatTimestamp(eta.createdAt!)),
-        ],
+        const SizedBox(height: 8),
+        EtaEstimationCard(orderId: order.id),
+        const SizedBox(height: 12),
         if (detail.scheduledDepartureTime != null)
           _detail(
             'Scheduled departure',
