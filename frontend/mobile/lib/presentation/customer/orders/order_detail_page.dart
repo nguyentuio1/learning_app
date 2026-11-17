@@ -227,6 +227,18 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const Key('order-detail-ask-assistant-button'),
+          onPressed: () => context.push(
+            RoutePaths.customerAssistantFor(
+              orderId: order.id,
+              trackingNumber: order.trackingNumber,
+            ),
+          ),
+          icon: const Icon(Icons.smart_toy_outlined),
+          label: const Text('Ask AI Assistant'),
+        ),
       ],
     );
   }

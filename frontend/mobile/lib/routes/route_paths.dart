@@ -21,6 +21,25 @@ abstract final class RoutePaths {
   static const customerOrderSubmitted = '/customer/orders/create/submitted';
   static const customerOrdersEdit = '/customer/orders/edit';
   static const customerNotifications = '/customer/notifications';
+  static const customerAssistant = '/customer/assistant';
+  static String customerAssistantFor({
+    String? orderId,
+    String? trackingNumber,
+    String? sessionId,
+  }) {
+    final query = <String, String>{};
+    if (orderId != null && orderId.isNotEmpty) query['orderId'] = orderId;
+    if (trackingNumber != null && trackingNumber.isNotEmpty) {
+      query['trackingNumber'] = trackingNumber;
+    }
+    if (sessionId != null && sessionId.isNotEmpty) {
+      query['sessionId'] = sessionId;
+    }
+    return Uri(
+      path: customerAssistant,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
   static const operatorHome = '/operator';
   static const operatorPickup = '/operator/pickup';
   static const operatorExpiredParcels = '/operator/expired-parcels/:stationId';

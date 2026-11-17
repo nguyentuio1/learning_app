@@ -11,6 +11,7 @@ using SmartDroneDelivery.Api.Services;
 using SmartDroneDelivery.Api.Tracking;
 using SmartDroneDelivery.Api.Security;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +85,18 @@ builder.Services.AddOptions<DroneSimulatorOptions>()
 builder.Services.AddScoped<DroneSimulatorService>();
 builder.Services.AddHostedService<DroneSimulatorWorker>();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
+builder.Services.AddScoped<AssistantAccess>();
+builder.Services.AddScoped<AssistantHistoryService>();
+builder.Services.AddScoped<CustomerAssistantService>();
+builder.Services.AddScoped<AssistantContextReader>();
+builder.Services.AddScoped<AssistantExchangeWriter>();
+builder.Services.AddScoped<AssistantRetentionService>();
+builder.Services.AddHostedService<AssistantRetentionWorker>();
+builder.Services.TryAddSingleton<AiGenerationSlots>();
+builder.Services.AddOptions<CustomerAssistantOptions>().Bind(builder.Configuration.GetSection(CustomerAssistantOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "Assistant activation requires approved retention/backup settings and a configured local model.").ValidateOnStart();
+builder.Services.AddHttpClient<IAssistantModelGateway, LocalAssistantModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
