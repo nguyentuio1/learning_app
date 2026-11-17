@@ -44,7 +44,7 @@ public class UserManagementTests : IClassFixture<AuthApiFactory>, IDisposable
     }
 
     private async Task<string> AdminTokenAsync() =>
-        (await SignInAsync("admin@smartdronedelivery.com", "Admin@123456"))
+        (await SignInAsync(TestSettings.AdminEmail, TestSettings.AdminPassword))
         .GetProperty("accessToken").GetString()!;
 
     private async Task<JsonElement> SeedSessionAsync(string role)

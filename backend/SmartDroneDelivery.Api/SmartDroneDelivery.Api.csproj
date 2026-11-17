@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- LA-328: local secrets live in dotnet user-secrets, outside the repository. -->
+    <UserSecretsId>smart-drone-delivery-api</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

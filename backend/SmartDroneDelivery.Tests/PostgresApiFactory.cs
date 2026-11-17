@@ -21,7 +21,7 @@ public sealed class PostgresFactAttribute : FactAttribute
     {
         if (PostgresApiFactory.ServerConnectionString is null)
             Skip = $"Set {PostgresApiFactory.ConnectionVariable} to a PostgreSQL server to run this test, " +
-                   "for example: Host=localhost;Port=5433;Username=postgres;Password=Password123!";
+                   "for example: Host=localhost;Port=5433;Username=postgres;Password=<your POSTGRES_PASSWORD>";
     }
 }
 
@@ -63,8 +63,7 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
         CreateDatabase(server);
 
         builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["Seed:DevelopmentData"] = "false" }));
+        TestSettings.Apply(builder);
         builder.ConfigureServices(services =>
         {
             // Manual deterministic simulator ticks must never race the hosted worker.
