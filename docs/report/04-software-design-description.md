@@ -2,19 +2,19 @@
 
 This chapter brings together the system architecture, the data model and the design of each SmartDroneDelivery module. Trần Nguyễn owns the chapter under [LA-254](https://hungndemail.atlassian.net/browse/LA-254). The implementation baseline is [develop at 894ceab](https://github.com/nguyentuio1/learning_app/commit/894ceab0cc70f6c68e543274382580b9d21f40d6), checked on 16 November 2026. Section 4 records Sprint 7 work tracked on story branches. The publication target is the existing [Chapter IV in Confluence](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109).
 
-## 1. System Design
+## 1. System design
 
-### 1.1 System Architecture
+### 1.1 System architecture
 
 The React web portal serves customers, dispatchers, logistics managers and administrators. The Flutter Customer app supports customer workflows, and the Flutter Station Operator app supports station workflows. Both clients use the ASP.NET Core API. Tracking clients also subscribe to authorized delivery updates through SignalR.
 
 The API checks authorization and validates business rules before applying changes through EF Core to PostgreSQL 16. MinIO stores uploaded files such as package images and avatars. Docker Compose provides the local PostgreSQL and MinIO services. The software simulator supplies telemetry for flight and tracking workflows. Physical drone control is outside the project scope. [System design](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14090250) · [Architecture diagram](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=1540097) · [Local infrastructure](../../docker-compose.yml) · [Flutter architecture](../../frontend/mobile/docs/KIEN_TRUC.md)
 
-### 1.2 Access and Integration
+### 1.2 Access and integration
 
 Web and mobile clients authenticate with bearer tokens. The backend checks the role and, where required, ownership of the requested record. External clients use scoped API keys with the versioned delivery-order integration API. AI features use the operational data permitted for the requester, and their responses are informational. [Authentication API](../api/auth-api.md) · [Tracking and integration API](../api/sprint-6-api-contract.md) · [AI access rules](../api/sprint-7-api-contract.md)
 
-## 2. Database Design
+## 2. Database design
 
 ### 2.1 Records by module
 
@@ -32,7 +32,7 @@ The Confluence ERD describes the 17-table baseline. The EF Core model also conta
 
 An order can have multiple missions over time, for example after a reschedule. A filtered unique index allows at most one mission in `PLANNED` or `IN_AIR` for an order at a time. Slot numbers are unique within a station. The order timeline and mission telemetry record different events, so station arrival can be shown separately from recipient confirmation. [Current model and indexes](../../backend/SmartDroneDelivery.Api/Data/AppDbContext.cs) · [Workflow classes](../design/class-specification-delivery-workflow.md) · [Station, slot and drone classes](../design/class-specification-stations-slots-drones.md)
 
-## 3. Detailed Design
+## 3. Detailed design
 
 ### 3.1 Identity and access
 
@@ -72,7 +72,7 @@ AI acceptance still requires evidence against the real backend and the applicabl
 
 Reference drawings for the current design are in the [Detailed Design index](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14090271), the [web wireframes](../design/wireframes/web/index.md) and the [mobile wireframes](../design/wireframes/app/index.md).
 
-## 4. Handoff and Review
+## 4. Handoff and review
 
 ### 4.1 Sprint 7 implementation evidence
 
@@ -89,6 +89,6 @@ Trần Nguyễn owns the web flows and chapter consolidation. Nhân Lưu Thiện
 
 This draft can be reviewed while the remaining mobile flows and acceptance evidence are collected. Publish the reviewed content to the existing Chapter IV page and record the PR, commit, Confluence version and verification date in the Jira handoff. TBA Review coordinates final report assembly and approval under [LA-204](https://hungndemail.atlassian.net/browse/LA-204).
 
-## Historical References
+### 4.3 Historical references
 
 The previous layouts and dated implementation snapshots remain available for comparison. [Sprint 5 snapshot](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=18055306) · [Chapter IV version history](https://hungndemail.atlassian.net/wiki/spaces/~712020594ceef270154d55954fe04ed3d2e61b/history/11993109)
