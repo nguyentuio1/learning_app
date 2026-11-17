@@ -13,7 +13,7 @@ Owner: [LA-255](https://hungndemail.atlassian.net/browse/LA-255), Hung Nguyen. P
 | **III. Software Requirements Specification** | [SRS.md](../requirements/SRS.md) | Consolidated via LA-253 | Cross-referenced from Chapters I, II, and IV (`Checked`). |
 | **IV. Software Design Description** | [04-software-design-description.md](04-software-design-description.md) | [Page 11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | Numbered `1.`–`4.` (`4.3 Historical references`), sentence-case headings aligned with Chapters I–II (`Checked`). |
 | **V. Test Plan & Test Report** | [test-plan.md](../testing/test-plan.md) · [test-report.md](../testing/test-report.md) | [Chapter V](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | Linked from Chapter II and Chapter IV (`Checked`). |
-| **VI. Conclusion & Final Export** | Assembled in Confluence / export | Consolidated under LA-204 | Pending final export & TOC check by TBA Review. |
+| **VI. Release Package & User Guides** | Deliverable package, installation guides, and user manual | [Page 14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) (v2) | Structure preserved; final export & TOC assembly remain a pending gate under LA-204. |
 
 Formatting fixes applied in this pass:
 - Fixed missing spaces and added direct Confluence page links in [README.md](README.md) (`14188546`, `11927566`), and updated the chapter file count wording.
@@ -30,7 +30,7 @@ All repository report chapters and Sprint 7 mobile/station user-flow sources sho
 | **Flutter Customer app** | `Customer app` (`AppFlavor.customer`) | Owns customer orders, tracking, delivery confirmation, ETA, and AI assistant (`LA-160`, `LA-167`, `LA-169`, `LA-171`). |
 | **Flutter Station Operator app** | `Station Operator app` (`AppFlavor.operator`) | Owns station availability, slot maintenance, origin intake, destination pickup, expired-parcel clearing, and operator notifications (`LA-170`). |
 | **Landing station & slot states** | `Landing station` with `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR` slots | Manual operator toggle is restricted to `EMPTY <-> ERROR`. |
-| **Order lifecycle transitions** | `APPROVED -> READY_FOR_TAKEOFF` (intake, requires `PLANNED` mission), `APPROVED -> FAILED` (intake rejection), `IN_AIR -> ARRIVED` (station arrival), `ARRIVED -> DELIVERED` (recipient/pickup confirmation) | Do not use non-backend labels (`IN_ORIGIN_STATION`, `REJECTED`, `COMPLETED`) in flow docs or API examples. |
+| **Order lifecycle transitions** | `APPROVED -> READY_FOR_TAKEOFF` (intake, requires `PLANNED` mission), `APPROVED -> FAILED` (intake rejection), `IN_TRANSIT -> ARRIVED` (station arrival), `ARRIVED -> DELIVERED` (recipient/pickup confirmation) | `IN_AIR` is a `FlightMission.FlightStatus` (not a `DeliveryOrder.Status`); do not mix order/mission states or use non-backend labels (`IN_ORIGIN_STATION`, `REJECTED`, `COMPLETED`). |
 
 ---
 
@@ -52,4 +52,4 @@ All repository report chapters and Sprint 7 mobile/station user-flow sources sho
 | Cross-document formatting & terminology pass | Hung Nguyen (`LA-255`) | This checklist + PR on `docs/LA-255-proofread-format-report` | Prepared for review |
 | Proofreader #1 sign-off | *Pending human reviewer 1* | *Record reviewer name, date, and notes* | Pending |
 | Proofreader #2 sign-off | *Pending human reviewer 2* | *Record reviewer name, date, and notes* | Pending |
-| Confluence publication & final export | TBA Review (`LA-204`) | *Record exported PDF/DOCX + Confluence page versions (`14188546`, `11927566`, `11993109`, Chapter V/VI)* | Pending |
+| Confluence publication & final export | TBA Review (`LA-204`) | *Record exported PDF/DOCX + Confluence page versions (`14188546`, `11927566`, `11993109`, Chapter V, `14024801`)* | Pending |
