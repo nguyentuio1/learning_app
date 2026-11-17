@@ -166,7 +166,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               trackingNumber:
                   state.uri.queryParameters['trackingNumber'] ??
                   extraTrackingNumber,
-              sessionId: state.uri.queryParameters['sessionId'],
+              sessionId:
+                  state.uri.queryParameters['sessionId'] ??
+                  (extra is Map ? extra['sessionId']?.toString() : null),
             );
           },
         ),
