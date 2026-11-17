@@ -43,7 +43,8 @@ set -a; . ./.env; set +a
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@smartdronedelivery.com}
 
 echo "2. one command starts the full system"
-docker compose -p "$PROJECT" up -d --build
+docker compose -p "$PROJECT" up -d --build --wait --wait-timeout 300
+[ "$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose -p "$PROJECT" ps -q api)")" = healthy ]   || { echo "api container is not healthy"; exit 1; }
 
 wait_for() { # url, expected status, attempts
   for _ in $(seq 1 "${3:-60}"); do
@@ -66,6 +67,8 @@ curl -sf "$WEB/" | grep -qi '<div id="root"' || { echo "portal index.html not se
 curl -sf "$WEB/orders/some/client/route" | grep -qi '<div id="root"' || { echo "SPA fallback missing"; exit 1; }
 
 echo "4. API reachable directly (mobile apps) and through the proxy, with the database"
+curl -sf "$API/health/live" | grep -q '"status":"Healthy"'
+curl -sf "$API/health/ready" | grep -q '"status":"Healthy"' || { echo "readiness is not Healthy"; exit 1; }
 login "$API" >/dev/null
 curl -sf "$WEB/api/landing-stations" -H "Authorization: Bearer $TOKEN" >/dev/null
 

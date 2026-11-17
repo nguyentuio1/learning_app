@@ -49,7 +49,7 @@ One command builds and starts PostgreSQL, MinIO, the API and the web portal (LA-
 
 ```bash
 cp .env.example .env        # fill in every empty value; .env is ignored by git
-docker compose up -d --build
+docker compose up -d --build --wait     # returns once the API reports healthy
 ```
 
 | Service | Address |
@@ -59,6 +59,15 @@ docker compose up -d --build
 | MinIO console | <http://localhost:9001> |
 
 The API runs in the `Production` environment: no Swagger and no demo accounts; the administrator is created from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`. Set `ASPNETCORE_ENVIRONMENT=Development` in `.env` for Swagger and the demo accounts below. `docker compose down` stops everything and keeps the data; `docker compose down -v` also deletes it. Host ports can be changed in `.env` (`API_HOST_PORT`, `WEB_HOST_PORT`, ...). [`scripts/docker-smoke-test.sh`](scripts/docker-smoke-test.sh) starts the stack from scratch and checks the portal, login, a database read and an avatar upload to MinIO; the `Docker package` workflow runs it on pull requests that touch the package.
+
+### Health and monitoring
+
+| Endpoint | Anonymous | Checks | Status |
+|---|---|---|---|
+| `GET /health/live` | yes | the API process answers | `200` |
+| `GET /health/ready` | yes | PostgreSQL connection and MinIO (`/minio/health/live`) | `200` when all are healthy, otherwise `503` |
+
+Both return JSON such as `{"status":"Healthy","totalDurationMs":4,"checks":[{"name":"database","status":"Healthy","durationMs":3},{"name":"storage","status":"Healthy","durationMs":1}]}` with no host names, connection strings or error text; the reason for a failure is written to the API log. In Docker the `api` service uses `/health/ready` as its health check and `web` starts only after it is healthy: `docker compose ps` shows the state and `docker compose logs api` the log (LA-178).
 
 ## Run it locally
 

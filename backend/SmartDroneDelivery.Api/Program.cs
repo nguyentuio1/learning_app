@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.Health;
 using SmartDroneDelivery.Api.Middleware;
 using SmartDroneDelivery.Api.Options;
 using SmartDroneDelivery.Api.Services;
@@ -143,6 +144,8 @@ builder.Services
     })
     .AddScheme<AuthenticationSchemeOptions, IntegrationKeyAuthenticationHandler>(IntegrationKeyAuthenticationHandler.SchemeName, _ => { });
 // Secure by default: an endpoint without [Authorize] or [AllowAnonymous] still needs a signed-in user.
+builder.Services.AddSystemHealthChecks();
+
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
@@ -226,6 +229,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapSystemHealthChecks();
 app.MapHub<TrackingHub>("/hubs/tracking", options => options.CloseOnAuthenticationExpiration = true);
 
 app.Run();
