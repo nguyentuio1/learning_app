@@ -14,6 +14,7 @@ Choose **one** startup path (do not mix them, as both bind port `5055`):
 
 1. **Path A — One-command Docker stack (recommended for the demo):**
    - Copy `.env.example` to `.env` and populate every interpolated variable (`POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `JWT_KEY`, `ADMIN_PASSWORD`), plus `ASPNETCORE_ENVIRONMENT=Development`, `DroneSimulator__Enabled=true`, and `DeliveryFlight__CruiseSpeedMps=60`.
+   - `docker-compose.yml` forwards `DroneSimulator__Enabled` and `DeliveryFlight__CruiseSpeedMps` into `services.api.environment` (defaulting to `false` and `12` when unset). Verify the effective API container environment before starting: `docker compose config` (confirm `DroneSimulator__Enabled: "true"` and `DeliveryFlight__CruiseSpeedMps: "60"` under `services.api.environment`).
    - Run `docker compose up -d --build --wait`.
    - Open the web portal at `http://localhost:8080` and verify `curl http://localhost:5055/health/ready` reports `"status":"Healthy"`.
 2. **Path B — Developer servers (local hot-reload):**
