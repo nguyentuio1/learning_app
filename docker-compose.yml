@@ -1,3 +1,8 @@
+# LA-181: the full system (PostgreSQL, MinIO, API, web portal) with one command:
+#   cp .env.example .env   # replace every value first
+#   docker compose up -d --build
+# Infrastructure only, for `dotnet run` / `npm run dev`:  docker compose up -d postgres minio
+# The passwords come from .env (LA-328); compose stops when a required value is missing.
 services:
   postgres:
     image: postgres:16-alpine
@@ -6,12 +11,16 @@ services:
     environment:
       POSTGRES_DB: drone_delivery_db
       POSTGRES_USER: postgres
-      # LA-328: the passwords come from .env (copy .env.example); compose stops when one is missing.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d drone_delivery_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   minio:
     image: cgr.dev/chainguard/minio:latest
@@ -22,10 +31,46 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env (see .env.example)}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env (see .env.example)}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_HOST_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
+
+  api:
+    build: ./backend
+    image: smart-drone-delivery-api:local
+    container_name: drone_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=drone_delivery_db;Username=postgres;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}"
+      Jwt__Key: ${JWT_KEY:?set JWT_KEY in .env (see .env.example)}
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env (see .env.example)}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env (see .env.example)}
+      # Address of MinIO as browsers and phones see it (avatar and package photo URLs).
+      Minio__PublicBaseUrl: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+      # Optional: creates the first administrator on the first start (LA-328).
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@smartdronedelivery.com}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:-}
+    ports:
+      # Same port as `dotnet run`, so the mobile apps work unchanged. Stop one before starting the other.
+      - "${API_HOST_PORT:-5055}:8080"
+
+  web:
+    build: ./frontend/web
+    image: smart-drone-delivery-web:local
+    container_name: drone_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_HOST_PORT:-8080}:80"
 
 volumes:
   postgres_data:
