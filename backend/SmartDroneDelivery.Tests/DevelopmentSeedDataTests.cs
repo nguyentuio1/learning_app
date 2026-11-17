@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.Entities;
 
 namespace SmartDroneDelivery.Tests;
 
@@ -329,6 +330,97 @@ public class DevelopmentSeedDataTests
         {
             Assert.Equal("Renamed by hand", (await db.LandingStations.FirstAsync(s => s.StationCode == "HCM-01")).Name);
             Assert.Equal("Changed by hand", (await db.Users.FirstAsync(u => u.Email == "customer@smartdronedelivery.com")).FullName);
+        });
+    }
+
+    [Fact]
+    public async Task Upgrading_existing_database_assigns_hcm02_operator_without_overwriting_explicit_assignments()
+    {
+        using var factory = new AuthApiFactory();
+        await SeedData.InitializeAsync(factory.Services);
+        await SeedData.SeedDevelopmentDataAsync(factory.Services);
+
+        var explicitOperatorId = Guid.NewGuid();
+        await factory.WithDbAsync(async db =>
+        {
+            var operatorRole = await db.Roles.SingleAsync(r => r.Code == "STATION_OPERATOR");
+            db.Users.Add(new User
+            {
+                Id = explicitOperatorId,
+                RoleId = operatorRole.Id,
+                Email = $"explicit-operator-{explicitOperatorId:N}@example.com",
+                PasswordHash = "not-used",
+                FullName = "Explicit Station Operator",
+                PhoneNumber = "0900000099",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            var hcm01 = await db.LandingStations.SingleAsync(s => s.StationCode == "HCM-01");
+            var hcm02 = await db.LandingStations.SingleAsync(s => s.StationCode == "HCM-02");
+            hcm01.OperatorId = explicitOperatorId;
+            hcm02.OperatorId = null;
+            await db.SaveChangesAsync();
+        });
+
+        await SeedData.SeedDevelopmentDataAsync(factory.Services);
+
+        await factory.WithDbAsync(async db =>
+        {
+            var operator2 = await db.Users.SingleAsync(u => u.Email == "operator2@smartdronedelivery.com");
+            var hcm01 = await db.LandingStations.SingleAsync(s => s.StationCode == "HCM-01");
+            var hcm02 = await db.LandingStations.SingleAsync(s => s.StationCode == "HCM-02");
+            Assert.Equal(operator2.Id, hcm02.OperatorId);
+            Assert.Equal(explicitOperatorId, hcm01.OperatorId);
+        });
+    }
+
+    [Fact]
+    public async Task Reseeding_after_renaming_default_address_does_not_create_duplicate_default_address()
+    {
+        using var factory = new AuthApiFactory();
+        await SeedData.InitializeAsync(factory.Services);
+        await SeedData.SeedDevelopmentDataAsync(factory.Services);
+        using var client = factory.CreateClient();
+
+        using var login = await client.PostAsJsonAsync("/api/auth/login",
+            new { email = "customer@smartdronedelivery.com", password = "Customer@123456" });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("accessToken").GetString();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var addressesResponse = await client.GetAsync("/api/customer-addresses");
+        Assert.Equal(HttpStatusCode.OK, addressesResponse.StatusCode);
+        var addresses = await addressesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var defaultAddress = Assert.Single(addresses.EnumerateArray(),
+            address => address.GetProperty("label").GetString() == "Home - District 1" &&
+                       address.GetProperty("isDefault").GetBoolean());
+        var addressId = defaultAddress.GetProperty("id").GetString();
+
+        using var updateResponse = await client.PutAsJsonAsync($"/api/customer-addresses/{addressId}", new
+        {
+            label = "Primary Home",
+            contactName = defaultAddress.GetProperty("contactName").GetString(),
+            contactPhone = defaultAddress.GetProperty("contactPhone").GetString(),
+            addressLine = defaultAddress.GetProperty("addressLine").GetString(),
+            latitude = defaultAddress.GetProperty("latitude").GetDecimal(),
+            longitude = defaultAddress.GetProperty("longitude").GetDecimal(),
+            isDefault = true
+        });
+        Assert.True(updateResponse.IsSuccessStatusCode,
+            $"Updating the address returned {(int)updateResponse.StatusCode}.");
+
+        await SeedData.SeedDevelopmentDataAsync(factory.Services);
+
+        await factory.WithDbAsync(async db =>
+        {
+            var customer = await db.Users.SingleAsync(u => u.Email == "customer@smartdronedelivery.com");
+            var customerAddresses = await db.CustomerAddresses.Where(a => a.UserId == customer.Id).ToListAsync();
+            Assert.Equal(2, customerAddresses.Count);
+            var defaultAfterReseeding = Assert.Single(customerAddresses.Where(a => a.IsDefault));
+            Assert.Equal("Primary Home", defaultAfterReseeding.Label);
         });
     }
 

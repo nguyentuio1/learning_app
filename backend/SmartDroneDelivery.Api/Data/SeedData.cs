@@ -164,7 +164,16 @@ public static class SeedData
         decimal latitude, decimal longitude, int totalSlots, string status, Guid? operatorId)
     {
         var existing = await context.LandingStations.FirstOrDefaultAsync(s => s.StationCode == code);
-        if (existing != null) return existing;
+        if (existing != null)
+        {
+            if (existing.OperatorId == null && operatorId != null)
+            {
+                existing.OperatorId = operatorId;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await context.SaveChangesAsync();
+            }
+            return existing;
+        }
 
         var station = new LandingStation
         {
@@ -193,9 +202,14 @@ public static class SeedData
         decimal latitude, decimal longitude, bool isDefault)
     {
         var existing = await context.CustomerAddresses
-            .FirstOrDefaultAsync(a => a.UserId == customer.Id && a.Label == label);
+            .Where(a => a.UserId == customer.Id &&
+                        (a.Label == label || (a.AddressLine == addressLine && a.ContactPhone == contactPhone)))
+            .OrderByDescending(a => a.Label == label)
+            .FirstOrDefaultAsync();
         if (existing != null) return existing;
 
+        var effectiveIsDefault = isDefault &&
+                                 !await context.CustomerAddresses.AnyAsync(a => a.UserId == customer.Id && a.IsDefault);
         var address = new CustomerAddress
         {
             Id = Guid.NewGuid(),
@@ -206,7 +220,7 @@ public static class SeedData
             AddressLine = addressLine,
             Latitude = latitude,
             Longitude = longitude,
-            IsDefault = isDefault,
+            IsDefault = effectiveIsDefault,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
