@@ -11,7 +11,7 @@ import './account-layout.css'
 import './account-motion.css'
 
 type AccountIconName =
-  | 'users' | 'roles' | 'profile' | 'logout' | 'notifications' | 'assistant'
+  | 'users' | 'roles' | 'audit' | 'profile' | 'logout' | 'notifications' | 'assistant'
   | 'orders' | 'create-order' | 'edit-order' | 'addresses' | 'packages' | 'summary'
   | 'drone' | 'map' | 'route' | 'landing-pad' | 'activity' | 'grid'
   | 'schedule' | 'clock' | 'alert' | 'approval' | 'chart'
@@ -27,6 +27,7 @@ function AccountIcon({ name }: { name: AccountIconName }) {
     {name === 'approval' && <path d="M8 4H5v17h14V4h-3M9 3h6v4H9zM8.5 13.5l2.3 2.3 4.7-4.7"/>}
     {name === 'users' && <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v2"/></>}
     {name === 'roles' && <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></>}
+    {name === 'audit' && <><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></>}
     {name === 'profile' && <><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></>}
     {name === 'logout' && <><path d="M9 4H4v16h5M9 12h12m-4-4 4 4-4 4"/></>}
     {name === 'orders' && <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h.1M8 12h.1M8 16h.1M11 8h5m-5 4h5m-5 4h5"/></>}
@@ -96,7 +97,7 @@ export function AccountLayout() {
   const managedOrderId = pathname.match(/^\/orders\/([^/]+)\/(?:edit|manage)$/)?.[1]
   const initials = auth.user?.fullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SD'
   const operation = operationFeatures.find(feature => pathname === feature.path || pathname.startsWith(feature.path + '/'))
-  const section = operation ? operation.label : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/notifications') ? 'Notifications' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
+  const section = operation ? operation.label : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/notifications') ? 'Notifications' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/audit-logs') ? 'Audit logs' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
   const sidebarContent = <>
       <span className="account-nav-marker" aria-hidden="true" />
       <Link to="/profile" className="account-brand"><img className="account-brand-logo" src={brandLogo} alt="" width="40" height="40" /><span>SmartDrone<small>Delivery operations</small></span></Link>
@@ -108,6 +109,7 @@ export function AccountLayout() {
         {isAdmin && <>
           <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="users"/>Users</NavLink>
           <NavLink to="/admin/roles" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="roles"/>Roles</NavLink>
+          <NavLink to="/admin/audit-logs" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="audit"/>Audit logs</NavLink>
         </>}
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/addresses" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="addresses"/>Addresses</NavLink>}
         {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/packages" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="packages"/>Packages</NavLink>}

@@ -83,6 +83,7 @@ public class DevelopmentSeedDataTests
     [InlineData("customer@smartdronedelivery.com", "Customer@123456", "CUSTOMER")]
     [InlineData("dispatcher@smartdronedelivery.com", "Dispatcher@123456", "DISPATCHER")]
     [InlineData("operator@smartdronedelivery.com", "Operator@123456", "STATION_OPERATOR")]
+    [InlineData("operator2@smartdronedelivery.com", "Operator@123456", "STATION_OPERATOR")]
     [InlineData("manager@smartdronedelivery.com", "Manager@123456", "MANAGER")]
     public async Task Seeds_active_demo_accounts_that_can_sign_in(string email, string password, string role)
     {
@@ -108,8 +109,14 @@ public class DevelopmentSeedDataTests
         await factory.WithDbAsync(async db =>
         {
             var operatorUser = await db.Users.SingleAsync(u => u.Email == "operator@smartdronedelivery.com");
-            var station = await db.LandingStations.SingleAsync(s => s.OperatorId == operatorUser.Id);
+            var station = await db.LandingStations.SingleAsync(s => s.StationCode == "HCM-01");
+            Assert.Equal(operatorUser.Id, station.OperatorId);
             Assert.Equal("OPERATIONAL", station.Status);
+
+            var operatorUser2 = await db.Users.SingleAsync(u => u.Email == "operator2@smartdronedelivery.com");
+            var station2 = await db.LandingStations.SingleAsync(s => s.StationCode == "HCM-02");
+            Assert.Equal(operatorUser2.Id, station2.OperatorId);
+            Assert.Equal("OPERATIONAL", station2.Status);
         });
     }
 
@@ -154,6 +161,7 @@ public class DevelopmentSeedDataTests
             Assert.Equal(2, drones.Count(d => d.Status == "IDLE"));
             Assert.Single(drones, d => d.Status == "CHARGING");
             Assert.Single(drones, d => d.Status == "MAINTENANCE");
+            Assert.All(drones, d => Assert.InRange(d.MaxPayloadGram, 1m, 3000m));
             Assert.All(drones, d => Assert.NotNull(d.CurrentStation));
             Assert.Equal("HCM-01", drones.Single(d => d.SerialNumber == "DRONE-HCM-001").CurrentStation!.StationCode);
             Assert.Equal("HCM-02", drones.Single(d => d.SerialNumber == "DRONE-HCM-002").CurrentStation!.StationCode);
@@ -189,6 +197,20 @@ public class DevelopmentSeedDataTests
             Assert.NotNull(delivered.ActualDepartureTime);
             Assert.NotNull(delivered.EstimatedDeliveryTime);
             Assert.NotNull(delivered.ActualDeliveryTime);
+
+            var statusLogs = await db.DeliveryStatusLogs
+                .Where(log => log.OrderId == delivered.Id)
+                .OrderBy(log => log.CreatedAt)
+                .ThenBy(log => log.Id)
+                .ToListAsync();
+            var stationOperator = await db.Users.SingleAsync(u => u.Email == "operator@smartdronedelivery.com");
+            var stationOperator2 = await db.Users.SingleAsync(u => u.Email == "operator2@smartdronedelivery.com");
+            Assert.Equal(
+                new[] { "PENDING", "APPROVED", "READY_FOR_TAKEOFF", "IN_TRANSIT", "ARRIVED", "DELIVERED" },
+                statusLogs.Select(log => log.ToStatus));
+            Assert.Equal(
+                new Guid?[] { customer.Id, dispatcher.Id, stationOperator.Id, null, null, stationOperator2.Id },
+                statusLogs.Select(log => log.ChangedBy));
 
         });
 
@@ -226,6 +248,69 @@ public class DevelopmentSeedDataTests
     }
 
     [Fact]
+    public async Task Every_seeded_drone_accepts_its_current_specs_through_the_update_api()
+    {
+        using var factory = new AuthApiFactory();
+        await SeedData.InitializeAsync(factory.Services);
+        await SeedData.SeedDevelopmentDataAsync(factory.Services);
+        using var client = factory.CreateClient();
+
+        using var login = await client.PostAsJsonAsync("/api/auth/login",
+            new { email = TestSettings.AdminEmail, password = TestSettings.AdminPassword });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("accessToken").GetString();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var dronesResponse = await client.GetAsync("/api/drones");
+        Assert.Equal(HttpStatusCode.OK, dronesResponse.StatusCode);
+        var drones = await dronesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(4, drones.GetArrayLength());
+
+        foreach (var drone in drones.EnumerateArray())
+        {
+            var id = drone.GetProperty("id").GetString();
+            using var updateResponse = await client.PutAsJsonAsync($"/api/drones/{id}", new
+            {
+                modelName = drone.GetProperty("modelName").GetString(),
+                maxPayloadGram = drone.GetProperty("maxPayloadGram").GetDecimal(),
+                maxFlightRangeKm = drone.GetProperty("maxFlightRangeKm").GetDecimal(),
+                batteryCapacityMah = drone.GetProperty("batteryCapacityMah").GetInt32()
+            });
+            Assert.True(updateResponse.StatusCode == HttpStatusCode.OK,
+                $"Updating {drone.GetProperty("serialNumber").GetString()} returned {(int)updateResponse.StatusCode}.");
+        }
+    }
+
+    [Fact]
+    public async Task Approved_demo_order_is_listed_but_unavailable_for_drone_assignment_until_scheduled()
+    {
+        using var factory = new AuthApiFactory();
+        await SeedData.InitializeAsync(factory.Services);
+        await SeedData.SeedDevelopmentDataAsync(factory.Services);
+        using var client = factory.CreateClient();
+
+        using var login = await client.PostAsJsonAsync("/api/auth/login",
+            new { email = "dispatcher@smartdronedelivery.com", password = "Dispatcher@123456" });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("accessToken").GetString();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var approvedResponse = await client.GetAsync("/api/dispatch/approved-orders");
+        Assert.Equal(HttpStatusCode.OK, approvedResponse.StatusCode);
+        var approvedOrders = await approvedResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var demoOrder = Assert.Single(approvedOrders.GetProperty("items").EnumerateArray(),
+            order => order.GetProperty("trackingNumber").GetString() == "ORD-DEMO-002");
+
+        var orderId = demoOrder.GetProperty("orderId").GetString();
+        using var candidatesResponse = await client.GetAsync($"/api/delivery-orders/{orderId}/available-drones");
+        Assert.Equal(HttpStatusCode.Conflict, candidatesResponse.StatusCode);
+        Assert.Contains("must be APPROVED and scheduled",
+            await candidatesResponse.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Existing_station_and_user_are_kept_untouched_when_seeding_again()
     {
         using var factory = new AuthApiFactory();
@@ -257,7 +342,7 @@ public class DevelopmentSeedDataTests
         var (stations, users) = await CountAsync(seeded);
 
         Assert.Equal(3, stations);
-        Assert.Equal(5, users);
+        Assert.Equal(6, users);
     }
 
     [Fact]

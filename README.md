@@ -33,7 +33,7 @@ docs/
   architecture/                architecture, ERD (erd.md, erd.dbml)
   design/                      sequence, class and activity diagrams, user flows, wireframes
   requirements/                SRS, use cases, business rules, functions, messages
-docker-compose.yml             PostgreSQL 16 and MinIO for local development
+docker-compose.yml             Full system (PostgreSQL 16, MinIO, API, web portal); see "Run everything with Docker"
 ```
 
 ## Prerequisites
@@ -43,13 +43,39 @@ docker-compose.yml             PostgreSQL 16 and MinIO for local development
 - A current Node.js LTS and npm (the project was built with Node 24)
 - Flutter with a Dart SDK matching `frontend/mobile/pubspec.yaml` (only for the mobile apps)
 
+## Run everything with Docker
+
+One command builds and starts PostgreSQL, MinIO, the API and the web portal (LA-47):
+
+```bash
+cp .env.example .env        # fill in every empty value; .env is ignored by git
+docker compose up -d --build --wait     # returns once the API reports healthy
+```
+
+| Service | Address |
+|---|---|
+| Web portal | <http://localhost:8080> (forwards `/api` and `/hubs` to the API) |
+| API (mobile apps, scripts) | <http://localhost:5055> |
+| MinIO console | <http://localhost:9001> |
+
+The API runs in the `Production` environment: no Swagger and no demo accounts; the administrator is created from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`. Set `ASPNETCORE_ENVIRONMENT=Development` in `.env` for Swagger and the demo accounts below. `docker compose down` stops everything and keeps the data; `docker compose down -v` also deletes it. Host ports can be changed in `.env` (`API_HOST_PORT`, `WEB_HOST_PORT`, ...). [`scripts/docker-smoke-test.sh`](scripts/docker-smoke-test.sh) starts the stack from scratch and checks the portal, login, a database read and an avatar upload to MinIO; the `Docker package` workflow runs it on pull requests that touch the package.
+
+### Health and monitoring
+
+| Endpoint | Anonymous | Checks | Status |
+|---|---|---|---|
+| `GET /health/live` | yes | the API process answers | `200` |
+| `GET /health/ready` | yes | PostgreSQL connection and MinIO (`/minio/health/live`) | `200` when all are healthy, otherwise `503` |
+
+Both return JSON such as `{"status":"Healthy","totalDurationMs":4,"checks":[{"name":"database","status":"Healthy","durationMs":3},{"name":"storage","status":"Healthy","durationMs":1}]}` with no host names, connection strings or error text; the reason for a failure is written to the API log. In Docker the `api` service uses `/health/ready` as its health check and `web` starts only after it is healthy: `docker compose ps` shows the state and `docker compose logs api` the log (LA-178).
+
 ## Run it locally
 
 ### 1. Infrastructure
 
 ```bash
-cp .env.example .env        # then replace every value in .env; .env is ignored by git
-docker compose up -d
+cp .env.example .env        # fill in every empty value; .env is ignored by git
+docker compose up -d postgres minio
 ```
 
 | Service | Host port | Credentials |
@@ -105,7 +131,8 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 | System administrator | `admin@smartdronedelivery.com` (`Seed:AdminEmail`) | the value of `Seed:AdminPassword`; created in every environment, but only when that setting is present |
 | Customer | `customer@smartdronedelivery.com` | `Customer@123456` |
 | Dispatcher | `dispatcher@smartdronedelivery.com` | `Dispatcher@123456` |
-| Station operator | `operator@smartdronedelivery.com` | `Operator@123456` (assigned to `HCM-01`) |
+| Station operator (HCM-01) | `operator@smartdronedelivery.com` | `Operator@123456` |
+| Station operator (HCM-02) | `operator2@smartdronedelivery.com` | `Operator@123456` |
 | Logistics manager (`MANAGER`) | `manager@smartdronedelivery.com` | `Manager@123456` |
 
 | Station | Name | Status | Slots |
@@ -118,10 +145,12 @@ Demo data also includes two customer addresses (`Home - District 1` and `Office 
 
 | Type | Demo records |
 |---|---|
-| Drones | `DRONE-HCM-001` (`IDLE`, HCM-01), `DRONE-HCM-002` (`IDLE`, HCM-02), `DRONE-HCM-003` (`CHARGING`, HCM-01), `DRONE-HCM-004` (`MAINTENANCE`, HCM-03) |
+| Drones | `DRONE-HCM-001` (`IDLE`, HCM-01, 3000 g), `DRONE-HCM-002` (`IDLE`, HCM-02, 2500 g), `DRONE-HCM-003` (`CHARGING`, HCM-01, 3000 g), `DRONE-HCM-004` (`MAINTENANCE`, HCM-03, 2700 g) |
 | Orders | `ORD-DEMO-001` (`PENDING`), `ORD-DEMO-002` (`APPROVED`), `ORD-DEMO-003` (`DELIVERED`, with a completed flight mission) |
 
-So a customer can sign in, see the sample deliveries, and create an order right after `docker compose up` and `dotnet run`, with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
+So a customer can sign in and create an order right after docker compose up -d postgres minio and dotnet run (or the full Docker stack with ASPNETCORE_ENVIRONMENT=Development), with no SQL. HCM-03 is there to check that a station in maintenance is refused.
+
+`ORD-DEMO-003` uses timestamps relative to `DateTime.UtcNow` at its first seed and they are not rewritten on restart. If you run the demo on another date and want the dashboard's "today" filter to include this order, create a fresh database volume before the demo.
 
 Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. Outside the Development demo seed, staff accounts are created by the administrator in the web portal (Users, New user). The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
 

@@ -381,3 +381,74 @@ Reads, rejected requests and no-op updates do not create mutation audit entries.
 Role changes and deactivation lock administrator rows in a PostgreSQL transaction
 before checking the actor and remaining admins, so concurrent requests cannot
 deactivate/demote each other and remove every active admin.
+
+## 8. Audit logs (LA-177, FR-32 / FR-33)
+
+### What is recorded
+
+Sensitive actions write one `audit_logs` row each: actor (`userId`), `action`, `entityName`, `entityId`, IP address, user agent, optional `reason` and the UTC `timestamp`. Passwords, tokens and pickup codes are never stored (BR-UA-19).
+
+| Area | Actions |
+|---|---|
+| Sign-in | `REGISTER`, `LOGIN`, `LOGOUT`, `PASSWORD_CHANGE`, `LOGIN_FAILED` (LA-177; `reason` = `INVALID_PASSWORD` or `ACCOUNT_NOT_ACTIVE`; written only for an existing account, an unknown email is not stored) |
+| Users and roles | `CREATE_USER`, `USER_UPDATE`, `ROLE_CHANGE`, `USER_DEACTIVATE` |
+| Order decisions and workflow | `ORDER_APPROVAL`, `ORDER_REJECTION`, `DRONE_ASSIGNMENT`, failure handling, `ORDER_PICKUP_TIMEOUT`, `PACKAGE_INTAKE_*`, `PACKAGE_DELIVERY_CONFIRMATION`, `EXPIRED_PARCEL_CLEARED` |
+| Stations, slots, drones, integration keys | `STATION_*`, `SLOT_*`, `DRONE_*`, integration key create/revoke |
+
+`GET /api/audit-logs/actions` returns the codes actually present.
+
+### GET /api/audit-logs
+
+Administrator only (`401` without a token, `403` for other roles or an inactive account). Read-only; newest first (`timestamp` desc, then `id` desc).
+
+| Query | Type | Rule |
+|---|---|---|
+| `userId` | GUID | actor |
+| `action` | string, 1–100 | exact code, case-insensitive (`login_failed` = `LOGIN_FAILED`) |
+| `entityName`, `entityId` | string | exact |
+| `from`, `to` | ISO 8601 date or date-time | inclusive; UTC unless an offset is given. The web portal sends calendar days in UTC+07:00, e.g. `from=2026-11-10T00:00:00+07:00&to=2026-11-10T23:59:59.999+07:00` |
+| `page` | integer ≥ 1 | default 1 |
+| `pageSize` | integer 1–100 | default 20 |
+
+Unknown or repeated parameters, malformed values and `to` before `from` return `400` with `errors` keyed by the parameter name.
+
+Response `200 OK`:
+
+```json
+{
+  "items": [
+    {
+      "id": 412,
+      "timestamp": "2026-11-17T03:04:05Z",
+      "userId": "2b0f3c1e-1a2b-4c3d-9e8f-001122334455",
+      "userEmail": "customer@smartdronedelivery.com",
+      "userFullName": "Demo Customer",
+      "action": "LOGIN_FAILED",
+      "entityName": "User",
+      "entityId": "2b0f3c1e-1a2b-4c3d-9e8f-001122334455",
+      "ipAddress": "172.18.0.5",
+      "userAgent": "Mozilla/5.0",
+      "reason": "INVALID_PASSWORD"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 1,
+  "totalPages": 1
+}
+```
+
+`userId`, `userEmail` and `userFullName` are `null` for system actions (for example the pickup timeout job). Indexes on `timestamp`, `(userId, timestamp)` and `(action, timestamp)` serve these searches (migration `AddAuditLogSearchIndexes`).
+
+### GET /api/audit-logs/actions
+
+Administrator only. `200 OK` with the distinct action codes, sorted: `["CREATE_USER","LOGIN","LOGIN_FAILED", ...]`.
+
+### Web portal
+
+Administrator → **Audit logs** (`/admin/audit-logs`): filter by user, action and From/To calendar day (Vietnam time), 20 rows per page; the filters are kept in the address so a search can be shared.
+
+### Known limit
+
+Behind the Docker web proxy (LA-47) the API sees the proxy container as the client, so `ipAddress` is the proxy address for portal requests; requests sent straight to the API port (mobile apps) keep the real address. Trusting `X-Forwarded-For` was not enabled because the API port is also published directly and the header could then be forged.
+

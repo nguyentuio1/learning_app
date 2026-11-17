@@ -84,10 +84,11 @@ public static class SeedData
         var customer = await EnsureUserAsync(context, "CUSTOMER", "customer@smartdronedelivery.com", "Customer@123456", "Demo Customer", "0900000002");
         var dispatcher = await EnsureUserAsync(context, "DISPATCHER", "dispatcher@smartdronedelivery.com", "Dispatcher@123456", "Demo Dispatcher", "0900000003");
         var stationOperator = await EnsureUserAsync(context, "STATION_OPERATOR", "operator@smartdronedelivery.com", "Operator@123456", "Demo Station Operator", "0900000004");
+        var stationOperator2 = await EnsureUserAsync(context, "STATION_OPERATOR", "operator2@smartdronedelivery.com", "Operator@123456", "Demo Thu Duc Operator", "0900000006");
         await EnsureUserAsync(context, "MANAGER", "manager@smartdronedelivery.com", "Manager@123456", "Demo Logistics Manager", "0900000005");
 
         var hcm01 = await EnsureStationAsync(context, "HCM-01", "District 1 Hub", "1 Le Loi, District 1, Ho Chi Minh City", 10.7769m, 106.7009m, 4, "OPERATIONAL", stationOperator.Id);
-        var hcm02 = await EnsureStationAsync(context, "HCM-02", "Thu Duc Hub", "2 Vo Van Ngan, Thu Duc, Ho Chi Minh City", 10.8506m, 106.7719m, 4, "OPERATIONAL", null);
+        var hcm02 = await EnsureStationAsync(context, "HCM-02", "Thu Duc Hub", "2 Vo Van Ngan, Thu Duc, Ho Chi Minh City", 10.8506m, 106.7719m, 4, "OPERATIONAL", stationOperator2.Id);
         var hcm03 = await EnsureStationAsync(context, "HCM-03", "Binh Thanh Hub", "3 Xo Viet Nghe Tinh, Binh Thanh, Ho Chi Minh City", 10.8012m, 106.7098m, 2, "MAINTENANCE", null);
 
         var address1 = await EnsureAddressAsync(context, customer, "Home - District 1", "Demo Customer", "0900000002",
@@ -95,9 +96,9 @@ public static class SeedData
         var address2 = await EnsureAddressAsync(context, customer, "Office - Thu Duc", "Tran Thi Binh", "0912345678",
             "120 Vo Van Ngan, Thu Duc, Ho Chi Minh City", 10.8512m, 106.7725m, false);
 
-        var droneHcm01 = await EnsureDroneAsync(context, "DRONE-HCM-001", "DJI FlyCart 30", 30000m, 16.0m, 38000, "IDLE", hcm01.Id);
-        var droneHcm02 = await EnsureDroneAsync(context, "DRONE-HCM-002", "Wingcopter 198", 5000m, 75.0m, 24000, "IDLE", hcm02.Id);
-        await EnsureDroneAsync(context, "DRONE-HCM-003", "DJI FlyCart 30", 30000m, 16.0m, 38000, "CHARGING", hcm01.Id);
+        var droneHcm01 = await EnsureDroneAsync(context, "DRONE-HCM-001", "DJI Matrice 300 RTK", 3000m, 16.0m, 38000, "IDLE", hcm01.Id);
+        var droneHcm02 = await EnsureDroneAsync(context, "DRONE-HCM-002", "Wingcopter 198", 2500m, 75.0m, 24000, "IDLE", hcm02.Id);
+        await EnsureDroneAsync(context, "DRONE-HCM-003", "DJI Matrice 300 RTK", 3000m, 16.0m, 38000, "CHARGING", hcm01.Id);
         await EnsureDroneAsync(context, "DRONE-HCM-004", "Matrice 350 RTK", 2700m, 15.0m, 5880, "MAINTENANCE", hcm03.Id);
 
         var now = DateTime.UtcNow;
@@ -127,14 +128,14 @@ public static class SeedData
             [
                 new(null, "PENDING", customer.Id, "Demo order submitted", scheduledDeparture),
                 new("PENDING", "APPROVED", dispatcher.Id, "Demo order approved", scheduledDeparture.AddMinutes(5)),
-                new("APPROVED", "READY_FOR_TAKEOFF", dispatcher.Id, "Demo mission prepared", scheduledDeparture.AddMinutes(10)),
-                new("READY_FOR_TAKEOFF", "IN_TRANSIT", dispatcher.Id, "Demo mission departed", actualDeparture),
-                new("IN_TRANSIT", "ARRIVED", dispatcher.Id, "Demo mission arrived", estimatedDelivery),
-                new("ARRIVED", "DELIVERED", dispatcher.Id, "Demo delivery completed", actualDelivery)
+                new("APPROVED", "READY_FOR_TAKEOFF", stationOperator.Id, "Demo mission prepared", scheduledDeparture.AddMinutes(10)),
+                new("READY_FOR_TAKEOFF", "IN_TRANSIT", null, "Demo mission departed", actualDeparture),
+                new("IN_TRANSIT", "ARRIVED", null, "Demo mission arrived", estimatedDelivery),
+                new("ARRIVED", "DELIVERED", stationOperator2.Id, "Demo delivery completed", actualDelivery)
             ]);
     }
 
-    private sealed record StatusChange(string? FromStatus, string ToStatus, Guid ChangedBy, string Remarks, DateTime CreatedAt);
+    private sealed record StatusChange(string? FromStatus, string ToStatus, Guid? ChangedBy, string Remarks, DateTime CreatedAt);
 
     private static async Task<User> EnsureUserAsync(AppDbContext context, string roleCode, string email, string password, string fullName, string phoneNumber)
     {
