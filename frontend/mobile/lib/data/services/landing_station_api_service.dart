@@ -5,6 +5,8 @@ import '../../core/network/error_interceptor.dart';
 import '../models/landing_station.dart';
 import '../models/station_availability.dart';
 import '../models/station_detail.dart';
+import '../models/station_operation_models.dart';
+import '../models/station_slot.dart';
 
 class LandingStationApiService {
   LandingStationApiService(this._dio);
@@ -86,6 +88,26 @@ class LandingStationApiService {
         );
       }
       return StationDetail.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } on DioException catch (error) {
+      throw error.apiException;
+    }
+  }
+
+  Future<StationSlot> updateSlotStatus({
+    required String slotId,
+    required UpdateSlotStatusRequest request,
+  }) async {
+    try {
+      final response = await _dio.put<dynamic>(
+        ApiEndpoints.updateSlotStatus(slotId),
+        data: request.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException('Expected an updated slot object.');
+      }
+      return StationSlot.fromJson(
         Map<String, dynamic>.from(response.data as Map),
       );
     } on DioException catch (error) {

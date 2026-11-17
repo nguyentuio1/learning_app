@@ -120,11 +120,13 @@ class DeliveryOrderStatusLogDto {
     required this.toStatus,
     required this.createdAt,
     this.fromStatus,
+    this.changedBy,
     this.remarks,
   });
 
   final String? fromStatus;
   final String toStatus;
+  final String? changedBy;
   final String? remarks;
   final DateTime createdAt;
 
@@ -132,6 +134,7 @@ class DeliveryOrderStatusLogDto {
       DeliveryOrderStatusLogDto(
         fromStatus: json['fromStatus'] as String?,
         toStatus: json['toStatus'] as String,
+        changedBy: json['changedBy'] as String?,
         remarks: json['remarks'] as String?,
         createdAt: DateTime.parse(json['createdAt'] as String).toUtc(),
       );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_message.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/station_operation_models.dart';
@@ -59,21 +60,42 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     final detail = ref.watch(orderDetailProvider(widget.detailId));
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Order details')),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(orderDetailErrorMessage(error), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () =>
-                    ref.invalidate(orderDetailProvider(widget.detailId)),
-                child: const Text('Retry'),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isNetworkError(error)
+                        ? Icons.wifi_off_rounded
+                        : Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    orderDetailErrorMessage(error),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(120, 48),
+                    ),
+                    onPressed: () =>
+                        ref.invalidate(orderDetailProvider(widget.detailId)),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         data: (response) {
@@ -207,38 +229,50 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               detail.statusLogs[index],
               index < detail.statusLogs.length - 1,
             ),
-        if (order.status == 'ARRIVED')
-          FilledButton.icon(
-            key: const Key('enter-pickup-code-button'),
-            onPressed: () => _openConfirmDelivery(order),
-            icon: const Icon(Icons.vpn_key_outlined),
-            label: const Text('Enter pickup code'),
-          ),
-        if (order.status == 'PENDING')
-          FilledButton.icon(
-            onPressed: () => _editOrder(order),
-            icon: const Icon(Icons.edit),
-            label: const Text('Edit Order'),
-          ),
-        if ((order.status == 'PENDING' || order.status == 'APPROVED') &&
-            !_cancelled)
-          OutlinedButton.icon(
-            onPressed: () => _confirmCancellation(order),
-            icon: const Icon(Icons.cancel_outlined),
-            label: const Text('Cancel order'),
-          ),
-        const SizedBox(height: 8),
         OutlinedButton.icon(
-          key: const Key('order-detail-ask-assistant-button'),
+          key: const Key('view-order-history-button'),
+          onPressed: () =>
+              context.push(RoutePaths.customerOrderHistoryFor(order.id)),
+          icon: const Icon(Icons.history),
+          label: const Text('View Order History'),
+        ),
+        OutlinedButton.icon(
+          key: const Key('ask-ai-assistant-button'),
           onPressed: () => context.push(
             RoutePaths.customerAssistantFor(
               orderId: order.id,
               trackingNumber: order.trackingNumber,
             ),
           ),
-          icon: const Icon(Icons.smart_toy_outlined),
+          icon: const Icon(Icons.chat_outlined),
           label: const Text('Ask AI Assistant'),
         ),
+        if (order.status == 'ARRIVED') ...[
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            key: const Key('enter-pickup-code-button'),
+            onPressed: () => _openConfirmDelivery(order),
+            icon: const Icon(Icons.vpn_key_outlined),
+            label: const Text('Enter pickup code'),
+          ),
+        ],
+        if (order.status == 'PENDING') ...[
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: () => _editOrder(order),
+            icon: const Icon(Icons.edit),
+            label: const Text('Edit Order'),
+          ),
+        ],
+        if ((order.status == 'PENDING' || order.status == 'APPROVED') &&
+            !_cancelled) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _confirmCancellation(order),
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Cancel order'),
+          ),
+        ],
       ],
     );
   }

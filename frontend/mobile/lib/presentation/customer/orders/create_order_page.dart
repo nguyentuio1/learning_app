@@ -46,10 +46,12 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final addresses = ref.watch(orderAddressesProvider);
     final routePreview = ref.watch(routeEtaPreviewProvider);
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Create delivery order')),
       body: Form(
         key: _formKey,
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(24),
           children: [
             packages.when(
@@ -60,6 +62,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
               ),
               data: (items) => DropdownButtonFormField<String>(
                 key: const Key('order-package'),
+                isExpanded: true,
                 initialValue: state.package?.id,
                 decoration: const InputDecoration(
                   labelText: 'Package',
@@ -69,7 +72,10 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                   for (final package in items)
                     DropdownMenuItem(
                       value: package.id,
-                      child: Text(package.packageName),
+                      child: Text(
+                        package.packageName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
                 onChanged: (id) => ref
@@ -212,6 +218,9 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
             const SizedBox(height: 20),
             FilledButton(
               key: const Key('order-review'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
                 final error = ref
@@ -253,6 +262,7 @@ class _StationPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
     key: fieldKey,
+    isExpanded: true,
     initialValue: value,
     decoration: InputDecoration(
       labelText: label,
@@ -262,7 +272,10 @@ class _StationPicker extends StatelessWidget {
       for (final station in items)
         DropdownMenuItem(
           value: station.id,
-          child: Text('${station.name} · ${station.stationCode}'),
+          child: Text(
+            '${station.name} · ${station.stationCode}',
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
     ],
     onChanged: (id) {

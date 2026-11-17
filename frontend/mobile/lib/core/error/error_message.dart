@@ -9,3 +9,10 @@ String errorMessage(Object error) {
   if (error is DioException) return error.apiException.message;
   return 'Something went wrong. Please try again.';
 }
+
+/// Kiểm tra lỗi có phải là lỗi mạng hay không.
+bool isNetworkError(Object error) {
+  if (error is ApiException) return error.isNetwork;
+  if (error is DioException) return error.apiException.isNetwork;
+  return false;
+}

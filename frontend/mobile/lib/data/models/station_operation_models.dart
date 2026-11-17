@@ -29,6 +29,7 @@ class StationOrderInfo {
 
   bool get isOrigin => role == 'ORIGIN';
   bool get isDestination => role == 'DESTINATION';
+  bool get isEligibleForIntake => isOrigin && status == 'APPROVED';
   bool get isEligibleForPickup => isDestination && status == 'ARRIVED';
 
   static String formatDecimal(double value) =>
@@ -132,5 +133,115 @@ class ConfirmPickupResponse {
         'actualDeliveryTime': actualDeliveryTime.toUtc().toIso8601String(),
         'slotId': slotId,
         'slotReleased': slotReleased,
+      };
+}
+
+class PackageIntakeRequest {
+  const PackageIntakeRequest({
+    required this.trackingNumber,
+    required this.slotId,
+    required this.measuredWeightGram,
+    required this.measuredLengthCm,
+    required this.measuredWidthCm,
+    required this.measuredHeightCm,
+    required this.visualInspectionPassed,
+  });
+
+  final String trackingNumber;
+  final String slotId;
+  final double measuredWeightGram;
+  final double measuredLengthCm;
+  final double measuredWidthCm;
+  final double measuredHeightCm;
+  final bool visualInspectionPassed;
+
+  Map<String, dynamic> toJson() => {
+        'trackingNumber': trackingNumber,
+        'slotId': slotId,
+        'measuredWeightGram': measuredWeightGram,
+        'measuredLengthCm': measuredLengthCm,
+        'measuredWidthCm': measuredWidthCm,
+        'measuredHeightCm': measuredHeightCm,
+        'visualInspectionPassed': visualInspectionPassed,
+      };
+}
+
+class PackageIntakeResponse {
+  const PackageIntakeResponse({
+    required this.orderId,
+    required this.trackingNumber,
+    required this.status,
+    required this.slotId,
+    required this.slotNumber,
+    required this.confirmedAt,
+  });
+
+  final String orderId;
+  final String trackingNumber;
+  final String status;
+  final String slotId;
+  final int slotNumber;
+  final DateTime confirmedAt;
+
+  factory PackageIntakeResponse.fromJson(Map<String, dynamic> json) =>
+      PackageIntakeResponse(
+        orderId: json['orderId'] as String? ?? '',
+        trackingNumber: json['trackingNumber'] as String? ?? '',
+        status: json['status'] as String? ?? 'READY_FOR_TAKEOFF',
+        slotId: json['slotId'] as String? ?? '',
+        slotNumber: (json['slotNumber'] as num?)?.toInt() ?? 0,
+        confirmedAt: json['confirmedAt'] != null
+            ? DateTime.parse(json['confirmedAt'] as String).toUtc()
+            : DateTime.now().toUtc(),
+      );
+}
+
+class RejectIntakeRequest {
+  const RejectIntakeRequest({
+    required this.trackingNumber,
+    required this.reason,
+  });
+
+  final String trackingNumber;
+  final String reason;
+
+  Map<String, dynamic> toJson() => {
+        'trackingNumber': trackingNumber,
+        'reason': reason,
+      };
+}
+
+class RejectIntakeResponse {
+  const RejectIntakeResponse({
+    required this.orderId,
+    required this.trackingNumber,
+    required this.status,
+  });
+
+  final String orderId;
+  final String trackingNumber;
+  final String status;
+
+  factory RejectIntakeResponse.fromJson(Map<String, dynamic> json) =>
+      RejectIntakeResponse(
+        orderId: json['orderId'] as String? ?? '',
+        trackingNumber: json['trackingNumber'] as String? ?? '',
+        status: json['status'] as String? ?? 'FAILED',
+      );
+}
+
+class UpdateSlotStatusRequest {
+  const UpdateSlotStatusRequest({
+    required this.targetStatus,
+    this.reason,
+  });
+
+  final String targetStatus;
+  final String? reason;
+
+  Map<String, dynamic> toJson() => {
+        'targetStatus': targetStatus,
+        if (reason != null && reason!.trim().isNotEmpty)
+          'reason': reason!.trim(),
       };
 }

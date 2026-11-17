@@ -48,7 +48,7 @@ class OrderTrackingPage extends ConsumerWidget {
             ),
           ),
           onViewHistory: () => context.push(
-            RoutePaths.customerOrderDetailsFor(value.snapshot.orderId),
+            RoutePaths.customerOrderHistoryFor(value.snapshot.orderId),
           ),
         ),
       ),

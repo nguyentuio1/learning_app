@@ -7,7 +7,10 @@ import '../../../core/session/auth_controller.dart';
 import '../../../data/models/landing_station.dart';
 import '../../../data/models/station_availability.dart';
 import '../../../data/models/station_detail.dart';
+import '../../../data/models/station_operation_models.dart';
 import '../../../data/models/station_slot.dart';
+import '../../../data/providers/landing_station_providers.dart';
+import '../../../data/providers/notification_providers.dart';
 import '../expired_parcels/pickup_timeout_alerts_card.dart';
 import '../../../routes/route_paths.dart';
 import 'station_availability_providers.dart';
@@ -20,6 +23,7 @@ class OperatorHomePage extends ConsumerWidget {
     final asyncState = ref.watch(stationAvailabilityNotifierProvider);
     final roleCode = ref.watch(currentUserProvider)?.roleCode.toUpperCase();
     final canManageFailures = roleCode == 'DISPATCHER' || roleCode == 'ADMIN';
+    final unreadCount = ref.watch(unreadNotificationsCountProvider).value ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -31,6 +35,16 @@ class OperatorHomePage extends ConsumerWidget {
               icon: const Icon(Icons.report_gmailerrorred_outlined),
               onPressed: () => context.push(RoutePaths.operatorFailedOrders),
             ),
+          IconButton(
+            key: const Key('operator-notifications-button'),
+            tooltip: 'Notifications',
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text('$unreadCount'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => context.push(RoutePaths.customerNotifications),
+          ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
@@ -54,69 +68,80 @@ class OperatorHomePage extends ConsumerWidget {
       body: asyncState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  errorMessage(error),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => ref
-                      .read(stationAvailabilityNotifierProvider.notifier)
-                      .refresh(),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isNetworkError(error)
+                        ? Icons.wifi_off_rounded
+                        : Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    errorMessage(error),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(120, 48),
+                    ),
+                    onPressed: () => ref
+                        .read(stationAvailabilityNotifierProvider.notifier)
+                        .refresh(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
         data: (state) {
           if (state.isUnassignedOperator) {
             return Center(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.assignment_late_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No station assigned',
-                      style: Theme.of(context).textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'You do not have an assigned landing station yet. Please contact your administrator to be assigned to a station.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: Colors.grey.shade700),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () => ref
-                          .read(stationAvailabilityNotifierProvider.notifier)
-                          .refresh(),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Check again'),
-                    ),
-                  ],
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.assignment_late_outlined,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No station assigned',
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'You do not have an assigned landing station yet. Please contact your administrator to be assigned to a station.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(color: Colors.grey.shade700),
+                      ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => ref
+                            .read(stationAvailabilityNotifierProvider.notifier)
+                            .refresh(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Check again'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -124,29 +149,32 @@ class OperatorHomePage extends ConsumerWidget {
 
           if (state.stations.isEmpty) {
             return Center(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.location_city_outlined,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No landing stations found.',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: () => ref
-                          .read(stationAvailabilityNotifierProvider.notifier)
-                          .refresh(),
-                      child: const Text('Reload'),
-                    ),
-                  ],
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.location_city_outlined,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No landing stations found.',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: () => ref
+                            .read(stationAvailabilityNotifierProvider.notifier)
+                            .refresh(),
+                        child: const Text('Reload'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -184,12 +212,29 @@ class OperatorHomePage extends ConsumerWidget {
                   const SizedBox(height: 12),
                 ],
 
-                // Quick Action: Package Pickup Confirmation (LA-29 / LA-126)
-                FilledButton.icon(
-                  key: const Key('operator-pickup-button'),
-                  onPressed: () => context.push(RoutePaths.operatorPickup),
-                  icon: const Icon(Icons.mark_email_read_outlined),
-                  label: const Text('Confirm Package Pickup'),
+                // Quick Actions: Origin Package Intake & Destination Pickup
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        key: const Key('operator-intake-button'),
+                        onPressed: () =>
+                            context.push(RoutePaths.operatorIntake),
+                        icon: const Icon(Icons.inventory_2_outlined),
+                        label: const Text('Origin Intake'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        key: const Key('operator-pickup-button'),
+                        onPressed: () =>
+                            context.push(RoutePaths.operatorPickup),
+                        icon: const Icon(Icons.mark_email_read_outlined),
+                        label: const Text('Confirm Pickup'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 
@@ -233,109 +278,7 @@ class OperatorHomePage extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        final (color, icon) = _slotStatusStyle(context, slot.status);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: color.withOpacity(0.15),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Slot #${slot.slotNumber}',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'ID: ${slot.id}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      slot.status,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-              _DetailRow(
-                label: 'Status',
-                value: slot.status,
-                icon: Icons.info_outline,
-              ),
-              const SizedBox(height: 12),
-              _DetailRow(
-                label: 'Last Updated',
-                value: slot.lastUpdated.toLocal().toString().split('.').first,
-                icon: Icons.access_time,
-              ),
-              if (slot.currentOrderId != null) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Current Order ID',
-                  value: slot.currentOrderId!,
-                  icon: Icons.inventory_2_outlined,
-                ),
-              ],
-              if (slot.currentMissionId != null) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Flight Mission ID',
-                  value: slot.currentMissionId!,
-                  icon: Icons.flight_outlined,
-                ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Close'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => _SlotDetailsModalBody(slot: slot),
     );
   }
 
@@ -394,6 +337,7 @@ class _StationHeaderCard extends StatelessWidget {
             if (stations.length > 1) ...[
               DropdownButtonFormField<String>(
                 value: selectedStationId,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Selected Station',
                   prefixIcon: Icon(Icons.hub_outlined),
@@ -427,8 +371,10 @@ class _StationHeaderCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -448,7 +394,6 @@ class _StationHeaderCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -697,17 +642,21 @@ class _MetricCounterBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
           Text(
             sublabel,
             style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -974,6 +923,220 @@ class _DetailRow extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SlotDetailsModalBody extends ConsumerStatefulWidget {
+  const _SlotDetailsModalBody({required this.slot});
+
+  final StationSlot slot;
+
+  @override
+  ConsumerState<_SlotDetailsModalBody> createState() =>
+      _SlotDetailsModalBodyState();
+}
+
+class _SlotDetailsModalBodyState extends ConsumerState<_SlotDetailsModalBody> {
+  final _reasonController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  bool get _canToggle =>
+      widget.slot.status == 'EMPTY' || widget.slot.status == 'ERROR';
+
+  String get _targetStatus =>
+      widget.slot.status == 'EMPTY' ? 'ERROR' : 'EMPTY';
+
+  Future<void> _toggleStatus() async {
+    setState(() {
+      _isSubmitting = true;
+      _errorText = null;
+    });
+    try {
+      final api = ref.read(landingStationApiServiceProvider);
+      await api.updateSlotStatus(
+        slotId: widget.slot.id,
+        request: UpdateSlotStatusRequest(
+          targetStatus: _targetStatus,
+          reason: _reasonController.text,
+        ),
+      );
+      await ref.read(stationAvailabilityNotifierProvider.notifier).refresh();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _errorText = errorMessage(error);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slot = widget.slot;
+    final (color, icon) = OperatorHomePage._slotStatusStyle(context, slot.status);
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 20, 24, 32 + bottomInset),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withOpacity(0.15),
+                  child: Icon(icon, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Slot #${slot.slotNumber}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'ID: ${slot.id}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    slot.status,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 32),
+            _DetailRow(
+              label: 'Status',
+              value: slot.status,
+              icon: Icons.info_outline,
+            ),
+            const SizedBox(height: 12),
+            _DetailRow(
+              label: 'Last Updated',
+              value: slot.lastUpdated.toLocal().toString().split('.').first,
+              icon: Icons.access_time,
+            ),
+            if (slot.currentOrderId != null) ...[
+              const SizedBox(height: 12),
+              _DetailRow(
+                label: 'Current Order ID',
+                value: slot.currentOrderId!,
+                icon: Icons.inventory_2_outlined,
+              ),
+            ],
+            if (slot.currentMissionId != null) ...[
+              const SizedBox(height: 12),
+              _DetailRow(
+                label: 'Flight Mission ID',
+                value: slot.currentMissionId!,
+                icon: Icons.flight_outlined,
+              ),
+            ],
+            if (_canToggle) ...[
+              const Divider(height: 28),
+              TextField(
+                key: const Key('slot-status-reason-input'),
+                controller: _reasonController,
+                decoration: InputDecoration(
+                  labelText: slot.status == 'EMPTY'
+                      ? 'Maintenance reason (optional)'
+                      : 'Resolution note (optional)',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _errorText!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('slot-status-toggle-button'),
+                  onPressed: _isSubmitting ? null : _toggleStatus,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          slot.status == 'EMPTY'
+                              ? Icons.build_outlined
+                              : Icons.check_circle_outline,
+                        ),
+                  label: Text(
+                    slot.status == 'EMPTY'
+                        ? 'Mark Maintenance (ERROR)'
+                        : 'Restore Operational (EMPTY)',
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _isSubmitting
+                    ? null
+                    : () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

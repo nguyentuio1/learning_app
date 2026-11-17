@@ -26,13 +26,19 @@ abstract final class ApiEndpoints {
   static String resolveDeliveryFailure(String id) =>
       '$deliveryOrders/$id/resolve-failure';
 
-  // Station Operations - Package Pickup (LA-29 / LA-126)
+  // Station Operations - Package Pickup & Intake (LA-29 / LA-126 / LA-170)
   static String stationOrderLookup(String stationId, String trackingNumber) =>
       '$landingStations/$stationId/operations/orders/$trackingNumber';
+  static String stationIntake(String stationId) =>
+      '$landingStations/$stationId/operations/intake';
+  static String stationIntakeReject(String stationId) =>
+      '$landingStations/$stationId/operations/intake-reject';
   static String stationPickup(String stationId) =>
       '$landingStations/$stationId/operations/pickup';
   static String clearExpiredParcel(String stationId) =>
       '$landingStations/$stationId/operations/clear-expired-parcel';
+  static String updateSlotStatus(String slotId) =>
+      '/station-slots/$slotId/status';
 
   // Customer Delivery Confirmation (LA-37 / LA-151)
   static String confirmDelivery(String id) =>
