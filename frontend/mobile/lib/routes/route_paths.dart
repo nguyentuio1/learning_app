@@ -13,7 +13,6 @@ abstract final class RoutePaths {
   static const customerOrderTracking = '/customer/orders/tracking/:orderId';
   static const customerOrderDetails = '/customer/orders/:orderId';
   static const customerOrderHistory = '/customer/orders/:orderId/history';
-  static const customerAssistant = '/customer/assistant';
   static const customerOrderConfirmDelivery =
       '/customer/orders/:orderId/confirm-delivery';
   static String customerOrderConfirmDeliveryFor(String orderId) =>
@@ -23,6 +22,26 @@ abstract final class RoutePaths {
   static const customerOrderSubmitted = '/customer/orders/create/submitted';
   static const customerOrdersEdit = '/customer/orders/edit';
   static const customerNotifications = '/customer/notifications';
+  static const customerAssistant = '/customer/assistant';
+  static String customerAssistantFor({
+    String? orderId,
+    String? trackingNumber,
+    String? sessionId,
+  }) {
+    final query = <String, String>{};
+    if (orderId != null && orderId.isNotEmpty) query['orderId'] = orderId;
+    if (trackingNumber != null && trackingNumber.isNotEmpty) {
+      query['trackingNumber'] = trackingNumber;
+    }
+    if (sessionId != null && sessionId.isNotEmpty) {
+      query['sessionId'] = sessionId;
+    }
+    return Uri(
+      path: customerAssistant,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
+
   static const operatorHome = '/operator';
   static const operatorIntake = '/operator/intake';
   static const operatorPickup = '/operator/pickup';
@@ -42,21 +61,6 @@ abstract final class RoutePaths {
       '/customer/orders/${Uri.encodeComponent(orderId)}';
   static String customerOrderHistoryFor(String orderId) =>
       '/customer/orders/${Uri.encodeComponent(orderId)}/history';
-  static String customerAssistantFor({
-    String? orderId,
-    String? trackingNumber,
-  }) {
-    final query = <String, String>{
-      if (orderId != null && orderId.isNotEmpty) 'orderId': orderId,
-      if (trackingNumber != null && trackingNumber.isNotEmpty)
-        'trackingNumber': trackingNumber,
-    };
-    return Uri(
-      path: customerAssistant,
-      queryParameters: query.isEmpty ? null : query,
-    ).toString();
-  }
-
   static String operatorExpiredParcelsFor(String stationId) =>
       '/operator/expired-parcels/$stationId';
 }

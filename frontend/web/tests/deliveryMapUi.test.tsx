@@ -1,6 +1,6 @@
 // LA-149: Test delivery map web UI and integration
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ConfigProvider } from 'antd'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import MockAdapter from 'axios-mock-adapter'
@@ -20,6 +20,8 @@ vi.mock('../src/hooks/useAuth', () => ({
   }),
 }))
 
+const hubHandlers = new Map<string, () => void>()
+
 vi.mock('@microsoft/signalr', () => ({
   HubConnectionState: { Disconnected: 'Disconnected' },
   LogLevel: { None: 6 },
@@ -30,11 +32,15 @@ vi.mock('@microsoft/signalr', () => ({
     build() {
       return {
         state: 'Disconnected',
-        start: vi.fn().mockRejectedValue(new Error('No live hub in unit test')),
+        start: vi.fn().mockResolvedValue(undefined),
         stop: vi.fn().mockResolvedValue(undefined),
         invoke: vi.fn().mockResolvedValue(undefined),
-        on: vi.fn(),
-        off: vi.fn(),
+        on: vi.fn((event: string, handler: () => void) => {
+          hubHandlers.set(event, handler)
+        }),
+        off: vi.fn((event: string) => {
+          hubHandlers.delete(event)
+        }),
         onreconnecting: vi.fn(),
         onreconnected: vi.fn(),
         onclose: vi.fn(),
@@ -82,6 +88,7 @@ const makeSnapshot = (overrides: Record<string, unknown> = {}) => ({
 let mock: MockAdapter
 
 beforeEach(() => {
+  hubHandlers.clear()
   session.clear()
   mock = new MockAdapter(apiClient)
 })
@@ -190,11 +197,27 @@ it('supports zoom, keyboard pan, and basemap retry when a tile fails to load', a
   )
 
   const svg = screen.getByRole('img')
+  const marker = screen.getByLabelText('Reported drone marker')
+  const initialTransform = marker.getAttribute('transform')
+  expect(initialTransform).toBeTruthy()
+
   fireEvent.keyDown(svg, { key: 'ArrowLeft' })
+  const afterPanTransform = marker.getAttribute('transform')
+  expect(afterPanTransform).not.toBe(initialTransform)
+
   fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+  const afterZoomInTransform = marker.getAttribute('transform')
+  expect(afterZoomInTransform).not.toBe(afterPanTransform)
+
   fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
+  const afterZoomOutTransform = marker.getAttribute('transform')
+  expect(afterZoomOutTransform).not.toBe(afterZoomInTransform)
+
   fireEvent.click(screen.getByRole('button', { name: 'Fit stations' }))
+  expect(marker.getAttribute('transform')).toBe(initialTransform)
+
   fireEvent.click(screen.getByRole('button', { name: 'Center drone' }))
+  expect(marker.getAttribute('transform')).not.toBe(initialTransform)
 
   const tile = container.querySelector('image')
   expect(tile).not.toBeNull()
@@ -207,5 +230,40 @@ it('supports zoom, keyboard pan, and basemap retry when a tile fails to load', a
   fireEvent.click(screen.getByRole('button', { name: 'Retry basemap' }))
   await waitFor(() => {
     expect(screen.queryByText(/Basemap tiles are unavailable\./)).not.toBeInTheDocument()
+  })
+})
+
+it('updates drone marker coordinates and transform when SignalR telemetry arrives', async () => {
+  let currentSnapshot = makeSnapshot()
+  mock.onGet('/api/dispatch/active-deliveries').reply(200, [activeOrder])
+  mock.onGet(`/api/delivery-orders/${orderId}/tracking`).reply(() => [200, currentSnapshot])
+
+  renderMap(`/delivery-map/${orderId}`)
+
+  expect(await screen.findByText('10.795123, 106.665432')).toBeInTheDocument()
+  const initialTransform = screen.getByLabelText('Reported drone marker').getAttribute('transform')
+
+  await waitFor(() => {
+    expect(hubHandlers.has('PositionUpdated')).toBe(true)
+  })
+
+  currentSnapshot = makeSnapshot({
+    lastPosition: {
+      latitude: 10.812345,
+      longitude: 106.645678,
+      altitudeMeters: 70,
+      speedMps: 15,
+      batteryPercentage: 80,
+      timestamp: new Date().toISOString(),
+    },
+  })
+
+  await act(async () => {
+    hubHandlers.get('PositionUpdated')?.()
+  })
+
+  expect(await screen.findByText('10.812345, 106.645678')).toBeInTheDocument()
+  await waitFor(() => {
+    expect(screen.getByLabelText('Reported drone marker').getAttribute('transform')).not.toBe(initialTransform)
   })
 })

@@ -9,6 +9,7 @@ import '../presentation/auth/login_page.dart';
 import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
+import '../presentation/customer/assistant/customer_assistant_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/notifications/notifications_list_page.dart';
 import '../presentation/customer/orders/confirm_delivery_page.dart';
@@ -19,7 +20,6 @@ import '../presentation/customer/orders/order_detail_page.dart';
 import '../presentation/customer/orders/order_history_page.dart';
 import '../presentation/customer/orders/order_submitted_page.dart';
 import '../presentation/customer/orders/review_order_page.dart';
-import '../presentation/customer/assistant/ai_assistant_page.dart';
 import '../presentation/customer/tracking/order_tracking_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
@@ -148,6 +148,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const ThemeSettingsPage(),
         ),
         GoRoute(
+          path: RoutePaths.customerAssistant,
+          builder: (_, state) {
+            final extra = state.extra;
+            final extraOrderId = switch (extra) {
+              DeliveryOrder order => order.id,
+              Map values => values['orderId']?.toString(),
+              _ => null,
+            };
+            final extraTrackingNumber = switch (extra) {
+              DeliveryOrder order => order.trackingNumber,
+              Map values => values['trackingNumber']?.toString(),
+              _ => null,
+            };
+            return CustomerAssistantPage(
+              orderId: state.uri.queryParameters['orderId'] ?? extraOrderId,
+              trackingNumber:
+                  state.uri.queryParameters['trackingNumber'] ??
+                  extraTrackingNumber,
+              sessionId: state.uri.queryParameters['sessionId'],
+            );
+          },
+        ),
+        GoRoute(
           path: RoutePaths.customerOrders,
           builder: (_, _) => const MyOrdersPage(),
         ),
@@ -200,28 +223,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.customerOrderHistory,
           builder: (_, state) =>
               OrderHistoryPage(orderId: state.pathParameters['orderId'] ?? ''),
-        ),
-        GoRoute(
-          path: RoutePaths.customerAssistant,
-          builder: (_, state) {
-            final extra = state.extra;
-            final extraOrderId = switch (extra) {
-              DeliveryOrder order => order.id,
-              Map values => values['orderId']?.toString(),
-              _ => null,
-            };
-            final extraTrackingNumber = switch (extra) {
-              DeliveryOrder order => order.trackingNumber,
-              Map values => values['trackingNumber']?.toString(),
-              _ => null,
-            };
-            return AiAssistantPage(
-              orderId: state.uri.queryParameters['orderId'] ?? extraOrderId,
-              trackingNumber:
-                  state.uri.queryParameters['trackingNumber'] ??
-                  extraTrackingNumber,
-            );
-          },
         ),
         GoRoute(
           path: RoutePaths.customerOrderConfirmDelivery,

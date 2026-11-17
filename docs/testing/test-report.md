@@ -1,21 +1,21 @@
 # LA-248: Test Execution Report — SmartDroneDelivery
 
-**Report Date:** 2026-11-15  
+**Report Date:** 2026-11-16  
 **Prepared By:** Phan Văn Khải (QA / Test)
 
 ---
 
 ## 1. Execution Summary by Baseline & PR
 
-Execution results are separated strictly by **Baseline / PR**, **Environment**, **Commit SHA**, **Test Result**, and **Evidence URL** so local `develop` runs are never mixed with feature PR CI runs.
+Execution results are separated strictly by **Baseline / PR**, **Environment**, **Commit SHA**, **Test Result**, and **Evidence URL** so local `develop` runs are never mixed with feature PR CI runs. Passing automated/fake-provider tests establish API/UI contract and boundary behavior; they do not claim live AI model quality, chat retention approval, physical drone hardware control, or production deployment acceptance.
 
 ### 1.1 `origin/develop` Baseline (Local Verification)
 
 | Baseline / PR | Layer | Environment | Commit SHA | Test Result | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| `origin/develop` | Backend (.NET 8, `dotnet test`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `636f9a4` | **372 Passed, 0 Failed, 21 Skipped** (393 total; 21 `[PostgresFact]` skipped locally) | [backend-develop-test-run.txt](evidence/backend-develop-test-run.txt) |
-| `origin/develop` | Web (Vitest, 20 files / 183 tests) | Local Windows, `jsdom` | `636f9a4` | **183 Passed, 0 Failed** (15 files / 117 tests passed in parallel; 5 AntD-heavy files / 66 tests passed 66/66 with `--no-file-parallelism`) | Local CLI run on `636f9a4`; CI Web job on PR #176 (`c9ce9bc`): https://github.com/nguyentuio1/learning_app/actions/runs/43678283005/job/132703130618 |
-| `origin/develop` | Mobile (Flutter, 26 test files) | Local Windows (Flutter SDK not installed locally) | `636f9a4` | Not executed locally; verified via GitHub Actions CI | CI Mobile job on PR #176 (`c9ce9bc`): https://github.com/nguyentuio1/learning_app/actions/runs/43678283005/job/132703130839 |
+| `origin/develop` (Sprint 5 snapshot) | Backend (.NET 8, `dotnet test`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `636f9a4` | **372 Passed, 0 Failed, 21 Skipped** (393 total; 21 `[PostgresFact]` skipped locally) | [backend-develop-test-run.txt](evidence/backend-develop-test-run.txt) |
+| `origin/develop` (Sprint 5 snapshot) | Web (Vitest, 20 files / 183 tests) | Local Windows, `jsdom` | `636f9a4` | **183 Passed, 0 Failed** (15 files / 117 tests passed in parallel; 5 AntD-heavy files / 66 tests passed 66/66 with `--no-file-parallelism`) | Local CLI run on `636f9a4`; CI Web job on PR #176 (`c9ce9bc`): https://github.com/nguyentuio1/learning_app/actions/runs/43678283005/job/132703130618 |
+| `origin/develop` (Sprint 5 snapshot) | Mobile (Flutter, 26 test files) | Local Windows (Flutter SDK not installed locally) | `636f9a4` | Not executed locally; verified via GitHub Actions CI | CI Mobile job on PR #176 (`c9ce9bc`): https://github.com/nguyentuio1/learning_app/actions/runs/43678283005/job/132703130839 |
 
 ### 1.2 Sprint 5 Feature PR Verification
 
@@ -27,13 +27,36 @@ Execution results are separated strictly by **Baseline / PR**, **Environment**, 
 | **PR #163 (`LA-142`)** — Merged | Local Vitest (`deliveryFailureHandlingUi.test.tsx`) + GitHub PR | `bda9ddb` | **6/6 Passed** (Web Failure Handling UI) | https://github.com/nguyentuio1/learning_app/pull/163 |
 | **PR #162 (`LA-326`)** — **Approved & Merged** | GitHub Actions CI (`ubuntu-latest` + `postgres:16-alpine`) | `c4bd627` | **3/3 CI Checks Passed** (`Backend tests`, `Web lint, test and build`, `Mobile analyze and test`) | https://github.com/nguyentuio1/learning_app/pull/162 |
 
+### 1.3 Sprint 6 & Sprint 7 Feature and Story PR Verification
+
+| Baseline / PR | Environment | Commit SHA (Head / Merge) | Test Result | Evidence URL |
+| --- | --- | --- | --- | --- |
+| **PR #198 (`LA-157`)** & **PR #203 (`LA-39`)** — Merged | GitHub Actions CI (`ubuntu-latest` + `postgres:16-alpine`) | PR #198: `f5b8924` / `dbf50cc`<br>PR #203: `c6f0b9d` / `89579f8` | **3/3 CI Checks Passed** (`ExternalIntegrationAcceptanceTests`) | https://github.com/nguyentuio1/learning_app/pull/198<br>https://github.com/nguyentuio1/learning_app/pull/203 |
+| **PR #199 (`LA-152`)** & **PR #208 (`LA-37`)** — Merged | GitHub Actions CI (`ubuntu-latest` + `postgres:16-alpine`) | PR #199: `7c81aca` / `4c22afa`<br>PR #208: `b411d14` / `321733b` | **3/3 CI Checks Passed** (`DeliveryConfirmationAcceptanceTests`) | https://github.com/nguyentuio1/learning_app/pull/199<br>https://github.com/nguyentuio1/learning_app/pull/208 |
+| **PR #200 (`LA-146`)** & **PR #205 (`LA-35`)** — Merged | GitHub Actions CI (`ubuntu-latest` + `postgres:16-alpine`) | PR #200: `9d1c9cb` / `f330956`<br>PR #205: `10ebbf6` / `10fa726` | **3/3 CI Checks Passed** (`TrackingAcceptanceTests`) | https://github.com/nguyentuio1/learning_app/pull/200<br>https://github.com/nguyentuio1/learning_app/pull/205 |
+| **PR #201 (`LA-155`)** & **PR #202 (`LA-38`)** — Merged | GitHub Actions CI (`ubuntu-latest` + `postgres:16-alpine`) | PR #201: `ab2a12f` / `e534022`<br>PR #202: `18cb307` / `a965a4e` | **3/3 CI Checks Passed** (`AnalyticsAcceptanceTests`) | https://github.com/nguyentuio1/learning_app/pull/201<br>https://github.com/nguyentuio1/learning_app/pull/202 |
+| **PR #204 (`LA-149`)** & **PR #206 (`LA-36`)** — Merged | Local Vitest (`deliveryMapUi.test.tsx`) + GitHub Actions CI | PR #204: `e6d68ff` / `2535349`<br>PR #206: `c761577` / `462d297` | **3/3 CI Checks Passed** (Web & Mobile Delivery Map) | https://github.com/nguyentuio1/learning_app/pull/204<br>https://github.com/nguyentuio1/learning_app/pull/206 |
+| **PR #216 (`LA-173`)** — Merged | GitHub Actions CI (`ubuntu-latest` + `postgres:16-alpine`) | `2b5b069` / `8413d84` | **3/3 CI Checks Passed** (Story PR CI trigger & SignalR protocol collection isolation) | https://github.com/nguyentuio1/learning_app/pull/216 |
+| **PR #220 (`LA-161`)** & **PR #226 (`LA-40`)** — Merged | Local Vitest (`deliveryEtaUi.test.tsx`) + GitHub Actions CI | PR #220: `176413b` / `27698e8`<br>PR #226: `31aa0ca` / `99b8a5c` | **3/3 CI Checks Passed** (Guarded ETA API, Web & Mobile) | https://github.com/nguyentuio1/learning_app/pull/220<br>https://github.com/nguyentuio1/learning_app/pull/226 |
+| **PR #228 (`LA-164`)** — Open on `story/LA-41-delivery-summarization` | Local Vitest (`deliverySummaryUi.test.tsx`) + GitHub Actions CI | `135f87e` (Head) | **8/8 Passed** locally (`deliverySummaryUi` + `deliverySummaryFreshness`); **3/3 CI Checks Passed** | https://github.com/nguyentuio1/learning_app/pull/228 |
+| **PR #229 (`LA-168`)** — Open on `story/LA-42-customer-ai-assistant` | Local `dotnet test` (`CustomerAssistantAcceptanceTests`) + GitHub Actions CI | `58ba04a` (Head; updated in follow-up commit) | **3/3 Passed** locally (`CustomerAssistantAcceptanceTests`) | https://github.com/nguyentuio1/learning_app/pull/229 |
+| **PR #230 (`LA-172`)** — Open on `develop` | Local `dotnet test` (`FullSystemIntegrationTests`) + GitHub Actions CI | Current PR head | **3/3 Passed** locally (`FullSystemIntegrationTests`: end-to-end delivery lifecycle, UTC midnight boundary, failure recovery + v1 API) | https://github.com/nguyentuio1/learning_app/pull/230 |
+
 ---
 
-## 2. Module Coverage on `origin/develop` (`636f9a4`)
+## 2. Module Coverage
 
-- **Backend (`SmartDroneDelivery.Tests`, 24 files, 393 tests):** Auth, Authentication Boundaries, RBAC & Boundaries, Profile & Boundaries, User Management, Development Seed Data, Delivery Order Creation/Queries/Mutations/Concurrency (6 `[PostgresFact]`), Landing Station Access/Management (3 `[PostgresFact]`), Station Slot Access/Management/Availability (3 `[PostgresFact]`), Drone Fleet Access/Management (3 `[PostgresFact]`), Package Pickup Confirmation (3 `[PostgresFact]`), Pickup Timeout, and Station Operations Concurrency (3 `[PostgresFact]`).
-- **Frontend Web (`frontend/web/tests/`, 20 files, 183 tests):** Auth Session, Auth Review UI, Customer Registration, Account Flow, Account Motion, Route Loading, Customer Address Contract, Customer Package Contract, Order Creation/Queries/Mutations, User Management & Auth/UI, Landing Station Contract/UI, Station Slot Contract/UI, Drone Management Contract/UI.
-- **Frontend Mobile (`frontend/mobile/test/`, 26 files on `develop` + `notifications_page_test.dart` merged via PR #162):** App Smoke, DI Wiring, API Exception, Dio Client, Auth/Logging Interceptors, Auth/Profile Repositories, Customer Addresses/Packages/Orders/Notifications, Operator Station Availability & Package Pickup, Profile Pages.
+### 2.1 Merged `origin/develop` Baseline (`99b8a5c`)
+
+- **Backend (`SmartDroneDelivery.Tests`):** Auth, Authentication Boundaries, RBAC & Boundaries, Profile & Boundaries, User Management, Development Seed Data, Delivery Order Creation/Queries/Mutations/Concurrency, Order Review, Order State Machine, Scheduling, Failure Handling, Flight Telemetry, Drone Simulator, Real-Time Tracking & SignalR Hub, Delivery Confirmation, Analytics & Reports, External v1 Integration API, and Guarded ETA Read/Producer/Local Model Adapter.
+- **Frontend Web (`frontend/web/tests/`):** Auth Session, Auth Review UI, Customer Registration, Account Flow, Account Motion, Route Loading, Customer Address/Package/Order Flows, User Management UI, Landing Station/Slot/Drone Management UI, Delivery Approval/Scheduling/Failure Handling UI, Customer Notifications UI, Real-Time Tracking & Delivery Map UI, and Delivery ETA UI (`deliveryEtaUi.test.tsx`, `deliveryEtaStatusRefresh.test.tsx`).
+- **Frontend Mobile (`frontend/mobile/test/`):** App Smoke, DI Wiring, API Exception, Dio Client, Auth/Logging Interceptors, Auth/Profile Repositories, Customer Addresses/Packages/Orders/Notifications, Real-Time Tracking, Delivery Map, Delivery Confirmation, ETA Estimation (`eta_estimation_screens_test.dart`), and Operator Station Availability & Package Pickup.
+
+### 2.2 Additional Coverage in Open Feature PRs (Not Yet Merged into `develop`)
+
+- **PR #228 (`LA-164`, on `story/LA-41-delivery-summarization`):** `deliverySummaryUi.test.tsx` (Web UI & integration tests for AI delivery summarization).
+- **PR #229 (`LA-168`, on `story/LA-42-customer-ai-assistant`):** `CustomerAssistantAcceptanceTests.cs` (acceptance & regression tests for Customer AI Assistant).
+- **PR #230 (`LA-172`, targeting `develop`):** `FullSystemIntegrationTests.cs` (end-to-end multi-actor delivery lifecycle, UTC midnight analytics boundary, and external v1 API recovery flow).
 
 ---
 
@@ -50,15 +73,14 @@ Execution results are separated strictly by **Baseline / PR**, **Environment**, 
 | `DEF-07` | PR #162 (`LA-326` Web) | P2 | Marking the sole unread item on page 2 left UI on empty page 2 with pagination hidden. | **Verified** | Commit `c4bd627`; `customerNotificationsUi.test.tsx` **7/7 passed** |
 | `DEF-08` | PR #162 (`LA-326` Backend) | P2 | Non-atomic read/read-all could overwrite first `ReadAt` or double-count `updatedCount` under concurrency. | **Verified** | Commit `c4bd627`; CI `Backend tests` (`NotificationConcurrencyTests` on Postgres 16) **success** |
 | `DEF-09` | PR #162 (`LA-326` Mobile) | P2 | `loadMore()` race condition: delayed `All` page 2 response could overwrite `Unread` list after filter switch. | **Verified** | Commit `c4bd627` (`_generation` guard + regression test); CI `Mobile analyze and test` **success** |
+| `DEF-10` | PR #216 (`LA-173` Backend CI) | P2 | Parallel API/BCrypt test fixtures contended with real SignalR WebSocket handshake in `TrackingHubTests`. | **Verified** | Commit `2b5b069` (`SignalRProtocolCollection` nonparallel isolation); [LA-173-ci-stability.md](LA-173-ci-stability.md) |
 
 ---
 
 ## 4. Open Items & Next Steps
-1. **PR #162 (`LA-326`):** **Approved by `nguyentuio1` and Merged** into `develop` (`c4bd627`).
-2. **PR #176 (`LA-202`):** Test Scope & Strategy (`LA-245`), Test Plan (`LA-246`), Test Cases (`LA-247`), and Test Report (`LA-248`) open for review.
-3. **Upcoming Test Tasks (Pending Feature Implementations on `develop`):**
-   - `LA-146` (`LA-35`): `[Test] real-time delivery tracking` (`FR-24`)
-   - `LA-149` (`LA-36`): `[Test] delivery map` (`FR-25`)
-   - `LA-152` (`LA-37`): `[Test] delivery confirmation` (`FR-26`, `FR-27`)
-   - `LA-155` (`LA-38`): `[Test] dashboard and reports` (`FR-28`)
-   - `LA-157` (`LA-39`): `[Test] external integration API` (`FR-34`)
+1. **Merged Stories (`develop` at `99b8a5c`):** Sprint 6 (`LA-35`–`LA-39`) and Sprint 7 Story `LA-40` (`LA-158`–`LA-161` Guarded ETA) are integrated into `develop` with 3/3 CI checks green.
+2. **Active Sprint 7 Reviews:**
+   - **PR #222 (`LA-253`):** SRS consolidation updated per review feedback and re-opened against `develop`.
+   - **PR #228 (`LA-164`):** Delivery summarization Web UI & integration tests open against `story/LA-41-delivery-summarization`.
+   - **PR #229 (`LA-168`):** Customer AI assistant acceptance & regression tests open against `story/LA-42-customer-ai-assistant`.
+   - **`LA-172` (`LA-44`):** End-to-end full system integration tests (`FullSystemIntegrationTests.cs`) and updated Sprint 6–7 test evidence.

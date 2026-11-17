@@ -80,6 +80,11 @@ class AppLogInterceptor extends Interceptor {
   final void Function(String message) _logger;
 
   static const _startKey = 'logStartMicros';
+  static const suppressBodyLogKey = 'suppressBodyLog';
+
+  static bool _shouldSuppressBody(RequestOptions options) =>
+      options.extra[suppressBodyLogKey] == true ||
+      options.uri.path.contains('/ai-assistant');
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -88,8 +93,10 @@ class AppLogInterceptor extends Interceptor {
     if (logHeaders) {
       b.write('\n    headers: ${LogRedactor.headers(options.headers)}');
     }
-    final body = _formatBody(options.data);
-    if (body != null) b.write('\n    body: $body');
+    if (!_shouldSuppressBody(options)) {
+      final body = _formatBody(options.data);
+      if (body != null) b.write('\n    body: $body');
+    }
     _logger(b.toString());
     handler.next(options);
   }
@@ -107,8 +114,10 @@ class AppLogInterceptor extends Interceptor {
       final h = response.headers.map.map((k, v) => MapEntry(k, v.join(', ')));
       b.write('\n    headers: ${LogRedactor.headers(h)}');
     }
-    final body = _formatBody(response.data);
-    if (body != null) b.write('\n    body: $body');
+    if (!_shouldSuppressBody(o)) {
+      final body = _formatBody(response.data);
+      if (body != null) b.write('\n    body: $body');
+    }
     _logger(b.toString());
     handler.next(response);
   }
@@ -120,8 +129,10 @@ class AppLogInterceptor extends Interceptor {
     final b = StringBuffer(
       '<-x $status ${o.method} ${o.uri} (${_elapsed(o)}) [${err.type.name}]',
     );
-    final body = _formatBody(err.response?.data);
-    if (body != null) b.write('\n    body: $body');
+    if (!_shouldSuppressBody(o)) {
+      final body = _formatBody(err.response?.data);
+      if (body != null) b.write('\n    body: $body');
+    }
     _logger(b.toString());
     handler.next(err);
   }

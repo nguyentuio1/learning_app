@@ -35,7 +35,8 @@ class CustomerHomePage extends ConsumerWidget {
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
           ),
         ],
       ),
@@ -75,6 +76,13 @@ class CustomerHomePage extends ConsumerWidget {
                         ? 'Notifications ($unreadCount unread)'
                         : 'Notifications',
                   ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  key: const Key('home-ai-assistant-button'),
+                  onPressed: () => context.push(RoutePaths.customerAssistant),
+                  icon: const Icon(Icons.smart_toy_outlined),
+                  label: const Text('AI Assistant'),
                 ),
               ],
             ),
