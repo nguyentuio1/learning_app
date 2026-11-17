@@ -9,6 +9,7 @@ import '../presentation/auth/login_page.dart';
 import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
+import '../presentation/customer/assistant/customer_assistant_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/notifications/notifications_list_page.dart';
 import '../presentation/customer/orders/confirm_delivery_page.dart';
@@ -134,6 +135,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: RoutePaths.customerNotifications,
           builder: (_, _) => const NotificationsListPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerAssistant,
+          builder: (_, state) => CustomerAssistantPage(
+            orderId: state.uri.queryParameters['orderId'],
+            trackingNumber: state.uri.queryParameters['trackingNumber'],
+            sessionId: state.uri.queryParameters['sessionId'],
+          ),
         ),
         GoRoute(
           path: RoutePaths.customerOrders,

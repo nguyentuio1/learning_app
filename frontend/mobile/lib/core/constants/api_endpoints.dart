@@ -43,4 +43,10 @@ abstract final class ApiEndpoints {
   static const notificationsUnreadCount = '/notifications/unread-count';
   static String notificationRead(String id) => '$notifications/$id/read';
   static const notificationsReadAll = '/notifications/read-all';
+
+  // Customer AI Assistant (LA-42 / LA-167)
+  static const aiAssistantMessages = '/ai-assistant/messages';
+  static const aiAssistantSessions = '/ai-assistant/sessions';
+  static String aiAssistantSessionMessages(String sessionId) =>
+      '$aiAssistantSessions/${Uri.encodeComponent(sessionId)}/messages';
 }
