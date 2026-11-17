@@ -1,43 +1,45 @@
 # Sprint 8 Final Demo Rehearsal Plan & Runbook (LA-188)
 
 Owner: [LA-188](https://hungndemail.atlassian.net/browse/LA-188), Hung Nguyen. Parent story: [LA-49](https://hungndemail.atlassian.net/browse/LA-49) (`story/LA-49-prepare-final-demo`).
+Companion demo script: [Final demo script (LA-186)](../demo/demo-script.md).
 
 > [!IMPORTANT]
-> This document defines the rehearsal script, pre-flight environment checks, and issue-tracking table for the whole-team demo rehearsal. Automated build/CI checks recorded here do **not** substitute for the live team dry-run; live rehearsal attendance and issue fixes must be recorded after the team executes the runbook.
+> This runbook defines the pre-flight startup configuration, rehearsal guardrails, and issue-tracking log for the whole-team dry-run of [demo-script.md](../demo/demo-script.md). Automated build and CI checks recorded below do **not** establish that the live demo works end-to-end; live rehearsal attendance and issue fixes must be recorded after the team runs through the script together.
 
 ---
 
-## 1. Pre-flight environment checklist (post-LA-328)
+## 1. Pre-flight environment checklist (post-LA-47 / LA-328)
 
-Before starting the rehearsal, verify every service starts cleanly without committed secrets:
+Choose **one** startup path (do not mix them, as both bind port `5055`):
 
-1. **Infrastructure (`docker compose up -d`):**
-   - Copy `.env.example` to `.env` and populate `POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD`.
-   - Confirm PostgreSQL 16 (`localhost:5433`, database `drone_delivery_db`) and MinIO (`localhost:9000` / console `localhost:9001`) are healthy.
-2. **Backend API (`backend/SmartDroneDelivery.Api`):**
-   - Configure `dotnet user-secrets` (`ConnectionStrings:DefaultConnection`, `Minio:AccessKey`, `Minio:SecretKey`, `Jwt:Key`, `Seed:AdminPassword`).
-   - Run `dotnet run --launch-profile http` -> verify `http://localhost:5055/swagger` loads and EF Core migrations complete without errors.
-   - If using synthetic demo data, verify `Seed:DevelopmentData` is enabled only for local rehearsal and never commit real credentials.
-3. **Web Portal (`frontend/web`):**
-   - Run `npm ci` and `npm run dev` -> open `http://localhost:5173` (proxies `/api` and `/hubs/tracking` to `http://localhost:5055`).
-4. **Flutter Mobile Apps (`frontend/mobile`):**
+1. **Path A — One-command Docker stack (recommended for the demo):**
+   - Copy `.env.example` to `.env` and populate every interpolated variable (`POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `JWT_KEY`, `ADMIN_PASSWORD`), plus `ASPNETCORE_ENVIRONMENT=Development`, `DroneSimulator__Enabled=true`, and `DeliveryFlight__CruiseSpeedMps=60`.
+   - Run `docker compose up -d --build --wait`.
+   - Open the web portal at `http://localhost:8080` and verify `curl http://localhost:5055/health/ready` reports `"status":"Healthy"`.
+2. **Path B — Developer servers (local hot-reload):**
+   - Copy `.env.example` to `.env` and populate all required variables (including `JWT_KEY` and `ADMIN_PASSWORD`, because Docker Compose interpolates the whole file even when starting infrastructure only).
+   - Start infrastructure only (avoids port `5055` conflict): `docker compose up -d postgres minio`.
+   - In `backend/SmartDroneDelivery.Api`, configure `dotnet user-secrets` (`ConnectionStrings:DefaultConnection`, `Minio:AccessKey`, `Minio:SecretKey`, `Jwt:Key`, `Seed:AdminPassword`, and `"DroneSimulator:Enabled" "true"` plus `"DeliveryFlight:CruiseSpeedMps" "60"`), then run `dotnet run --launch-profile http` (`http://localhost:5055/swagger`).
+   - In `frontend/web`, run `npm ci` and `npm run dev` (`http://localhost:5173`).
+3. **Flutter Mobile Apps (`frontend/mobile`):**
    - Run `flutter pub get`.
-   - Customer app: `flutter run -t lib/main_customer.dart --flavor customer` (use `--dart-define=API_BASE_URL=http://<host>:5055/api` on physical devices).
-   - Station Operator app: `flutter run -t lib/main_operator.dart --flavor operator`.
+   - Customer app: `flutter run -t lib/main_customer.dart --flavor customer --dart-define=API_BASE_URL=http://<host>:5055/api`
+   - Station Operator app: `flutter run -t lib/main_operator.dart --flavor operator --dart-define=API_BASE_URL=http://<host>:5055/api`
 
 ---
 
-## 2. End-to-end live demo script
+## 2. Rehearsal data prerequisites & scene guardrails
 
-| Scene | Role & Client | Actions to demonstrate | Expected observable result | Fallback / guard if something fails |
-|---|---|---|---|---|
-| **1. System setup** | `SystemAdministrator` (Web) | Sign in -> verify 5 roles, operational stations, drone fleet, and `StationOperator` station assignment. | Stations show `OPERATIONAL` with `EMPTY` slots; operator is assigned to origin/destination station. | Re-check user role and station assignment in Admin -> Users. |
-| **2. Order creation** | `Customer` (Mobile or Web) | Manage address & package -> create delivery order -> **record the one-time 6-digit pickup code**. | Order created in `PENDING`; 6-digit code shown once at creation. | If validation fails, check package weight/dimensions against drone limits. |
-| **3. Dispatch & schedule** | `Dispatcher` (Web) | Open pending order -> Approve (`PENDING -> APPROVED`) -> select departure & assign eligible drone/slots. | Order moves to `APPROVED` with a `PLANNED` mission. | If `409 Conflict` occurs, refresh list and pick another free drone/slot. |
-| **4. Origin intake** | `StationOperator` (Mobile) | Tap **Origin Intake** -> look up tracking number -> select `EMPTY` slot -> enter measured weight/dimensions & visual check -> **Confirm Intake** (also show slot `EMPTY <-> ERROR` toggle in detail sheet). | Order transitions `APPROVED -> READY_FOR_TAKEOFF`; slot becomes `OCCUPIED`. | If slot was taken during polling, dropdown reconciles to remaining `EMPTY` slot; confirm `PLANNED` mission exists. |
-| **5. Live tracking & AI** | `Customer` & `Dispatcher` | Start/run simulator flight -> observe SignalR `IN_TRANSIT` & `ARRIVED` updates, live map, ETA countdown, and Delivery Summary (plus AI Assistant if enabled). | Map & status timeline update live; ETA shows countdown/overdue state; summary renders delivery record. | Note if AI provider/retention gates are off (local/default-off adapter behavior); never retry uncertain assistant POSTs without history recovery. |
-| **6. Destination pickup** | `StationOperator` (Mobile) / `Customer` | Operator taps **Confirm Pickup** -> looks up `ARRIVED` order -> enters 6-digit pickup code (or Customer confirms delivery). Show `PickupTimeoutAlertsCard` for overdue parcels. | Order transitions `ARRIVED -> DELIVERED`; destination slot returns to `EMPTY`. | Avoid >3 wrong codes to prevent `423` temporary lockout during live demo. |
-| **7. Reports & audit** | `LogisticsManager` / `SystemAdministrator` (Web) | Filter reporting period on Dashboard/Reports; open Admin Audit Logs. | Delivery metrics, completed count, and chronological audit entries reflect the demo order. | Refresh reporting range if cached metrics lag. |
+The Development seed (`SeedDevelopmentDataAsync`) creates stations `HCM-01` and `HCM-02` (`OPERATIONAL`), `HCM-03` (`MAINTENANCE`), plus `customer@...`, `dispatcher@...`, and one operator (`operator@...` assigned to `HCM-01`). Before rehearsing [demo-script.md](../demo/demo-script.md) (demo order **`HCM-01` -> `HCM-02`**), verify these prerequisites—either via **LA-187** demo data (Nhân Lưu Thiện) or manual Admin setup in Scene 1:
+
+| Scene(s) in `demo-script.md` | Prerequisite / Guardrail | Why / Failure avoided |
+|---|---|---|
+| **1, 3** (Setup & Dispatch) | Create at least one `IDLE` drone in **Admin -> Drone fleet** matching the demo package payload/range. | `SeedDevelopmentDataAsync` seeds no drones; Scene 3 scheduling fails without an `IDLE` drone. |
+| **1, 8** (Setup & Reports) | Create a `LogisticsManager` (`MANAGER`) account in **Admin -> Users**. | `SeedDevelopmentDataAsync` seeds no `MANAGER` account for Scene 8 dashboard/reports. |
+| **3, 4, 5** (Schedule -> Intake -> Flight) | In Scene 3, set `ScheduledDepartureTime` **3–4 minutes ahead** so Scene 4 intake finishes before takeoff; ensure `DroneSimulator:Enabled=true`. | `DroneSimulator:Enabled` defaults to `false` (`appsettings.json`), and `DroneSimulatorService` only takes off a `READY_FOR_TAKEOFF` order once `ScheduledDepartureTime <= now`. |
+| **4, 6a/6b** (Origin Intake & Destination Pickup) | Assign a second `StationOperator` to destination `HCM-02` before Scene 6a, **or** use Customer self-confirmation in the Customer app (`6b`). | `StationOperationService` enforces `station.OperatorId == caller` (`403` otherwise); `operator@...` is assigned only to `HCM-01` and cannot confirm pickup at `HCM-02`. |
+| **6a/6b** (Secure Code Lockout) | Allow **at most 2 wrong codes**; the **3rd** wrong code locks the order for 10 minutes (`HTTP 423`, `OtpLockoutManager`: `failedLogs.Count >= 3`, `AddMinutes(10)`). | Prevents locking the demo order mid-rehearsal. |
+| **9** (Admin Audit Logs) | Verify **LA-177** (`AuditLogsPage` / `AuditLogsController`, merged via `#241`) is present on the rehearsal checkout. | Required for Scene 9 read-only audit filtering. |
 
 ---
 
@@ -45,10 +47,10 @@ Before starting the rehearsal, verify every service starts cleanly without commi
 
 ### 3.1 Pre-rehearsal technical checks (observed)
 
-| Check | Command / Source | Result | Notes |
+| Check | Command / Source | Result | Scope / Notes |
 |---|---|---|---|
-| Backend build (`feature/LA-188-rehearse-demo`) | `dotnet build backend/SmartDroneDelivery.sln --no-restore` | Passed (`0 Warning(s)`, `0 Error(s)`) | Executed locally on `2026-11-17` against `story/LA-49-prepare-final-demo` (`6954667`). |
-| Full repository CI (`Backend`, `Web`, `Mobile`) | GitHub Actions PR workflow | Verified on PR | Covers `dotnet test`, `npm run lint/test/build`, and `flutter analyze/test`. |
+| Backend build (`feature/LA-188-rehearse-demo`) | `dotnet build backend/SmartDroneDelivery.sln --no-restore` | `Build succeeded` (`0 Warning(s)`, `0 Error(s)`) | Build verification only (not a test run), executed locally on `2026-11-17`. |
+| Repository CI (`32c33b3f25af5dee5a9930e7053ed360ea895ce2`) | [GitHub Actions run 44070729998](https://github.com/nguyentuio1/learning_app/actions/runs/44070729998) | `Backend tests`, `Web lint, test and build`, `Mobile analyze and test` all `success` | Automated CI on PR #240 prior to story merge; does not replace the live team dry-run. |
 
 ### 3.2 Live team rehearsal log
 
