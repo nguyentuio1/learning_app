@@ -98,7 +98,7 @@ The API address defaults to `http://10.0.2.2:5055/api` on the Android emulator a
 
 ## Accounts and test data
 
-When the backend runs in the **Development** environment (`dotnet run` does this by default), it creates the accounts and stations below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. Nothing is created in any other environment, and `Seed:DevelopmentData` in `appsettings.Development.json` switches it off.
+When the backend runs in the **Development** environment (`dotnet run` does this by default) with `Seed:DevelopmentData` enabled, it creates the demo accounts, stations, addresses, drones and orders below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. This demo data is not created in any other environment; set `Seed:DevelopmentData` to `false` in `appsettings.Development.json` to switch it off.
 
 | Role | Email | Password |
 |---|---|---|
@@ -106,6 +106,7 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 | Customer | `customer@smartdronedelivery.com` | `Customer@123456` |
 | Dispatcher | `dispatcher@smartdronedelivery.com` | `Dispatcher@123456` |
 | Station operator | `operator@smartdronedelivery.com` | `Operator@123456` (assigned to `HCM-01`) |
+| Logistics manager (`MANAGER`) | `manager@smartdronedelivery.com` | `Manager@123456` |
 
 | Station | Name | Status | Slots |
 |---|---|---|---|
@@ -113,15 +114,22 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 | `HCM-02` | Thu Duc Hub | `OPERATIONAL` | 4 |
 | `HCM-03` | Binh Thanh Hub | `MAINTENANCE` | 2 |
 
-So a customer can sign in and create an order right after `docker compose up` and `dotnet run`, with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
+Demo data also includes two customer addresses (`Home - District 1` and `Office - Thu Duc`), four drones, and three sample deliveries:
 
-Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
+| Type | Demo records |
+|---|---|
+| Drones | `DRONE-HCM-001` (`IDLE`, HCM-01), `DRONE-HCM-002` (`IDLE`, HCM-02), `DRONE-HCM-003` (`CHARGING`, HCM-01), `DRONE-HCM-004` (`MAINTENANCE`, HCM-03) |
+| Orders | `ORD-DEMO-001` (`PENDING`), `ORD-DEMO-002` (`APPROVED`), `ORD-DEMO-003` (`DELIVERED`, with a completed flight mission) |
+
+So a customer can sign in, see the sample deliveries, and create an order right after `docker compose up` and `dotnet run`, with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
+
+Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. Outside the Development demo seed, staff accounts are created by the administrator in the web portal (Users, New user). The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
 
 ```bash
 curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: application/json"   -d '{"email":"customer2@example.com","password":"Passw0rd123","fullName":"Second Customer","phoneNumber":"0900000010"}'
 ```
 
-Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md). Other staff accounts (Dispatcher, Logistics Manager, Administrator) are created by the administrator in the web portal (Users, New user).
+Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md).
 
 ## Configuration and secrets
 
