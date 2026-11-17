@@ -48,24 +48,32 @@ docker-compose.yml             PostgreSQL 16 and MinIO for local development
 ### 1. Infrastructure
 
 ```bash
+cp .env.example .env        # then replace every value in .env; .env is ignored by git
 docker compose up -d
 ```
 
 | Service | Host port | Credentials |
 |---|---|---|
-| PostgreSQL 16, database `drone_delivery_db` | 5433 | `postgres` / `Password123!` |
-| MinIO (S3 API / console) | 9000 / 9001 | `minioadmin` / `minioadminpassword` |
+| PostgreSQL 16, database `drone_delivery_db` | 5433 | `postgres` / `POSTGRES_PASSWORD` from `.env` |
+| MinIO (S3 API / console) | 9000 / 9001 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` from `.env` |
 
-These are development-only values (also in `backend/SmartDroneDelivery.Api/appsettings.json`).
+`docker compose` stops with "required variable ... is missing a value" when `.env` is missing a password.
 
 ### 2. Backend
 
+The repository holds no secret (LA-328), so give the backend its settings once with `dotnet user-secrets` (stored in your user profile, outside the repository). Use the same passwords as in `.env`:
+
 ```bash
 cd backend/SmartDroneDelivery.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=drone_delivery_db;Username=postgres;Password=<POSTGRES_PASSWORD>"
+dotnet user-secrets set "Minio:AccessKey" "<MINIO_ROOT_USER>"
+dotnet user-secrets set "Minio:SecretKey" "<MINIO_ROOT_PASSWORD>"
+dotnet user-secrets set "Jwt:Key" "<at least 32 random bytes, for example: openssl rand -base64 48>"
+dotnet user-secrets set "Seed:AdminPassword" "<your administrator password>"
 dotnet run --launch-profile http
 ```
 
-The API listens on <http://localhost:5055> and Swagger is at <http://localhost:5055/swagger>. On start it applies the EF Core migrations and seeds the five roles and one administrator account.
+The API listens on <http://localhost:5055> and Swagger is at <http://localhost:5055/swagger>. On start it applies the EF Core migrations and seeds the five roles and the administrator account (see [Configuration and secrets](#configuration-and-secrets)).
 
 ### 3. Web portal
 
@@ -94,7 +102,7 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 
 | Role | Email | Password |
 |---|---|---|
-| System administrator | `admin@smartdronedelivery.com` | `Admin@123456` (also created outside Development: change it for any shared environment) |
+| System administrator | `admin@smartdronedelivery.com` (`Seed:AdminEmail`) | the value of `Seed:AdminPassword`; created in every environment, but only when that setting is present |
 | Customer | `customer@smartdronedelivery.com` | `Customer@123456` |
 | Dispatcher | `dispatcher@smartdronedelivery.com` | `Dispatcher@123456` |
 | Station operator | `operator@smartdronedelivery.com` | `Operator@123456` (assigned to `HCM-01`) |
@@ -114,6 +122,21 @@ curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: applicati
 ```
 
 Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md). Other staff accounts (Dispatcher, Logistics Manager, Administrator) are created by the administrator in the web portal (Users, New user).
+
+## Configuration and secrets
+
+No working secret is committed (LA-328). `appsettings.json` keeps the secret settings empty, and the API stops on start with a message naming each missing setting:
+
+| Setting | Environment variable | Notes |
+|---|---|---|
+| `ConnectionStrings:DefaultConnection` | `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
+| `Jwt:Key` | `Jwt__Key` | at least 32 bytes; changing it signs every user out |
+| `Minio:AccessKey`, `Minio:SecretKey` | `Minio__AccessKey`, `Minio__SecretKey` | MinIO user and password |
+| `Seed:AdminPassword` (optional) | `Seed__AdminPassword` | creates the first administrator (`Seed:AdminEmail`) if it does not exist yet; 8 to 100 characters with a letter and a digit. Without it no administrator is created and a warning is logged. Change the password after the first sign-in (Profile, Change password). |
+
+In Development, `dotnet user-secrets` is the simplest place for them (see "Run it locally"); in any other environment use environment variables or the deployment's secret store. Outside Development the API also refuses the values that were committed before LA-328 (the old JWT key, PostgreSQL, MinIO and administrator passwords), because they remain readable in the git history: rotate them on every environment that used them.
+
+A PostgreSQL volume keeps the password it was created with; `POSTGRES_PASSWORD` only applies to a new volume. To rotate a local database either run `ALTER USER postgres PASSWORD '...'` in the container or recreate the volume (`docker compose down -v`, which deletes the local data).
 
 ## Using the application today
 
@@ -135,7 +158,7 @@ cd backend && dotnet test
 
 # Backend, including the concurrency tests that need a real PostgreSQL (LA-322).
 # Start `docker compose up -d postgres` first. Each run creates its own database on the server and drops it again.
-TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=Password123!" dotnet test
+TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=$POSTGRES_PASSWORD" dotnet test
 
 # Web
 cd frontend/web && npm test && npm run lint && npm run build

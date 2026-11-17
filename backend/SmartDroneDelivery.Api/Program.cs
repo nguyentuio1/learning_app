@@ -15,6 +15,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// LA-328: secrets come from environment variables or user-secrets; stop here when one is missing.
+RequiredConfiguration.Validate(builder.Configuration, builder.Environment);
+
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

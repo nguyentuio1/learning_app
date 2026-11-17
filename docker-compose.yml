@@ -6,7 +6,8 @@ services:
     environment:
       POSTGRES_DB: drone_delivery_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Password123!
+      # LA-328: the passwords come from .env (copy .env.example); compose stops when one is missing.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
     ports:
       - "5433:5432"
     volumes:
@@ -18,8 +19,8 @@ services:
     restart: always
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadminpassword
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env (see .env.example)}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env (see .env.example)}
     ports:
       - "9000:9000"
       - "9001:9001"

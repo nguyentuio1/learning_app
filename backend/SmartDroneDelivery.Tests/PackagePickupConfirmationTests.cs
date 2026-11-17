@@ -631,8 +631,7 @@ public class PackagePickupPostgresTests : IClassFixture<PostgresApiFactory>, IDi
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((_, config) =>
-                config.AddInMemoryCollection(new Dictionary<string, string?> { ["Seed:DevelopmentData"] = "false" }));
+            TestSettings.Apply(builder);
             builder.ConfigureServices(services =>
             {
                 foreach (var descriptor in services

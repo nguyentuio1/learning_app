@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SmartDroneDelivery.Api.Entities;
+using SmartDroneDelivery.Api.Security;
 
 namespace SmartDroneDelivery.Api.Data;
 
@@ -32,18 +33,30 @@ public static class SeedData
             await context.SaveChangesAsync();
         }
 
-        // 2. Seed Default Administrator User
-        if (!await context.Users.AnyAsync(u => u.Email == "admin@smartdronedelivery.com"))
+        // 2. Seed the first administrator (LA-328). Email and password come from configuration
+        // (Seed:AdminEmail, Seed:AdminPassword); the repository holds no password. Without a password no administrator is created.
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var adminEmail = configuration[RequiredConfiguration.AdminEmailKey];
+        if (string.IsNullOrWhiteSpace(adminEmail)) adminEmail = RequiredConfiguration.DefaultAdminEmail;
+        var adminPassword = configuration[RequiredConfiguration.AdminPasswordKey];
+
+        if (!await context.Users.AnyAsync(u => u.Email == adminEmail))
         {
             var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Code == "ADMIN");
-            if (adminRole != null)
+            if (string.IsNullOrEmpty(adminPassword))
+            {
+                scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(SeedData))
+                    .LogWarning("No administrator was created: set {Setting} to create {Email} on the next start.",
+                        RequiredConfiguration.AdminPasswordKey, adminEmail);
+            }
+            else if (adminRole != null)
             {
                 var adminUser = new User
                 {
                     Id = Guid.NewGuid(),
                     RoleId = adminRole.Id,
-                    Email = "admin@smartdronedelivery.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
+                    Email = adminEmail,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
                     FullName = "System Administrator",
                     PhoneNumber = "0900000001",
                     Status = "ACTIVE",
