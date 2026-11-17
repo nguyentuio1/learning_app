@@ -1,0 +1,33 @@
+name: Docker package
+
+# LA-47: proves on a clean runner that one command starts the full system
+# (PostgreSQL, MinIO, API, web portal) and that it works through the web proxy.
+on:
+  pull_request:
+    branches: [develop, main, 'story/**']
+    paths:
+      - 'backend/SmartDroneDelivery.Api/**'
+      - 'backend/Dockerfile'
+      - 'backend/.dockerignore'
+      - 'frontend/web/**'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'scripts/docker-smoke-test.sh'
+      - '.github/workflows/docker.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Docker compose smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the full stack and check it end to end
+        run: ./scripts/docker-smoke-test.sh

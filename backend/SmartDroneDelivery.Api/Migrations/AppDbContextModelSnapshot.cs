@@ -168,7 +168,11 @@ namespace SmartDroneDelivery.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("Action", "Timestamp");
+
+                    b.HasIndex("UserId", "Timestamp");
 
                     b.ToTable("audit_logs", (string)null);
                 });
