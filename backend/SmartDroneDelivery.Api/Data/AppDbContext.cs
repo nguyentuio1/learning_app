@@ -380,6 +380,10 @@ public class AppDbContext : DbContext
             entity.Property(e => e.IpAddress).HasMaxLength(50);
             entity.Property(e => e.Reason).HasMaxLength(500);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("now()");
+            // LA-177: the administrator search (newest first, by user or by action).
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => new { e.UserId, e.Timestamp });
+            entity.HasIndex(e => new { e.Action, e.Timestamp });
 
             entity.HasOne(e => e.User)
                 .WithMany(u => u.AuditLogs)
