@@ -16,6 +16,7 @@ const UsersPage = lazy(() => import('../pages/UsersPage').then(module => ({ defa
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then(module => ({ default: module.CreateUserPage })))
 const UserDetailPage = lazy(() => import('../pages/UserDetailPage').then(module => ({ default: module.UserDetailPage })))
 const RolesPage = lazy(() => import('../pages/RolesPage').then(module => ({ default: module.RolesPage })))
+const AuditLogsPage = lazy(() => import('../pages/AuditLogsPage').then(module => ({ default: module.AuditLogsPage })))
 const CustomerOrdersPage = lazy(() => import('../pages/CustomerOrdersPage').then(module => ({ default: module.CustomerOrdersPage })))
 const CustomerOrderDetailPage = lazy(() => import('../pages/CustomerOrderDetailPage').then(module => ({ default: module.CustomerOrderDetailPage })))
 const ManageCustomerOrderPage = lazy(() => import('../pages/ManageCustomerOrderPage').then(module => ({ default: module.ManageCustomerOrderPage })))
@@ -49,6 +50,7 @@ export function AppRouter() {
             <Route path="/admin/users/new" element={<CreateUserPage />} />
             <Route path="/admin/users/:id" element={<UserDetailPage />} />
             <Route path="/admin/roles" element={<RolesPage />} />
+            <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
           </Route>
         </Route>
         <Route element={<RequireAuth roles={allRoles} />}>
