@@ -9,6 +9,7 @@ import '../presentation/auth/login_page.dart';
 import '../presentation/auth/register_page.dart';
 import '../presentation/common/splash_page.dart';
 import '../presentation/customer/addresses/addresses_list_page.dart';
+import '../presentation/customer/assistant/customer_assistant_page.dart';
 import '../presentation/customer/home/customer_home_page.dart';
 import '../presentation/customer/notifications/notifications_list_page.dart';
 import '../presentation/customer/orders/confirm_delivery_page.dart';
@@ -16,12 +17,14 @@ import '../presentation/customer/orders/edit_delivery_order_page.dart';
 import '../presentation/customer/orders/create_order_page.dart';
 import '../presentation/customer/orders/my_orders_page.dart';
 import '../presentation/customer/orders/order_detail_page.dart';
+import '../presentation/customer/orders/order_history_page.dart';
 import '../presentation/customer/orders/order_submitted_page.dart';
 import '../presentation/customer/orders/review_order_page.dart';
 import '../presentation/customer/tracking/order_tracking_page.dart';
 import '../presentation/customer/packages/add_edit_package_page.dart';
 import '../presentation/customer/packages/packages_list_page.dart';
 import '../presentation/operator/home/operator_home_page.dart';
+import '../presentation/operator/intake/package_intake_page.dart';
 import '../presentation/operator/expired_parcels/expired_parcel_screen.dart';
 import '../presentation/operator/failures/failed_order_detail_page.dart';
 import '../presentation/operator/failures/failed_orders_page.dart';
@@ -29,6 +32,7 @@ import '../presentation/operator/pickup/package_pickup_page.dart';
 import '../presentation/profile/change_password_page.dart';
 import '../presentation/profile/edit_profile_page.dart';
 import '../presentation/profile/profile_page.dart';
+import '../presentation/profile/theme_settings_page.dart';
 import 'route_paths.dart';
 
 /// Router theo flavor + chặn truy cập theo trạng thái đăng nhập:
@@ -96,6 +100,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const OperatorHomePage(),
         ),
         GoRoute(
+          path: RoutePaths.operatorIntake,
+          builder: (_, _) => const PackageIntakePage(),
+        ),
+        GoRoute(
           path: RoutePaths.operatorPickup,
           builder: (_, _) => const PackagePickupPage(),
         ),
@@ -130,10 +138,39 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: RoutePaths.customerAddresses,
           builder: (_, _) => const AddressesListPage(),
         ),
+      GoRoute(
+        path: RoutePaths.customerNotifications,
+        builder: (_, _) => const NotificationsListPage(),
+      ),
       if (flavor == AppFlavor.customer) ...[
         GoRoute(
-          path: RoutePaths.customerNotifications,
-          builder: (_, _) => const NotificationsListPage(),
+          path: RoutePaths.themeSettings,
+          builder: (_, _) => const ThemeSettingsPage(),
+        ),
+        GoRoute(
+          path: RoutePaths.customerAssistant,
+          builder: (_, state) {
+            final extra = state.extra;
+            final extraOrderId = switch (extra) {
+              DeliveryOrder order => order.id,
+              Map values => values['orderId']?.toString(),
+              _ => null,
+            };
+            final extraTrackingNumber = switch (extra) {
+              DeliveryOrder order => order.trackingNumber,
+              Map values => values['trackingNumber']?.toString(),
+              _ => null,
+            };
+            return CustomerAssistantPage(
+              orderId: state.uri.queryParameters['orderId'] ?? extraOrderId,
+              trackingNumber:
+                  state.uri.queryParameters['trackingNumber'] ??
+                  extraTrackingNumber,
+              sessionId:
+                  state.uri.queryParameters['sessionId'] ??
+                  (extra is Map ? extra['sessionId']?.toString() : null),
+            );
+          },
         ),
         GoRoute(
           path: RoutePaths.customerOrders,
@@ -183,6 +220,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               order: order is DeliveryOrder ? order : null,
             );
           },
+        ),
+        GoRoute(
+          path: RoutePaths.customerOrderHistory,
+          builder: (_, state) =>
+              OrderHistoryPage(orderId: state.pathParameters['orderId'] ?? ''),
         ),
         GoRoute(
           path: RoutePaths.customerOrderConfirmDelivery,

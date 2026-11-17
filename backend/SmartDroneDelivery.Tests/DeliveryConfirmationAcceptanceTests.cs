@@ -28,13 +28,17 @@ public class DeliveryConfirmationAcceptanceTests(AuthApiFactory factory) : IClas
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Expired_order_cannot_be_confirmed_and_returns_conflict()
+    [Theory]
+    [InlineData("IN_TRANSIT")]
+    [InlineData("DELIVERED")]
+    [InlineData("CANCELLED")]
+    [InlineData("FAILED")]
+    public async Task Non_arrived_order_cannot_be_confirmed_and_returns_conflict(string status)
     {
         var data = await SeedAsync();
         await factory.WithDbAsync(async db =>
         {
-            (await db.DeliveryOrders.FindAsync(data.Order))!.Status = "EXPIRED";
+            (await db.DeliveryOrders.FindAsync(data.Order))!.Status = status;
             await db.SaveChangesAsync();
         });
 
@@ -43,7 +47,7 @@ public class DeliveryConfirmationAcceptanceTests(AuthApiFactory factory) : IClas
 
         await factory.WithDbAsync(async db =>
         {
-            Assert.Equal("EXPIRED", (await db.DeliveryOrders.FindAsync(data.Order))!.Status);
+            Assert.Equal(status, (await db.DeliveryOrders.FindAsync(data.Order))!.Status);
             Assert.Equal("OCCUPIED", (await db.StationSlots.FindAsync(data.Slot))!.Status);
         });
     }

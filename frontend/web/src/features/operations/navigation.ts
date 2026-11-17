@@ -5,7 +5,6 @@ import type { Role } from '../../types/auth'
 export interface OperationFeature {
   path: string
   label: string
-  mobileMenu?: 'drawer'
   roles: readonly Role[]
   routes: { path: string; Page: ComponentType; roles?: readonly Role[] }[]
 }

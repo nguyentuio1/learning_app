@@ -8,6 +8,8 @@ import '../../../data/models/landing_station.dart';
 import '../../../data/providers/delivery_order_providers.dart';
 import '../../../routes/route_paths.dart';
 import 'create_order_notifier.dart';
+import 'eta_estimation_controller.dart';
+import 'widgets/eta_estimation_card.dart';
 
 class CreateOrderPage extends ConsumerStatefulWidget {
   const CreateOrderPage({super.key});
@@ -42,11 +44,14 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final packages = ref.watch(orderPackagesProvider);
     final stations = ref.watch(orderStationsProvider);
     final addresses = ref.watch(orderAddressesProvider);
+    final routePreview = ref.watch(routeEtaPreviewProvider);
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Create delivery order')),
       body: Form(
         key: _formKey,
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(24),
           children: [
             packages.when(
@@ -57,6 +62,7 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
               ),
               data: (items) => DropdownButtonFormField<String>(
                 key: const Key('order-package'),
+                isExpanded: true,
                 initialValue: state.package?.id,
                 decoration: const InputDecoration(
                   labelText: 'Package',
@@ -66,7 +72,10 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                   for (final package in items)
                     DropdownMenuItem(
                       value: package.id,
-                      child: Text(package.packageName),
+                      child: Text(
+                        package.packageName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
                 onChanged: (id) => ref
@@ -193,6 +202,10 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                     : 'Phone number must be 9 to 11 digits.';
               },
             ),
+            if (routePreview != null) ...[
+              const SizedBox(height: 16),
+              RouteEtaPreviewCard(preview: routePreview),
+            ],
             if (state.error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -205,6 +218,9 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
             const SizedBox(height: 20),
             FilledButton(
               key: const Key('order-review'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
                 final error = ref
@@ -246,6 +262,7 @@ class _StationPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
     key: fieldKey,
+    isExpanded: true,
     initialValue: value,
     decoration: InputDecoration(
       labelText: label,
@@ -255,7 +272,10 @@ class _StationPicker extends StatelessWidget {
       for (final station in items)
         DropdownMenuItem(
           value: station.id,
-          child: Text('${station.name} · ${station.stationCode}'),
+          child: Text(
+            '${station.name} · ${station.stationCode}',
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
     ],
     onChanged: (id) {

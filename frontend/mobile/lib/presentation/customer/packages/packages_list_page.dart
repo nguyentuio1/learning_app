@@ -6,6 +6,7 @@ import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_message.dart';
 import '../../../data/models/package_model.dart';
 import '../../../routes/route_paths.dart';
+import '../../common/widgets/empty_state_view.dart';
 import 'package_notifier.dart';
 
 class PackagesListPage extends ConsumerWidget {
@@ -32,21 +33,44 @@ class PackagesListPage extends ConsumerWidget {
       body: packages.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_packageErrorMessage(error)),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () =>
-                    ref.read(packageNotifierProvider.notifier).refresh(),
-                child: const Text('Retry'),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isNetworkError(error)
+                        ? Icons.wifi_off_rounded
+                        : Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _packageErrorMessage(error),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(120, 48),
+                    ),
+                    onPressed: () =>
+                        ref.read(packageNotifierProvider.notifier).refresh(),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         data: (items) => items.isEmpty
-            ? const Center(child: Text('No packages'))
+            ? const EmptyStateView(
+                title: 'No packages',
+                icon: Icons.inventory_2_outlined,
+              )
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: items.length,
@@ -103,6 +127,7 @@ class _PackageCard extends ConsumerWidget {
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton.icon(
                   onPressed: isLoading

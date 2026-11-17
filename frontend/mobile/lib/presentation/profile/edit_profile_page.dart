@@ -190,11 +190,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     });
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Edit Profile'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Center(
             child: ConstrainedBox(

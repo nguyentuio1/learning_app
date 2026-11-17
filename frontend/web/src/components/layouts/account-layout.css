@@ -33,13 +33,11 @@
 .account-header { min-height:80px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding:16px 36px; background:#fffffb; border-bottom:1px solid #d3dfd5; color:#70806e; font-size:12px; }
 .account-user { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 760px) {
-  .account-layout { grid-template-columns: 1fr; }
-  .account-sidebar { position:static; height:auto; padding: 16px; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px; border-right: 0; border-bottom: 1px solid #c5d3bc; }
-  .account-brand { border:0; padding:0; }
-  .account-sidebar nav { display:flex; }
-  .account-nav-label { display: none; }
-  .account-sidebar-bottom { margin: 0 0 0 auto; padding: 0; border: 0; }
-  .account-sidebar-bottom { display:flex; align-items:center; flex-wrap:wrap; }
-  .account-workspace-role,.account-role-badge,.account-user-name { display:none; }
-  .account-header { padding: 16px; min-height: 64px; }
+  .account-layout { grid-template-columns:minmax(0,1fr); }
+  .account-layout > .account-sidebar { display:none; }
+  .account-header { position:sticky; top:0; z-index:30; flex-wrap:nowrap; gap:12px; padding:16px; min-height:64px; }
+  .account-breadcrumb { gap:8px; min-width:0; flex:1; }
+  .account-breadcrumb > span { display:none; }
+  .account-breadcrumb strong { overflow-wrap:anywhere; }
+  .account-role-badge,.account-user-name { display:none; }
 }

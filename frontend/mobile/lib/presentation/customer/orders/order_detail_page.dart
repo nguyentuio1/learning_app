@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_message.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/station_operation_models.dart';
@@ -16,6 +17,7 @@ import 'cancel_order_controller.dart';
 import 'cancel_order_sheet.dart';
 import 'confirm_delivery_page.dart';
 import 'my_orders_provider.dart';
+import 'widgets/eta_estimation_card.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   const OrderDetailPage({DeliveryOrder? order, String? orderId, super.key})
@@ -58,26 +60,51 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     final detail = ref.watch(orderDetailProvider(widget.detailId));
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Order details')),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(orderDetailErrorMessage(error), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () =>
-                    ref.invalidate(orderDetailProvider(widget.detailId)),
-                child: const Text('Retry'),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isNetworkError(error)
+                        ? Icons.wifi_off_rounded
+                        : Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    orderDetailErrorMessage(error),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(120, 48),
+                    ),
+                    onPressed: () =>
+                        ref.invalidate(orderDetailProvider(widget.detailId)),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         data: (response) {
           final order = _localOrder ?? _orderFrom(response);
-          final mapState = order.status == 'IN_TRANSIT'
+          final isNonTerminal =
+              order.status != 'DELIVERED' &&
+              order.status != 'CANCELLED' &&
+              order.status != 'FAILED';
+          final mapState = isNonTerminal
               ? ref.watch(deliveryMapControllerProvider(order.id))
               : null;
           return _buildDetails(order, response, mapState);
@@ -95,14 +122,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final origin = detail.originStation;
     final destination = detail.destinationStation;
     final address = detail.deliveryAddress;
-    final eta = detail.aiEtaPrediction;
 
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         if (order.status == 'ARRIVED') _arrivedBanner(detail),
         if (order.status == 'FAILED') _failureBanner(detail),
-        if (mapState != null) ...[
+        if (order.status == 'IN_TRANSIT' && mapState != null) ...[
           AsyncValueView<DeliveryMapViewState>(
             value: mapState,
             onRetry: () =>
@@ -167,26 +193,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         ] else if (order.deliveryAddressId != null) ...[
           _detail('Delivery address', order.deliveryAddressId!),
         ],
-        if (eta != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'AI ETA prediction',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (eta.calculatedDistanceKm != null)
-            _detail('Distance', '${eta.calculatedDistanceKm} km'),
-          if (eta.predictedDurationMinutes != null)
-            _detail(
-              'Predicted duration',
-              '${eta.predictedDurationMinutes} minutes',
-            ),
-          if (eta.weatherCondition != null)
-            _detail('Weather', eta.weatherCondition!),
-          if (eta.confidenceScore != null)
-            _detail('Confidence', '${eta.confidenceScore}'),
-          if (eta.createdAt != null)
-            _detail('Prediction created', _formatTimestamp(eta.createdAt!)),
-        ],
+        const SizedBox(height: 8),
+        EtaEstimationCard(orderId: order.id),
+        const SizedBox(height: 12),
         if (detail.scheduledDepartureTime != null)
           _detail(
             'Scheduled departure',
@@ -220,26 +229,50 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               detail.statusLogs[index],
               index < detail.statusLogs.length - 1,
             ),
-        if (order.status == 'ARRIVED')
+        OutlinedButton.icon(
+          key: const Key('view-order-history-button'),
+          onPressed: () =>
+              context.push(RoutePaths.customerOrderHistoryFor(order.id)),
+          icon: const Icon(Icons.history),
+          label: const Text('View Order History'),
+        ),
+        OutlinedButton.icon(
+          key: const Key('ask-ai-assistant-button'),
+          onPressed: () => context.push(
+            RoutePaths.customerAssistantFor(
+              orderId: order.id,
+              trackingNumber: order.trackingNumber,
+            ),
+          ),
+          icon: const Icon(Icons.chat_outlined),
+          label: const Text('Ask AI Assistant'),
+        ),
+        if (order.status == 'ARRIVED') ...[
+          const SizedBox(height: 8),
           FilledButton.icon(
             key: const Key('enter-pickup-code-button'),
             onPressed: () => _openConfirmDelivery(order),
             icon: const Icon(Icons.vpn_key_outlined),
             label: const Text('Enter pickup code'),
           ),
-        if (order.status == 'PENDING')
+        ],
+        if (order.status == 'PENDING') ...[
+          const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: () => _editOrder(order),
             icon: const Icon(Icons.edit),
             label: const Text('Edit Order'),
           ),
+        ],
         if ((order.status == 'PENDING' || order.status == 'APPROVED') &&
-            !_cancelled)
+            !_cancelled) ...[
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => _confirmCancellation(order),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
+        ],
       ],
     );
   }

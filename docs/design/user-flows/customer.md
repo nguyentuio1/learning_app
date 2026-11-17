@@ -47,8 +47,12 @@ flowchart TB
     OrderStatus -->|ARRIVED| Arrived["Show arrived status"]
     Arrived --> EnterCode["Enter pickup secure code"]
     EnterCode --> CodeValid{"Secure code valid?"}
-    CodeValid -->|no| CodeError["Show invalid code and retry"]
+    CodeValid -->|no| WrongAttempts{"3 wrong attempts reached?"}
+    WrongAttempts -->|no| CodeError["Show invalid code and retry"]
     CodeError --> EnterCode
+    WrongAttempts -->|yes| Locked["HTTP 423 Locked<br/>Retry-After: 600 seconds<br/>MSG-P-LS-16 countdown"]
+    Locked --> WaitTenMinutes["Disable keypad and confirm for 10 minutes"]
+    WaitTenMinutes --> EnterCode
     CodeValid -->|yes| Delivered["Show delivery completed"]
     Delivered --> Orders
     OrderStatus -->|DELIVERED| Delivered
@@ -162,7 +166,7 @@ flowchart TB
 | Customer Home | Central entry point for delivery summary, orders, packages, addresses, notifications and profile | Customer home/dashboard use case |
 | My Orders | List the signed-in Customer's orders; search by tracking number and filter by status | UC-01 to UC-10 mapping to be verified against `use-cases.md` |
 | Order Details and tracking | Show current order status, route, tracking timeline and status-dependent actions | Order tracking use case |
-| Order History | Show order status changes, timestamps, actor and notes | Order history use case |
+| Order History | Show a vertical audit timeline of status transitions, UTC timestamps, actor when supplied and remarks; show “No order history found.” when empty | Order history use case |
 | Create Delivery | Select a package, origin/destination stations and recipient details | Create delivery use case |
 | AI delivery estimate | Display the estimate described by the source, such as distance, flight duration and weather | AI delivery estimate use case |
 | Review Delivery | Let the Customer review details and return to edit before submission | Delivery review/submission use case |
@@ -172,11 +176,12 @@ flowchart TB
 | Add/Edit Package | Capture package name, weight, dimensions, description, fragile flag and optional image | Package management use case |
 | Delivery Addresses | List and manage saved addresses; choose a default address where supported | Address management use case |
 | Add/Edit Address | Capture label, recipient name, phone and address | Address management use case |
-| Confirm Delivery | Allow the Customer to enter the pickup secure code after the order reaches `ARRIVED` | Delivery confirmation use case |
-| Invalid Secure Code | Explain failed verification and allow retry | Delivery confirmation use case |
-| Notifications | Show order and delivery updates and support read-state actions | Notification use case |
-| AI Assistant | Answer questions about the Customer's own order or provide general delivery support | AI Assistant use case |
+| Confirm Delivery | Allow the Customer to enter the pickup secure code after the order reaches `ARRIVED`; disable keypad and submission while locked | Delivery confirmation use case |
+| Invalid / Locked Secure Code | Explain failed verification; after 3 wrong pickup OTP attempts, show HTTP 423 Locked, Retry-After: 600 (10 minutes), countdown and MSG-P-LS-16 | Delivery confirmation use case |
+| Notifications | Show order and delivery updates, support read-state actions, and open the associated order detail/tracking screen | Notification use case |
+| AI Assistant | Provide quick prompts and simulated local replies with optional own-order context; refuse requests about foreign tracking codes | AI Assistant use case |
 | Profile and Settings | Provide access to profile editing, password, theme, addresses, notifications, assistant and logout | Profile management use case |
+| Theme Settings | Immediately apply System Default, Light or Dark and return to Profile & Settings | Profile management use case |
 | Edit Profile | Update editable profile details; email remains read-only if required by the source | Profile management use case |
 | Change Password | Validate current/new password and end old sessions as specified by the source | Password management use case |
 | Order status decision | Determine available actions from the current delivery-order status | Order lifecycle rules |
@@ -206,13 +211,13 @@ flowchart TB
 - **Tracking and history**
   - Order Details displays the status, route and relevant timeline milestones.
   - The supplied source specifies live drone location and telemetry through SignalR for the applicable in-transit state; confirm implementation and connection behavior.
-  - Order History displays status changes and associated timestamps/details.
+  - Order History displays each `fromStatus → toStatus` transition, timestamp in UTC, actor when supplied, and remarks; an empty history displays `No order history found.`.
 
 - **Pickup secure-code confirmation**
   - The code-entry screen is available when the order is `ARRIVED`.
-  - A failed code attempt shows an error and permits retry, subject to the final security policy.
+  - The first two failed attempts show an error and permit retry. After the third wrong pickup OTP attempt the backend responds with HTTP 423 Locked and `Retry-After: 600`; keep the keypad and confirm button disabled and display the remaining 10-minute countdown using `MSG-P-LS-16`: `Too many attempts. Try again after {time}.`.
   - A valid code follows the supplied Customer flow to delivery completion (`DELIVERED`).
-  - **Open question:** confirm code length, failed-attempt limit, lockout duration and alert behavior. The supplied source materials describe inconsistent proposals for these values.
+  - The pickup code is six digits. Lockout timing is server-derived; the client countdown reflects the returned retry duration.
 
 - **Package management**
   - Package records belong to the signed-in Customer.
@@ -226,17 +231,27 @@ flowchart TB
 
 - **Notifications**
   - Notifications cover relevant order and delivery events described by the source.
-  - Selecting an order notification opens that order's details.
+  - Selecting an order notification opens its corresponding order detail/tracking screen.
   - Read/unread behavior must match the notification API.
 
 - **AI Assistant**
-  - The assistant may answer general delivery questions and questions about the signed-in Customer's own order.
-  - It must not disclose another Customer's order information.
+  - C23 runs strictly in local simulation mode and makes no HTTP requests.
+  - Optional order ID/tracking-number context may be passed from a customer's own order.
+  - Refuse queries containing another customer's tracking code or explicitly asking about someone else's order; never reveal foreign order information.
+  - C23 does not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../api/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
 
 - **Profile and settings**
   - Profile editing validates fields before saving.
   - The source says email is read-only and changing a password revokes old refresh tokens; verify these behaviors against the authentication implementation.
-  - Theme options are Light, Dark and System if supported by the app.
+  - C24 links to C23 and C27. Theme options are System Default, Light and Dark; the selection takes effect immediately and returns to C24.
+
+- **Customer screen inventory**
+  - C01–C04: Login, Register, Home with active deliveries, and Home empty state.
+  - C05–C10: Orders list, in-transit/pending/arrived order details, cancel order, and order history.
+  - C11–C13: Enter pickup OTP, incorrect OTP/10-minute lockout state, and delivery completed.
+  - C14–C17: Create delivery, validation errors, review, and order submitted.
+  - C18–C21: Packages, add package, saved addresses, and add/edit address.
+  - C22–C27: Notifications, local AI Assistant, Profile & Settings, Edit Profile, Change Password, and Theme Settings.
 
 - **Scope**
   - This document describes the Customer mobile application only. Station Operator flows are documented separately.

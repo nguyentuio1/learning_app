@@ -47,4 +47,44 @@ class StationOperationsApiService {
       throw error.apiException;
     }
   }
+
+  Future<PackageIntakeResponse> confirmIntake({
+    required String stationId,
+    required PackageIntakeRequest request,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.stationIntake(stationId),
+        data: request.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException('Expected intake confirmation object.');
+      }
+      return PackageIntakeResponse.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } on DioException catch (error) {
+      throw error.apiException;
+    }
+  }
+
+  Future<RejectIntakeResponse> rejectIntake({
+    required String stationId,
+    required RejectIntakeRequest request,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.stationIntakeReject(stationId),
+        data: request.toJson(),
+      );
+      if (response.data is! Map) {
+        throw const FormatException('Expected intake rejection object.');
+      }
+      return RejectIntakeResponse.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } on DioException catch (error) {
+      throw error.apiException;
+    }
+  }
 }

@@ -11,6 +11,7 @@ using SmartDroneDelivery.Api.Services;
 using SmartDroneDelivery.Api.Tracking;
 using SmartDroneDelivery.Api.Security;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,15 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<DeliveryEtaQueryService>();
+builder.Services.AddScoped<EtaPredictionService>();
+builder.Services.AddOptions<EtaPredictionOptions>()
+    .Bind(builder.Configuration.GetSection(EtaPredictionOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "EtaPrediction requires bounded batches/intervals, a loopback model endpoint and an explicit model revision when enabled.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<IEtaModelGateway, LocalEtaModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHostedService<EtaPredictionWorker>();
 builder.Services.AddScoped<AnalyticsQueryService>();
 builder.Services.AddScoped<IOrderTransitionWriter, OrderTransitionWriter>();
 builder.Services.AddScoped<IOrderReviewService, OrderReviewService>();
@@ -46,6 +56,15 @@ builder.Services.AddSingleton<IntegrationRateLimits>();
 builder.Services.AddScoped<ITrackingService, TrackingService>();
 builder.Services.AddScoped<FailureService>();
 builder.Services.AddScoped<DeliveryRouteEstimate>();
+builder.Services.AddScoped<DeliverySummaryFacts>();
+builder.Services.AddScoped<DeliverySummaryService>();
+builder.Services.AddSingleton<AiGenerationSlots>();
+builder.Services.AddOptions<DeliverySummaryOptions>()
+    .Bind(builder.Configuration.GetSection(DeliverySummaryOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "DeliverySummary requires a loopback URL, model and immutable revision when enabled.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<ISummaryModelGateway, LocalSummaryModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
     .Validate(o => double.IsFinite(o.CruiseSpeedMps) && o.CruiseSpeedMps > 0,
@@ -66,6 +85,18 @@ builder.Services.AddOptions<DroneSimulatorOptions>()
 builder.Services.AddScoped<DroneSimulatorService>();
 builder.Services.AddHostedService<DroneSimulatorWorker>();
 builder.Services.AddScoped<IStationSlotService, StationSlotService>();
+builder.Services.AddScoped<AssistantAccess>();
+builder.Services.AddScoped<AssistantHistoryService>();
+builder.Services.AddScoped<CustomerAssistantService>();
+builder.Services.AddScoped<AssistantContextReader>();
+builder.Services.AddScoped<AssistantExchangeWriter>();
+builder.Services.AddScoped<AssistantRetentionService>();
+builder.Services.AddHostedService<AssistantRetentionWorker>();
+builder.Services.TryAddSingleton<AiGenerationSlots>();
+builder.Services.AddOptions<CustomerAssistantOptions>().Bind(builder.Configuration.GetSection(CustomerAssistantOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "Assistant activation requires approved retention/backup settings and a configured local model.").ValidateOnStart();
+builder.Services.AddHttpClient<IAssistantModelGateway, LocalAssistantModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

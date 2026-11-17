@@ -2,19 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
+import '../../../core/error/error_message.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../routes/route_paths.dart';
+import '../../common/widgets/empty_state_view.dart';
 import 'notification_notifier.dart';
 
 class NotificationsListPage extends ConsumerWidget {
   const NotificationsListPage({super.key});
 
+  static bool _isOperatorFlavor(WidgetRef ref) {
+    try {
+      return ref.watch(appConfigProvider).flavor == AppFlavor.operator;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationsAsync = ref.watch(customerNotificationsProvider);
     final onlyUnread = ref.watch(notificationsFilterProvider);
+    final isOperator = _isOperatorFlavor(ref);
 
-    ref.listen<AsyncValue<void>>(notificationActionsNotifierProvider, (_, next) {
+    ref.listen<AsyncValue<void>>(notificationActionsNotifierProvider, (
+      _,
+      next,
+    ) {
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Operation failed: ${next.error}')),
@@ -31,7 +46,9 @@ class NotificationsListPage extends ConsumerWidget {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(RoutePaths.customerHome);
+              context.go(
+                isOperator ? RoutePaths.operatorHome : RoutePaths.customerHome,
+              );
             }
           },
         ),
@@ -75,23 +92,46 @@ class NotificationsListPage extends ConsumerWidget {
             child: notificationsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Failed to load notifications: $error'),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: () =>
-                          ref.invalidate(customerNotificationsProvider),
-                      child: const Text('Retry'),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isNetworkError(error)
+                              ? Icons.wifi_off_rounded
+                              : Icons.error_outline,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Failed to load notifications: ${errorMessage(error)}',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(120, 48),
+                          ),
+                          onPressed: () =>
+                              ref.invalidate(customerNotificationsProvider),
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
               data: (page) {
                 final items = page.items;
                 if (items.isEmpty) {
-                  return const Center(child: Text('No notifications'));
+                  return const EmptyStateView(
+                    title: 'No notifications',
+                    icon: Icons.notifications_none_outlined,
+                  );
                 }
                 return RefreshIndicator(
                   onRefresh: () async {
@@ -111,8 +151,10 @@ class NotificationsListPage extends ConsumerWidget {
                                 : OutlinedButton(
                                     onPressed: () {
                                       ref
-                                          .read(customerNotificationsProvider
-                                              .notifier)
+                                          .read(
+                                            customerNotificationsProvider
+                                                .notifier,
+                                          )
                                           .loadMore();
                                     },
                                     child: const Text('Load more'),
@@ -121,7 +163,10 @@ class NotificationsListPage extends ConsumerWidget {
                         );
                       }
                       final item = items[index];
-                      return _NotificationCard(item: item);
+                      return _NotificationCard(
+                        item: item,
+                        allowCustomerOrderNavigation: !isOperator,
+                      );
                     },
                   ),
                 );
@@ -135,9 +180,13 @@ class NotificationsListPage extends ConsumerWidget {
 }
 
 class _NotificationCard extends ConsumerWidget {
-  const _NotificationCard({required this.item});
+  const _NotificationCard({
+    required this.item,
+    required this.allowCustomerOrderNavigation,
+  });
 
   final NotificationModel item;
+  final bool allowCustomerOrderNavigation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -145,7 +194,8 @@ class _NotificationCard extends ConsumerWidget {
       elevation: item.isRead ? 0 : 2,
       color: item.isRead
           ? Theme.of(context).cardColor
-          : Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.15),
+          : Theme.of(context).colorScheme.primaryContainer
+                .withValues(alpha: 0.15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -162,8 +212,10 @@ class _NotificationCard extends ConsumerWidget {
                 .read(notificationActionsNotifierProvider.notifier)
                 .markAsRead(item.id);
           }
-          if (item.orderId != null && item.orderId!.isNotEmpty) {
-            context.push(RoutePaths.customerOrderTrackingFor(item.orderId!));
+          if (allowCustomerOrderNavigation &&
+              item.orderId != null &&
+              item.orderId!.isNotEmpty) {
+            context.push(RoutePaths.customerOrderDetailsFor(item.orderId!));
           }
         },
         child: Padding(
@@ -189,50 +241,55 @@ class _NotificationCard extends ConsumerWidget {
                     child: Text(
                       item.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: item.isRead
-                                ? FontWeight.w500
-                                : FontWeight.bold,
-                          ),
+                        fontWeight: item.isRead
+                            ? FontWeight.w500
+                            : FontWeight.bold,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     _formatDate(item.createdAt),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: Colors.grey.shade600),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                item.message,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(item.message, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (!item.isRead)
-                    TextButton(
-                      onPressed: () {
-                        ref
-                            .read(notificationActionsNotifierProvider.notifier)
-                            .markAsRead(item.id);
-                      },
-                      child: const Text('Mark as read'),
-                    ),
-                  if (item.orderId != null && item.orderId!.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
-                      onPressed: () {
-                        context.push(
-                          RoutePaths.customerOrderTrackingFor(item.orderId!),
-                        );
-                      },
-                      child: const Text('View order'),
-                    ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    if (!item.isRead)
+                      TextButton(
+                        onPressed: () {
+                          ref
+                              .read(
+                                notificationActionsNotifierProvider.notifier,
+                              )
+                              .markAsRead(item.id);
+                        },
+                        child: const Text('Mark as read'),
+                      ),
+                    if (allowCustomerOrderNavigation &&
+                        item.orderId != null &&
+                        item.orderId!.isNotEmpty) ...[
+                      FilledButton.tonal(
+                        onPressed: () {
+                          context.push(
+                            RoutePaths.customerOrderDetailsFor(item.orderId!),
+                          );
+                        },
+                        child: const Text('View order'),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
           ),
