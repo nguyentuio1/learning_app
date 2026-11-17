@@ -10,6 +10,9 @@ using SmartDroneDelivery.Api.Tracking;
 
 namespace SmartDroneDelivery.Tests;
 
+// Protocol tests use real wall-clock handshake deadlines. Keep unrelated API/Bcrypt
+// fixtures from exhausting the test process while a socket handshake is pending.
+[Collection("SignalR protocol timing")]
 public class TrackingHubTests(AuthApiFactory factory) : IClassFixture<AuthApiFactory>
 {
     [Fact]

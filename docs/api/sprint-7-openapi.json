@@ -1,0 +1,173 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sprint 7 AI API working draft",
+    "version": "0.1.0-draft",
+    "description": "LA-342: PROPOSED interfaces, not implemented endpoints. See sprint-7-api-contract.md for verified Sprint 7 ownership, availability, privacy, generation gates and recovery behavior. Consumer approval pending. Chat persistence and generation remain disabled until retention/deletion policy is approved and implemented. Unicode scalar limits require application validation."
+  },
+  "security": [{ "BearerAuth": [] }],
+  "paths": {
+    "/api/delivery-orders/{id}/eta": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "get": {
+        "operationId": "readOrderEta",
+        "description": "Proposed. Active owning CUSTOMER or persisted DISPATCHER/MANAGER with project-wide access to this redacted resource only. Read only, no model or writes. Existing detail GET must expose the same nullable prediction shape.",
+        "responses": {
+          "200": { "description": "Current authorized order ETA, possibly unavailable. Cache-Control: no-store.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EtaView" } } } },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/delivery-orders/{id}/ai-summary": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "post": {
+        "operationId": "generateOrderSummary",
+        "description": "Proposed. Active owning CUSTOMER or persisted DISPATCHER/MANAGER with project-wide access to this redacted resource only. No request body, transient summary; no history => no provider call. Recheck access/source after generation.",
+        "responses": {
+          "200": { "description": "Summary or explicit no-history result. Cache-Control: no-store.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SummaryView" } } } },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" },
+          "409": { "$ref": "#/components/responses/Problem" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "503": { "$ref": "#/components/responses/Problem" },
+          "504": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/ai-assistant/messages": {
+      "post": {
+        "operationId": "sendAssistantMessage",
+        "description": "Proposed. Active CUSTOMER only. 32 KiB raw body cap. No automatic POST retries or exactly-once guarantee. Non-ANSWERED results persist nothing. No model tools or actions.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssistantRequest" } } } },
+        "responses": {
+          "200": { "description": "Answered exchange or nonpersisted safe response. Cache-Control: no-store.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssistantReply" } } } },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" },
+          "409": { "$ref": "#/components/responses/Problem" },
+          "413": { "$ref": "#/components/responses/Problem" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "503": { "$ref": "#/components/responses/Problem" },
+          "504": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/ai-assistant/sessions": {
+      "get": {
+        "operationId": "listOwnedAssistantSessions",
+        "description": "Proposed. Active CUSTOMER only. Owned sessions, ordered createdAt then ID descending. Read never creates a session.",
+        "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/PageSize" }],
+        "responses": {
+          "200": { "description": "Owned session page. Cache-Control: no-store.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SessionPage" } } } },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/ai-assistant/sessions/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "delete": {
+        "operationId": "deleteOwnedAssistantSession",
+        "description": "LA-165 deletion extension. Persisted active CUSTOMER only. Delete an owned conversation and its messages atomically; unknown/foreign resources have the same 404. Available for existing owned data while generation is disabled.",
+        "responses": {
+          "204": { "description": "Conversation deleted. Cache-Control: no-store." },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/ai-assistant/sessions/{id}/messages": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "get": {
+        "operationId": "readOwnedAssistantMessages",
+        "description": "Proposed. Active CUSTOMER only. Owned session; unknown/foreign => same 404. Order createdAt then numeric ID ascending before pagination; concurrent appends do not freeze pages.",
+        "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/PageSize" }],
+        "responses": {
+          "200": { "description": "Owned message page. Cache-Control: no-store.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessagePage" } } } },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "BearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
+    "parameters": {
+      "Id": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+      "PageSize": { "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } }
+    },
+    "responses": {
+      "Problem": { "description": "Problem response; see shared status semantics in the Markdown contract.", "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } },
+      "RateLimited": { "description": "Concurrent generation rejected.", "headers": { "Retry-After": { "schema": { "type": "string", "enum": ["5"] } } }, "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+    },
+    "schemas": {
+      "Problem": { "type": "object", "required": ["type", "title", "status", "detail"], "properties": { "type": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "integer" }, "detail": { "type": "string" }, "errors": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } } } },
+      "Prediction": {
+        "type": "object", "nullable": true,
+        "required": ["calculatedDistanceKm", "predictedDurationMinutes", "weatherCondition", "confidenceScore", "createdAt"],
+        "properties": {
+          "calculatedDistanceKm": { "type": "number", "exclusiveMinimum": true, "minimum": 0, "maximum": 9999.99, "description": "Full-route distance, km." },
+          "predictedDurationMinutes": { "type": "integer", "minimum": 1, "maximum": 2147483647, "description": "Full-flight duration, not remaining time." },
+          "weatherCondition": { "type": "string", "nullable": true, "maxLength": 50 },
+          "confidenceScore": { "type": "number", "nullable": true, "minimum": 0, "maximum": 1 },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "EtaView": {
+        "type": "object", "required": ["orderId", "status", "estimatedDeliveryTime", "actualDeliveryTime", "aiEtaPrediction"],
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["PENDING", "APPROVED", "READY_FOR_TAKEOFF", "IN_TRANSIT", "ARRIVED", "DELIVERED", "CANCELLED", "FAILED"] },
+          "estimatedDeliveryTime": { "type": "string", "format": "date-time", "nullable": true },
+          "actualDeliveryTime": { "type": "string", "format": "date-time", "nullable": true },
+          "aiEtaPrediction": { "$ref": "#/components/schemas/Prediction" }
+        }
+      },
+      "SummaryView": {
+        "type": "object", "required": ["orderId", "outcome", "text", "generatedAt"],
+        "description": "GENERATED requires non-null text/time; NO_HISTORY requires null text/time. Application validation enforces this relationship.",
+        "properties": { "orderId": { "type": "string", "format": "uuid" }, "outcome": { "type": "string", "enum": ["GENERATED", "NO_HISTORY"] }, "text": { "type": "string", "nullable": true, "maxLength": 4000 }, "generatedAt": { "type": "string", "format": "date-time", "nullable": true } }
+      },
+      "AssistantRequest": {
+        "type": "object", "additionalProperties": false, "required": ["sessionId", "orderId", "message"],
+        "properties": { "sessionId": { "type": "string", "format": "uuid", "nullable": true }, "orderId": { "type": "string", "format": "uuid", "nullable": true }, "message": { "type": "string", "minLength": 1, "description": "Application validation requires 1-2000 Unicode scalar values after trimming; raw body is capped at 32 KiB." } }
+      },
+      "AssistantReply": {
+        "type": "object", "required": ["outcome", "sessionId", "userMessageId", "reply"],
+        "description": "ANSWERED has non-null session/user/reply IDs; other outcomes have null IDs and persist nothing. Enforce the relationship in application validation.",
+        "properties": { "outcome": { "type": "string", "enum": ["ANSWERED", "CLARIFICATION_REQUIRED", "HELP", "REFUSED"] }, "sessionId": { "type": "string", "format": "uuid", "nullable": true }, "userMessageId": { "type": "string", "pattern": "^[1-9][0-9]*$", "nullable": true }, "reply": { "$ref": "#/components/schemas/BotReply" } }
+      },
+      "BotReply": {
+        "type": "object", "required": ["id", "senderType", "messageText", "createdAt"],
+        "properties": { "id": { "type": "string", "pattern": "^[1-9][0-9]*$", "nullable": true }, "senderType": { "type": "string", "enum": ["BOT"] }, "messageText": { "type": "string", "minLength": 1, "maxLength": 4000 }, "createdAt": { "type": "string", "format": "date-time" } }
+      },
+      "StoredMessage": {
+        "type": "object", "required": ["id", "senderType", "messageText", "createdAt"],
+        "properties": { "id": { "type": "string", "pattern": "^[1-9][0-9]*$" }, "senderType": { "type": "string", "enum": ["USER", "BOT"] }, "messageText": { "type": "string", "maxLength": 4000 }, "createdAt": { "type": "string", "format": "date-time" } }
+      },
+      "Session": {
+        "type": "object", "required": ["id", "sessionTitle", "createdAt"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "sessionTitle": { "type": "string", "nullable": true, "maxLength": 200 }, "createdAt": { "type": "string", "format": "date-time" } }
+      },
+      "SessionPage": {
+        "type": "object", "required": ["items", "page", "pageSize", "totalCount"],
+        "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Session" } }, "page": { "type": "integer", "minimum": 1 }, "pageSize": { "type": "integer", "minimum": 1, "maximum": 50 }, "totalCount": { "type": "integer", "minimum": 0 } }
+      },
+      "MessagePage": {
+        "type": "object", "required": ["sessionId", "items", "page", "pageSize", "totalCount"],
+        "properties": { "sessionId": { "type": "string", "format": "uuid" }, "items": { "type": "array", "items": { "$ref": "#/components/schemas/StoredMessage" } }, "page": { "type": "integer", "minimum": 1 }, "pageSize": { "type": "integer", "minimum": 1, "maximum": 50 }, "totalCount": { "type": "integer", "minimum": 0 } }
+      }
+    }
+  }
+}
