@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/error/error_message.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../routes/route_paths.dart';
@@ -11,10 +12,19 @@ import 'notification_notifier.dart';
 class NotificationsListPage extends ConsumerWidget {
   const NotificationsListPage({super.key});
 
+  static bool _isOperatorFlavor(WidgetRef ref) {
+    try {
+      return ref.watch(appConfigProvider).flavor == AppFlavor.operator;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationsAsync = ref.watch(customerNotificationsProvider);
     final onlyUnread = ref.watch(notificationsFilterProvider);
+    final isOperator = _isOperatorFlavor(ref);
 
     ref.listen<AsyncValue<void>>(notificationActionsNotifierProvider, (
       _,
@@ -36,7 +46,9 @@ class NotificationsListPage extends ConsumerWidget {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(RoutePaths.customerHome);
+              context.go(
+                isOperator ? RoutePaths.operatorHome : RoutePaths.customerHome,
+              );
             }
           },
         ),
@@ -151,7 +163,10 @@ class NotificationsListPage extends ConsumerWidget {
                         );
                       }
                       final item = items[index];
-                      return _NotificationCard(item: item);
+                      return _NotificationCard(
+                        item: item,
+                        allowCustomerOrderNavigation: !isOperator,
+                      );
                     },
                   ),
                 );
@@ -165,9 +180,13 @@ class NotificationsListPage extends ConsumerWidget {
 }
 
 class _NotificationCard extends ConsumerWidget {
-  const _NotificationCard({required this.item});
+  const _NotificationCard({
+    required this.item,
+    required this.allowCustomerOrderNavigation,
+  });
 
   final NotificationModel item;
+  final bool allowCustomerOrderNavigation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -193,7 +212,9 @@ class _NotificationCard extends ConsumerWidget {
                 .read(notificationActionsNotifierProvider.notifier)
                 .markAsRead(item.id);
           }
-          if (item.orderId != null && item.orderId!.isNotEmpty) {
+          if (allowCustomerOrderNavigation &&
+              item.orderId != null &&
+              item.orderId!.isNotEmpty) {
             context.push(RoutePaths.customerOrderDetailsFor(item.orderId!));
           }
         },
@@ -255,7 +276,9 @@ class _NotificationCard extends ConsumerWidget {
                         },
                         child: const Text('Mark as read'),
                       ),
-                    if (item.orderId != null && item.orderId!.isNotEmpty) ...[
+                    if (allowCustomerOrderNavigation &&
+                        item.orderId != null &&
+                        item.orderId!.isNotEmpty) ...[
                       FilledButton.tonal(
                         onPressed: () {
                           context.push(
