@@ -60,34 +60,73 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                 message: 'Unable to load packages. Please try again.',
                 onRetry: () => ref.invalidate(orderPackagesProvider),
               ),
-              data: (items) => DropdownButtonFormField<String>(
-                key: const Key('order-package'),
-                isExpanded: true,
-                initialValue: state.package?.id,
-                decoration: const InputDecoration(
-                  labelText: 'Package',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  for (final package in items)
-                    DropdownMenuItem(
-                      value: package.id,
-                      child: Text(
-                        package.packageName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              data: (items) => items.isEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'No packages available yet. Add a package to continue.',
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          key: const Key('order-add-package-button'),
+                          onPressed: () async {
+                            await context.push<bool>(
+                              RoutePaths.customerPackagesAdd,
+                            );
+                            ref.invalidate(orderPackagesProvider);
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add package'),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          key: const Key('order-package'),
+                          isExpanded: true,
+                          initialValue: state.package?.id,
+                          decoration: const InputDecoration(
+                            labelText: 'Package',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: [
+                            for (final package in items)
+                              DropdownMenuItem(
+                                value: package.id,
+                                child: Text(
+                                  package.packageName,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (id) => ref
+                              .read(createOrderNotifierProvider.notifier)
+                              .selectPackage(
+                                id == null
+                                    ? null
+                                    : items.firstWhere((item) => item.id == id),
+                              ),
+                          validator: (value) =>
+                              value == null ? 'Select a package.' : null,
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              await context.push<bool>(
+                                RoutePaths.customerPackagesAdd,
+                              );
+                              ref.invalidate(orderPackagesProvider);
+                            },
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('+ Add new package'),
+                          ),
+                        ),
+                      ],
                     ),
-                ],
-                onChanged: (id) => ref
-                    .read(createOrderNotifierProvider.notifier)
-                    .selectPackage(
-                      id == null
-                          ? null
-                          : items.firstWhere((item) => item.id == id),
-                    ),
-                validator: (value) =>
-                    value == null ? 'Select a package.' : null,
-              ),
             ),
             const SizedBox(height: 16),
             stations.when(
@@ -143,21 +182,38 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
                 message: 'Unable to load addresses. Please try again.',
                 onRetry: () => ref.invalidate(orderAddressesProvider),
               ),
-              data: (items) => _AddressPicker(
-                items: items,
-                selected: state.address,
-                onChanged: (address) {
-                  final notifier = ref.read(
-                    createOrderNotifierProvider.notifier,
-                  );
-                  notifier.selectAddress(address);
-                  if (address != null) {
-                    _name.text = address.contactName;
-                    _phone.text = address.contactPhone;
-                    notifier.setRecipientName(address.contactName);
-                    notifier.setRecipientPhone(address.contactPhone);
-                  }
-                },
+              data: (items) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _AddressPicker(
+                    items: items,
+                    selected: state.address,
+                    onChanged: (address) {
+                      final notifier = ref.read(
+                        createOrderNotifierProvider.notifier,
+                      );
+                      notifier.selectAddress(address);
+                      if (address != null) {
+                        _name.text = address.contactName;
+                        _phone.text = address.contactPhone;
+                        notifier.setRecipientName(address.contactName);
+                        notifier.setRecipientPhone(address.contactPhone);
+                      }
+                    },
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: const Key('order-manage-addresses-button'),
+                      onPressed: () async {
+                        await context.push(RoutePaths.customerAddresses);
+                        ref.invalidate(orderAddressesProvider);
+                      },
+                      icon: const Icon(Icons.location_on_outlined, size: 18),
+                      label: const Text('Manage / Add addresses'),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
