@@ -2,7 +2,7 @@
 
 ## Six-part contents
 
-The consolidated report follows the existing six-chapter course structure. **LA-362** (under **LA-351**) reconciles this index against the current integrated `develop` source baseline [`b5e54fa`](https://github.com/nguyentuio1/learning_app/commit/b5e54fa601a666f929ebdb1b626c0c80697a89fc) (18 November 2026), while preserving earlier dated chapter baselines (`8413d84`, `894ceab`, `07f38d1`) as historical snapshots.
+The consolidated report follows the existing six-chapter course structure. **LA-362** (under **LA-351**) reconciles this index against the current integrated `develop` source baseline [`e3c647c`](https://github.com/nguyentuio1/learning_app/commit/e3c647c24878aa1b24a8b4eec137e0fde289ffcb) (18 November 2026), while preserving earlier dated chapter baselines (`8413d84`, `894ceab`, `07f38d1`) as historical snapshots.
 
 | Part | Repository source | Existing Confluence chapter |
 |---|---|---|
@@ -17,7 +17,7 @@ The existing [Confluence Overview (98403)](https://hungndemail.atlassian.net/wik
 
 ## Implementation, integration, deployment, and acceptance status
 
-- **Implementation & integration (`develop` `b5e54fa`):** Sprint 7 stories (`LA-40`–`LA-43`) and Sprint 8 additions (`LA-47` Docker packaging, `LA-177` audit logging, `LA-178` health checks, `LA-355` staff delivery lookup, `LA-186` demo script, `LA-187` demo seed, and `LA-188` rehearsal runbook PR #266) are merged into `develop`. Earlier open-PR labels in dated chapter snapshots (`04-software-design-description.md` §4.1 at `894ceab`) remain historical baseline records.
+- **Implementation & integration (`develop` `e3c647c`):** Sprint 7 stories (`LA-40`–`LA-43`) and Sprint 8 additions (`LA-47` Docker packaging, `LA-46` / PR #269 audit, monitoring, and backup/restore guards, `LA-177` audit logging, `LA-178` health checks, `LA-355` staff delivery lookup, `LA-186` demo script, `LA-187` demo seed, and `LA-188` rehearsal runbook PR #266 at [`b5e54fa`](https://github.com/nguyentuio1/learning_app/commit/b5e54fa00cab689c548fb1dcba97d6e80820ea73)) are merged into `develop`. Earlier open-PR labels in dated chapter snapshots (`04-software-design-description.md` §4.1 at `894ceab`) remain historical baseline records.
 - **Deployment packaging:** Docker Compose packaging and smoke verification pass in CI; production hosting, Android/iOS release signing, and cloud AI retention-policy approval remain separate release gates.
 - **Acceptance & live rehearsal (`LA-175`, `LA-188`):** Repository CI verifies automated tests and builds. Final test execution acceptance (`LA-175`) and live team demo rehearsal evidence (`LA-188`, [LA-188-demo-rehearsal.md](../testing/LA-188-demo-rehearsal.md)) remain open until executed and recorded.
 
