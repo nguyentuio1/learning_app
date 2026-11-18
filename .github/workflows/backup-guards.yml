@@ -1,0 +1,32 @@
+name: Backup guard checks
+
+on:
+  pull_request:
+    branches: [develop, main, 'story/**']
+    paths:
+      - 'scripts/backup-db.*'
+      - 'scripts/restore-db.*'
+      - 'scripts/tests/restore-db*'
+      - '.github/workflows/backup-guards.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-guards-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  windows-restore:
+    name: PowerShell restore guards
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test Windows PowerShell function and native argument boundaries
+        shell: powershell
+        run: |
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/restore-db.Tests.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/restore-db.Native.Tests.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
