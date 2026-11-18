@@ -52,6 +52,9 @@ jobs:
       - name: dotnet test
         run: dotnet test backend/SmartDroneDelivery.sln --configuration Release --verbosity minimal
 
+      - name: Backup restore guard regressions
+        run: bash scripts/tests/restore-db.Tests.sh
+
   web:
     name: Web lint, test and build
     runs-on: ubuntu-latest

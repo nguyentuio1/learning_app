@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, Button, Input, Progress, Tag } from 'antd'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { orderStatusLabel } from '../../utils/orderDisplay'
 import { OperationsPage, ResourceState } from '../operations/OperationsUi'
 import { trackingApi, type TrackingSnapshot } from './trackingApi'
 import { useTrackingPoll } from './useTrackingPoll'
@@ -10,7 +11,7 @@ import './tracking.css'
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
 const statusColors: Record<string, string> = { IN_TRANSIT: 'cyan', READY_FOR_TAKEOFF: 'gold', DELIVERED: 'green', ARRIVED: 'blue', FAILED: 'red', CANCELLED: 'default', APPROVED: 'gold' }
-function Status({ value }: { value: string }) { return <Tag color={statusColors[value]}>{value.replaceAll('_', ' ')}</Tag> }
+function Status({ value }: { value: string }) { return <Tag color={statusColors[value]}>{orderStatusLabel(value)}</Tag> }
 function date(value: string | null | undefined) {
   const parsed = value ? new Date(value) : undefined
   return parsed && Number.isFinite(parsed.getTime()) ? parsed.toLocaleString() : 'Not available'
@@ -79,6 +80,7 @@ function TrackingDetail({ id }: { id: string }) {
       <section className="tracking-card tracking-journey"><div className="tracking-card-heading"><div><span className="tracking-kicker">YOUR SELECTED DELIVERY</span><h2>{order.trackingNumber}</h2></div><Status value={order.status}/></div>
         <div className="tracking-route"><div><span>FROM</span><strong>{order.originStation.name}</strong></div><span className="tracking-route-arrow" aria-hidden="true">→</span><div><span>TO</span><strong>{order.destinationStation.name}</strong></div></div>
         <div className="tracking-arrival"><span>Estimated arrival</span><strong>{date(order.estimatedDeliveryTime)}</strong><small>An estimate, not a guaranteed arrival time.</small></div>
+        <div className="operations-actions"><Link to={`/delivery-map/${encodeURIComponent(id)}`}>View delivery map →</Link></div>
       </section>
       {stale && <Alert type="warning" showIcon title="Position is out of date" description="The last reported position is older than 60 seconds or marked stale by the service. It is not a live position; a telemetry gap does not mean this delivery has failed." />}
       <div className="tracking-detail-grid"><section className="tracking-card"><div className="tracking-card-heading"><h2>{fresh ? 'Latest flight position' : 'Last reported position'}</h2><Tag color={fresh ? 'green' : 'default'}>{fresh ? 'Recent sample' : 'Not live'}</Tag></div>

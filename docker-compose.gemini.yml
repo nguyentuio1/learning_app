@@ -1,0 +1,23 @@
+# Explicit Gemini overlay. Base deployment and all AI generation stay default-off.
+# docker compose -f docker-compose.yml -f docker-compose.gemini.yml up -d --build --wait
+services:
+  api:
+    environment:
+      ModelProvider__Provider: Gemini
+      ModelProvider__GeminiApiKey: ${GEMINI_API_KEY:?set server-side GEMINI_API_KEY before using this overlay}
+      ModelProvider__GeminiAssistantApprovedPolicyVersion: ${GEMINI_ASSISTANT_APPROVED_POLICY:-}
+      EtaPrediction__Enabled: ${AI_ETA_ENABLED:-false}
+      EtaPrediction__ModelName: ${AI_MODEL_NAME:-gemini-3.5-flash-lite}
+      EtaPrediction__ModelRevision: ${AI_MODEL_REVISION:-gemini-3.5-flash-lite}
+      DeliverySummary__Enabled: ${AI_SUMMARY_ENABLED:-false}
+      DeliverySummary__ModelName: ${AI_MODEL_NAME:-gemini-3.5-flash-lite}
+      DeliverySummary__ModelRevision: ${AI_MODEL_REVISION:-gemini-3.5-flash-lite}
+      CustomerAssistant__Enabled: ${AI_ASSISTANT_ENABLED:-false}
+      CustomerAssistant__ModelName: ${AI_MODEL_NAME:-gemini-3.5-flash-lite}
+      CustomerAssistant__ModelRevision: ${AI_MODEL_REVISION:-gemini-3.5-flash-lite}
+      CustomerAssistant__ApprovedPolicyVersion: ${ASSISTANT_APPROVED_POLICY:-}
+      CustomerAssistant__BackupRetentionDays: ${ASSISTANT_BACKUP_RETENTION_DAYS:-0}
+  web:
+    build:
+      args:
+        VITE_AI_ASSISTANT_SEND_ENABLED: ${AI_ASSISTANT_UI_ENABLED:-false}

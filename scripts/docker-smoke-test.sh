@@ -79,10 +79,32 @@ AVATAR_URL=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["avatarUrl"
 echo "   $AVATAR_URL"
 curl -sf -o /dev/null "$AVATAR_URL"
 
+echo "5b. customer package photos use MinIO and invalid uploads preserve the saved URL"
+customer_payload=$(python3 -c 'import json,secrets; print(json.dumps({"email":"photo-"+secrets.token_hex(6)+"@example.test","password":"Smoke-"+secrets.token_urlsafe(12)+"1a","fullName":"Photo smoke customer","phoneNumber":"0900000098"}))')
+customer_json=$(curl -sf -X POST "$WEB/api/auth/register" -H 'Content-Type: application/json' -d "$customer_payload")
+CUSTOMER_TOKEN=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["accessToken"])' <<<"$customer_json")
+package_json=$(curl -sf -X POST "$WEB/api/packages" -H "Authorization: Bearer $CUSTOMER_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"packageName":"Docker photo smoke","weightGram":500,"lengthCm":20,"widthCm":15,"heightCm":8,"isFragile":false}')
+PACKAGE_ID=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$package_json")
+photo_json=$(curl -sf -X POST "$WEB/api/packages/$PACKAGE_ID/image" -H "Authorization: Bearer $CUSTOMER_TOKEN" -F "file=@/tmp/smoke-avatar.png;type=image/png")
+PHOTO_URL=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["imageUrl"])' <<<"$photo_json")
+curl -sf "$PHOTO_URL" -o /tmp/smoke-package-downloaded.png
+cmp /tmp/smoke-avatar.png /tmp/smoke-package-downloaded.png
+printf 'invalid photo' > /tmp/smoke-invalid-photo.txt
+invalid_status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WEB/api/packages/$PACKAGE_ID/image" \
+  -H "Authorization: Bearer $CUSTOMER_TOKEN" -F "file=@/tmp/smoke-invalid-photo.txt;type=text/plain")
+[ "$invalid_status" = 400 ] || { echo "expected invalid photo rejection, got $invalid_status"; exit 1; }
+saved_photo=$(curl -sf "$WEB/api/packages/$PACKAGE_ID" -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["packageImageUrl"])')
+[ "$saved_photo" = "$PHOTO_URL" ] || { echo "invalid upload changed the saved photo URL"; exit 1; }
+
 echo "6. a restart keeps the data and does not seed twice"
 docker compose -p "$PROJECT" restart api
 for _ in $(seq 1 40); do login "$API" >/dev/null 2>&1 && break; sleep 3; done
 login "$API" >/dev/null
+curl -sf -o /dev/null "$AVATAR_URL"
+curl -sf "$PHOTO_URL" -o /tmp/smoke-package-after-restart.png
+cmp /tmp/smoke-avatar.png /tmp/smoke-package-after-restart.png
 admins=$(docker compose -p "$PROJECT" exec -T postgres psql -U postgres -d drone_delivery_db -tAc \
   "select count(*) from users where \"Email\" = '$ADMIN_EMAIL'")
 [ "$admins" = 1 ] || { echo "expected one administrator, found $admins"; exit 1; }
