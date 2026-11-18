@@ -18,6 +18,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -48,7 +49,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ref.watch(appConfigProvider).flavor == AppFlavor.customer;
 
     return Scaffold(
-      appBar: AppBar(title: Text(appName)),
+      appBar: isCustomerApp ? null : AppBar(title: Text(appName)),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -61,32 +62,127 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Sign in',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
+                    if (isCustomerApp) ...[
+                      Column(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEF2FF),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.inventory_2_rounded,
+                              color: Color(0xFF1E56A0),
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'SmartDroneDelivery',
+                            style: TextStyle(
+                              color: Color(0xFF1E56A0),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Reliable delivery, made smarter',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 36),
+                      Text(
+                        'Welcome back',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sign in to manage and track your deliveries.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ] else
+                      Text(
+                        'Sign in',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
                     const SizedBox(height: 24),
+                    const Text(
+                      'Email',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(labelText: 'Email'),
+                      decoration: const InputDecoration(
+                        hintText: 'Enter your email',
+                      ),
                       validator: (v) => (v == null || !v.contains('@'))
                           ? 'Enter a valid email'
                           : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Password',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _password,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       autofillHints: const [AutofillHints.password],
-                      decoration: const InputDecoration(labelText: 'Password'),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your password',
+                        suffixIcon: IconButton(
+                          tooltip: _obscurePassword
+                              ? 'Show password'
+                              : 'Hide password',
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
                       validator: (v) => (v == null || v.length < 6)
                           ? 'At least 6 characters'
                           : null,
                       onFieldSubmitted: (_) => isLoading ? null : _submit(),
                     ),
-                    const SizedBox(height: 24),
+                    if (isCustomerApp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Password reset is not available yet.',
+                                ),
+                              ),
+                            ),
+                          child: const Text('Forgot password?'),
+                        ),
+                      )
+                    else
+                      const SizedBox(height: 24),
                     FilledButton(
                       onPressed: isLoading ? null : _submit,
                       child: isLoading
@@ -95,13 +191,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Continue'),
+                          : Text(isCustomerApp ? 'Sign in' : 'Continue'),
                     ),
                     if (isCustomerApp) ...[
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => context.go(RoutePaths.register),
-                        child: const Text('Create a customer account'),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'New here? ',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          InkWell(
+                            onTap: () => context.go(RoutePaths.register),
+                            child: Text(
+                              'Create account',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],

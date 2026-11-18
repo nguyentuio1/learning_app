@@ -785,7 +785,9 @@ void main() {
 
         await tester.tap(find.byKey(const Key('order-package')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Lab sample kit').last);
+        await tester.tap(
+          find.text('Lab sample kit · 1.2 kg · Fragile').last,
+        );
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(const Key('order-origin')));

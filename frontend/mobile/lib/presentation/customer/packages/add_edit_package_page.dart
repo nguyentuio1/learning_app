@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/error_message.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/package_model.dart';
 import '../../../data/providers/package_providers.dart';
 import 'package_notifier.dart';
@@ -68,6 +69,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   late final TextEditingController _widthController;
   late final TextEditingController _heightController;
   late final TextEditingController _imageUrlController;
+  late final TextEditingController _descriptionController;
   late bool _isFragile;
 
   @override
@@ -90,6 +92,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     _imageUrlController = TextEditingController(
       text: package?.packageImageUrl ?? '',
     );
+    _descriptionController = TextEditingController();
     _isFragile = package?.isFragile ?? false;
   }
 
@@ -101,6 +104,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     _widthController.dispose();
     _heightController.dispose();
     _imageUrlController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -110,62 +114,170 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.package == null ? 'Add package' : 'Edit package'),
+        toolbarHeight: 84,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: AppColors.customerSurface,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.of(context).maybePop(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.customerBorder),
+                    ),
+                    child: const Icon(Icons.arrow_back, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.package == null ? 'Add Package' : 'Edit Package',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Enter your package details.',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.customerTextSecondary),
+            ),
+          ],
+        ),
       ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
-              TextFormField(
-                controller: _nameController,
-                maxLength: 200,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Package name'),
-                validator: _validateName,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _weightController,
-                label: 'Weight (g)',
-                maximum: 3000,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _lengthController,
-                label: 'Length (cm)',
-                maximum: 30,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _widthController,
-                label: 'Width (cm)',
-                maximum: 20,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _heightController,
-                label: 'Height (cm)',
-                maximum: 15,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _imageUrlController,
-                keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'Package image URL (optional)',
+              _labeledField(
+                'Package name',
+                TextFormField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(),
+                  validator: _validateName,
                 ),
-                validator: _validateImageUrl,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              _labeledField(
+                'Weight (g)',
+                _numberField(controller: _weightController, maximum: 3000),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _labeledField(
+                      'Length (cm)',
+                      _numberField(controller: _lengthController, maximum: 30),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _labeledField(
+                      'Width (cm)',
+                      _numberField(controller: _widthController, maximum: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _labeledField(
+                      'Height (cm)',
+                      _numberField(controller: _heightController, maximum: 15),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _labeledField(
+                'Description (optional)',
+                TextFormField(
+                  controller: _descriptionController,
+                  minLines: 3,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    hintText: 'Add any helpful package details',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: _editImageUrl,
+                borderRadius: BorderRadius.circular(12),
+                child: CustomPaint(
+                  foregroundPainter: const _DashedBorderPainter(
+                    color: AppColors.customerSeed,
+                    radius: 12,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.camera_alt_outlined,
+                          color: AppColors.customerSeed,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _imageUrlController.text.isEmpty
+                                ? 'Add package photo (optional)'
+                                : _imageUrlController.text,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.customerSeed,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.add_circle_outline,
+                          color: AppColors.customerSeed,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Fragile'),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 value: _isFragile,
                 onChanged: (value) =>
                     setState(() => _isFragile = value ?? false),
                 controlAffinity: ListTileControlAffinity.leading,
+                title: const Text(
+                  'Fragile package',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Handle with extra care.'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.customerBorder),
+                ),
               ),
               const SizedBox(height: 16),
               FilledButton(
@@ -178,9 +290,15 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
                       )
                     : Text(
                         widget.package == null
-                            ? 'Save package'
+                            ? 'Save Package'
                             : 'Save changes',
                       ),
+              ),
+              TextButton(
+                onPressed: isLoading
+                    ? null
+                    : () => Navigator.of(context).maybePop(),
+                child: const Text('Cancel'),
               ),
             ],
           ),
@@ -191,14 +309,24 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
 
   TextFormField _numberField({
     required TextEditingController controller,
-    required String label,
     required double maximum,
   }) => TextFormField(
     controller: controller,
     keyboardType: const TextInputType.numberWithOptions(decimal: true),
     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.-]'))],
-    decoration: InputDecoration(labelText: label),
+    decoration: const InputDecoration(),
     validator: (value) => _validateMeasurement(value, maximum),
+  );
+
+  Widget _labeledField(String label, Widget field) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8, left: 2),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ),
+      field,
+    ],
   );
 
   String? _validateName(String? value) {
@@ -233,8 +361,54 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     return null;
   }
 
+  Future<void> _editImageUrl() async {
+    final controller = TextEditingController(text: _imageUrlController.text);
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Package photo'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              labelText: 'Image URL (optional)',
+              hintText: 'https://',
+            ),
+            validator: _validateImageUrl,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(dialogContext, controller.text.trim());
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => _imageUrlController.text = result);
+    }
+    controller.dispose();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final imageUrlError = _validateImageUrl(_imageUrlController.text);
+    if (imageUrlError != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(imageUrlError)));
+      return;
+    }
 
     final weight = double.tryParse(_weightController.text.trim());
     final length = double.tryParse(_lengthController.text.trim());
@@ -274,4 +448,35 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     );
     Navigator.of(context).pop(true);
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
+      );
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = (distance + 6).clamp(0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance = next + 4;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }

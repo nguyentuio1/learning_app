@@ -19,6 +19,7 @@ class CreateOrderState {
     this.address,
     this.recipientName = '',
     this.recipientPhone = '',
+    this.instructions = '',
     this.isSubmitting = false,
     this.error,
   });
@@ -29,6 +30,7 @@ class CreateOrderState {
   final CustomerAddress? address;
   final String recipientName;
   final String recipientPhone;
+  final String instructions;
   final bool isSubmitting;
   final ApiException? error;
 
@@ -40,6 +42,7 @@ class CreateOrderState {
     bool clearAddress = false,
     String? recipientName,
     String? recipientPhone,
+    String? instructions,
     bool? isSubmitting,
     ApiException? error,
     bool clearError = false,
@@ -50,6 +53,7 @@ class CreateOrderState {
     address: clearAddress ? null : address ?? this.address,
     recipientName: recipientName ?? this.recipientName,
     recipientPhone: recipientPhone ?? this.recipientPhone,
+    instructions: instructions ?? this.instructions,
     isSubmitting: isSubmitting ?? this.isSubmitting,
     error: clearError ? null : error ?? this.error,
   );
@@ -82,10 +86,20 @@ class CreateOrderNotifier extends Notifier<CreateOrderState> {
   void setRecipientPhone(String value) =>
       state = state.copyWith(recipientPhone: value, clearError: true);
 
+  void setInstructions(String value) =>
+      state = state.copyWith(instructions: value, clearError: true);
+
   ApiException? validate() {
     final order = state;
     if (order.package == null || !_guidPattern.hasMatch(order.package!.id)) {
       return const ApiException(message: 'Select a package.');
+    }
+    if (order.package!.isAssigned || order.package!.orderId != null) {
+      return const ApiException(
+        message: 'This package is already linked to an order.',
+        statusCode: 409,
+        code: 'MSG-P-CO-11',
+      );
     }
     if (!_guidPattern.hasMatch(order.originStationId) ||
         !_guidPattern.hasMatch(order.destinationStationId)) {

@@ -180,7 +180,7 @@ void main() {
     await _pumpOrders(tester, service);
     expect(find.text('TRACK-1'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'IN TRANSIT'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'In transit'));
     await tester.pumpAndSettle();
     expect(service.requests.last.status, 'IN_TRANSIT');
     expect(service.requests.last.page, 1);

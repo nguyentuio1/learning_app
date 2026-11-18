@@ -67,10 +67,39 @@ List<Override> _operatorOverrides() => [
   landingStationApiServiceProvider.overrideWithValue(_EmptyStationService()),
 ];
 
+Future<void> _openRegisterPage(WidgetTester tester) async {
+  final link = find.text('Create account');
+  await tester.ensureVisible(link);
+  await tester.tap(link);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _fillRegistrationForm(
+  WidgetTester tester, {
+  required String email,
+  String confirmPassword = 'Passw0rd12',
+}) async {
+  final values = [
+    'Test Customer',
+    email,
+    '0901234567',
+    confirmPassword,
+    'Passw0rd12',
+  ];
+  final fields = find.byType(TextFormField);
+  for (var index = 0; index < values.length; index++) {
+    final field = fields.at(index);
+    await tester.ensureVisible(field);
+    await tester.enterText(field, values[index]);
+  }
+  tester.testTextInput.hide();
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('Customer đã đăng nhập -> vào Customer home', (tester) async {
     await _pump(tester, AppConfig.customer(), await _loggedIn());
-    expect(find.text('Customer Home'), findsOneWidget);
+    expect(find.text('Send a delivery'), findsOneWidget);
     expect(find.text('Create delivery'), findsWidgets);
   });
 
@@ -88,7 +117,7 @@ void main() {
   testWidgets('Chưa đăng nhập -> bị chuyển tới Login', (tester) async {
     await _pump(tester, AppConfig.customer(), InMemoryTokenStorage());
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.text('Customer Home'), findsNothing);
+    expect(find.text('Send a delivery'), findsNothing);
     expect(find.text('Create delivery'), findsNothing);
   });
 
@@ -96,20 +125,32 @@ void main() {
     tester,
   ) async {
     await _pump(tester, AppConfig.customer(), InMemoryTokenStorage());
-    await tester.tap(find.text('Create a customer account'));
-    await tester.pumpAndSettle();
+    await _openRegisterPage(tester);
 
-    expect(find.text('Create account'), findsOneWidget);
-    await tester.tap(find.text('Register'));
+    expect(find.text('Customers can register on their own.'), findsOneWidget);
+    final submitButton = find.widgetWithText(FilledButton, 'Create account');
+    await tester.ensureVisible(submitButton);
+    await tester.tap(submitButton);
     await tester.pumpAndSettle();
-    expect(find.text('Enter your full name'), findsOneWidget);
+    expect(find.text('Enter your full name'), findsNWidgets(2));
     expect(find.text('Enter a valid email'), findsOneWidget);
     expect(
       find.text('Enter a phone number with 9 to 11 digits'),
       findsOneWidget,
     );
+    await _fillRegistrationForm(
+      tester,
+      email: 'new@example.com',
+      confirmPassword: 'Different12',
+    );
+    await tester.ensureVisible(submitButton);
+    await tester.tap(submitButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Passwords do not match'), findsOneWidget);
 
-    await tester.tap(find.text('Already have an account? Log in'));
+    final backButton = find.byIcon(Icons.arrow_back);
+    await tester.ensureVisible(backButton);
+    await tester.tap(backButton);
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
   });
@@ -136,14 +177,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Create a customer account'));
-    await tester.pumpAndSettle();
-    final fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'Test Customer');
-    await tester.enterText(fields.at(1), 'used@example.com');
-    await tester.enterText(fields.at(2), '0901234567');
-    await tester.enterText(fields.at(3), 'Passw0rd12');
-    await tester.tap(find.text('Register'));
+    await _openRegisterPage(tester);
+    await _fillRegistrationForm(tester, email: 'used@example.com');
+    final submitButton = find.widgetWithText(FilledButton, 'Create account');
+    await tester.ensureVisible(submitButton);
+    await tester.tap(submitButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -154,23 +192,23 @@ void main() {
     tester,
   ) async {
     await _pump(tester, AppConfig.customer(), InMemoryTokenStorage());
-    await tester.tap(find.text('Create a customer account'));
-    await tester.pumpAndSettle();
-    final fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'Test Customer');
-    await tester.enterText(fields.at(1), 'new@example.com');
-    await tester.enterText(fields.at(2), '0901234567');
-    await tester.enterText(fields.at(3), 'Passw0rd12');
-    await tester.tap(find.text('Register'));
+    await _openRegisterPage(tester);
+    await _fillRegistrationForm(tester, email: 'new@example.com');
+    final submitButton = find.widgetWithText(FilledButton, 'Create account');
+    await tester.ensureVisible(submitButton);
+    await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Customer Home'), findsOneWidget);
-    expect(find.text('Your orders'), findsOneWidget);
+    expect(find.text('Send a delivery'), findsOneWidget);
+    expect(find.text('Recent deliveries'), findsOneWidget);
   });
 
   testWidgets('Đăng xuất -> router đưa về Login', (tester) async {
     await _pump(tester, AppConfig.customer(), await _loggedIn());
-    await tester.tap(find.byIcon(Icons.logout));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(App)),
+    );
+    await container.read(authControllerProvider.notifier).signOut();
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
   });

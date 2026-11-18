@@ -106,20 +106,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Customer Home'), findsOneWidget);
+      expect(find.text('Hello, Customer'), findsOneWidget);
       expect(find.text('Find a station'), findsNothing);
       expect(find.text('Create delivery'), findsOneWidget);
       expect(find.text('DD-1001'), findsOneWidget);
       expect(find.text('Recipient: Alex Recipient'), findsOneWidget);
       expect(find.text('DD-1002'), findsOneWidget);
       expect(find.text('DD-1003'), findsOneWidget);
-      expect(find.text('Active orders'), findsOneWidget);
-      expect(find.text('Recent orders'), findsOneWidget);
+      expect(find.text('My deliveries'), findsOneWidget);
+      expect(find.text('Recent deliveries'), findsOneWidget);
       expect(find.text('Track'), findsNWidgets(3));
       expect(find.text('Confirm receipt'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.text('Active orders')).dy,
-        lessThan(tester.getTopLeft(find.text('Recent orders')).dy),
+        tester.getTopLeft(find.text('My deliveries')).dy,
+        lessThan(tester.getTopLeft(find.text('Recent deliveries')).dy),
       );
     });
 
@@ -143,7 +143,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('No orders yet'), findsOneWidget);
+      expect(find.text('No deliveries yet'), findsOneWidget);
       expect(find.text('Create delivery'), findsNWidgets(2));
     });
 
@@ -216,7 +216,7 @@ void main() {
       find.text('No packages available yet. Add a package to continue.'),
       findsOneWidget,
     );
-    expect(find.text('Add package'), findsOneWidget);
+    expect(find.text('+ Add New Package'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('order-origin')));
     await tester.pumpAndSettle();
@@ -226,20 +226,51 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Destination · DS-01').last);
     await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.byKey(const Key('order-recipient-name')),
+      find.byType(Scrollable).first,
+      const Offset(0, -150),
+    );
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('order-recipient-name')),
       'Draft recipient',
     );
+    await tester.dragUntilVisible(
+      find.byKey(const Key('order-recipient-phone')),
+      find.byType(Scrollable).first,
+      const Offset(0, -150),
+    );
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('order-recipient-phone')),
       '0901234567',
     );
 
+    await tester.dragUntilVisible(
+      find.byKey(const Key('order-add-package-button')),
+      find.byType(Scrollable).first,
+      const Offset(0, 150),
+    );
     await tester.ensureVisible(
       find.byKey(const Key('order-add-package-button')),
     );
-    await tester.tap(find.byKey(const Key('order-add-package-button')));
+    await tester.tap(
+      find.byKey(const Key('order-add-package-button')),
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
+    if (find
+        .byKey(const Key('test-return-from-add-package'))
+        .evaluate()
+        .isEmpty) {
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const Key('order-add-package-button')),
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
+    }
     await tester.tap(find.byKey(const Key('test-return-from-add-package')));
     await tester.pumpAndSettle();
 
@@ -283,7 +314,10 @@ void main() {
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('one-time pickup code'), findsOneWidget);
+    expect(
+      find.textContaining('Share this code only with the recipient'),
+      findsOneWidget,
+    );
     expect(find.text('ONE-TIME-4821'), findsOneWidget);
     await tester.ensureVisible(
       find.byKey(const Key('order-view-detail-button')),

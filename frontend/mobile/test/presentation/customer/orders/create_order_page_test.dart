@@ -106,20 +106,26 @@ Future<void> _pumpFlow(
 }
 
 Future<void> _enter(WidgetTester tester, String key, String value) async {
-  await tester.ensureVisible(find.byKey(Key(key)));
-  await tester.enterText(find.byKey(Key(key)), value);
+  final field = find.byKey(Key(key));
+  await tester.scrollUntilVisible(
+    field,
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.enterText(field, value);
   await tester.pump();
 }
 
 Future<void> _completeForm(WidgetTester tester, {String? phone}) async {
   await tester.tap(find.byKey(const Key('order-package')));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Parcel').last);
+  await tester.tap(find.textContaining('Parcel').last);
   await tester.pumpAndSettle();
   await _selectStation(tester, 'order-origin', 'Origin · OR-01');
   await _selectStation(tester, 'order-destination', 'Destination · DS-01');
   await _enter(tester, 'order-recipient-name', 'Customer Name');
   await _enter(tester, 'order-recipient-phone', phone ?? '123456789');
+  await _enter(tester, 'order-instructions', 'Leave at the front desk.');
   await tester.ensureVisible(find.byKey(const Key('order-review')));
   await tester.tap(find.byKey(const Key('order-review')));
   await tester.pumpAndSettle();
@@ -143,7 +149,13 @@ void main() {
     await _pumpFlow(tester, service: _FakeOrderService());
     await _completeForm(tester);
 
-    expect(find.text('Review order'), findsOneWidget);
+    expect(find.text('Review Delivery'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Leave at the front desk.'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Leave at the front desk.'), findsOneWidget);
     await tester.tap(find.byKey(const Key('order-submit')));
     await tester.pumpAndSettle();
 

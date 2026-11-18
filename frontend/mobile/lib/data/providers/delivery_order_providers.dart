@@ -15,7 +15,8 @@ final deliveryOrderApiServiceProvider = Provider<DeliveryOrderApiService>(
 );
 
 final orderPackagesProvider = FutureProvider.autoDispose<List<PackageModel>>(
-  (ref) => PackageApiService(ref.watch(dioProvider)).getPackages(),
+  (ref) =>
+      PackageApiService(ref.watch(dioProvider)).getPackages(available: true),
   name: 'orderPackages',
 );
 
