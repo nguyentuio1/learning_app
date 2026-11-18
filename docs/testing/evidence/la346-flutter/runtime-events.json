@@ -1,0 +1,60 @@
+{
+  "events": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/packages",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/packages/90668070-2b1a-43c6-aeb2-396693866080/image",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/packages/90668070-2b1a-43c6-aeb2-396693866080",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/me",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/me/avatar",
+      "status": 200
+    }
+  ],
+  "pageErrors": []
+}
