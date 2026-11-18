@@ -1,0 +1,94 @@
+{
+  "reviewPacket": "LA204-20261119-review-2-template",
+  "status": "REVIEW COPY; two actual human proofreading confirmations pending",
+  "documentationBaseline": "a90668c",
+  "applicationBaseline": "10c77d0",
+  "relativeLinksChecked": 96,
+  "brokenLinks": [],
+  "pdfPages": 71,
+  "pdfAllChapters": true,
+  "pdfCurrent425Evidence": true,
+  "pdfHumanGate": true,
+  "docxParagraphs": 324,
+  "files": {
+    "SmartDroneDelivery-LA204-review.docx": {
+      "bytes": 255102,
+      "sha256": "c79ce0886577e211eeaa519ffbf7f781dd3fe8d01f34aac66339d070fc9e6370"
+    },
+    "SmartDroneDelivery-LA204-review.pdf": {
+      "bytes": 1655595,
+      "sha256": "325faa2c5a91ab8c11777e192686fade4d9db99c5441e7ec353ea6756ca8e584"
+    }
+  },
+  "publishedVersions": [
+    {
+      "id": "98403",
+      "title": "Overview",
+      "version": 8
+    },
+    {
+      "id": "14188546",
+      "title": "I. Project Introduction",
+      "version": 3
+    },
+    {
+      "id": "11927566",
+      "title": "II. Project Management Plan",
+      "version": 6
+    },
+    {
+      "id": "11993093",
+      "title": "III. Software Requirement Specification",
+      "version": 14
+    },
+    {
+      "id": "11993109",
+      "title": "IV. Software Design Description",
+      "version": 14
+    },
+    {
+      "id": "11927583",
+      "title": "V. Software Testing Documentation",
+      "version": 16
+    },
+    {
+      "id": "14024801",
+      "title": "VI. Release Package & User Guides",
+      "version": 9
+    },
+    {
+      "id": "11960371",
+      "title": "4. Non-Functional Requirements (NFR)",
+      "version": 9
+    },
+    {
+      "id": "14024759",
+      "title": "Acknowledgement",
+      "version": 2
+    },
+    {
+      "id": "14024779",
+      "title": "Definitions and Acronyms",
+      "version": 1
+    },
+    {
+      "id": "14090250",
+      "title": "1. System Design",
+      "version": 3
+    },
+    {
+      "id": "14188589",
+      "title": "2. Database Design",
+      "version": 5
+    }
+  ],
+  "exportScope": "Six chapters plus Acknowledgement/Definitions, ten substantive existing child specifications (actors/usecases/rules/messages/architecture/schema/detailed-design), and two actual browser-runtime figures. Template cover geometry/logos/table preserved with explicit metadata placeholders. Historical diagram embeds remain linked on Confluence; no human approval inferred.",
+  "template": "C:/Users/tbare/Downloads/Copy of Final_Project_Report_PDCMS.docx.pdf; first three pages inspected: cover and detailed contents",
+  "missingAcademicMetadata": [
+    "Student IDs for all five contributors",
+    "Formal name behind TBA Review display name",
+    "Supervisor name(s)",
+    "External supervisor name or confirmed not applicable",
+    "Academic capstone project code"
+  ]
+}

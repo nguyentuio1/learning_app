@@ -1,5 +1,7 @@
 # I. Project Introduction
 
+> **Current lifecycle correction (19 November 2026):** Jira Sprint 8 (id 8) is CLOSED at `2026-11-18T23:09:56.278Z` (06:09:56 Asia/Ho_Chi_Minh). Older active-sprint statements below are dated historical planning snapshots. Unfinished acceptance remains in backlog/In Progress. See the [current report index](README.md) for application evidence and final review targets.
+
 Owner: [LA-252](https://hungndemail.atlassian.net/browse/LA-252), TBA Review. Evidence checked on 2026-11-16 against `develop` at `8413d84` and the active Jira Sprint 7. Publication target: the existing [Project Introduction](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546), not a new chapter. Final report assembly and human approval remain [LA-204](https://hungndemail.atlassian.net/browse/LA-204).
 
 ## 1. Overview
