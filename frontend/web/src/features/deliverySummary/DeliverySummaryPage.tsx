@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Button, Tag, Timeline } from 'antd'
 import axios from 'axios'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { OrderUiProvider } from '../../components/orders/OrderUiProvider'
 import { useAuth } from '../../hooks/useAuth'
 import { customerOrderApi } from '../../services/customerOrderApi'
 import type { CustomerOrderDetail } from '../../types/customerOrder'
 import { orderStatusLabel, orderTime } from '../../utils/orderDisplay'
-import { orderIdPattern } from '../operations/deliveryInsight'
+import { orderIdPattern, type InsightRouteState } from '../operations/deliveryInsight'
 import { InsightOrderPicker } from '../operations/InsightOrderPicker'
 import { OperationsPage, ResourceState } from '../operations/OperationsUi'
 import { useResource } from '../operations/useResource'
@@ -18,16 +18,23 @@ export function DeliverySummaryPage() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { search, state } = useLocation()
+  const context = state as InsightRouteState | null
   const customer = user?.role.code === 'CUSTOMER'
   return (
     <OrderUiProvider>
       <OperationsPage
         title="Delivery summary"
         subtitle="Read a summary alongside the recorded delivery information."
-        action={id && <Link className="insight-link" to="/delivery-summary">Choose another delivery</Link>}
+        action={id && (context?.reportSearch !== undefined && !customer ? (
+          <Link className="insight-link" to={{ pathname: '/manager/analytics', search: context.reportSearch }}>Back to delivery report</Link>
+        ) : <Link className="insight-link" to={{ pathname: '/delivery-summary', search }}>Choose another delivery</Link>)}
       >
         {!id ? (
-          <InsightOrderPicker key={user?.id} customer={customer} onSelect={value => navigate('/delivery-summary/' + value)} />
+          <InsightOrderPicker key={user?.id} customer={customer} onSelect={(value, trackingNumber) => navigate(
+            { pathname: '/delivery-summary/' + value, search },
+            { state: { trackingNumber } satisfies InsightRouteState },
+          )} />
         ) : orderIdPattern.test(id) ? (
           <SummaryDetail key={user?.id + ':' + id} id={id} customer={customer} />
         ) : <Alert type="error" showIcon title="Invalid order ID" />}
@@ -98,7 +105,12 @@ function SummaryDetail({ id, customer }: { id: string; customer: boolean }) {
           break
         }
         case 503:
-          setNotice({ type: 'warning', title: 'The summary service is temporarily unavailable.' })
+          setNotice({
+            type: 'warning',
+            title: response.data?.detail === 'Delivery summarization is not configured.'
+              ? 'AI summaries are disabled in this environment. You can still review the delivery record.'
+              : 'The summary service is temporarily unavailable.',
+          })
           break
         case 504:
           setNotice({ type: 'warning', title: 'Summary generation took too long. You can try again.' })

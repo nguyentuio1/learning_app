@@ -1,4 +1,16 @@
 .analytics-feature .analytics-filter{display:flex;align-items:end;gap:16px;flex-wrap:wrap;background:#f4f7ee;border:1px solid #cfdbc7;border-radius:14px;padding:24px;margin-bottom:16px}.analytics-feature .analytics-filter .ant-form-item{margin:0;min-width:200px}.analytics-feature .analytics-filter>p{width:100%;font-size:11px;color:#52654d;margin:0;line-height:1.7}
+.analytics-feature .analytics-presets {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.analytics-feature .analytics-insight-links {
+  display: flex;
+  margin-top: 4px;
+  gap: 12px;
+  white-space: nowrap;
+}
 .analytics-feature .analytics-empty { display:block; padding:20px 12px; color:#617167; }
 .analytics-feature .analytics-card{min-width:0;padding:26px;background:#fffffc;border:1px solid #cddcc5;border-radius:14px;box-shadow:0 4px 18px #203d3105;margin-bottom:22px}.analytics-feature h2{font-size:18px;color:#2d4d39;margin:0 0 16px}.analytics-feature .analytics-card p{font-size:13px;line-height:1.8;color:#52654d}.analytics-feature .analytics-start{padding:48px 30px}.analytics-feature .analytics-start h2{font-size:25px;letter-spacing:-.6px}
 .analytics-feature .analytics-refresh{display:flex;justify-content:flex-end;margin-bottom:18px}.analytics-feature .analytics-period{display:flex;align-items:center;gap:10px 22px;flex-wrap:wrap;border-left:3px solid #d5b361;background:#f3f6ed;border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:22px;color:#536c4e;font-size:12px}.analytics-feature .analytics-period small{color:#52654d}
