@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'antd'
@@ -22,7 +22,7 @@ const detail = {
   ],
 }
 beforeEach(() => { mock = new MockAdapter(apiClient) })
-afterEach(() => mock.restore())
+afterEach(() => { mock.restore(); vi.unstubAllGlobals() })
 function open(path = '/orders') {
   render(<ConfigProvider theme={{ token: { motion: false } }}><MemoryRouter initialEntries={[path]}><Routes>
     <Route path="/orders" element={<CustomerOrdersPage />} /><Route path="/orders/:id" element={<CustomerOrderDetailPage />} />
@@ -48,7 +48,7 @@ it('uses the paged contract, sends UTC date boundaries and resets pagination on 
 })
 it('rejects reversed dates before requesting another page', async () => {
   mock.onGet('/api/delivery-orders').reply(200, { items: [], totalCount: 0 })
-  open(); await screen.findByText('No orders match these filters.')
+  open(); await screen.findByText('No orders yet.')
   await setDate('Created from', '2026-11-03')
   await setDate('Created through', '2026-11-01')
   await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
@@ -62,7 +62,7 @@ it.each([
   mock.onGet('/api/delivery-orders').reply(200, { items: [], totalCount: 0 })
   const user = userEvent.setup()
   open()
-  await screen.findByText('No orders match these filters.')
+  await screen.findByText('No orders yet.')
 
   await setDate('Created from', '2026-11-15')
   const apply = screen.getByRole('button', { name: 'Apply filters' })
@@ -84,13 +84,28 @@ it.each([
   })
 })
 
+it('exposes order status, route and the permitted action on narrow screens', async () => {
+  const matchMedia = window.matchMedia
+  vi.stubGlobal('matchMedia', (query: string) => ({ ...matchMedia(query), matches: query === '(max-width: 1140px)' }))
+  mock.onGet('/api/delivery-orders').reply(200, { items: [detail], page: 1, pageSize: 20, totalCount: 1, totalPages: 1 })
+  open()
+  expect(await screen.findByRole('link', { name: detail.trackingNumber })).toHaveAttribute('href', '/orders/o1')
+  expect(screen.getByText('Pending')).toBeVisible()
+  expect(screen.getByText('North → South')).toBeVisible()
+  expect(screen.getByRole('link', { name: /Edit or cancel order/ })).toHaveAttribute('href', '/orders/o1/manage')
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  const dates = screen.getByRole('button', { name: 'Show date filters' })
+  expect(dates).toHaveAttribute('aria-expanded', 'false')
+  await userEvent.click(dates)
+  expect(screen.getByLabelText('Created from')).toBeVisible()
+})
 it('shows server failures separately from an empty list and supports retry', async () => {
   mock.onGet('/api/delivery-orders').reply(500)
   open(); const retry = await screen.findByRole('button', { name: 'Try again' })
-  expect(screen.queryByText('No orders match these filters.')).not.toBeInTheDocument()
+  expect(screen.queryByText('No orders yet.')).not.toBeInTheDocument()
   mock.onGet('/api/delivery-orders').reply(200, { items: [], totalCount: 0 })
   await userEvent.click(retry)
-  expect(await screen.findByText('No orders match these filters.')).toBeVisible()
+  expect(await screen.findByText('No orders yet.')).toBeVisible()
 })
 it('shows detail with chronological history and never renders the pickup code', async () => {
   mock.onGet('/api/delivery-orders/o1').reply(200, detail)
@@ -98,6 +113,8 @@ it('shows detail with chronological history and never renders the pickup code', 
   expect(await screen.findByRole('heading', { name: detail.trackingNumber })).toBeVisible()
   expect(screen.getAllByRole('listitem').map(li => li.textContent)).toEqual([expect.stringContaining('Order created'), expect.stringContaining('Approved by dispatcher')])
   expect(screen.queryByText('987654')).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /View arrival estimate/ })).toHaveAttribute('href', '/delivery-eta/o1')
+  expect(screen.getByRole('link', { name: /View delivery summary/ })).toHaveAttribute('href', '/delivery-summary/o1')
   expect(mock.history.get.map(r => r.url)).toEqual(['/api/delivery-orders/o1'])
   expect(screen.getAllByText('Not available yet')).toHaveLength(4)
 })
