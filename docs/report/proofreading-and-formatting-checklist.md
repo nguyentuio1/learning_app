@@ -1,29 +1,26 @@
-# Proofreading, Formatting, and Terminology Checklist (LA-255)
+# Proofreading, Formatting, and Terminology Checklist (LA-255 / LA-362)
 
-Owner: [LA-255](https://hungndemail.atlassian.net/browse/LA-255), Hung Nguyen. Parent story: [LA-204](https://hungndemail.atlassian.net/browse/LA-204) (TBA Review retains final report consolidation, export, and approval).
+Owners: [LA-255](https://hungndemail.atlassian.net/browse/LA-255) & [LA-362](https://hungndemail.atlassian.net/browse/LA-362), Hung Nguyen. Parent stories: [LA-204](https://hungndemail.atlassian.net/browse/LA-204) / [LA-351](https://hungndemail.atlassian.net/browse/LA-351) (TBA Review retains final report consolidation, export, and approval).
 
 ---
 
 ## 1. Cross-document structure and numbering
 
-| Report part | Repository source | Confluence target | Formatting & numbering status |
+| Report part | Repository source | Confluence target | Formatting, numbering & reconciliation status |
 |---|---|---|---|
-| **I. Project Introduction** | [01-project-introduction.md](01-project-introduction.md) | [Page 14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | Numbered `1.`–`6.` with sentence-case headings (`Checked`). |
-| **II. Project Management Plan** | [02-project-management-plan.md](02-project-management-plan.md) | [Page 11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | Numbered `1.`–`8.` with sentence-case headings (`Checked`). |
-| **III. Software Requirements Specification** | [SRS.md](../requirements/SRS.md) | Consolidated via LA-253 | Cross-referenced from Chapters I, II, and IV (`Checked`). |
-| **IV. Software Design Description** | [04-software-design-description.md](04-software-design-description.md) | [Page 11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | Numbered `1.`–`4.` (`4.3 Historical references`), sentence-case headings aligned with Chapters I–II (`Checked`). |
-| **V. Test Plan & Test Report** | [test-plan.md](../testing/test-plan.md) · [test-report.md](../testing/test-report.md) | [Chapter V](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | Linked from Chapter II and Chapter IV (`Checked`). |
-| **VI. Release Package & User Guides** | Deliverable package, installation guides, and user manual | [Page 14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) (v2) | Structure preserved; final export & TOC assembly remain a pending gate under LA-204. |
-
-Formatting fixes applied in this pass:
-- Fixed missing spaces and added direct Confluence page links in [README.md](README.md) (`14188546`, `11927566`), and updated the chapter file count wording.
-- Harmonized [04-software-design-description.md](04-software-design-description.md) headings to sentence case (`1. System design`, `2. Database design`, `3. Detailed design`, `4. Handoff and review`, `4.3 Historical references`) to match Chapters I and II.
+| **Overview / Contents** | [README.md](README.md) | [Page 98403](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=98403) | Reconciled to `develop` `b5e54fa` (18 Nov 2026); manual Confluence `98403` sync pending. |
+| **I. Project Introduction** | [01-project-introduction.md](01-project-introduction.md) | [Page 14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | Numbered `1.`–`6.` with sentence-case headings (`Checked`; dated baseline `8413d84` retained as snapshot). |
+| **II. Project Management Plan** | [02-project-management-plan.md](02-project-management-plan.md) | [Page 11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | Numbered `1.`–`8.` with sentence-case headings (`Checked`; dated baseline `8413d84` retained as snapshot). |
+| **III. Software Requirements Specification** | [SRS.md](../requirements/SRS.md) | [Page 11993093](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993093) | Cross-referenced from Chapters I, II, and IV (`Checked`). |
+| **IV. Software Design Description** | [04-software-design-description.md](04-software-design-description.md) | [Page 11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | Numbered `1.`–`4.` (`4.3 Historical references`), sentence-case headings aligned with Chapters I–II (`Checked`; §4.1 at `894ceab` preserved as historical baseline). |
+| **V. Software Testing Documentation** | [05-software-testing-documentation.md](05-software-testing-documentation.md) · [test-plan.md](../testing/test-plan.md) · [test-report.md](../testing/test-report.md) | [Page 11927583](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | Linked to Chapter V ledger (`07f38d1`); final alignment with `LA-175` / `LA-188` live results pending execution. |
+| **VI. Release Package & User Guides** | [06-release-package-and-user-guides.md](06-release-package-and-user-guides.md) | [Page 14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) | Linked to Chapter VI (`07f38d1`); final export & TOC assembly remain a pending gate under LA-204. |
 
 ---
 
 ## 2. Mobile and station terminology consistency
 
-All repository report chapters and Sprint 7 mobile/station user-flow sources should use the following canonical terms:
+All repository report chapters and Sprint 7–8 mobile/station user-flow sources should use the following canonical terms:
 
 | Term / Symbol | Canonical usage | Notes / verified alignment |
 |---|---|---|
@@ -34,22 +31,35 @@ All repository report chapters and Sprint 7 mobile/station user-flow sources sho
 
 ---
 
-## 3. Diagrams and links check
+## 3. Diagrams, links, and status-distinction check
 
-- **Relative links in `docs/report/*.md`:** Audited against the `origin/develop` tree; 0 broken relative links.
+- **Relative links in `docs/report/*.md`:** Audited against `origin/develop` (`b5e54fa`); 0 broken relative links.
 - **Mermaid diagrams in `docs/design/user-flows/*.md` and `docs/report/*.md`:** All `mermaid` code fences are properly closed and syntactically balanced.
-- **AI / release-gate disclaimer consistency:** Chapters I, II, and IV consistently state that default-off AI adapters, provider/model activation, chat retention, physical-device signing, and hardware flight control remain outside automated test/merge claims.
+- **Implementation vs. integration vs. deployment vs. acceptance:** [README.md](README.md) explicitly separates merged `develop` code (`b5e54fa`), Docker smoke packaging (`LA-47`), and open live acceptance/rehearsal gates (`LA-175`, `LA-188`).
 
 ---
 
-## 4. Proofreader sign-off and Confluence export evidence (LA-204 gate)
+## 4. Proofreader confirmations & Confluence page/version ledger (LA-362 / LA-204)
 
 > [!IMPORTANT]
-> Per **LA-204** and **LA-255**, repository commits alone do not establish Confluence publication or final report acceptance. Record two distinct human proofreaders and the published Confluence page versions / final export link below before closing LA-204.
+> Per **LA-362** and **LA-204**, CI runs, authorship, and automated agent reviews do **not** count as human proofreading confirmations. Leave Proofreader #1 and Proofreader #2 open until two distinct team members record their actual confirmation on the published report/page versions.
 
-| Gate item | Owner / Reviewer | Evidence / Confluence page & version | Status |
-|---|---|---|---|
-| Cross-document formatting & terminology pass | Hung Nguyen (`LA-255`) | This checklist + PR on `docs/LA-255-proofread-format-report` | Prepared for review |
-| Proofreader #1 sign-off | *Pending human reviewer 1* | *Record reviewer name, date, and notes* | Pending |
-| Proofreader #2 sign-off | *Pending human reviewer 2* | *Record reviewer name, date, and notes* | Pending |
-| Confluence publication & final export | TBA Review (`LA-204`) | *Record exported PDF/DOCX + Confluence page versions (`14188546`, `11927566`, `11993109`, Chapter V, `14024801`)* | Pending |
+### 4.1 Human proofreading confirmations
+
+| Role | Reviewer name | Date | Target page(s) / version(s) | Decision & notes | Status |
+|---|---|---|---|---|---|
+| Formatting & index reconciliation | Hung Nguyen (`LA-255` / `LA-362`) | 2026-11-18 | Repo `docs/report/*` at `develop` `b5e54fa` (prior pass: PR #233 merged `229d1cf`) | Cross-document numbering, terminology, and link pass prepared in repo | Source prepared; human proofreaders pending |
+| Proofreader #1 | *Pending distinct member* | *Pending* | *Exact Confluence page IDs/versions* | *Record actual decision/notes* | **Open** |
+| Proofreader #2 | *Pending distinct member* | *Pending* | *Exact Confluence page IDs/versions* | *Record actual decision/notes* | **Open** |
+
+### 4.2 Confluence page/version ledger & remaining blockers
+
+| Confluence page | Page ID | Last observed / verified version | Sync status against `develop` `b5e54fa` | Remaining blocker |
+|---|---|---|---|---|
+| Overview (Six-chapter index) | `98403` | *Pending manual check/publish* | Needs manual sync after sibling chapter updates | Sibling updates + `LA-175`/`LA-188` alignment + 2 proofreaders |
+| I. Project Introduction | `14188546` | *Record published version* | Maintained by `LA-252` | Record published version after sync |
+| II. Project Management Plan | `11927566` | *Record published version* | Maintained by `LA-252` | Record published version after sync |
+| III. Software Requirement Specification | `11993093` | *Record published version* | Maintained by `LA-253` | Record published version after sync |
+| IV. Software Design Description | `11993109` | *Record published version* | Maintained by `LA-254` | Record published version after sync |
+| V. Software Testing Documentation | `11927583` | *Record published version* | Pending `LA-175` / `LA-188` results | Needs actual `LA-175` & `LA-188` evidence |
+| VI. Release Package & User Guides | `14024801` | `v2` (observed 2026-11-17) | Re-verify after final export | Final export & `LA-204` approval |
