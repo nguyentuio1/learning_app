@@ -15,7 +15,7 @@ export const operationFeatures = Object.values(modules).sort((a, b) => a.label.l
 export function workspaceDestination(role?: string) {
   switch (role) {
     case 'MANAGER': return '/manager/analytics'
-    case 'CUSTOMER': return '/addresses'
+    case 'CUSTOMER': return '/orders'
     default: return '/'
   }
 }

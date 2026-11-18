@@ -66,11 +66,16 @@ it('blocks dimensions above contract limits before sending a request', async () 
   expect(await screen.findByText('Use 0.01 to 3000 grams.')).toBeVisible()
   expect(mock.history.post).toHaveLength(0)
 })
-it('does not allow saving an existing package when its data could not be loaded', async () => {
-  mock.onGet('/api/packages/' + id).reply(404)
+it('keeps editing disabled until retry loads the authoritative package', async () => {
+  mock.onGet('/api/packages/' + id).replyOnce(404)
+  mock.onGet('/api/packages/' + id).reply(200, item)
   form(true)
   expect(await screen.findByRole('button', { name: 'Save changes' })).toBeDisabled()
   expect(mock.history.put).toHaveLength(0)
+  await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+  expect(await screen.findByDisplayValue('Documents')).toBeEnabled()
+  expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled()
+  expect(mock.history.get).toHaveLength(2)
 })
 it('keeps the package visible and shows an inline conflict when deletion is rejected', async () => {
   mock.onGet('/api/packages').reply(200, [item])

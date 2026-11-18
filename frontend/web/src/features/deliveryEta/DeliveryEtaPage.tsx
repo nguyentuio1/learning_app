@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Button, Tag } from 'antd'
 import axios from 'axios'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { OrderUiProvider } from '../../components/orders/OrderUiProvider'
 import { useAuth } from '../../hooks/useAuth'
 import { orderStatusLabel, orderTime } from '../../utils/orderDisplay'
-import { orderIdPattern } from '../operations/deliveryInsight'
+import { orderIdPattern, type InsightRouteState } from '../operations/deliveryInsight'
 import { InsightOrderPicker } from '../operations/InsightOrderPicker'
 import { OperationsPage, ResourceState } from '../operations/OperationsUi'
 import { useTrackingLive } from '../tracking/useTrackingLive'
@@ -20,6 +20,8 @@ const stoppedStatuses = ['ARRIVED', 'DELIVERED', 'FAILED', 'CANCELLED']
 export function DeliveryEtaPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { search, state } = useLocation()
+  const context = state as InsightRouteState | null
   const { user } = useAuth()
   const customer = user?.role.code === 'CUSTOMER'
   return (
@@ -27,19 +29,24 @@ export function DeliveryEtaPage() {
       <OperationsPage
         title="Arrival estimate"
         subtitle="See the expected arrival time and available flight estimate details."
-        action={id && <Link className="insight-link" to="/delivery-eta">Choose another delivery</Link>}
+        action={id && (context?.reportSearch !== undefined && !customer ? (
+          <Link className="insight-link" to={{ pathname: '/manager/analytics', search: context.reportSearch }}>Back to delivery report</Link>
+        ) : <Link className="insight-link" to={{ pathname: '/delivery-eta', search }}>Choose another delivery</Link>)}
       >
         {!id ? (
-          <InsightOrderPicker key={user?.id} customer={customer} onSelect={value => navigate('/delivery-eta/' + value)} />
+          <InsightOrderPicker key={user?.id} customer={customer} onSelect={(value, trackingNumber) => navigate(
+            { pathname: '/delivery-eta/' + value, search },
+            { state: { trackingNumber } satisfies InsightRouteState },
+          )} />
         ) : orderIdPattern.test(id) ? (
-          <EtaDetail key={user?.id + ':' + id} id={id} customer={customer} />
+          <EtaDetail key={user?.id + ':' + id} id={id} customer={customer} trackingNumber={customer ? undefined : context?.trackingNumber} />
         ) : <Alert type="error" showIcon title="Invalid order ID" />}
       </OperationsPage>
     </OrderUiProvider>
   )
 }
 
-function EtaDetail({ id, customer }: { id: string; customer: boolean }) {
+function EtaDetail({ id, customer, trackingNumber }: { id: string; customer: boolean; trackingNumber?: string }) {
   const load = useCallback((signal: AbortSignal) => getDeliveryEta(id, signal), [id])
   const resource = useTrackingPoll(load, 30_000)
   const live = useTrackingLive(id, resource.refresh, !!resource.data && !resource.blocked, 'status')
@@ -74,6 +81,7 @@ function EtaDetail({ id, customer }: { id: string; customer: boolean }) {
       {result && (
         <div className="insight-grid">
           <section className="operations-panel insight-panel insight-arrival">
+            {trackingNumber && <p className="insight-timestamp">Tracking number {trackingNumber}</p>}
             <Tag>{orderStatusLabel(result.status)}</Tag>
             <h2>{ended ? 'Arrival estimate ended' : failed ? 'Last known estimated arrival' : 'Estimated arrival'}</h2>
             {ended ? (
