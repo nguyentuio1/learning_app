@@ -1,9 +1,13 @@
 # LA-248: Test Execution Report — SmartDroneDelivery
 
-**Report Date:** 2026-11-16  
+**Report Date:** 2026-11-16
 **Prepared By:** Phan Văn Khải (QA / Test)
 
 ---
+
+## Current LA-45 performance evidence
+
+The later [performance reference validation](PerformanceTestReport.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) at source `f7502b7` records three unchanged 10/50/100 barrier runs (45/45 measurements pass) and a separate PostgreSQL16 Docker mixed k6 run (15/15 thresholds, zero HTTP failures). Machine/runtime/command details and raw logs are linked there; previous failed runs are preserved. This establishes performance for that recorded reference instance, not native-device, enabled-AI or universal deployment acceptance. The older execution snapshots below keep their original dates and source revisions.
 
 ## 1. Execution Summary by Baseline & PR
 

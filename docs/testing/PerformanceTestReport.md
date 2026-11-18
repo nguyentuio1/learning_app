@@ -1,7 +1,8 @@
 # LA-176: Performance & Concurrency Test Report — SmartDroneDelivery
 
-**Report Date:** 2026-11-17  
-**Baseline Commit:** `develop` (`2148e50`)  
+**Initial Report Date:** 2026-11-17
+**Initial Baseline Commit:** `develop` (`2148e50`)
+**Latest reference validation:** source `f7502b7`, including application `10700d2`; see Section 5.3 for new scoped PASS results. Earlier run results are preserved.
 **Prepared By:** Phan Văn Khải (QA / Test)
 
 ---
@@ -123,6 +124,31 @@ After merging `origin/develop` (`10700d2`, PR #281 / `LA-366` atomic `DeliveryTr
 
 - **Error Rate & `create_order` Status Counts:** `http_req_failed = 0.00%` (**0 out of 13,833**); `checks_succeeded = 100.00%` (**13,831 out of 13,831**); `POST /api/delivery-orders`: **2,305 `201 Created`**, **0 `409`**, **0 `5xx`/other failures** (`0` `fail:` or `23505` entries in API logs).
 
+
+### 5.3 Recorded Reference Workstation and PostgreSQL16 Docker Validation
+
+The **unchanged** `PerformanceBenchmarkTests` at `f7502b7` was run three times, each in a fresh test process with `RUN_PERFORMANCE_BENCHMARKS=true`. All 15 endpoint/tier cases passed in each run (45 measurements, zero HTTP errors). BCrypt remains cost11; no processor/thread-pool overrides, threshold changes, auth-result caching, or benchmark edits were applied.
+
+| Reference environment | Recorded configuration |
+| --- | --- |
+| Host | Intel Core i5-13420H, 8 physical cores /12 logical processors |
+| Barrier runtime | Windows, .NET8.0.31 /SDK10.0.402, Release TestServer + EFInMemory |
+| Docker runtime | Docker29.8.1,12 exposed CPUs,16629112832 bytes VM memory; no explicit container CPU/memory caps |
+| Live database/API | PostgreSQL16.15 (`postgres:16-alpine`), API .NET8.0.34 container, MinIO; isolated fresh synthetic database |
+| Live load generator | k6v2.4.0 /go1.27.3 /linux-amd64, unchanged mixed-endpoint script at `f7502b7` |
+
+| Barrier repeat | Login10 p95 | Login50 p95 | Login100 p95 (max) | Complete result /raw output |
+| --- | ---: | ---: | ---: | --- |
+| 1 | 290.0ms | 562.9ms | 1177.3ms (1211.1ms) | 15/15PASS; [raw1](evidence/perf-reference-barrier-1.txt) |
+| 2 | 199.5ms | 813.8ms | 1234.4ms (1307.6ms) | 15/15PASS; [raw2](evidence/perf-reference-barrier-2.txt) |
+| 3 | 254.1ms | 590.2ms | 1202.2ms (1213.3ms) | 15/15PASS; [raw3](evidence/perf-reference-barrier-3.txt) |
+
+The separate Docker/PostgreSQL16 mixed profile also passed all15 per-endpoint/per-tier p95 thresholds: **0/17111 HTTP failures**, all17107 checks passed,2851 complete iterations and no interrupted iterations. At100VUs, login p95=**1.09s** (max1.62s) and create-order p95=**280.74ms** (max982.53ms). See [full raw k6 output](evidence/k6-reference-docker-pg16.txt) for every endpoint/tier. API log scan found zero23505 and zero `fail:` entries; one tracking-constraint text occurrence was the migration's `CREATE UNIQUE INDEX`, not an error count.
+
+[Machine/runtime metadata, commands, timestamps and file hashes](evidence/performance-reference-environment.json) record the scope. The database/API/MinIO ran in a separate Compose project with synthetic data and were stopped after measurement. Existing application services were left running. Private generated secrets/configuration are excluded from evidence.
+
+These results demonstrate the existing p95<3000ms and zero-error criteria on **this recorded reference workstation/profile**. They do not establish the cause of earlier failures or guarantee the same timings on every machine. Shared background load was not controlled. Earlier Windows/PG18 and barrier FAIL outputs remain unchanged historical results. No revised login workload or weaker BCrypt criterion is being substituted.
+
 ---
 
 ## 6. Relational Concurrency Correctness (PostgreSQL 16 CI)
@@ -138,6 +164,6 @@ In addition to throughput/latency measurement, data consistency under concurrent
 
 ## 7. Observations & Recommendations
 
-1. **BCrypt CPU Cost on `/api/auth/login`:** In the barrier benchmark (Sections 3 and 5.1), 10 and 50 concurrent login requests pass `< 3,000 ms`, while 100 simultaneous logins at `gate.Task` still **FAIL** (`p95 = 3,608.0 ms` in baseline `6c2c02c`; `p95 = 4,285.0 ms` in rerun `1927fe9`) due to intentional BCrypt CPU cost on a single host. Under the live `k6` mixed-endpoint `constant-vus` workload (Sections 4 and 5.2), `POST /api/auth/login` **PASSED** all three tiers (`p95 = 1.09 s` at 100 VUs post-fix).
-2. **`LA-366` Resolution of `POST /api/delivery-orders` Concurrency:** Merging `LA-366` (`10700d2`, atomic `DeliveryTrackingCounters`) eliminated the `POST /api/delivery-orders` failures and latency spike observed in Section 4: the post-fix `k6` rerun achieved **2,305/2,305 `201 Created` (`0` errors)** and `p95 = 738.48 ms` at 100 VUs (down from `245/1,118` failures and `p95 = 4.32 s`).
-3. **Acceptance Status:** The mixed-endpoint `k6` profile now passes all 15/15 latency thresholds with `0.00%` errors, while the 100-VU barrier login benchmark still fails (`4,285.0 ms > 3,000 ms`). `LA-176` / `LA-45` remain open until the team lead confirms whether the passing `k6` mixed-endpoint profile satisfies acceptance or agrees on a revised barrier login criterion/hardware profile.
+1. **Environment-specific login measurements:** Earlier barrier runs failed at3608.0ms and4285.0ms; three unchanged reference-workstation repeats pass at1177.3/1234.4/1202.2ms. The difference has not been traced to a specific CPU/load/scheduling cause. Do not claim the old failures were fixed by an authentication code change; none was made.
+2. **Tracking-number repair:** LA-366 is integrated at `10700d2`. Both the PG18 mixed rerun (Section5.2) and separate PostgreSQL16 Docker run (Section5.3) show zero HTTP failures for their stated workloads. The atomic allocator's correctness and migration regressions are separate from performance measurements.
+3. **Acceptance scope:** The original barrier and mixed criteria pass on the recorded reference hardware in Section5.3, with all earlier failures retained. Source integration/review must reference this configuration and successful current CI. Native/device, live AI policy/quality, production deployment and other-machine performance remain separate evidence scopes.
