@@ -23,7 +23,7 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
   final _formKey = GlobalKey<FormState>();
 
   String? _selectedSlotId;
-  bool _visualInspectionPassed = true;
+  bool _visualInspectionPassed = false;
   String? _prefilledOrderId;
 
   @override
@@ -45,30 +45,25 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
     return emptySlots.first.id;
   }
 
-  void _prefillFromOrder(
-    StationOrderInfo info,
-    List<StationSlot> emptySlots,
-  ) {
+  void _prefillFromOrder(StationOrderInfo info, List<StationSlot> emptySlots) {
     if (_prefilledOrderId == info.orderId) {
       _selectedSlotId = _resolveSelectedSlotId(emptySlots);
       return;
     }
     _prefilledOrderId = info.orderId;
-    _weightController.text =
-        StationOrderInfo.formatDecimal(info.declaredWeightGram);
-    _lengthController.text =
-        StationOrderInfo.formatDecimal(info.declaredLengthCm);
-    _widthController.text =
-        StationOrderInfo.formatDecimal(info.declaredWidthCm);
-    _heightController.text =
-        StationOrderInfo.formatDecimal(info.declaredHeightCm);
-    _visualInspectionPassed = true;
+    _weightController.clear();
+    _lengthController.clear();
+    _widthController.clear();
+    _heightController.clear();
+    _visualInspectionPassed = false;
     _selectedSlotId = _resolveSelectedSlotId(emptySlots);
   }
 
   Future<void> _lookup(String stationId) async {
     _prefilledOrderId = null;
-    await ref.read(intakeControllerProvider.notifier).lookupOrder(
+    await ref
+        .read(intakeControllerProvider.notifier)
+        .lookupOrder(
           stationId: stationId,
           trackingNumber: _trackingController.text,
         );
@@ -87,7 +82,9 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
       return;
     }
 
-    final ok = await ref.read(intakeControllerProvider.notifier).confirmIntake(
+    final ok = await ref
+        .read(intakeControllerProvider.notifier)
+        .confirmIntake(
           stationId: stationId,
           trackingNumber: info.trackingNumber,
           slotId: slotId,
@@ -102,14 +99,19 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
     }
   }
 
-  Future<void> _showRejectDialog(String stationId, StationOrderInfo info) async {
+  Future<void> _showRejectDialog(
+    String stationId,
+    StationOrderInfo info,
+  ) async {
     final confirmed = await showDialog<String>(
       context: context,
       builder: (_) => const _RejectIntakeDialog(),
     );
 
     if (confirmed == null || !mounted) return;
-    final ok = await ref.read(intakeControllerProvider.notifier).rejectIntake(
+    final ok = await ref
+        .read(intakeControllerProvider.notifier)
+        .rejectIntake(
           stationId: stationId,
           trackingNumber: info.trackingNumber,
           reason: confirmed,
@@ -121,7 +123,7 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
 
   String? _positiveNumberValidator(String? value, String label) {
     final parsed = double.tryParse(value?.trim() ?? '');
-    if (parsed == null || parsed <= 0) {
+    if (parsed == null || !parsed.isFinite || parsed <= 0) {
       return 'Enter a valid $label';
     }
     return null;
@@ -129,14 +131,24 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(stationAvailabilityNotifierProvider, (previous, next) {
+      if (previous?.value?.selectedStationId != next.value?.selectedStationId) {
+        _prefilledOrderId = null;
+        _visualInspectionPassed = false;
+        _trackingController.clear();
+        _weightController.clear();
+        _lengthController.clear();
+        _widthController.clear();
+        _heightController.clear();
+        ref.read(intakeControllerProvider.notifier).reset();
+      }
+    });
     final stationAsync = ref.watch(stationAvailabilityNotifierProvider);
     final state = ref.watch(intakeControllerProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Origin package intake'),
-      ),
+      appBar: AppBar(title: const Text('Origin package intake')),
       body: stationAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -183,9 +195,10 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
             );
           }
 
-          final emptySlots = (stationState.detail?.slots ?? const <StationSlot>[])
-              .where((s) => s.status == 'EMPTY')
-              .toList(growable: false);
+          final emptySlots =
+              (stationState.detail?.slots ?? const <StationSlot>[])
+                  .where((s) => s.status == 'EMPTY')
+                  .toList(growable: false);
 
           if (state.orderInfo != null) {
             _prefillFromOrder(state.orderInfo!, emptySlots);
@@ -209,6 +222,7 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                       const SizedBox(height: 12),
                       TextField(
                         key: const Key('intake-tracking-input'),
+                        enabled: !state.isLoading && !state.isSubmitting,
                         controller: _trackingController,
                         textCapitalization: TextCapitalization.characters,
                         decoration: const InputDecoration(
@@ -222,13 +236,16 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         key: const Key('intake-lookup-button'),
-                        onPressed:
-                            state.isLoading ? null : () => _lookup(stationId),
+                        onPressed: (state.isLoading || state.isSubmitting)
+                            ? null
+                            : () => _lookup(stationId),
                         icon: state.isLoading
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.search),
                         label: const Text('Look Up Order'),
@@ -325,11 +342,17 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Measure this parcel at the station. Customer-declared values above are reference only.',
+                            ),
                             const SizedBox(height: 12),
                             if (emptySlots.isEmpty)
                               Text(
                                 'No EMPTY slots available at this station.',
-                                style: TextStyle(color: theme.colorScheme.error),
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                ),
                               )
                             else
                               DropdownButtonFormField<String>(
@@ -356,8 +379,8 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                               controller: _weightController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
+                                    decimal: true,
+                                  ),
                               decoration: const InputDecoration(
                                 labelText: 'Measured weight (g)',
                                 border: OutlineInputBorder(),
@@ -374,8 +397,8 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                                     controller: _lengthController,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                          decimal: true,
+                                        ),
                                     decoration: const InputDecoration(
                                       labelText: 'L (cm)',
                                       border: OutlineInputBorder(),
@@ -391,8 +414,8 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                                     controller: _widthController,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                          decimal: true,
+                                        ),
                                     decoration: const InputDecoration(
                                       labelText: 'W (cm)',
                                       border: OutlineInputBorder(),
@@ -408,8 +431,8 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                                     controller: _heightController,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                          decimal: true,
+                                        ),
                                     decoration: const InputDecoration(
                                       labelText: 'H (cm)',
                                       border: OutlineInputBorder(),
@@ -433,13 +456,16 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                             const SizedBox(height: 12),
                             FilledButton.icon(
                               key: const Key('intake-confirm-button'),
-                              onPressed: state.isSubmitting || emptySlots.isEmpty
+                              onPressed:
+                                  state.isSubmitting ||
+                                      emptySlots.isEmpty ||
+                                      !_visualInspectionPassed
                                   ? null
                                   : () => _confirmIntake(
-                                        stationId,
-                                        state.orderInfo!,
-                                        _resolveSelectedSlotId(emptySlots),
-                                      ),
+                                      stationId,
+                                      state.orderInfo!,
+                                      _resolveSelectedSlotId(emptySlots),
+                                    ),
                               icon: const Icon(Icons.inventory_outlined),
                               label: const Text('Confirm Intake'),
                             ),
@@ -452,9 +478,9 @@ class _PackageIntakePageState extends ConsumerState<PackageIntakePage> {
                               onPressed: state.isSubmitting
                                   ? null
                                   : () => _showRejectDialog(
-                                        stationId,
-                                        state.orderInfo!,
-                                      ),
+                                      stationId,
+                                      state.orderInfo!,
+                                    ),
                               icon: const Icon(Icons.block_outlined),
                               label: const Text('Reject Parcel'),
                             ),
