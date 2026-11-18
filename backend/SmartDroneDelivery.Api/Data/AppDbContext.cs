@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<StationSlot> StationSlots => Set<StationSlot>();
     public DbSet<Package> Packages => Set<Package>();
     public DbSet<DeliveryOrder> DeliveryOrders => Set<DeliveryOrder>();
+    public DbSet<DeliveryTrackingCounter> DeliveryTrackingCounters => Set<DeliveryTrackingCounter>();
     public DbSet<DeliveryStatusLog> DeliveryStatusLogs => Set<DeliveryStatusLog>();
     public DbSet<Drone> Drones => Set<Drone>();
     public DbSet<FlightMission> FlightMissions => Set<FlightMission>();
@@ -34,6 +35,13 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<DeliveryTrackingCounter>(entity =>
+        {
+            entity.ToTable("delivery_tracking_counters");
+            entity.HasKey(c => c.Month);
+            entity.Property(c => c.Month).HasMaxLength(6);
+        });
 
         modelBuilder.Entity<IntegrationApiKey>(entity =>
         {

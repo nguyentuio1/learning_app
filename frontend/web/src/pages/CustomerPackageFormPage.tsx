@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Card, Checkbox, ConfigProvider, Form, Image, Input, InputNumber, Space, Spin, Typography, Upload } from 'antd'
 import type { UploadFile } from 'antd'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { customerPackageApi } from '../services/customerPackageApi'
 import type { PackageValues } from '../types/customerPackage'
 import { customerPackageIssue } from '../utils/customerPackageIssue'
@@ -14,6 +14,8 @@ export function CustomerPackageFormPage() {
   const { id } = useParams()
   const editing = Boolean(id)
   const navigate = useNavigate()
+  const { state } = useLocation()
+  const orderDraft = !editing ? state?.orderDraft : undefined
   const [form] = Form.useForm<PackageValues>()
   const [loading, setLoading] = useState(editing)
   const [saving, setSaving] = useState(false)
@@ -23,12 +25,14 @@ export function CustomerPackageFormPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const submitting = useRef(false)
   const [loadFailed, setLoadFailed] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [uploadPending, setUploadPending] = useState(false)
   useEffect(() => {
     if (!id) return
     let active = true
     void customerPackageApi.getPackage(id).then(item => {
       if (!active) return
+      setLoadFailed(false)
       form.setFieldsValue(item)
       setImageUrl(item.packageImageUrl)
     }).catch(error => {
@@ -37,7 +41,18 @@ export function CustomerPackageFormPage() {
       setIssue(customerPackageIssue(error, 'Unable to load this package.'))
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [form, id])
+  }, [form, id, loadAttempt])
+  function retryPackage() {
+    setIssue('')
+    setLoading(true)
+    setLoadAttempt(attempt => attempt + 1)
+  }
+  function returnToPreviousPage() {
+    if (orderDraft) {
+      const { originStationId, destinationStationId } = orderDraft
+      navigate('/orders/new', { replace: true, state: { orderDraft: { originStationId, destinationStationId, packageId: savedId.current } } })
+    } else navigate('/packages')
+  }
   async function submit(values: PackageValues) {
     if (submitting.current || loadFailed) return
     submitting.current = true
@@ -60,13 +75,13 @@ export function CustomerPackageFormPage() {
           return
         }
       }
-      navigate('/packages')
+      returnToPreviousPage()
     } catch (error) { setIssue(customerPackageIssue(error, 'Unable to save this package.')) }
     finally { submitting.current = false; setSaving(false) }
   }
   return <main className="customer-page customer-form-page"><header className="customer-heading"><div><span className="customer-eyebrow">PACKAGE DETAILS</span><Title level={1}>{editing ? 'Edit package' : 'Add package'}</Title><Text type="secondary">Enter dimensions and weight accurately so a suitable drone can be assigned.</Text></div></header>
     <Card className="customer-card customer-form-card">{loading ? <Spin tip="Loading package…" /> : <Form form={form} layout="vertical" initialValues={empty} onFinish={submit}>
-      {issue && <Alert className="customer-alert" type="error" showIcon title={issue} />}
+      {issue && <Alert className="customer-alert" type="error" showIcon title={issue} action={loadFailed ? <Button onClick={retryPackage}>Try again</Button> : undefined} />}
       <ConfigProvider componentDisabled={saving || uploadPending || loadFailed}>
       <fieldset disabled={saving || uploadPending || loadFailed} className="customer-fields">
       {imageUrl && <div className="customer-current-photo"><Image src={imageUrl} alt="Current package photo" width={120} preview={false} /><Text type="secondary">Your current photo is kept unless a new upload succeeds.</Text></div>}
@@ -74,7 +89,7 @@ export function CustomerPackageFormPage() {
       <Form.Item name="isFragile" valuePropName="checked"><Checkbox>Handle this package as fragile</Checkbox></Form.Item><Form.Item label="Package photo (optional)" extra="JPEG or PNG, maximum 5 MB."><Upload.Dragger accept="image/jpeg,image/png" maxCount={1} beforeUpload={(file) => { if (!['image/jpeg', 'image/png'].includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024) { setIssue('Choose a JPEG or PNG image no larger than 5 MB.'); return Upload.LIST_IGNORE } return false }} fileList={fileList} onChange={({ fileList: next }) => setFileList(next)} onRemove={() => { setFileList([]); return true }}><p className="ant-upload-drag-icon">↑</p><p className="ant-upload-text">Drop a photo here or choose a file</p><p className="ant-upload-hint">It is uploaded only after the package is saved.</p></Upload.Dragger></Form.Item>
       </fieldset>
       </ConfigProvider>
-      <Space wrap><Button type="primary" htmlType="submit" disabled={loadFailed} loading={saving}>{uploadPending ? 'Retry photo upload' : editing ? 'Save changes' : 'Add package'}</Button><Button disabled={saving} onClick={() => navigate('/packages')}>{uploadPending ? 'Continue without new photo' : 'Cancel'}</Button></Space>
+      <Space wrap><Button type="primary" htmlType="submit" disabled={loadFailed} loading={saving}>{uploadPending ? 'Retry photo upload' : editing ? 'Save changes' : 'Add package'}</Button><Button disabled={saving} onClick={returnToPreviousPage}>{uploadPending ? 'Continue without new photo' : 'Cancel'}</Button></Space>
     </Form>}</Card>
   </main>
 }

@@ -3,7 +3,7 @@ import { Avatar, Badge, Button, ConfigProvider } from 'antd'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useAccountMotion } from '../../hooks/useAccountMotion'
-import { operationFeatures } from '../../features/operations/navigation'
+import { operationFeatures, operationNavigation, workspaceDestination } from '../../features/operations/navigation'
 import { customerNotificationApi } from '../../services/customerNotificationApi'
 import brandLogo from '../../assets/smartdrone-logo-02.png'
 import { AccountMobileNavigation } from './AccountMobileNavigation'
@@ -14,7 +14,7 @@ type AccountIconName =
   | 'users' | 'roles' | 'audit' | 'profile' | 'logout' | 'notifications' | 'assistant'
   | 'orders' | 'create-order' | 'edit-order' | 'addresses' | 'packages' | 'summary'
   | 'drone' | 'map' | 'route' | 'landing-pad' | 'activity' | 'grid'
-  | 'schedule' | 'clock' | 'alert' | 'approval' | 'chart'
+  | 'schedule' | 'clock' | 'alert' | 'approval' | 'chart' | 'home'
 
 function AccountIcon({ name }: { name: AccountIconName }) {
   return <svg className="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -37,6 +37,7 @@ function AccountIcon({ name }: { name: AccountIconName }) {
     {name === 'landing-pad' && <><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 8v8m6-8v8m-6-4h6"/></>}
     {name === 'clock' && <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>}
     {name === 'chart' && <path d="M4 3v18h17M8 16v-5m5 5V7m5 9V4"/>}
+    {name === 'home' && <path d="m3 10 9-7 9 7v10h-6v-6H9v6H3z"/>}
     {name === 'summary' && <path d="M6 3h8l4 4v14H6V3Zm8 0v5h4m-9 4h6m-6 4h4"/>}
     {name === 'create-order' && <path d="M6 3h8l4 4v14H6V3Zm8 0v5h4m-6 3v6m-3-3h6"/>}
     {name === 'edit-order' && <path d="m4 20 4.5-1 11-11-3.5-3.5-11 11L4 20Zm10-13 3.5 3.5M4 20h16"/>}
@@ -65,8 +66,10 @@ export function AccountLayout() {
   const auth = useAuth()
   const { pathname } = useLocation()
   const motionRef = useAccountMotion(pathname)
-  const isAdmin = auth.user?.role.code === 'ADMIN'
-  const isCustomer = auth.user?.role.code === 'CUSTOMER'
+  const role = auth.user?.role.code
+  const isAdmin = role === 'ADMIN'
+  const isCustomer = role === 'CUSTOMER'
+  const hasWorkspace = isAdmin || role === 'DISPATCHER'
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   useEffect(() => {
@@ -97,26 +100,32 @@ export function AccountLayout() {
   const managedOrderId = pathname.match(/^\/orders\/([^/]+)\/(?:edit|manage)$/)?.[1]
   const initials = auth.user?.fullName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SD'
   const operation = operationFeatures.find(feature => pathname === feature.path || pathname.startsWith(feature.path + '/'))
-  const section = operation ? operation.label : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/notifications') ? 'Notifications' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/audit-logs') ? 'Audit logs' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
+  const section = operation ? operation.label : pathname === '/' ? 'Workspace' : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/notifications') ? 'Notifications' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/audit-logs') ? 'Audit logs' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
   const sidebarContent = <>
-      <span className="account-nav-marker" aria-hidden="true" />
-      <Link to="/profile" className="account-brand"><img className="account-brand-logo" src={brandLogo} alt="" width="40" height="40" /><span>SmartDrone<small>Delivery operations</small></span></Link>
-      <nav aria-label="Account navigation"><span className="account-nav-label">WORKSPACE</span>
-        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/orders" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>My orders</NavLink>}
-        {auth.user?.role.code === 'CUSTOMER' && managedOrderId && <NavLink to={`/orders/${managedOrderId}/manage`} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="edit-order"/>Manage this order</NavLink>}
-        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/orders/new" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="create-order"/>Create order</NavLink>}
-        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/notifications" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="notifications"/>Notifications{unreadNotifications > 0 && <span style={{ marginLeft: 'auto', backgroundColor: '#52c41a', color: '#fff', borderRadius: 10, padding: '0 6px', fontSize: 11, fontWeight: 700 }}>{unreadNotifications}</span>}</NavLink>}
-        {isAdmin && <>
+      <Link to={hasWorkspace || role === 'MANAGER' ? workspaceDestination(role) : '/profile'} className="account-brand"><img className="account-brand-logo" src={brandLogo} alt="" width="40" height="40" /><span>SmartDrone<small>Delivery operations</small></span></Link>
+      <nav aria-label="Account navigation">
+        <span className="account-nav-marker" aria-hidden="true" />
+        {hasWorkspace && <NavLink to="/" end className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="home"/>Workspace</NavLink>}
+        {isCustomer && <div className="account-nav-group"><span className="account-nav-label">My deliveries</span>
+          <NavLink to="/orders" end={pathname === '/orders/new' || !!managedOrderId} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>My orders</NavLink>
+          {managedOrderId && <NavLink to={`/orders/${managedOrderId}/manage`} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="edit-order"/>Manage this order</NavLink>}
+          <NavLink to="/orders/new" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="create-order"/>Create order</NavLink>
+          <NavLink to="/notifications" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="notifications"/>Notifications{unreadNotifications > 0 && <Badge count={unreadNotifications} size="small" className="account-nav-unread" />}</NavLink>
+          <NavLink to="/addresses" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="addresses"/>Addresses</NavLink>
+          <NavLink to="/packages" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="packages"/>Packages</NavLink>
+        </div>}
+        {isAdmin && <div className="account-nav-group"><span className="account-nav-label">Administration</span>
           <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="users"/>Users</NavLink>
           <NavLink to="/admin/roles" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="roles"/>Roles</NavLink>
           <NavLink to="/admin/audit-logs" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="audit"/>Audit logs</NavLink>
-        </>}
-        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/addresses" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="addresses"/>Addresses</NavLink>}
-        {auth.user?.role.code === 'CUSTOMER' && <NavLink to="/packages" className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="packages"/>Packages</NavLink>}
-        {operationFeatures.filter(feature => feature.roles.some(role => role === auth.user?.role.code)).map(feature => (
-          <NavLink key={feature.path} to={feature.path} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}>
-            <AccountIcon name={operationIcons[feature.path] ?? 'grid'}/>{feature.label}
-          </NavLink>
+        </div>}
+        {operationNavigation(role).map(group => (
+          <div key={group.label} className="account-nav-group">
+            <span className="account-nav-label">{group.label}</span>
+            {group.features.map(feature => <NavLink key={feature.path} to={feature.path} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}>
+              <AccountIcon name={operationIcons[feature.path] ?? 'grid'}/>{feature.label}
+            </NavLink>)}
+          </div>
         ))}
       </nav>
       <div className="account-sidebar-bottom">
@@ -129,7 +138,7 @@ export function AccountLayout() {
     colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
     colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
     controlItemBgHover: '#f1f6eb', controlItemBgActiveHover: '#e6eedc',
-    fontSize: 14, fontWeightStrong: 650, colorTextPlaceholder: '#65776b',
+    fontSize: 14, fontWeightStrong: 650, colorTextDescription: '#546757', colorTextPlaceholder: '#65776b',
   } }}><div className="account-layout" ref={motionRef}>
     <aside className="account-sidebar">
       {sidebarContent}

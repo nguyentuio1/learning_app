@@ -8,16 +8,19 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 
 ## Project status
 
-| Area | State (end of Sprint 3) |
+| Area | Source state on `develop` |
 |---|---|
-| Authentication, profile, user and role management | Implemented (backend, web admin pages) |
-| Customer addresses and packages | Implemented (backend, web, mobile) |
-| Customer orders: create, list, details, update, cancel | Implemented (backend, web, mobile) |
-| Landing stations | Only a read-only list (`GET /api/landing-stations`); station management is planned (Sprint 4) |
-| Dispatcher approval, scheduling, drone assignment | Planned (Sprint 5); design documents exist |
-| Station pickup, secure code confirmation, live tracking, dashboard, AI services | Planned (Sprints 6 and 7); design documents exist |
+| Authentication, profile, user/role management & audit logs | Implemented (backend, web admin pages, failed sign-in & action audit search) |
+| Customer addresses, packages, delivery orders & notifications | Implemented (backend, web, mobile) |
+| Landing stations, slots, availability, drones & station intake/pickup | Implemented (backend, web, station operator mobile app, 24h timeout) |
+| Dispatcher approval, state machine, scheduling, drone assignment & failures | Implemented (backend, web, software flight simulator) |
+| Real-time tracking (SignalR), delivery map, confirmation, analytics & v1 API | Implemented (backend, web, mobile, OpenAPI 3.0) |
+| AI ETA estimation, delivery summary & customer assistant | Implemented behind default-off configuration/retention gates (`docs/api/sprint-7-api-contract.md`) |
+| Docker full-stack deployment, health checks & backup/restore scripts | Implemented (`docker-compose.yml`, `/health/live`, `/health/ready`, `scripts/backup-db.*`) |
 
-An order stays in `PENDING` after creation. Today the customer can only view, edit (while `PENDING`) or cancel it (`PENDING` or `APPROVED`). The dispatcher screens that approve and schedule it do not exist yet.
+Implementation is distinct from acceptance: native mobile, enabled-AI policy/quality, performance/load criteria and the full team rehearsal retain open evidence gates. See the [current screen flows](docs/design/ui-screen-flows.md) for the reviewed web journeys.
+
+> See [`docs/DeliverableList.md`](docs/DeliverableList.md), [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md), [`docs/operations/DeploymentGuide.md`](docs/operations/DeploymentGuide.md), and [`docs/guides/README.md`](docs/guides/README.md) for full documentation.
 
 ## Repository layout
 
@@ -124,14 +127,16 @@ The API address defaults to `http://10.0.2.2:5055/api` on the Android emulator a
 
 ## Accounts and test data
 
-When the backend runs in the **Development** environment (`dotnet run` does this by default), it creates the accounts and stations below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. Nothing is created in any other environment, and `Seed:DevelopmentData` in `appsettings.Development.json` switches it off.
+When the backend runs in the **Development** environment (`dotnet run` does this by default) with `Seed:DevelopmentData` enabled, it creates the demo accounts, stations, addresses, drones and orders below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. This demo data is not created in any other environment; set `Seed:DevelopmentData` to `false` in `appsettings.Development.json` to switch it off.
 
 | Role | Email | Password |
 |---|---|---|
 | System administrator | `admin@smartdronedelivery.com` (`Seed:AdminEmail`) | the value of `Seed:AdminPassword`; created in every environment, but only when that setting is present |
 | Customer | `customer@smartdronedelivery.com` | `Customer@123456` |
 | Dispatcher | `dispatcher@smartdronedelivery.com` | `Dispatcher@123456` |
-| Station operator | `operator@smartdronedelivery.com` | `Operator@123456` (assigned to `HCM-01`) |
+| Station operator (HCM-01) | `operator@smartdronedelivery.com` | `Operator@123456` |
+| Station operator (HCM-02) | `operator2@smartdronedelivery.com` | `Operator@123456` |
+| Logistics manager (`MANAGER`) | `manager@smartdronedelivery.com` | `Manager@123456` |
 
 | Station | Name | Status | Slots |
 |---|---|---|---|
@@ -139,15 +144,24 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 | `HCM-02` | Thu Duc Hub | `OPERATIONAL` | 4 |
 | `HCM-03` | Binh Thanh Hub | `MAINTENANCE` | 2 |
 
-So a customer can sign in and create an order right after `docker compose up -d postgres minio` and `dotnet run` (or the full Docker stack with `ASPNETCORE_ENVIRONMENT=Development`), with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
+Demo data also includes two customer addresses (`Home - District 1` and `Office - Thu Duc`), four drones, and three sample deliveries:
 
-Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
+| Type | Demo records |
+|---|---|
+| Drones | `DRONE-HCM-001` (`IDLE`, HCM-01, 3000 g), `DRONE-HCM-002` (`IDLE`, HCM-02, 2500 g), `DRONE-HCM-003` (`CHARGING`, HCM-01, 3000 g), `DRONE-HCM-004` (`MAINTENANCE`, HCM-03, 2700 g) |
+| Orders | `ORD-DEMO-001` (`PENDING`), `ORD-DEMO-002` (`APPROVED`), `ORD-DEMO-003` (`DELIVERED`, with a completed flight mission) |
+
+So a customer can sign in and create an order right after docker compose up -d postgres minio and dotnet run (or the full Docker stack with ASPNETCORE_ENVIRONMENT=Development), with no SQL. HCM-03 is there to check that a station in maintenance is refused.
+
+`ORD-DEMO-003` uses timestamps relative to `DateTime.UtcNow` at its first seed and they are not rewritten on restart. If you run the demo on another date and want the dashboard's "today" filter to include this order, create a fresh database volume before the demo.
+
+Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. Outside the Development demo seed, staff accounts are created by the administrator in the web portal (Users, New user). The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
 
 ```bash
 curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: application/json"   -d '{"email":"customer2@example.com","password":"Passw0rd123","fullName":"Second Customer","phoneNumber":"0900000010"}'
 ```
 
-Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md). Other staff accounts (Dispatcher, Logistics Manager, Administrator) are created by the administrator in the web portal (Users, New user).
+Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md).
 
 ## Configuration and secrets
 
@@ -177,6 +191,17 @@ Sign in as a **customer** (web or mobile):
 Sign in as the **administrator** (web) to manage users and roles. Approval by a dispatcher, scheduling, drone assignment, station pickup and tracking are not implemented yet (see the status table).
 
 ## Tests
+
+For an explicitly selected local **Development** API with demo seeding and the
+simulator enabled, `python scripts/demo-smoke.py --base-url http://localhost:5055
+--wait-for-flight` creates a labelled parcel, approves/schedules/assigns it,
+performs origin intake and waits for real simulator tracking before destination
+pickup. Run the command on one line. It uses the documented development accounts
+and creates data, so it is restricted to loopback hosts. It prints identifiers
+and status evidence, never tokens or the pickup code. Allow 25–30 minutes: the
+normal minimum 15-minute scheduling lead time remains enforced. Omit
+`--wait-for-flight` to stop at `READY_FOR_TAKEOFF`; that is **not** proof of a
+completed flight. This API smoke check does not replace web/Flutter UI acceptance.
 
 ```bash
 # Backend (xUnit, EF Core InMemory; no database needed)

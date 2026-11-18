@@ -79,6 +79,6 @@ function MapViewport({ origin, destination, position, stale }: { origin: Trackin
     {loading && !unavailable && <span className="dm-layer-state" role="status">Loading basemap…</span>}
     {unavailable && <div className="dm-layer-state" role="status">Basemap tiles are unavailable. <Button size="small" onClick={() => { setTiles({}); setAttempt(v => v + 1) }}>Retry basemap</Button></div>}
     <span className="dm-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></span></div>
-    <p className="dm-disclaimer">Dashed line: a visual connection between stations, not a verified flight plan. Drone coordinates are never extrapolated.</p>
+    <p className="dm-disclaimer">Simulated telemetry shows reported samples only. The dashed line connects the stations for reference and does not represent a verified flight path.</p>
   </section>
 }
