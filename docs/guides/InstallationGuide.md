@@ -22,10 +22,12 @@ Step-by-step installation instructions for **Docker Compose** (PostgreSQL, MinIO
 ### Step 1: Clone Repository & Configure `.env`
 
 ```bash
-git clone https://github.com/nguyentuio1/learning_app.git
+git clone --branch develop https://github.com/nguyentuio1/learning_app.git
 cd learning_app
 cp .env.example .env
 ```
+
+These instructions target the integration branch `develop`; the older release branch `main` does not contain the full current stack. For an existing clone, switch to `develop` and update it before following these steps.
 
 For PowerShell, use `Copy-Item .env.example .env`. Open `.env` and fill in every required value:
 - `POSTGRES_PASSWORD`: strong password (no spaces or `;`).
@@ -126,6 +128,12 @@ flutter run -t lib/main_operator.dart --flavor operator
 ```
 
 ### Step 3: Build Installable APKs for Physical Android Devices
+
+Compose publishes the API host port for LAN clients. If using the standalone API from Section 3, its HTTP launch profile binds localhost; stop that API process and restart it to accept connections from your test phone:
+
+```bash
+dotnet run --project backend/SmartDroneDelivery.Api/SmartDroneDelivery.Api.csproj --launch-profile http --urls http://0.0.0.0:5055
+```
 
 When installing on a physical Android phone on the same Wi-Fi/LAN, pass your workstation's reachable LAN IP via `--dart-define=API_BASE_URL`:
 
