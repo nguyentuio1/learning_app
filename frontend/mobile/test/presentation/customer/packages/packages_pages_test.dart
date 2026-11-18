@@ -143,6 +143,20 @@ Future<void> _pumpPage(
 }
 
 void main() {
+  testWidgets('same-URL replacement rebuilds the displayed image', (tester) async {
+    final package = _package(request: const PackageRequest(
+      packageName: 'Parcel', weightGram: 500, lengthCm: 20, widthCm: 10,
+      heightCm: 8, isFragile: false, packageImageUrl: 'https://example.com/uploaded.png'));
+    final service = _FakePackageApiService(initialPackages: [package])..photoFails = false;
+    await _pumpPage(tester, AddEditPackagePage(package: package), service);
+    expect(find.byKey(const ValueKey('package-photo-preview-0')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('package-upload-photo')));
+    await tester.pumpAndSettle();
+    expect(service.photoUploads, 1);
+    expect(find.byKey(const ValueKey('package-photo-preview-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('package-photo-preview-0')), findsNothing);
+  });
+
   testWidgets('retrying a failed upload reuses the saved package', (
     tester,
   ) async {

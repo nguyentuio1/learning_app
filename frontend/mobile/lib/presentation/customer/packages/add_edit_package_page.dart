@@ -73,6 +73,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   late bool _isFragile;
   String? _savedPackageId;
   bool _uploadingPhoto = false;
+  int _photoRevision = 0;
 
   @override
   void initState() {
@@ -210,7 +211,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
               if (_imageUrlController.text.isNotEmpty) ...[
                 Image.network(
                   _imageUrlController.text,
-                  key: const Key('package-photo-preview'),
+                  key: ValueKey('package-photo-preview-$_photoRevision'),
                   height: 150,
                   fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => const Text(
@@ -483,7 +484,12 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
         filename: selected.name,
       );
       if (!mounted) return;
-      setState(() => _imageUrlController.text = imageUrl);
+      await NetworkImage(imageUrl).evict();
+      if (!mounted) return;
+      setState(() {
+        _imageUrlController.text = imageUrl;
+        _photoRevision++;
+      });
       await ref.read(packageNotifierProvider.notifier).refresh();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
