@@ -25,21 +25,24 @@
         "raw": "perf-reference-barrier-1.txt",
         "exitCode": 0,
         "logFinalWriteUtc": "2026-11-18T18:33:10.321211+00:00",
-        "sha256": "1a37cee0c1e328dd13f6a48cbdb055b0ddb7a67f0be1ff58f7eed38a827f34cb"
+        "sha256": "fd89bd384b15b1d09c0a898840be98f3f65fae5f5193a41f419f20ca8e27b61b",
+        "capturedFileSha256BeforeGitNormalization": "1a37cee0c1e328dd13f6a48cbdb055b0ddb7a67f0be1ff58f7eed38a827f34cb"
       },
       {
         "run": 2,
         "raw": "perf-reference-barrier-2.txt",
         "exitCode": 0,
         "logFinalWriteUtc": "2026-11-18T18:33:16.555025+00:00",
-        "sha256": "2ea6b22b81b62fe035b3bff4934804f302f95e527b8b4267e5126066ea774a32"
+        "sha256": "664ec889a82b1e92764261f18c0e9b793a28f44b86e0704c3ebadc5cc738dd73",
+        "capturedFileSha256BeforeGitNormalization": "2ea6b22b81b62fe035b3bff4934804f302f95e527b8b4267e5126066ea774a32"
       },
       {
         "run": 3,
         "raw": "perf-reference-barrier-3.txt",
         "exitCode": 0,
         "logFinalWriteUtc": "2026-11-18T18:33:22.511960+00:00",
-        "sha256": "f1e25efb8558ac6de10e8e67b3199b62bb1bcc58be202d1654a10e9734f2e50a"
+        "sha256": "fbd8822c1db7124f9259eaaf7e293655912c3500a17e6e3c00ec2df93cd4ec48",
+        "capturedFileSha256BeforeGitNormalization": "f1e25efb8558ac6de10e8e67b3199b62bb1bcc58be202d1654a10e9734f2e50a"
       }
     ]
   },
@@ -65,5 +68,6 @@
     "apiFailCategoryOccurrences": 0,
     "trackingConstraintOccurrencesNote": "One occurrence is the migration CREATE UNIQUE INDEX statement, not an exception."
   },
-  "scope": "Reference-workstation results; same tests/workloads and source, no authentication/BCrypt/threshold changes. Shared workstation background load was not controlled. Earlier FAIL runs remain valid historical measurements; cause of their difference is not established. No native/AI/deployment release acceptance is implied."
+  "scope": "Reference-workstation results; same tests/workloads and source, no authentication/BCrypt/threshold changes. Shared workstation background load was not controlled. Earlier FAIL runs remain valid historical measurements; cause of their difference is not established. No native/AI/deployment release acceptance is implied.",
+  "hashRepresentation": "sha256/rawSha256 address UTF-8 LF-normalized Git blobs; original capture hash retained when line-ending normalization changed bytes."
 }
