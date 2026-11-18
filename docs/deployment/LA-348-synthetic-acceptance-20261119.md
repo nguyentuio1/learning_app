@@ -25,6 +25,8 @@ An earlier exploratory live run passed ETA and summary but the assistant respons
 
 Separately, **115 deterministic transport/API/pipeline tests passed with zero failures** on the same application base. Coverage includes unavailable-provider no-write behavior, Gemini quota preservation and no retry, unapproved cloud assistant zero-send gate, foreign-order/session isolation, grounded replies, sensitive-input refusal, deletion, default-off behavior, deadline cancellation, slot release and account isolation. These checks use synthetic in-memory API fixtures and controlled gateways; they are not actual provider failure or load tests.
 
+The full backend suite also passed: **1,086 passed, 110 skipped, 0 failed** in 1 minute 6 seconds. This separate run did not supply the live key or opt-in external-service configuration; the skip count includes the four live Gemini tests and database/storage-dependent checks. It does not replace the credentialed live run above. Results: `artifacts/ai-acceptance/backend-full.trx`.
+
 ## Reproduce safely
 
 Supply `TEST_GEMINI_API_KEY` only in the test process and optionally `TEST_GEMINI_MODEL=gemini-3.5-flash-lite`, then run:
