@@ -42,3 +42,7 @@ No academic identifiers, meeting attendance, deployment results, page versions, 
 The generated 71-page PDF and DOCX review copies are available in local `artifacts/la204-20261119/SmartDroneDelivery-LA204-review.*`. [The export manifest](final-review-manifest.json) records their exact SHA-256 hashes, chapter/page versions and validation. Collapsed historical appendices remain on the linked Confluence pages.
 
 Template alignment: cover, detailed numbered contents, acknowledgements/acronyms and ten substantive child specifications are included in review export 2. Existing Confluence Overview v8 explains the nested report structure; System Design `14090250 v3`, Database Design `14188589 v5` and Acknowledgement `14024759 v2` now contain substantive current text. Student IDs, formal TBA Review name, supervisor/external-supervisor names and academic project code remain explicit confirmation placeholders.
+
+Institution correction: the cover uses the user-provided text **UTH University**. Template institution branding was removed completely; no official logo or formal name expansion is inferred.
+
+The actual user-provided `Logo_UTH.png` has been visually inspected and embedded in both review covers; its SHA-256 is recorded in the export manifest.

@@ -1,5 +1,5 @@
 {
-  "reviewPacket": "LA204-20261119-review-2-template",
+  "reviewPacket": "LA204-20261119-review-4-user-UTH-logo",
   "status": "REVIEW COPY; two actual human proofreading confirmations pending",
   "documentationBaseline": "a90668c",
   "applicationBaseline": "10c77d0",
@@ -12,12 +12,12 @@
   "docxParagraphs": 324,
   "files": {
     "SmartDroneDelivery-LA204-review.docx": {
-      "bytes": 255102,
-      "sha256": "c79ce0886577e211eeaa519ffbf7f781dd3fe8d01f34aac66339d070fc9e6370"
+      "bytes": 267626,
+      "sha256": "e5dc3ad91995d33650090056a9d4a9ba8b35caa7db9c6d5209bdeca350281f61"
     },
     "SmartDroneDelivery-LA204-review.pdf": {
-      "bytes": 1655595,
-      "sha256": "325faa2c5a91ab8c11777e192686fade4d9db99c5441e7ec353ea6756ca8e584"
+      "bytes": 2377263,
+      "sha256": "5a4d88f5b28cd25b05d6a1ecf3c20be75f91da61f9112b8329a031a47529d021"
     }
   },
   "publishedVersions": [
@@ -82,7 +82,7 @@
       "version": 5
     }
   ],
-  "exportScope": "Six chapters plus Acknowledgement/Definitions, ten substantive existing child specifications (actors/usecases/rules/messages/architecture/schema/detailed-design), and two actual browser-runtime figures. Template cover geometry/logos/table preserved with explicit metadata placeholders. Historical diagram embeds remain linked on Confluence; no human approval inferred.",
+  "exportScope": "Six chapters plus Acknowledgement/Definitions, ten substantive existing child specifications (actors/usecases/rules/messages/architecture/schema/detailed-design), and two actual browser-runtime figures. Template cover geometry/table preserved; all FPT text/logos removed and replaced by exact user-provided UTH University text with explicit metadata placeholders. Historical diagram embeds remain linked on Confluence; no human approval inferred.",
   "template": "C:/Users/tbare/Downloads/Copy of Final_Project_Report_PDCMS.docx.pdf; first three pages inspected: cover and detailed contents",
   "missingAcademicMetadata": [
     "Student IDs for all five contributors",
@@ -90,5 +90,10 @@
     "Supervisor name(s)",
     "External supervisor name or confirmed not applicable",
     "Academic capstone project code"
-  ]
+  ],
+  "institution": "UTH University, with actual user-provided Logo_UTH.png inspected and embedded",
+  "userLogo": {
+    "source": "artifacts/la204-20261119/Logo_UTH.png",
+    "sha256": "57bdc96c91026f98da8980b839d1ed7cf52bdb8764580f806f8745fce27964d1"
+  }
 }
