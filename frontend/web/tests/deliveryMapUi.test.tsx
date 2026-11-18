@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ConfigProvider } from 'antd'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import MockAdapter from 'axios-mock-adapter'
-import { DeliveryMapPage } from '../src/features/deliveryMap/DeliveryMapPage'
+import { CustomerDeliveryMapPage, DeliveryMapPage } from '../src/features/deliveryMap/DeliveryMapPage'
 import { DeliveryMap } from '../src/features/deliveryMap/DeliveryMap'
 import { apiClient } from '../src/services/apiClient'
 import { session } from '../src/services/authSession'
@@ -15,7 +15,7 @@ vi.mock('../src/hooks/useAuth', () => ({
       id: 'dispatcher-1',
       email: 'dispatcher@smartdrone.local',
       fullName: 'Dispatcher',
-      role: 'DISPATCHER',
+      role: { code: 'DISPATCHER' },
     },
   }),
 }))
@@ -105,6 +105,7 @@ function renderMap(initialPath = '/delivery-map') {
         <Routes>
           <Route path="/delivery-map" element={<DeliveryMapPage />} />
           <Route path="/delivery-map/:id" element={<DeliveryMapPage />} />
+          <Route path="/orders/:id/map" element={<CustomerDeliveryMapPage />} />
         </Routes>
       </MemoryRouter>
     </ConfigProvider>,
@@ -115,7 +116,8 @@ it('shows empty state when there are no active deliveries', async () => {
   mock.onGet('/api/dispatch/active-deliveries').reply(200, [])
   renderMap('/delivery-map')
 
-  expect(await screen.findByText('There are no active deliveries right now.')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'No active deliveries' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Review approved deliveries' })).toHaveAttribute('href', '/dispatcher/scheduling')
 })
 
 it('shows invalid order ID alert for non-UUID route parameter', async () => {
@@ -157,9 +159,30 @@ it('hides drone marker and disables Center drone when order is not IN_TRANSIT', 
 
   renderMap(`/delivery-map/${orderId}`)
 
-  expect(await screen.findByText('No live position: this delivery is not in transit.')).toBeInTheDocument()
+  expect(await screen.findByText('Delivered. Pickup has been confirmed.')).toBeInTheDocument()
   expect(screen.queryByLabelText('Reported drone marker')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Center drone' })).toBeDisabled()
+})
+
+it('shows an owned order map before approval with a link back to the same order', async () => {
+  const path = `/api/delivery-orders/${orderId}/tracking`
+  mock.onGet(path).reply(200, makeSnapshot({ status: 'PENDING', lastPosition: null }))
+  renderMap(`/orders/${orderId}/map`)
+
+  expect(await screen.findByText('Awaiting approval. Scheduling and drone assignment follow approval.')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /Order details/ })).toHaveAttribute('href', `/orders/${orderId}`)
+  expect(screen.getByLabelText('Delivery geographical map')).toBeInTheDocument()
+  expect(mock.history.get.every(request => request.url === path)).toBe(true)
+})
+
+it('does not display a map or retry through a staff endpoint after an order access denial', async () => {
+  const path = `/api/delivery-orders/${orderId}/tracking`
+  mock.onGet(path).reply(404)
+  renderMap(`/orders/${orderId}/map`)
+
+  await screen.findByRole('button', { name: 'Try again' })
+  expect(screen.queryByLabelText('Delivery geographical map')).not.toBeInTheDocument()
+  expect(mock.history.get.map(request => request.url)).toEqual([path])
 })
 
 it('handles unsupported station coordinates gracefully', () => {

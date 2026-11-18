@@ -41,13 +41,20 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<DeliveryInsightLookupService>();
 builder.Services.AddScoped<DeliveryEtaQueryService>();
 builder.Services.AddScoped<EtaPredictionService>();
+builder.Services.AddOptions<ModelProviderOptions>()
+    .Bind(builder.Configuration.GetSection(ModelProviderOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "ModelProvider must be Ollama or explicitly configured Gemini with a server-side API key.")
+    .ValidateOnStart();
+builder.Services.AddTransient<GeminiModelHandler>();
 builder.Services.AddOptions<EtaPredictionOptions>()
     .Bind(builder.Configuration.GetSection(EtaPredictionOptions.SectionName))
     .Validate(o => o.HasValidConfiguration(), "EtaPrediction requires bounded batches/intervals, a loopback model endpoint and an explicit model revision when enabled.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<IEtaModelGateway, LocalEtaModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .AddHttpMessageHandler<GeminiModelHandler>()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddHostedService<EtaPredictionWorker>();
 builder.Services.AddScoped<AnalyticsQueryService>();
@@ -68,6 +75,7 @@ builder.Services.AddOptions<DeliverySummaryOptions>()
     .Validate(o => o.HasValidConfiguration(), "DeliverySummary requires a loopback URL, model and immutable revision when enabled.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<ISummaryModelGateway, LocalSummaryModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .AddHttpMessageHandler<GeminiModelHandler>()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
@@ -100,6 +108,7 @@ builder.Services.TryAddSingleton<AiGenerationSlots>();
 builder.Services.AddOptions<CustomerAssistantOptions>().Bind(builder.Configuration.GetSection(CustomerAssistantOptions.SectionName))
     .Validate(o => o.HasValidConfiguration(), "Assistant activation requires approved retention/backup settings and a configured local model.").ValidateOnStart();
 builder.Services.AddHttpClient<IAssistantModelGateway, LocalAssistantModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .AddHttpMessageHandler(services => new GeminiModelHandler(services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ModelProviderOptions>>(), assistant: true))
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 builder.Services

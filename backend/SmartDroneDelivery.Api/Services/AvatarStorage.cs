@@ -86,12 +86,14 @@ public class MinioAvatarStorage : IAvatarStorage
             if (!await _client.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket)))
             {
                 await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucket));
-                // Anyone may read avatar files; nobody can list or write without credentials.
-                var policy = $$"""
-                    {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::{{bucket}}/*"]}]}
-                    """;
-                await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(bucket).WithPolicy(policy));
             }
+
+            // Reconcile pre-provisioned buckets and retries after a failed policy setup.
+            // These dedicated application buckets allow object reads, never anonymous listing/writes.
+            var policy = $$"""
+                {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::{{bucket}}/*"]}]}
+                """;
+            await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(bucket).WithPolicy(policy));
 
             _bucketReady = true;
         }
