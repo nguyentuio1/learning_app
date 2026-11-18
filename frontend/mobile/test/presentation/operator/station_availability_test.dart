@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_drone_delivery/core/constants/api_endpoints.dart';
+import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/core/storage/storage_providers.dart';
 import 'package:smart_drone_delivery/data/models/landing_station.dart';
 import 'package:smart_drone_delivery/data/models/station_availability.dart';
@@ -311,6 +312,328 @@ void main() {
       expect(detail.name, 'District 1 Hub');
       expect(detail.slots.length, 4);
       expect(detail.hostedDroneCount, 2);
+    });
+  });
+
+  for (final pendingStage in ['availability', 'detail']) {
+    test(
+      'LA-367 stale rebuild at $pendingStage cannot replace refreshed assignment',
+      () async {
+        var stations = defaultStations;
+        var availabilityCalls = 0;
+        var detailCalls = 0;
+        final pendingAvailability = Completer<StationAvailability>();
+        final pendingDetail = Completer<StationDetail>();
+        final storage = InMemoryUserStorage();
+        await storage.write(
+          User(
+            id: operatorUserId,
+            email: 'op@example.invalid',
+            fullName: 'Operator',
+            phoneNumber: '0900000001',
+            roleCode: 'STATION_OPERATOR',
+            status: 'ACTIVE',
+            createdAt: DateTime.utc(2026),
+          ),
+        );
+        final service = _FakeStationService(
+          onGetStations: () async => stations,
+          onGetAvailability: (id) async {
+            availabilityCalls++;
+            if (pendingStage == 'availability' && availabilityCalls == 2)
+              return pendingAvailability.future;
+            return id == stationId ? defaultAvail1 : defaultAvail2;
+          },
+          onGetDetail: (id) async {
+            detailCalls++;
+            if (pendingStage == 'detail' && detailCalls == 2)
+              return pendingDetail.future;
+            return id == stationId
+                ? defaultDetail1
+                : StationDetail.fromJson({
+                    ...fakeDetailJson,
+                    'id': stationId2,
+                    'stationCode': 'HCM-02',
+                    'name': 'Thu Duc Hub',
+                    'operatorId': operatorUserId,
+                    'slots': [],
+                  });
+          },
+        );
+        final c = createContainer(
+          overrides: [
+            landingStationApiServiceProvider.overrideWithValue(service),
+            userStorageProvider.overrideWithValue(storage),
+          ],
+        );
+        final subscription = c.listen(
+          stationAvailabilityNotifierProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        await c.read(stationAvailabilityNotifierProvider.future);
+        c.invalidate(stationAvailabilityNotifierProvider);
+        final rebuilding = c.read(stationAvailabilityNotifierProvider.future);
+        await Future<void>.delayed(Duration.zero);
+        stations = defaultStations
+            .map(
+              (s) => LandingStation.fromJson({
+                ...s.toJson(),
+                'operatorId': s.id == stationId2 ? operatorUserId : null,
+              }),
+            )
+            .toList();
+        await c.read(stationAvailabilityNotifierProvider.notifier).refresh();
+        if (pendingStage == 'availability')
+          pendingAvailability.complete(defaultAvail1);
+        if (pendingStage == 'detail') pendingDetail.complete(defaultDetail1);
+        await rebuilding;
+        await Future<void>.delayed(Duration.zero);
+        final actual = c.read(stationAvailabilityNotifierProvider).value;
+        expect(actual?.selectedStationId, stationId2);
+        expect(actual?.stations.map((s) => s.id), [stationId2]);
+        expect(actual?.availability?.stationId, stationId2);
+        expect(actual?.detail?.id, stationId2);
+      },
+    );
+  }
+
+  group('LA-367 refresh scope', () {
+    Future<ProviderContainer> initialized(
+      String role,
+      _FakeStationService service,
+    ) async {
+      final storage = InMemoryUserStorage();
+      await storage.write(
+        User(
+          id: operatorUserId,
+          email: 'operator@example.invalid',
+          fullName: 'Operator',
+          phoneNumber: '0900000001',
+          roleCode: role,
+          status: 'ACTIVE',
+          createdAt: DateTime.utc(2026, 1, 1),
+        ),
+      );
+      final container = createContainer(
+        overrides: [
+          landingStationApiServiceProvider.overrideWithValue(service),
+          userStorageProvider.overrideWithValue(storage),
+        ],
+      );
+      final sub = container.listen(
+        stationAvailabilityNotifierProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+      await container.read(stationAvailabilityNotifierProvider.future);
+      return container;
+    }
+
+    List<LandingStation> assignedTo(String? id) => defaultStations
+        .map(
+          (s) => LandingStation.fromJson({
+            ...s.toJson(),
+            'operatorId': s.id == id ? operatorUserId : null,
+          }),
+        )
+        .toList();
+
+    _FakeStationService serviceFor(
+      Future<List<LandingStation>> Function() stations, {
+      Future<StationAvailability> Function(String)? availability,
+    }) => _FakeStationService(
+      onGetStations: stations,
+      onGetAvailability:
+          availability ??
+          (id) async => id == stationId ? defaultAvail1 : defaultAvail2,
+      onGetDetail: (id) async {
+        if (id == stationId) return defaultDetail1;
+        throw const ApiException(
+          message: 'Detail unavailable',
+          statusCode: 403,
+        );
+      },
+    );
+
+    test('refresh keeps only the operator assigned station', () async {
+      final c = await initialized(
+        'STATION_OPERATOR',
+        buildDefaultFakeService(),
+      );
+      expect(
+        c
+            .read(stationAvailabilityNotifierProvider)
+            .requireValue
+            .stations
+            .map((s) => s.id),
+        [stationId],
+      );
+      await c.read(stationAvailabilityNotifierProvider.notifier).refresh();
+      final state = c.read(stationAvailabilityNotifierProvider).requireValue;
+      expect(state.stations.map((s) => s.id), [stationId]);
+      expect(state.selectedStationId, stationId);
+    });
+
+    test(
+      'operator cannot select an unrelated station through the notifier',
+      () async {
+        final requested = <String>[];
+        final c = await initialized(
+          'STATION_OPERATOR',
+          serviceFor(
+            () async => defaultStations,
+            availability: (id) async {
+              requested.add(id);
+              return id == stationId ? defaultAvail1 : defaultAvail2;
+            },
+          ),
+        );
+        await c
+            .read(stationAvailabilityNotifierProvider.notifier)
+            .selectStation(stationId2);
+        expect(
+          c
+              .read(stationAvailabilityNotifierProvider)
+              .requireValue
+              .selectedStationId,
+          stationId,
+        );
+        expect(requested, [stationId]);
+      },
+    );
+
+    test(
+      'reassignment selects the new allowed station and replaces old data',
+      () async {
+        var stations = defaultStations;
+        final c = await initialized(
+          'STATION_OPERATOR',
+          serviceFor(() async => stations),
+        );
+        stations = assignedTo(stationId2);
+        await c.read(stationAvailabilityNotifierProvider.notifier).refresh();
+        final state = c.read(stationAvailabilityNotifierProvider).requireValue;
+        expect(state.stations.map((s) => s.id), [stationId2]);
+        expect(state.selectedStationId, stationId2);
+        expect(state.availability?.stationId, stationId2);
+        expect(state.detail, isNull);
+        expect(state.isUnassignedOperator, isFalse);
+      },
+    );
+
+    test('assignment removal clears protected station data without loading the old station', () async {
+      var stations = defaultStations;
+      final requested = <String>[];
+      final c = await initialized(
+        'STATION_OPERATOR',
+        serviceFor(
+          () async => stations,
+          availability: (id) async {
+            requested.add(id);
+            return defaultAvail1;
+          },
+        ),
+      );
+      stations = assignedTo(null);
+      await c.read(stationAvailabilityNotifierProvider.notifier).refresh();
+      final state = c.read(stationAvailabilityNotifierProvider).requireValue;
+      expect(state.isUnassignedOperator, isTrue);
+      expect(state.stations, isEmpty);
+      expect(state.selectedStationId, isNull);
+      expect(state.availability, isNull);
+      expect(state.detail, isNull);
+      expect(requested, [stationId]);
+    });
+
+    test('reassignment clears old station data while the new availability request fails', () async {
+      var stations = defaultStations;
+      final pending = Completer<StationAvailability>();
+      pending.future.ignore();
+      final c = await initialized(
+        'STATION_OPERATOR',
+        serviceFor(
+          () async => stations,
+          availability: (id) =>
+              id == stationId ? Future.value(defaultAvail1) : pending.future,
+        ),
+      );
+      stations = assignedTo(stationId2);
+      final refreshing = c
+          .read(stationAvailabilityNotifierProvider.notifier)
+          .refresh();
+      await Future<void>.delayed(Duration.zero);
+      final during = c.read(stationAvailabilityNotifierProvider).requireValue;
+      // Complete before assertions so a failed assertion cannot leak a pending operation.
+      pending.completeError(
+        const ApiException(message: 'Temporarily unavailable', statusCode: 503),
+      );
+      await refreshing;
+      expect(during.selectedStationId, stationId2);
+      expect(during.availability, isNull);
+      expect(during.detail, isNull);
+      final after = c.read(stationAvailabilityNotifierProvider).requireValue;
+      expect(after.selectedStationId, stationId2);
+      expect(after.availability, isNull);
+      expect(after.detail, isNull);
+      expect(after.errorMessage, isNotEmpty);
+      expect(after.isRefreshing, isFalse);
+    });
+
+    for (final role in ['ADMIN', 'DISPATCHER']) {
+      test(
+        '$role keeps multiple stations and its current selection on refresh',
+        () async {
+          final c = await initialized(role, buildDefaultFakeService());
+          final notifier = c.read(stationAvailabilityNotifierProvider.notifier);
+          await notifier.selectStation(stationId2);
+          await notifier.refresh();
+          final state = c
+              .read(stationAvailabilityNotifierProvider)
+              .requireValue;
+          expect(state.stations.map((s) => s.id), [stationId, stationId2]);
+          expect(state.selectedStationId, stationId2);
+          expect(state.availability?.stationId, stationId2);
+        },
+      );
+    }
+
+    test(
+      'removed administrator selection falls back to an existing station',
+      () async {
+        var stations = defaultStations;
+        final c = await initialized('ADMIN', serviceFor(() async => stations));
+        stations = [defaultStations.last];
+        await c.read(stationAvailabilityNotifierProvider.notifier).refresh();
+        final state = c.read(stationAvailabilityNotifierProvider).requireValue;
+        expect(state.selectedStationId, stationId2);
+        expect(state.availability?.stationId, stationId2);
+        expect(state.detail, isNull);
+      },
+    );
+
+    test('older refresh cannot restore a superseded assignment', () async {
+      var calls = 0;
+      final older = Completer<List<LandingStation>>();
+      final c = await initialized(
+        'STATION_OPERATOR',
+        serviceFor(() async {
+          calls++;
+          if (calls == 1) return defaultStations;
+          if (calls == 2) return older.future;
+          return assignedTo(stationId2);
+        }),
+      );
+      final notifier = c.read(stationAvailabilityNotifierProvider.notifier);
+      final first = notifier.refresh();
+      await Future<void>.delayed(Duration.zero);
+      await notifier.refresh();
+      older.complete(defaultStations);
+      await first;
+      final state = c.read(stationAvailabilityNotifierProvider).requireValue;
+      expect(state.stations.map((s) => s.id), [stationId2]);
+      expect(state.selectedStationId, stationId2);
+      expect(state.availability?.stationId, stationId2);
     });
   });
 
