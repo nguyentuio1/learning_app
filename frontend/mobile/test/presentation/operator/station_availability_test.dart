@@ -340,14 +340,16 @@ void main() {
           onGetStations: () async => stations,
           onGetAvailability: (id) async {
             availabilityCalls++;
-            if (pendingStage == 'availability' && availabilityCalls == 2)
+            if (pendingStage == 'availability' && availabilityCalls == 2) {
               return pendingAvailability.future;
+            }
             return id == stationId ? defaultAvail1 : defaultAvail2;
           },
           onGetDetail: (id) async {
             detailCalls++;
-            if (pendingStage == 'detail' && detailCalls == 2)
+            if (pendingStage == 'detail' && detailCalls == 2) {
               return pendingDetail.future;
+            }
             return id == stationId
                 ? defaultDetail1
                 : StationDetail.fromJson({
@@ -384,8 +386,9 @@ void main() {
             )
             .toList();
         await c.read(stationAvailabilityNotifierProvider.notifier).refresh();
-        if (pendingStage == 'availability')
+        if (pendingStage == 'availability') {
           pendingAvailability.complete(defaultAvail1);
+        }
         if (pendingStage == 'detail') pendingDetail.complete(defaultDetail1);
         await rebuilding;
         await Future<void>.delayed(Duration.zero);
