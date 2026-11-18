@@ -70,11 +70,11 @@ The Sprint 7 API handoff defines the inputs, outputs, role and ownership checks 
 
 AI acceptance still requires evidence against the real backend and the applicable provider and activation settings. The web assistant defaults to read-only until sending is enabled under the conversation retention and deletion policy. [Contract release gates](../api/sprint-7-api-contract.md) · [LA-165 implementation](https://github.com/nguyentuio1/learning_app/pull/224)
 
-Reference drawings for the current design are in the [Detailed Design index](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14090271), the [web wireframes](../design/wireframes/web/index.md) and the [mobile wireframes](../design/wireframes/app/index.md).
+Reference drawings and implemented screen flows are in the [Detailed Design index](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14090271), [UI/UX & Screen Flows (11894809)](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11894809), [Repository Screen Flows](../design/ui-screen-flows.md), the [web wireframes](../design/wireframes/web/index.md) and the [mobile wireframes](../design/wireframes/app/index.md).
 
 ## 4. Handoff and review
 
-### 4.1 Sprint 7 implementation evidence
+### 4.1 Sprint 7–8 implementation evidence
 
 | Module | Status at the chapter baseline | Source |
 | --- | --- | --- |
@@ -82,6 +82,10 @@ Reference drawings for the current design are in the [Detailed Design index](htt
 | Delivery summary | Backend and web changes merged into the LA-41 story branch. | [Backend #219](https://github.com/nguyentuio1/learning_app/pull/219) · [Web #212](https://github.com/nguyentuio1/learning_app/pull/212) |
 | Customer assistant | Backend merged into the LA-42 story branch. Web and mobile PRs were open. Web CI passed for `2171b6e`. | [Backend #224](https://github.com/nguyentuio1/learning_app/pull/224) · [Web #213](https://github.com/nguyentuio1/learning_app/pull/213) · [Web CI](https://github.com/nguyentuio1/learning_app/actions/runs/43897305057) · [Mobile #215](https://github.com/nguyentuio1/learning_app/pull/215) |
 | Flutter completion | Customer screen, responsive/error-state and Station Operator PRs were open against the LA-43 story branch. | [Customer screens #223](https://github.com/nguyentuio1/learning_app/pull/223) · [Responsive UI #214](https://github.com/nguyentuio1/learning_app/pull/214) · [Station Operator #221](https://github.com/nguyentuio1/learning_app/pull/221) |
+| Customer web journey | Narrow-screen cards (360px–390px), draft-safe creation, contrast compliance, and direct tracking actions merged into develop (`ef7ddec`). | [PR #271](https://github.com/nguyentuio1/learning_app/pull/271) · [LA-349](https://hungndemail.atlassian.net/browse/LA-349) |
+| Staff lookup & reporting | Authorized tracking-number lookup replacing GUIDs, 30-day/7-day/today presets, Asia/Ho_Chi_Minh timezone alignment, and contextual ETA/summary links merged into develop (`ef7ddec`). | [PR #276](https://github.com/nguyentuio1/learning_app/pull/276) · [LA-350](https://hungndemail.atlassian.net/browse/LA-350) |
+| UI/UX screen flows | Synchronized 5-actor implemented role journeys, responsive viewports, and wireframe comparison with Confluence page 11894809. | [LA-361](https://hungndemail.atlassian.net/browse/LA-361) · [Screen flows](../design/ui-screen-flows.md) · [Confluence 11894809](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11894809) |
+| Flutter mobile journeys | Customer home and operator action queue journeys prepared under LA-344. | [Customer #277](https://github.com/nguyentuio1/learning_app/pull/277) · [Operator #278](https://github.com/nguyentuio1/learning_app/pull/278) |
 
 ### 4.2 Chapter handoff
 
