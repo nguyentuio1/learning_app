@@ -102,9 +102,9 @@ export function AccountLayout() {
   const operation = operationFeatures.find(feature => pathname === feature.path || pathname.startsWith(feature.path + '/'))
   const section = operation ? operation.label : pathname === '/' ? 'Workspace' : pathname.startsWith('/orders') ? 'Orders' : pathname.startsWith('/notifications') ? 'Notifications' : pathname.startsWith('/admin/roles') ? 'Roles' : pathname.startsWith('/admin/audit-logs') ? 'Audit logs' : pathname.startsWith('/admin/users') ? 'Users' : pathname.startsWith('/addresses') ? 'Addresses' : pathname.startsWith('/packages') ? 'Packages' : 'My profile'
   const sidebarContent = <>
-      <span className="account-nav-marker" aria-hidden="true" />
       <Link to={hasWorkspace || role === 'MANAGER' ? workspaceDestination(role) : '/profile'} className="account-brand"><img className="account-brand-logo" src={brandLogo} alt="" width="40" height="40" /><span>SmartDrone<small>Delivery operations</small></span></Link>
       <nav aria-label="Account navigation">
+        <span className="account-nav-marker" aria-hidden="true" />
         {hasWorkspace && <NavLink to="/" end className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="home"/>Workspace</NavLink>}
         {isCustomer && <div className="account-nav-group"><span className="account-nav-label">My deliveries</span>
           <NavLink to="/orders" end={pathname === '/orders/new' || !!managedOrderId} className={({ isActive }) => isActive ? 'account-current' : 'account-nav-link'}><AccountIcon name="orders"/>My orders</NavLink>
