@@ -1,0 +1,30 @@
+{
+  "events": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders/d9c14e07-cb10-4328-aa34-9870ffab5238",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders/d9c14e07-cb10-4328-aa34-9870ffab5238/tracking",
+      "status": 200
+    }
+  ],
+  "pageErrors": []
+}

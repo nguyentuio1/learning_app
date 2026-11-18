@@ -1,0 +1,641 @@
+Resolving dependencies...
+Downloading packages...
+  code_assets 1.2.1 (2.2.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  hooks 2.0.2 (2.2.0 available)
+  image_picker 1.1.2 (1.2.4 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.3 (1.19.0 available)
+  objective_c 9.5.0 (9.6.4 available)
+  record_use 0.6.0 (1.1.1 available)
+  sse_channel 0.1.1 (0.2.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  vector_math 2.4.0 (2.4.4 available)
+Got dependencies!
+12 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart
+00:00 +0: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +1: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +2: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +3: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +4: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +5: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +6: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +7: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +8: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Operator đã đăng nhập -> vào Operator home
+00:00 +9: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Chưa đăng nhập -> bị chuyển tới Login
+00:00 +10: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Register validates inline and link returns to Login
+00:01 +11: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Register shows 409 API error in a snackbar
+00:01 +12: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: successful registration signs in and opens Customer home
+00:02 +13: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:02 +14: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/app_smoke_test.dart: Mỗi flavor có màu theme khác nhau
+00:03 +15: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: ApiException parsing parses RFC 7807 problem details with detail and status
+00:03 +16: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: ApiException parsing extracts first validation error from errors dictionary
+00:03 +17: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: ApiException parsing parses timeout as network exception
+00:03 +18: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: ApiException parsing parses connection error as network exception
+00:03 +19: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: ApiException parsing parses request cancelled exception
+00:03 +20: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to 401 message when body is empty
+00:03 +21: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to 403 message when body is empty
+00:03 +22: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to 404 message when body is empty
+00:03 +23: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to 409 message when body is empty
+00:03 +24: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to 423 message when body is empty
+00:03 +25: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to default 500 message when body is empty
+00:03 +26: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: HTTP Status Code Fallback Messages falls back to default message when status code is 503
+00:03 +27: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: isNetworkError helper returns true for ApiException with isNetwork = true
+00:03 +28: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: isNetworkError helper returns false for ApiException with isNetwork = false
+00:03 +29: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: isNetworkError helper returns true for DioException network timeout
+00:03 +30: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/error/api_exception_test.dart: isNetworkError helper returns false for generic errors
+00:03 +31: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: attaches Authorization header when token exists
+00:03 +32: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: skips Authorization header when skipAuth is true
+00:03 +33: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: 401 triggers refresh with camelCase refreshToken and retries request
+00:03 +34: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: invalid refresh token clears storage and invokes onSessionExpired
+00:03 +35: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: network error during refresh preserves stored tokens and session
+00:03 +36: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: 401 on request with skipRefresh does not trigger refresh or session expired
+00:04 +37: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/dio_client_test.dart: BaseOptions: baseUrl, 3 loại timeout và header mặc định
+00:04 +38: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/dio_client_test.dart: enableLogging=false -> không có AppLogInterceptor
+00:04 +39: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/dio_client_test.dart: enableLogging=true -> log đứng TRƯỚC AuthInterceptor
+00:04 +40: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/dio_client_test.dart: baseUrl sai -> ném ArgumentError ngay khi tạo client
+00:04 +41: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/dio_client_test.dart: timeout được đổi thành ApiException.isNetwork
+00:04 +42: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/dio_client_test.dart: path được nối đúng sau baseUrl (giữ /v1)
+00:04 +43: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: log request/response và che Authorization, password, token
+00:04 +44: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: che pickupSecureCode và secureCode trong log (BR-LS-22)
+00:04 +45: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: log lỗi 500 kèm status và body
+00:04 +46: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: body dài bị cắt
+00:04 +47: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: logBodies=false thì không log body
+00:04 +48: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: LogRedactor che key nhạy cảm ở mọi cấp lồng nhau
+00:05 +49: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/storage/user_storage_role_test.dart: cached STATION_OPERATOR profile retains its role through real storage serialization
+00:05 +50: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/storage/user_storage_role_test.dart: cached DISPATCHER profile retains its role through real storage serialization
+00:05 +51: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/storage/user_storage_role_test.dart: cached ADMIN profile retains its role through real storage serialization
+00:05 +52: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/storage/user_storage_role_test.dart: cached CUSTOMER profile retains its role through real storage serialization
+00:05 +53: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/core/storage/user_storage_role_test.dart: server role object takes precedence over a cached-role fallback
+00:05 +54: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.login sends email and password to ApiEndpoints.login with skipAuth
+00:05 +55: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.login maps 401 unauthorized to ApiException with detail message
+00:05 +56: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.login maps 403 forbidden to ApiException for inactive account
+00:05 +57: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.register sends registration fields publicly and maps AuthResponse
+00:05 +58: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.register maps duplicate email and phone 409 details
+00:05 +59: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.getMe sends GET /users/me and saves/returns user
+00:05 +60: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.getMe getMe throws ApiException on 401
+00:05 +61: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.logout sends refreshToken to ApiEndpoints.logout and clears userStorage
+00:05 +62: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.logout best-effort: suppresses server error on logout
+00:06 +63: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl getProfile returns User entity on 200
+00:06 +64: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl getProfile throws ApiException on error
+00:06 +65: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl updateProfile sends PUT /users/me and returns updated user
+00:06 +66: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl changePassword sends PUT /users/me/password with skipRefresh
+00:06 +67: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl uploadAvatar sends multipart POST /users/me/avatar and returns avatarUrl
+00:07 +68: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: requests the tracking snapshot and parses nullable UTC telemetry
+00:07 +69: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: preserves a null position and estimated delivery time
+00:07 +70: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 400 to ApiException
+00:07 +71: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 401 to ApiException
+00:07 +72: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 403 to ApiException
+00:07 +73: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 404 to ApiException
+00:07 +74: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_signalr_service_test.dart: registers events before start and subscribes the selected order
+00:07 +75: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/delivery_map_signalr_service_test.dart: forwards position/status and resubscribes after reconnect
+00:08 +76: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: filters timeout failures from the expired-parcels endpoint
+00:08 +77: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: posts validated clear request to station operations
+00:08 +78: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: rejects invalid clear request values
+00:08 +79: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: maps RFC 7807 HTTP 403 to a clear-specific error
+00:08 +80: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: maps RFC 7807 HTTP 409 to a clear-specific error
+00:08 +81: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: includes RFC 7807 detail with clear-specific conflict message
+00:08 +82: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: loads failed orders with contract query parameter names
+00:08 +83: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: loads failure detail and parses both histories
+00:08 +84: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: posts exact report-failure contract
+00:08 +85: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: posts exact resolve-failure body keys and parses decision
+00:08 +86: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 400
+00:08 +87: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 403
+00:08 +88: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 404
+00:08 +89: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 409
+00:09 +90: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: requests the tracking endpoint and parses nullable telemetry fields
+00:09 +91: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: maps HTTP 401 to ApiException
+00:09 +92: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: maps HTTP 403 to ApiException
+00:09 +93: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: maps HTTP 404 to ApiException
+00:09 +94: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: a failed snapshot request can be retried successfully
+00:09 +95: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_signalr_service_test.dart: builds hub URL from API base URL without the /api suffix
+00:09 +96: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_signalr_service_test.dart: registers event handlers before connect and subscribes with JWT
+00:09 +97: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/data/services/tracking_signalr_service_test.dart: forwards telemetry and status events and re-subscribes on reconnect
+00:09 +98: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +99: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +100: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +101: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +102: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +103: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +104: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:09 +105: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:10 +106: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:10 +107: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:10 +108: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +109: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +110: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +111: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +112: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +113: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +114: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +115: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +116: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:10 +117: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +118: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +119: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +120: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +121: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +122: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +123: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +124: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +125: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:10 +126: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:11 +127: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:11 +128: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:11 +129: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:11 +130: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:11 +131: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:11 +132: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_practical_journey_test.dart: CustomerHomePage shows primary create action and active/recent order actions
+00:11 +133: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_practical_journey_test.dart: CustomerHomePage shows primary create action and active/recent order actions
+00:11 +134: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C23 AI Assistant local simulation shows quick prompts and returns local guidance
+00:11 +135: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C23 AI Assistant local simulation shows quick prompts and returns local guidance
+00:11 +136: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:11 +137: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:11 +138: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:11 +139: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:11 +140: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:11 +141: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:12 +142: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays the API 404 for an address outside the owner scope
+00:12 +143: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays the API 404 for an address outside the owner scope
+00:12 +143: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: shows a drone only in transit and displays stale banner
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:12 +144: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays the API 404 for an address outside the owner scope
+00:12 +145: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +146: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +146: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: focus and fit controls are tappable without layout overflow
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:12 +147: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +148: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +149: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +150: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +151: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +152: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +153: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +154: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:12 +155: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_practical_journey_test.dart: empty packages can be added without losing the create draft
+00:12 +156: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +157: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +158: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +159: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +160: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +161: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +162: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +163: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +164: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +165: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +166: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +167: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +168: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +169: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +170: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +171: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +172: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +173: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:13 +174: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:13 +175: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: LA-167 review regressions 503 keeps the draft and permits a deliberate retry without history recovery
+00:13 +176: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: ignores stale loadMore response when filter changes while page 2 is in flight
+00:13 +177: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: ignores stale loadMore response when filter changes while page 2 is in flight
+00:13 +178: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: ignores stale loadMore response when filter changes while page 2 is in flight
+00:13 +179: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: ignores stale loadMore response when filter changes while page 2 is in flight
+00:14 +180: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 creates address with coordinates and default flag
+00:14 +181: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C22 order notification opens its order details
+00:14 +182: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: LA-167 review regressions marks malformed 2xx POST as uncertain and blocks sends until recovery
+00:14 +183: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:14 +184: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:14 +185: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:14 +186: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:14 +187: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:14 +188: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:14 +189: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:15 +190: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:15 +191: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) navigates from ARRIVED OrderDetailPage to ConfirmDeliveryPage, enters code via keypad, and completes delivery
+00:15 +192: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) navigates from ARRIVED OrderDetailPage to ConfirmDeliveryPage, enters code via keypad, and completes delivery
+00:15 +193: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) navigates from ARRIVED OrderDetailPage to ConfirmDeliveryPage, enters code via keypad, and completes delivery
+00:15 +194: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) navigates from ARRIVED OrderDetailPage to ConfirmDeliveryPage, enters code via keypad, and completes delivery
+00:15 +195: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: submits a valid reason and closes the sheet on success
+00:16 +196: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) shows remaining attempts on 400 and disables confirmation on 423 lockout
+00:16 +197: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) unlocks form and re-enables submission automatically when 423 lockout expires
+00:16 +198: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) recomputes a 3-strike lockout from its absolute expiry on app resume
+00:16 +199: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:16 +200: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:16 +201: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:16 +202: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:16 +203: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:16 +204: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:17 +205: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) clears completed confirmation and hides protected tracking data when refreshed GET returns 403
+00:17 +206: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) latches accessLost and clears completedConfirmation across 403-to-503 retry sequence without re-exposing tracking data
+00:17 +207: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) clears completedConfirmation and latches accessLost immediately on 401, 403, and 404 refreshed GET
+00:18 +208: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) shows ineligible state when order is not ARRIVED
+00:18 +209: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +210: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +211: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +212: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +213: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +214: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +215: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +216: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +217: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +218: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +219: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +220: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +221: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +222: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +223: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +224: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +225: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +226: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +227: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:18 +228: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +229: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +230: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +231: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +232: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +233: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +234: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +235: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +236: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +237: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +238: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +239: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +240: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +241: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +242: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +243: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:19 +244: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +245: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +246: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +247: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +248: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +249: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +250: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +251: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +252: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +253: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +254: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +255: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +256: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +257: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +258: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +259: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:20 +260: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:20 +261: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_update_cancel_pages_test.dart: C07 shows Edit Order only for PENDING orders
+00:20 +262: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/packages/packages_pages_test.dart: C18 shows loading indicator while packages load
+00:21 +263: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/packages/packages_pages_test.dart: C18 shows loading indicator while packages load
+00:21 +264: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/packages/packages_pages_test.dart: C18 shows loading indicator while packages load
+00:21 +264: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) detects corrected estimatedDeliveryTime while remaining IN_TRANSIT and fresh via both screen map refresh and direct notifier call
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:21 +265: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/packages/packages_pages_test.dart: C18 shows loading indicator while packages load
+00:21 +266: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows the 409 package conflict on review page
+00:21 +267: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows the 409 package conflict on review page
+00:21 +268: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows the 409 package conflict on review page
+00:21 +269: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: renders orders, changes status filter, and refreshes
+00:21 +270: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: renders orders, changes status filter, and refreshes
+00:21 +271: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/packages/packages_pages_test.dart: C18 shows empty state when no packages exist
+00:21 +272: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_update_cancel_pages_test.dart: C07 hides Edit Order for IN_TRANSIT orders
+00:21 +273: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) preserves newer ARRIVED observation when delayed IN_TRANSIT refresh completes and queues canonical reconciliation
+00:21 +274: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:21 +275: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:21 +276: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:21 +277: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:21 +278: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:21 +279: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:22 +280: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:22 +281: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:22 +282: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +283: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +284: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +284: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: shows Retry after an API error and retries the snapshot
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +285: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +286: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +287: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +287: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: shows a loading indicator while the first snapshot is pending
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +288: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +288: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: renders in-transit tracking details and drone map marker
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +289: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +290: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:23 +290: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: stale telemetry banner clears when a fresh position arrives
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +291: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +292: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +292: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: keeps telemetry card visible when an in-transit drone has no fix
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +293: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +293: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: opens tracking from an order card
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +294: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +294: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: READY_FOR_TAKEOFF without telemetry hides live drone data
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +295: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +296: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +297: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +297: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: ARRIVED without telemetry hides live drone data
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +298: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +298: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: opens full order details directly with chronological history
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +299: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +299: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: DELIVERED without telemetry hides live drone data
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +300: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +301: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +301: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: shows delivery map and telemetry for in-transit details
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:24 +302: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +303: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +304: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +305: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:24 +306: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +307: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +308: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +309: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +310: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +311: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +312: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +313: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +314: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:25 +315: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +316: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +317: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +318: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +319: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +320: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +321: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +322: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +323: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +324: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:26 +325: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +326: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +327: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +328: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +329: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +330: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +331: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +332: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +333: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +334: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +335: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +336: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +337: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +338: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +339: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +340: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +341: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +342: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +343: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +344: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +345: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +346: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +347: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:27 +348: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +349: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +350: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +351: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +352: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +353: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +354: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +355: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +356: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +357: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +358: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +359: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:28 +360: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +361: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +361: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/operator/package_pickup_test.dart: PackagePickupPage Widget station change removes the previous parcel and entered secure code
+
+Warning: A call to tap() with finder "Found 1 widget with text "Look up parcel": [
+  Text("Look up parcel", dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
+]" derived an Offset (Offset(142.3, 474.0)) that would not hit test on the specified widget.
+Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
+Indeed, Offset(142.3, 474.0) is outside the bounds of the root of the render tree, Size(266.7, 466.7).
+The finder corresponds to this RenderBox: RenderParagraph#dc165 relayoutBoundary=up33
+The hit test result at that offset is: HitTestResult(HitTestEntry<HitTestTarget>#1be2e(_ReusableRenderView#5c5e3), HitTestEntry<HitTestTarget>#d86bd(<AutomatedTestWidgetsFlutterBinding>))
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
+#2      WidgetController.tap (package:flutter_test/src/controller.dart:1080:7)
+#3      main.<anonymous closure>.<anonymous closure> (file:///C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/operator/package_pickup_test.dart:507:20)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+#6      StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+To silence this warning, pass "warnIfMissed: false" to "tap()".
+To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to true.
+
+00:29 +362: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +363: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +364: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +365: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +366: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +367: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +368: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +369: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +370: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +371: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +372: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +373: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +374: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +375: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +376: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +377: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +378: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +379: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +380: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +381: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +382: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +383: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +384: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +385: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +386: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +387: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +388: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +389: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +390: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +391: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +392: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +393: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +394: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +395: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:29 +396: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +397: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +398: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +399: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +400: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +401: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +402: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +403: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +404: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:30 +405: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:32 +406: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:32 +407: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:33 +408: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +409: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +410: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +411: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +412: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +413: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +414: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +415: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +416: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +417: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +418: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +419: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +420: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:36 +421: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:37 +422: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with DeliveryOrder extra from customer screens
+00:37 +423: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query overrides extra order and keeps extra session
+00:37 +424: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la363-review-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: operator router keeps intake and pickup destinations after assistant merge
+00:37 +425: All tests passed!

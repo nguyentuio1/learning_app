@@ -1,0 +1,80 @@
+{
+  "events": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/customer-addresses",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/packages",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/delivery-orders",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders/f2c1f8b7-15ad-4930-aeb1-d87fca883baf",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders/f2c1f8b7-15ad-4930-aeb1-d87fca883baf/tracking",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders/f2c1f8b7-15ad-4930-aeb1-d87fca883baf",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/delivery-orders/f2c1f8b7-15ad-4930-aeb1-d87fca883baf/tracking",
+      "status": 200
+    }
+  ],
+  "pageErrors": []
+}
