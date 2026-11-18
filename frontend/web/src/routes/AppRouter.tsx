@@ -69,7 +69,9 @@ export function AppRouter() {
           </Route>
         </Route>
         <Route element={<RequireAuth roles={managementRoles} />}>
-          <Route path="/" element={<HomePage />} />
+          <Route element={<AccountLayout />}>
+            <Route path="/" element={<HomePage />} />
+          </Route>
         </Route>
         {operationFeatures.flatMap(feature => feature.routes.map(({ path, Page, roles }) => (
           <Route key={path} element={<RequireAuth roles={roles ?? feature.roles} />}>
