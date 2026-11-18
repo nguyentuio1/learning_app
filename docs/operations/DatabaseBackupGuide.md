@@ -47,6 +47,8 @@ export PGPASSWORD="<your-postgres-password>"
 
 Always verify backups by restoring into a **separate test database** (`drone_delivery_db_verify` by default) before overwriting production data.
 
+Choose a fresh, unique test database for each verification. Both restore scripts reject **any existing target database**, including an existing verification database, unless the operator explicitly opts into overwriting it. The source database named by `POSTGRES_DB` (default `drone_delivery_db`) is also guarded, even if it does not currently exist. Restore targets must be ASCII identifiers beginning with a letter or underscore, followed by letters, digits or underscores, with at most 63 bytes. Invalid names are rejected before invoking PostgreSQL or Docker; quoted names, hyphens and SQL fragments are not accepted.
+
 ### PowerShell
 
 ```powershell
@@ -58,6 +60,18 @@ Always verify backups by restoring into a **separate test database** (`drone_del
 ```bash
 ./scripts/restore-db.sh ./backups/drone_delivery_db_20261117_150000.dump drone_delivery_db_verify
 ```
+
+For an intentional destructive restore to an existing database, PowerShell requires `-AllowOverwrite`; Bash requires `ALLOW_OVERWRITE=true`. These options allow `pg_restore --clean` to replace existing objects and data, including the configured source if selected. Use them only after checking the target and retaining a separate backup:
+
+```powershell
+.\scripts\restore-db.ps1 -BackupFile .\backups\verified.dump -TargetDatabase disposable_verify_db -AllowOverwrite
+```
+
+```bash
+ALLOW_OVERWRITE=true ./scripts/restore-db.sh ./backups/verified.dump disposable_verify_db
+```
+
+Lookup errors and unexpected lookup responses stop the restore; they do not trigger database creation. Both scripts use `pg_restore --exit-on-error` and report failure when restoration fails. This stops at the first SQL error but does not make the entire restore transactional; a failed target may contain partial results and should be inspected or recreated as a fresh disposable verification database.
 
 ### Post-Restore Data Verification
 
@@ -88,4 +102,12 @@ docker exec -it drone_postgres psql -U postgres -d drone_delivery_db_verify -c "
 1. **Never commit `.dump` files or `.env` credentials** to Git (`backups/` and `.env` must remain gitignored).
 2. Store off-site backup copies with server-side encryption (e.g., encrypted S3/MinIO bucket or encrypted volume).
 3. Restrict filesystem permissions on backup directories (`chmod 700 /var/backups/smartdrone`).
-4. Note on verification status: Script syntax and parameters are verified in the repository; live `pg_dump`/`pg_restore` execution requires a running Docker/PostgreSQL 16 instance (`docker compose up -d postgres`).
+4. Non-destructive guard regressions run with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/restore-db.Tests.ps1` and `bash scripts/tests/restore-db.Tests.sh`. They stub all database/Docker commands and exercise existing-target denial, source denial, invalid/oversized identifiers, fresh target creation, explicit overwrite, lookup errors and restore errors in both direct-host and Docker branches.
+
+## 6. Local verification evidence (2026-11-18)
+
+Windows PowerShell 5.1 ran the actual backup and restore scripts against local PostgreSQL in `drone_postgres`, reading only the synthetic `drone_integration_20261118` source. The custom-format dump used a container file and `docker cp` for binary transfer; it was never passed through a PowerShell text pipeline. Restoration used a fresh `la46_verify_<GUID>` database. All 22 table counts and row contents, migration history, columns, constraints and indexes matched. PostgreSQL rewrites equivalent ARRAY casts when deparsing the existing `flight_missions` partial index after restore; the schema comparison normalized that expression only.
+
+An additional restore attempt against that owned existing target was refused and preserved its sentinel table. A final read-only comparison found the source unchanged. The verification database was then dropped. Both shells also passed 16 command-stub guard checks each; Bash was executed using Git Bash, while the live database round trip covered the PowerShell Docker path. Direct-host live restoration and a live Bash restoration were not exercised.
+
+Local ignored evidence is retained under `artifacts/LA-46/` in the LA-46 integration worktree: `restore-verification.json`, `restore-live-powershell.txt`, source/restored schema comparison files and the custom-format dump. RED and GREEN command-stub outputs are retained there too. These results establish local synthetic backup restorability and restore safeguards. They do not establish production backup scheduling, off-host retention, a production recovery drill or deployment acceptance; the schedule above remains operational guidance.
