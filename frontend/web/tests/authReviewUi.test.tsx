@@ -61,6 +61,7 @@ function loginApp(role: Role | null, from?: string) {
         </Route>
         <Route path="/profile" element={<h1>Profile destination</h1>} />
         <Route path="/manager/analytics" element={<h1>Dashboard destination</h1>} />
+        <Route path="/orders" element={<h1>Customer destination</h1>} />
         <Route path="/addresses/*" element={<h1>Customer destination</h1>} />
         <Route path="/packages/*" element={<h1>Customer destination</h1>} />
         <Route path="/admin/users" element={<h1>Admin destination</h1>} />
