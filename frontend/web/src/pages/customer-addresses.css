@@ -46,7 +46,7 @@
 .customer-page .ant-btn-dangerous:hover { color:#8d2e28 !important; border-color:#d79a93 !important; background:#fff1ef !important; }
 .customer-page .ant-btn-sm { min-height:32px; padding:0 10px; font-size:12px; }
 .customer-page .ant-tag { margin-inline-end:0; padding:4px 8px; border:0; border-radius:4px; font-size:10px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
-.customer-page .ant-tag-green { color:#275e36; background:#e6f3df; }
+.customer-page .customer-address-default.ant-tag { color:#275e36; background:#e6f3df; }
 .customer-form-page .ant-input, .customer-form-page .ant-input-number, .customer-form-page .ant-input-affix-wrapper { min-height:42px; border-color:#c5d3bc; border-radius:7px; box-shadow:none; }
 .customer-form-page .ant-input:hover,.customer-form-page .ant-input-number:hover { border-color:#94ad94; }
 .customer-form-page .ant-input:focus,.customer-form-page .ant-input-focused,.customer-form-page .ant-input-number-focused { border-color:#4c7a56; box-shadow:0 0 0 3px #4c7a5617; }
