@@ -17,17 +17,18 @@ export function useAccountMotion(pathname: string) {
     const canAnimate = () => !reduced.matches && typeof root.animate === 'function'
     if (cycle.current?.path !== pathname) cycle.current = { path: pathname, from: lastPosition.current }
     const from = cycle.current.from
-    const sidebar = root.querySelector<HTMLElement>('.account-sidebar')
-    const marker = root.querySelector<HTMLElement>('.account-nav-marker')
-    const selected = sidebar?.querySelector<HTMLElement>('[aria-current="page"]')
+    const navigation = root.querySelector<HTMLElement>('.account-sidebar nav')
+    const marker = navigation?.querySelector<HTMLElement>('.account-nav-marker')
+    const selected = navigation?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (!selected) lastPosition.current = null
     let current: MarkerPosition | null = null
     let slide: Animation | undefined
     const align = (animate = false) => {
-      if (!sidebar || !marker || !selected) return
+      if (!navigation || !marker || !selected) return
       const link = selected.getBoundingClientRect()
-      const bounds = sidebar.getBoundingClientRect()
-      const next = { left: link.left - bounds.left + sidebar.scrollLeft,
-        top: link.top - bounds.top + sidebar.scrollTop + (link.height - 20) / 2,
+      const bounds = navigation.getBoundingClientRect()
+      const next = { left: link.left - bounds.left + navigation.scrollLeft,
+        top: link.top - bounds.top + navigation.scrollTop + (link.height - 20) / 2,
         width: bounds.width, height: bounds.height }
       if (!animate && current && Object.keys(next).every(key => next[key as keyof MarkerPosition] === current?.[key as keyof MarkerPosition])) return
       slide?.cancel()
@@ -35,7 +36,7 @@ export function useAccountMotion(pathname: string) {
       lastPosition.current = next
       const transform = `translate(${next.left}px, ${next.top}px)`
       marker.style.transform = transform
-      sidebar.dataset.motionNav = 'ready'
+      navigation.dataset.motionNav = 'ready'
       if (animate && canAnimate() && from && from.width === next.width && from.height === next.height) {
         slide = marker.animate([{ transform: `translate(${from.left}px, ${from.top}px)` }, { transform }], { duration: 400, easing: easeOut })
         animations.push(slide)
@@ -59,10 +60,9 @@ export function useAccountMotion(pathname: string) {
     const preferenceChanged = () => { if (reduced.matches) settle() }
     const realign = () => align()
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(realign)
-    if (sidebar) observer?.observe(sidebar)
+    if (navigation) observer?.observe(navigation)
     if (selected) observer?.observe(selected)
     window.addEventListener('resize', realign)
-    sidebar?.addEventListener('scroll', realign, { passive: true })
     reduced.addEventListener('change', preferenceChanged)
     root.addEventListener('pointerdown', settle)
     root.addEventListener('keydown', settle)
@@ -70,11 +70,10 @@ export function useAccountMotion(pathname: string) {
       settle()
       observer?.disconnect()
       window.removeEventListener('resize', realign)
-      sidebar?.removeEventListener('scroll', realign)
       reduced.removeEventListener('change', preferenceChanged)
       root.removeEventListener('pointerdown', settle)
       root.removeEventListener('keydown', settle)
-      if (sidebar) delete sidebar.dataset.motionNav
+      if (navigation) delete navigation.dataset.motionNav
     }
   }, [pathname])
   return rootRef

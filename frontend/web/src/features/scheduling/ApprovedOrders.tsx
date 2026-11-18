@@ -45,22 +45,22 @@ export function ApprovedOrders({ data, loading, error, reload, filters, onFilter
       <Form.Item name="through" label="Created through"><CalendarDayPicker /></Form.Item>
       <Form.Item name="departureFrom" label="Departure from"><CalendarDayPicker /></Form.Item>
       <Form.Item name="departureThrough" label="Departure through"><CalendarDayPicker /></Form.Item>
-      <Button type="primary" htmlType="submit">Apply filters</Button>
+      <Button htmlType="submit">Apply filters</Button>
       <Button onClick={() => { form.setFieldsValue({ searchKeyword: undefined, assignmentStatus: undefined, originStationId: undefined, destinationStationId: undefined, from: undefined, through: undefined, departureFrom: undefined, departureThrough: undefined }); onFilter({ page: 1, pageSize: 20 }) }}>Reset</Button>
     </Form>
     {!!stations.error && <Alert type="warning" title="Station filters could not be loaded." action={<Button onClick={stations.reload}>Retry stations</Button>} />}
     <ResourceState loading={loading} error={error} retry={reload} />
-    {data && <Table<ApprovedOrder> rowKey="orderId" dataSource={data.items} scroll={{ x: 1050 }}
+    {data && <Table<ApprovedOrder> rowKey="orderId" dataSource={data.items}
       locale={{ emptyText: 'No approved deliveries match these filters.' }}
       pagination={{ current: filters.page, pageSize: filters.pageSize, total: data.totalCount, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100],
         onChange: (page, pageSize) => onFilter({ ...filters, page: pageSize === filters.pageSize ? page : 1, pageSize }) }}
       columns={[
-        { title: 'Delivery', render: (_, row) => <><Link to={'/dispatcher/scheduling/' + row.orderId}>{row.trackingNumber}</Link><small className="operations-small">Created {orderTime(row.createdAt)}</small></> },
-        { title: 'Package', render: (_, row) => <>{row.packageName}<small className="operations-small">{row.weightGram} g</small></> },
-        { title: 'Route', render: (_, row) => <>{row.originStation.name} → {row.destinationStation.name}</> },
-        { title: 'Departure / arrival', render: (_, row) => <>{row.scheduledDepartureTime ? orderTime(row.scheduledDepartureTime) : 'Not scheduled'}<small className="operations-small">ETA: {row.estimatedDeliveryTime ? orderTime(row.estimatedDeliveryTime) : 'Not available'}</small></> },
-        { title: 'Assignment', render: (_, row) => <><StatusTag status={row.assignmentStatus} /><small className="operations-small">{row.droneSerialNumber || 'No drone assigned'}</small></> },
-        { title: 'Action', render: (_, row) => <Link to={'/dispatcher/scheduling/' + row.orderId}><Button>View delivery →</Button></Link> },
+        { title: 'Delivery', render: (_, row) => <><Link to={'/dispatcher/scheduling/' + row.orderId}>{row.trackingNumber}</Link><small className="operations-small">Created {orderTime(row.createdAt)}</small><small className="operations-small workflow-narrow-only">{row.originStation.name} → {row.destinationStation.name}</small></> },
+        { title: 'Package', responsive: ['lg'], render: (_, row) => <>{row.packageName}<small className="operations-small">{row.weightGram} g</small></> },
+        { title: 'Route', responsive: ['lg'], render: (_, row) => <>{row.originStation.name} → {row.destinationStation.name}</> },
+        { title: 'Departure / arrival', responsive: ['lg'], render: (_, row) => <>{row.scheduledDepartureTime ? orderTime(row.scheduledDepartureTime) : 'Not scheduled'}<small className="operations-small">ETA: {row.estimatedDeliveryTime ? orderTime(row.estimatedDeliveryTime) : 'Not available'}</small></> },
+        { title: 'Assignment', render: (_, row) => <><StatusTag status={row.assignmentStatus} /><small className="operations-small">{row.droneSerialNumber || 'No drone assigned'}</small>
+          <Link className="operations-small" to={row.assignmentStatus === 'ASSIGNED' ? '/delivery-tracking/' + row.orderId : '/dispatcher/scheduling/' + row.orderId}>{row.assignmentStatus === 'ASSIGNED' ? 'Track delivery' : row.scheduledDepartureTime ? 'Assign a drone' : 'Schedule delivery'}</Link></> },
       ]} />}
   </section>
 }
