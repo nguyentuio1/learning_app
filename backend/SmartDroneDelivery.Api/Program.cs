@@ -41,6 +41,7 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<DeliveryInsightLookupService>();
 builder.Services.AddScoped<DeliveryEtaQueryService>();
 builder.Services.AddScoped<EtaPredictionService>();
 builder.Services.AddOptions<ModelProviderOptions>()
