@@ -109,12 +109,11 @@ it.each(['STATION_OPERATOR'] as const)('shows mobile guidance to %s through the 
   expect(mock.history.get).toHaveLength(0)
 })
 it('opens the customer task through the real provider and uses the bearer token', async () => {
-  mock.onGet('/api/customer-addresses').reply(200, [])
+  mock.onGet('/api/delivery-orders').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
   await signIn('CUSTOMER')
   open('/login')
-  expect(await screen.findByRole('heading', { name: 'Addresses', exact: true })).toBeVisible()
-  await waitFor(() => expect(mock.history.get.find(request => request.url === '/api/customer-addresses')?.headers?.Authorization).toBe('Bearer test-access'))
-  expect(await screen.findByText('You have not added a delivery address yet.')).toBeVisible()
+  expect(await screen.findByRole('heading', { name: 'My orders', exact: true })).toBeVisible()
+  await waitFor(() => expect(mock.history.get.find(request => request.url === '/api/delivery-orders')?.headers?.Authorization).toBe('Bearer test-access'))
   expect(mock.history.get.some(request => request.url === '/api/users')).toBe(false)
 })
 it('opens order creation and loads the contract lookups', async () => {

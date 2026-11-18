@@ -138,7 +138,7 @@ export function AccountLayout() {
     colorLink: '#4a704b', colorLinkHover: '#1e4f3c', colorLinkActive: '#163f2f',
     colorPrimaryHover: '#163f2f', colorPrimaryActive: '#163f2f',
     controlItemBgHover: '#f1f6eb', controlItemBgActiveHover: '#e6eedc',
-    fontSize: 14, fontWeightStrong: 650, colorTextPlaceholder: '#65776b',
+    fontSize: 14, fontWeightStrong: 650, colorTextDescription: '#546757', colorTextPlaceholder: '#65776b',
   } }}><div className="account-layout" ref={motionRef}>
     <aside className="account-sidebar">
       {sidebarContent}

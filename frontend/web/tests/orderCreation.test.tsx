@@ -2,10 +2,12 @@ import { afterEach, beforeEach, expect, it } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'antd'
+import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom'
 import MockAdapter from 'axios-mock-adapter'
 import { apiClient } from '../src/services/apiClient'
 import { orderCreationApi } from '../src/services/orderCreationApi'
 import { CreateDeliveryOrderPage } from '../src/pages/CreateDeliveryOrderPage'
+import { CustomerPackageFormPage } from '../src/pages/CustomerPackageFormPage'
 
 let mock: MockAdapter
 beforeEach(() => {
@@ -19,7 +21,17 @@ beforeEach(() => {
   ])
 })
 afterEach(() => mock.restore())
-function open() { render(<ConfigProvider theme={{ token: { motion: false } }}><CreateDeliveryOrderPage /></ConfigProvider>) }
+function OpenedOrder() {
+  const { id } = useParams()
+  return <h1>Opened order {id}</h1>
+}
+function open() {
+  render(<ConfigProvider theme={{ token: { motion: false } }}><MemoryRouter initialEntries={['/orders/new']}><Routes>
+    <Route path="/orders/new" element={<CreateDeliveryOrderPage />} />
+    <Route path="/packages/new" element={<CustomerPackageFormPage />} />
+    <Route path="/orders/:id" element={<OpenedOrder />} />
+  </Routes></MemoryRouter></ConfigProvider>)
+}
 async function choose(label: string, option: string) {
   fireEvent.mouseDown(await screen.findByLabelText(label))
   await userEvent.click(await screen.findByText(option, { selector: '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-content' }))
@@ -49,8 +61,35 @@ it('requires confirmation, prevents repeated creation and displays the one-time 
   finish([201, { id: 'o1', trackingNumber: 'DD-202611-0001', status: 'PENDING', pickupSecureCode: '482917' }])
   expect(await screen.findByLabelText('Pickup code')).toHaveTextContent('482917')
   expect(screen.getByRole('button', { name: 'Create another order' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'View this order' })).toBeDisabled()
+  await userEvent.click(screen.getByRole('checkbox', { name: /I have saved/ }))
+  expect(screen.getByRole('button', { name: 'View this order' })).toBeEnabled()
   expect(JSON.stringify(localStorage)).not.toContain('482917')
   expect(JSON.stringify(sessionStorage)).not.toContain('482917')
+  await userEvent.click(screen.getByRole('button', { name: 'View this order' }))
+  expect(await screen.findByRole('heading', { name: 'Opened order o1' })).toBeVisible()
+  expect(screen.queryByLabelText('Pickup code')).not.toBeInTheDocument()
+})
+it('returns from creating a package with the station draft and the new package', async () => {
+  const item = { id: 'p1', packageName: 'Books', weightGram: 500, lengthCm: 10, widthCm: 10, heightCm: 5 }
+  let packageSaved = false
+  mock.onGet('/api/packages').reply(() => [200, packageSaved ? [item] : []])
+  mock.onPost('/api/packages').reply(() => { packageSaved = true; return [201, item] })
+  open()
+  await choose('Origin station', 'North station')
+  await choose('Destination station', 'South station')
+  fireEvent.change(screen.getByLabelText('Recipient name'), { target: { value: 'Not included in the draft' } })
+  await userEvent.click(screen.getByRole('button', { name: 'Add package' }))
+  fireEvent.change(await screen.findByLabelText('Package name'), { target: { value: 'Books' } })
+  for (const [label, value] of [['Weight (g)', '500'], ['Length (cm)', '10'], ['Width (cm)', '10'], ['Height (cm)', '5']]) {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } })
+  }
+  await userEvent.click(screen.getByRole('button', { name: 'Add package' }))
+  await screen.findByRole('heading', { name: 'Create delivery order' })
+  expect(await screen.findByLabelText('Recipient name')).toHaveValue('')
+  expect((await screen.findAllByText('North station')).length).toBeGreaterThan(0)
+  expect((await screen.findAllByText('South station')).length).toBeGreaterThan(0)
+  expect(await screen.findByText('Books · 500 g')).toBeVisible()
 })
 it('requires valid recipient input and revalidates the destination when origin changes', async () => {
   open(); await fill()
