@@ -54,11 +54,30 @@ public class LiveGeminiGatewayTests(ITestOutputHelper output)
         output.WriteLine($"model={Model}; assistantIntent={intent}; elapsedMs={timer.ElapsedMilliseconds}; no customer data or persistence");
     }
 
-    private static HttpClient Client(bool assistant = false) => new(new GeminiModelHandler(Options.Create(new ModelProviderOptions
+    private HttpClient Client(bool assistant = false) => new(new GeminiModelHandler(Options.Create(new ModelProviderOptions
     {
         Provider = "Gemini", GeminiApiKey = Environment.GetEnvironmentVariable("TEST_GEMINI_API_KEY")!,
         GeminiAssistantApprovedPolicyVersion = ModelProviderOptions.GeminiAssistantPolicyVersion
-    }), assistant) { InnerHandler = new HttpClientHandler { AllowAutoRedirect = false } }) { Timeout = TimeSpan.FromSeconds(20) };
+    }), assistant) { InnerHandler = new LiveGeminiProvenanceHandler(output) }) { Timeout = TimeSpan.FromSeconds(20) };
+}
+
+internal sealed class LiveGeminiProvenanceHandler(ITestOutputHelper output) : DelegatingHandler(new HttpClientHandler { AllowAutoRedirect = false })
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        var timer = Stopwatch.StartNew();
+        var response = await base.SendAsync(request, ct);
+        output.WriteLine($"providerStatus={(int)response.StatusCode}; elapsedMs={timer.ElapsedMilliseconds}");
+        if (response.IsSuccessStatusCode)
+        {
+            using var parsed = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsByteArrayAsync(ct));
+            if (parsed.RootElement.TryGetProperty("modelVersion", out var version)) output.WriteLine($"returnedModelVersion={version.GetString()}");
+            if (parsed.RootElement.TryGetProperty("candidates", out var candidates))
+                foreach (var candidate in candidates.EnumerateArray())
+                    if (candidate.TryGetProperty("finishReason", out var finish)) output.WriteLine($"finishReason={finish.GetString()}");
+        }
+        return response;
+    }
 }
 
 public sealed class LiveGeminiFactAttribute : FactAttribute
