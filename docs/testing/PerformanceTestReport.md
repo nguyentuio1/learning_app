@@ -87,7 +87,45 @@
 
 ---
 
-## 5. Relational Concurrency Correctness (PostgreSQL 16 CI)
+## 5. Post-Fix Rerun After `LA-366` Merge (`1927fe9` / `develop` `10700d2`)
+
+After merging `origin/develop` (`10700d2`, PR #281 / `LA-366` atomic `DeliveryTrackingCounters`), all previous API/DB processes were drained, the database was recreated with migration `20261118175032_AddDeliveryTrackingCounters` (verified `delivery_tracking_counters` table present), and both the in-process barrier benchmark and the live `k6` mixed-endpoint profile were re-run. All pre-fix **FAIL** outputs in Sections 3–4 are preserved unchanged.
+
+### 5.1 In-Process Barrier Benchmark Rerun (`PerformanceBenchmarkTests`)
+
+| Item | Details |
+| --- | --- |
+| **Application / Test SHA** | `1927fe9` (merge of `37f6523` + `origin/develop` `10700d2`) |
+| **Environment & Runtime** | Local Windows, .NET `8.0.31` (SDK `10.0.402`), `-c Release`, `AuthApiFactory` (EF Core InMemory) |
+| **Raw Output Evidence** | [perf-benchmark-rerun.txt](evidence/perf-benchmark-rerun.txt) (**FAILED** on `POST /api/auth/login` at 100 VUs) |
+
+- **Results:** **14/15 PASS, 1/15 FAIL** (`0` HTTP errors):
+  - `POST /api/auth/login`: 10 VUs `p95 = 539.1 ms` (**PASS**), 50 VUs `p95 = 2,280.8 ms` (**PASS**), 100 VUs `p95 = 4,285.0 ms` (`max = 4,306.5 ms`, **FAIL** — unchanged BCrypt CPU cost at 100 simultaneous logins).
+  - Non-hashing endpoints (`GET /health/live`, `GET /api/delivery-orders`, `GET /api/delivery-orders/{id}/tracking`, `POST /api/delivery-orders`): all passed across `10 / 50 / 100` VUs (`p95 <= 244.4 ms`, `0` errors).
+
+### 5.2 Live `k6` Mixed-Endpoint Constant-VU Rerun (PostgreSQL 18.4 + `LA-366`)
+
+| Item | Details |
+| --- | --- |
+| **Tool & Version** | `k6.exe v2.4.0` (`commit/dd9395906d`, `go1.26.11`, `windows/amd64`) |
+| **Application / Script SHA** | `1927fe9` (`SmartDroneDelivery.Api`, `-c Release`, `ASPNETCORE_ENVIRONMENT=Development`, `Seed__DevelopmentData=true`, `LA-366` migration `20261118175032_AddDeliveryTrackingCounters`) |
+| **Database** | Fresh PostgreSQL `18.4` (`localhost:5433`, `drone_delivery_db`, `max_connections=100`, `shared_buffers=128MB`) |
+| **Dataset & Volume** | Seeded demo customer (`customer@smartdronedelivery.com`), stations `HCM-01` & `HCM-02`, plus 2,305 packages and 2,305 orders created across 2,305 iterations (`13,833` HTTP requests, `205.12 req/s`) |
+| **Raw Output Evidence** | [k6-live-rerun.txt](evidence/k6-live-rerun.txt) (**15/15 PASS**, `0.00%` error rate) |
+
+| Endpoint | 10 VUs `p95` (max) | 50 VUs `p95` (max) | 100 VUs `p95` (max) | `< 3,000 ms` Target |
+| --- | ---: | ---: | ---: | :---: |
+| `GET /health/live` | 2.62 ms (38.33 ms) | 284 ms (512.57 ms) | 582.95 ms (880.2 ms) | **PASS** |
+| `POST /api/auth/login` | 222.58 ms (349.27 ms) | 692.22 ms (879.55 ms) | 1.09 s (1.34 s) | **PASS** |
+| `GET /api/delivery-orders` | 12.72 ms (31.02 ms) | 359.57 ms (532.14 ms) | 727.17 ms (1.09 s) | **PASS** |
+| `GET /api/delivery-orders/{id}/tracking` | 13.4 ms (61.24 ms) | 156.96 ms (406.68 ms) | 482.3 ms (911.23 ms) | **PASS** |
+| `POST /api/delivery-orders` | 26.11 ms (109.08 ms) | 175.42 ms (468.46 ms) | 738.48 ms (1.2 s) | **PASS** |
+
+- **Error Rate & `create_order` Status Counts:** `http_req_failed = 0.00%` (**0 out of 13,833**); `checks_succeeded = 100.00%` (**13,831 out of 13,831**); `POST /api/delivery-orders`: **2,305 `201 Created`**, **0 `409`**, **0 `5xx`/other failures** (`0` `fail:` or `23505` entries in API logs).
+
+---
+
+## 6. Relational Concurrency Correctness (PostgreSQL 16 CI)
 
 In addition to throughput/latency measurement, data consistency under concurrent writes is verified in CI against `postgres:16-alpine` across:
 - `DeliveryOrderConcurrencyTests`: concurrent order updates/cancellations serialize cleanly (`SELECT ... FOR UPDATE`).
@@ -98,8 +136,8 @@ In addition to throughput/latency measurement, data consistency under concurrent
 
 ---
 
-## 6. Observations & Recommendations
+## 7. Observations & Recommendations
 
-1. **BCrypt CPU Cost on `/api/auth/login`:** In the barrier benchmark (Section 3), 10 and 50 concurrent login requests achieve `p95` of **510.5 ms** and **2,067.2 ms** (PASS `< 3,000 ms`), while 100 simultaneous logins at a barrier reach **3,608.0 ms** (`max` 3,695.3 ms, **FAIL**). Under the live `k6` mixed-endpoint `constant-vus` workload (Section 4), `POST /api/auth/login` **PASSED** all three tiers (`319.04 ms`, `1.49 s`, `2.18 s` `p95`).
-2. **Suspected Backend Concurrency Bottleneck on `POST /api/delivery-orders`:** Live `k6` testing against PostgreSQL 18 recorded **245/1,118** failed `create_order` responses (`3.64%` overall `http_req_failed`) and `p95 = 4.32 s` at 100 VUs, alongside **13,069** un-deduplicated `IX_delivery_orders_TrackingNumber` (`23505`) log occurrences ([k6-live-api-errors-excerpt.txt](evidence/k6-live-api-errors-excerpt.txt)). Because final HTTP status counts were not logged, `MaxSaveAttempts = 5` retry exhaustion (`409 Conflict`) is the **suspected** failure cause rather than proven for all 245 responses. Even so, `NextTrackingNumberAsync` scanning for `max + 1` without a database sequence or lock can cause concurrent writers at 50–100 VUs to compute the same colliding number, trigger repeated `SaveChangesAsync()` retries (adding latency toward the `4.32 s` `p95`), and potentially exhaust the 5-attempt limit. Recommend investigating and replacing `max + 1` scanning with a **PostgreSQL sequence** (or atomic unique suffix) in a separate backend task/PR rather than increasing retry counts, then re-running the agreed workload.
-3. **Production / Docker Verification:** Re-run `scripts/k6-load-test.js` on the agreed staging/Docker environment after `NextTrackingNumberAsync` is fixed.
+1. **BCrypt CPU Cost on `/api/auth/login`:** In the barrier benchmark (Sections 3 and 5.1), 10 and 50 concurrent login requests pass `< 3,000 ms`, while 100 simultaneous logins at `gate.Task` still **FAIL** (`p95 = 3,608.0 ms` in baseline `6c2c02c`; `p95 = 4,285.0 ms` in rerun `1927fe9`) due to intentional BCrypt CPU cost on a single host. Under the live `k6` mixed-endpoint `constant-vus` workload (Sections 4 and 5.2), `POST /api/auth/login` **PASSED** all three tiers (`p95 = 1.09 s` at 100 VUs post-fix).
+2. **`LA-366` Resolution of `POST /api/delivery-orders` Concurrency:** Merging `LA-366` (`10700d2`, atomic `DeliveryTrackingCounters`) eliminated the `POST /api/delivery-orders` failures and latency spike observed in Section 4: the post-fix `k6` rerun achieved **2,305/2,305 `201 Created` (`0` errors)** and `p95 = 738.48 ms` at 100 VUs (down from `245/1,118` failures and `p95 = 4.32 s`).
+3. **Acceptance Status:** The mixed-endpoint `k6` profile now passes all 15/15 latency thresholds with `0.00%` errors, while the 100-VU barrier login benchmark still fails (`4,285.0 ms > 3,000 ms`). `LA-176` / `LA-45` remain open until the team lead confirms whether the passing `k6` mixed-endpoint profile satisfies acceptance or agrees on a revised barrier login criterion/hardware profile.
