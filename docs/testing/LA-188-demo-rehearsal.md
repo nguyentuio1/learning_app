@@ -4,7 +4,7 @@ Owner: [LA-188](https://hungndemail.atlassian.net/browse/LA-188), Hung Nguyen. P
 Companion demo script: [Final demo script (LA-186)](../demo/demo-script.md).
 
 > [!IMPORTANT]
-> This runbook defines the pre-flight startup configuration, rehearsal guardrails, and issue-tracking log for the whole-team dry-run of [demo-script.md](../demo/demo-script.md). Automated build and CI checks recorded below do **not** establish that the live demo works end-to-end; live rehearsal attendance and issue fixes must be recorded after the team runs through the script together.
+> This runbook defines the pre-flight startup configuration, rehearsal guardrails, and live-rehearsal log for the whole-team dry-run of [demo-script.md](../demo/demo-script.md) on integrated `develop` (`cc1fc256cb7fdb4ee3b89234cb90b7d868235de0` or newer). Automated build and CI checks recorded below do **not** establish that the live demo works end-to-end; live rehearsal attendance, step-by-step `PASS`/`FAIL`/`BLOCKED` results, and Web + Flutter screenshots/videos must be recorded after the team runs through the script together.
 
 ---
 
@@ -31,16 +31,17 @@ Choose **one** startup path (do not mix them, as both bind port `5055`):
 
 ## 2. Rehearsal data prerequisites & scene guardrails
 
-The Development seed (`SeedDevelopmentDataAsync`) creates stations `HCM-01` and `HCM-02` (`OPERATIONAL`), `HCM-03` (`MAINTENANCE`), plus `customer@...`, `dispatcher@...`, and one operator (`operator@...` assigned to `HCM-01`). Before rehearsing [demo-script.md](../demo/demo-script.md) (demo order **`HCM-01` -> `HCM-02`**), verify these prerequisites—either via **LA-187** demo data (Nhân Lưu Thiện) or manual Admin setup in Scene 1:
+On `develop` (`cc1fc256cb7fdb4ee3b89234cb90b7d868235de0`, including **LA-187** demo data), the Development seed (`SeedDevelopmentDataAsync`) already seeds stations `HCM-01` and `HCM-02` (`OPERATIONAL`), `HCM-03` (`MAINTENANCE`), `Customer`, `Dispatcher`, `LogisticsManager` (`MANAGER`), origin/destination station operators (`HCM-01` and `HCM-02`), and `IDLE` drone(s) *(older pre-LA-187 checkouts lacked the drone, `MANAGER`, and `HCM-02` operator seeds)*. Before rehearsing [demo-script.md](../demo/demo-script.md) (demo order **`HCM-01` -> `HCM-02`**), verify these prerequisites in the live environment:
 
 | Scene(s) in `demo-script.md` | Prerequisite / Guardrail | Why / Failure avoided |
 |---|---|---|
-| **1, 3** (Setup & Dispatch) | Create at least one `IDLE` drone in **Admin -> Drone fleet** matching the demo package payload/range. | `SeedDevelopmentDataAsync` seeds no drones; Scene 3 scheduling fails without an `IDLE` drone. |
-| **1, 8** (Setup & Reports) | Create a `LogisticsManager` (`MANAGER`) account in **Admin -> Users**. | `SeedDevelopmentDataAsync` seeds no `MANAGER` account for Scene 8 dashboard/reports. |
-| **3, 4, 5** (Schedule -> Intake -> Flight) | In Scene 3, save `ScheduledDepartureTime` **at least 16 minutes ahead**, then assign the drone and complete intake before takeoff; ensure `DroneSimulator:Enabled=true`. Allow 25–30 minutes for the full new-order flow, or explicitly use a separate order prepared before the presentation. | Scheduling rejects departures less than 15 minutes ahead. `DroneSimulator:Enabled` defaults to `false` (`appsettings.json`), and `DroneSimulatorService` only takes off a `READY_FOR_TAKEOFF` order once `ScheduledDepartureTime <= now`. |
-| **4, 6a/6b** (Origin Intake & Destination Pickup) | Assign a second `StationOperator` to destination `HCM-02` before Scene 6a, **or** use Customer self-confirmation in the Customer app (`6b`). | `StationOperationService` enforces `station.OperatorId == caller` (`403` otherwise); `operator@...` is assigned only to `HCM-01` and cannot confirm pickup at `HCM-02`. |
+| **1, 3** (Setup & Dispatch) | Verify at least one `IDLE` drone exists in **Admin -> Drone fleet** matching the demo package payload/range (create one if missing). | Scene 3 scheduling fails without an eligible `IDLE` drone. |
+| **1, 8** (Setup & Reports) | Verify the seeded `LogisticsManager` (`MANAGER`) account can sign in and view **Dashboard & reports**. | Required for Scene 8 metrics/reports verification. |
+| **3, 4, 5** (Schedule -> Intake -> Flight) | In Scene 3, save `ScheduledDepartureTime` **at least 16 minutes ahead**, then assign the drone and complete intake before takeoff; ensure `DroneSimulator:Enabled=true`. Plan **25–30 minutes** for the full mission and pickup rehearsal. | Real scheduling requires at least 15 minutes lead time. `DroneSimulator:Enabled` defaults to `false` (`appsettings.json`), and `DroneSimulatorService` only takes off a `READY_FOR_TAKEOFF` order once `ScheduledDepartureTime <= now`. |
+| **4, 6a/6b** (Origin Intake & Destination Pickup) | Verify `HCM-01` and `HCM-02` each have their assigned `StationOperator` before Scene 4/6a (or use Customer self-confirmation in the Customer app for `6b`). | `StationOperationService` enforces `station.OperatorId == caller` (`403` otherwise). |
 | **6a/6b** (Secure Code Lockout) | Allow **at most 2 wrong codes**; the **3rd** wrong code locks the order for 10 minutes (`HTTP 423`, `OtpLockoutManager`: `failedLogs.Count >= 3`, `AddMinutes(10)`). | Prevents locking the demo order mid-rehearsal. |
-| **9** (Admin Audit Logs) | Verify **LA-177** (`AuditLogsPage` / `AuditLogsController`, merged via `#241`) is present on the rehearsal checkout. | Required for Scene 9 read-only audit filtering. |
+| **7** (AI features) | Verify ETA and Delivery Summary either produce results or report their actual unavailable state honestly. Keep **Customer chat** disabled (`BLOCKED`) unless the cloud retention policy is explicitly approved. | Do not self-enable Customer chat or mark it `PASS` while disabled by policy. |
+| **9** (Admin Audit Logs) | Verify **LA-177** (`AuditLogsPage` / `AuditLogsController`, merged via `#241`) is present and filters read-only audit records. | Required for Scene 9 audit verification. |
 
 ---
 
@@ -50,14 +51,33 @@ The Development seed (`SeedDevelopmentDataAsync`) creates stations `HCM-01` and 
 
 | Check | Command / Source | Result | Scope / Notes |
 |---|---|---|---|
-| Backend build (`feature/LA-188-rehearse-demo`) | `dotnet build backend/SmartDroneDelivery.sln --no-restore` | `Build succeeded` (`0 Warning(s)`, `0 Error(s)`) | Build verification only (not a test run), executed locally on `2026-11-17`. |
-| Repository CI (`32c33b3f25af5dee5a9930e7053ed360ea895ce2`) | [GitHub Actions run 44070729998](https://github.com/nguyentuio1/learning_app/actions/runs/44070729998) | `Backend tests`, `Web lint, test and build`, `Mobile analyze and test` all `success` | Automated CI on PR #240 prior to story merge; does not replace the live team dry-run. |
+| Integrated `develop` CI (`22be768` -> `cc1fc256cb7fdb4ee3b89234cb90b7d868235de0`) | [CI run 44263268429](https://github.com/nguyentuio1/learning_app/actions/runs/44263268429) · [Docker smoke 44263268425](https://github.com/nguyentuio1/learning_app/actions/runs/44263268425) | `Backend`, `Web`, `Mobile`, and `Docker compose smoke` passed | Automated CI handoff prior to live team rehearsal; does not replace the live dry-run. |
 
-### 3.2 Live team rehearsal log
+### 3.2 Live team rehearsal session metadata
 
 > [!NOTE]
-> Complete this table during the whole-team dry-run before closing **LA-188** / **LA-49**.
+> Complete Sections 3.2 and 3.3 during the whole-team dry-run (`Hưng`, `Khải`, `Nhân`, ...) before closing **LA-188** / **LA-49**. Keep rows `Pending` until actually executed.
 
-| Rehearsal session | Date & Participants | Problems found | Fixes / PRs applied | Sign-off |
+| Field | Value |
+|---|---|
+| **Date & Start / End time (`Asia/Ho_Chi_Minh`)** | *Pending live rehearsal* |
+| **Participants** | *Pending (e.g., Hung Nguyen, Phan Van Khai, Nhan Luu Thien)* |
+| **Environment** | *Pending (Docker Path A / Dev Path B + Android/iOS target)* |
+| **Remote `develop` SHA** | `cc1fc256cb7fdb4ee3b89234cb90b7d868235de0` *(update if newer)* |
+| **CI run URLs (Backend / Web / Mobile)** | *Link current run URLs for the rehearsed SHA* |
+| **Web + Flutter Customer/Operator evidence** | *Attach screenshot/recording links for Web, Customer app, and Operator app* |
+| **Open bugs / Linked tickets / Re-run result** | *Record any `FAIL` tickets, fix PRs, and re-test outcomes* |
+
+### 3.3 Step-by-step live rehearsal checklist (`PASS` / `FAIL` / `BLOCKED`)
+
+| Step | Actor & Client | Verification criteria | Result (`PASS`/`FAIL`/`BLOCKED`) | Notes / Ticket / Evidence link |
 |---|---|---|---|---|
-| Dry-run #1 (Full team) | *Pending live rehearsal* | *Record any startup, seed, UI, or timing issues observed* | *Link fix commits/PRs* | *Pending* |
+| **1** | `Customer` (Web / Mobile) | Create order + upload package photo; verify photo reloads from MinIO; save 6-digit pickup code. | *Pending* | — |
+| **2** | `Dispatcher` (Web) | Approve order, schedule departure **>= 16 min ahead**, and assign eligible `IDLE` drone. | *Pending* | — |
+| **3** | `StationOperator` (`HCM-01`, Flutter Operator app) | Origin package intake (`APPROVED -> READY_FOR_TAKEOFF`) and slot occupancy update. | *Pending* | — |
+| **4** | Simulator + Tracking (`Dispatcher` / `Customer`) | Active simulator mission moves on basemap/live map (`IN_TRANSIT -> ARRIVED`). | *Pending* | — |
+| **5** | `StationOperator` (`HCM-02`) / `Customer` (Flutter) | Confirm pickup / receipt (`ARRIVED -> DELIVERED`) and release destination slot. | *Pending* | — |
+| **6** | `LogisticsManager` (Web) | Dashboard metrics & reports reflect completed order. | *Pending* | — |
+| **7** | `SystemAdministrator` (Web) | Admin management & read-only Audit Logs filter the demo order actions. | *Pending* | — |
+| **8** | Media & AI checks | Avatar/MinIO photo reload succeeds; AI ETA & Delivery Summary return output or honest unavailable status. | *Pending* | — |
+| **9** | Customer AI Chat | Remains disabled pending cloud chat retention policy approval. | `BLOCKED` *(expected while disabled by policy)* | Do not enable or mark `PASS` without policy approval. |
