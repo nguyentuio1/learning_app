@@ -8,7 +8,7 @@
     "NumberOfLogicalProcessors": 12
   },
   "barrier": {
-    "runtime": "Windows .NET8.0.31, SDK10.0.402, Release, TestServer and EFInMemory",
+    "runtime": "Windows .NET8.0.31, SDK8.0.425, Release, TestServer and EFInMemory",
     "command": "RUN_PERFORMANCE_BENCHMARKS=true dotnet test backend/SmartDroneDelivery.Tests/SmartDroneDelivery.Tests.csproj -c Release --no-restore --filter FullyQualifiedName~PerformanceBenchmarkTests --logger console;verbosity=detailed",
     "concurrency": [
       10,
@@ -44,7 +44,8 @@
         "sha256": "fbd8822c1db7124f9259eaaf7e293655912c3500a17e6e3c00ec2df93cd4ec48",
         "capturedFileSha256BeforeGitNormalization": "f1e25efb8558ac6de10e8e67b3199b62bb1bcc58be202d1654a10e9734f2e50a"
       }
-    ]
+    ],
+    "sdkVersionVerification": "dotnet --version from the benchmark worktree: 8.0.425"
   },
   "dockerMixed": {
     "sourceSha": "f7502b711a1c31f4d4da296bd4576fe351e574b4",
@@ -69,5 +70,6 @@
     "trackingConstraintOccurrencesNote": "One occurrence is the migration CREATE UNIQUE INDEX statement, not an exception."
   },
   "scope": "Reference-workstation results; same tests/workloads and source, no authentication/BCrypt/threshold changes. Shared workstation background load was not controlled. Earlier FAIL runs remain valid historical measurements; cause of their difference is not established. No native/AI/deployment release acceptance is implied.",
-  "hashRepresentation": "sha256/rawSha256 address UTF-8 LF-normalized Git blobs; original capture hash retained when line-ending normalization changed bytes."
+  "hashRepresentation": "sha256/rawSha256 address UTF-8 LF-normalized Git blobs; original capture hash retained when line-ending normalization changed bytes.",
+  "executedBy": "TBA Review / Codex; reference runs, separate from Khai historical runs"
 }

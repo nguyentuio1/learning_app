@@ -127,12 +127,12 @@ After merging `origin/develop` (`10700d2`, PR #281 / `LA-366` atomic `DeliveryTr
 
 ### 5.3 Recorded Reference Workstation and PostgreSQL16 Docker Validation
 
-The **unchanged** `PerformanceBenchmarkTests` at `f7502b7` was run three times, each in a fresh test process with `RUN_PERFORMANCE_BENCHMARKS=true`. All 15 endpoint/tier cases passed in each run (45 measurements, zero HTTP errors). BCrypt remains cost11; no processor/thread-pool overrides, threshold changes, auth-result caching, or benchmark edits were applied.
+Reference runs were executed by TBA Review/Codex, separately from Khai historical runs. The reference SDK was verified with `dotnet --version` as 8.0.425; the earlier Khai run reports SDK10.0.402. This difference is recorded, not established as the cause of different timings. The **unchanged** `PerformanceBenchmarkTests` at `f7502b7` was run three times, each in a fresh test process with `RUN_PERFORMANCE_BENCHMARKS=true`. All 15 endpoint/tier cases passed in each run (45 measurements, zero HTTP errors). BCrypt remains cost11; no processor/thread-pool overrides, threshold changes, auth-result caching, or benchmark edits were applied.
 
 | Reference environment | Recorded configuration |
 | --- | --- |
 | Host | Intel Core i5-13420H, 8 physical cores /12 logical processors |
-| Barrier runtime | Windows, .NET8.0.31 /SDK10.0.402, Release TestServer + EFInMemory |
+| Barrier runtime | Windows, .NET8.0.31 /SDK8.0.425, Release TestServer + EFInMemory |
 | Docker runtime | Docker29.8.1,12 exposed CPUs,16629112832 bytes VM memory; no explicit container CPU/memory caps |
 | Live database/API | PostgreSQL16.15 (`postgres:16-alpine`), API .NET8.0.34 container, MinIO; isolated fresh synthetic database |
 | Live load generator | k6v2.4.0 /go1.27.3 /linux-amd64, unchanged mixed-endpoint script at `f7502b7` |
