@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/error/error_message.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/package_model.dart';
 import '../../../data/providers/package_providers.dart';
+import '../../../routes/route_paths.dart';
 import 'package_notifier.dart';
 
 class EditPackageRoute extends ConsumerWidget {
@@ -442,7 +444,12 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Package saved successfully.')),
     );
-    Navigator.of(context).pop(true);
+    final router = GoRouter.maybeOf(context);
+    if (router != null && !router.canPop()) {
+      router.go(RoutePaths.customerPackages);
+    } else {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<void> _uploadPhoto() async {
