@@ -398,6 +398,20 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.ToTable("delivery_status_logs", (string)null);
                 });
 
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryTrackingCounter", b =>
+                {
+                    b.Property<string>("Month")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Month");
+
+                    b.ToTable("delivery_tracking_counters", (string)null);
+                });
+
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.Drone", b =>
                 {
                     b.Property<Guid>("Id")
