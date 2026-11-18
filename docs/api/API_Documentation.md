@@ -1,7 +1,7 @@
 # LA-183: SmartDroneDelivery API Documentation
 
-**Baseline:** `develop` (`2148e50`, ASP.NET Core 8)  
-**Interactive Explorer:** Swagger UI at `http://localhost:5055/swagger` (enabled when `ASPNETCORE_ENVIRONMENT=Development`)  
+**Baseline:** `develop` (`b6f7b7b03acb665164f2bd6f572930aa37d917c7`, ASP.NET Core 8)
+**Interactive Explorer:** Swagger UI at `http://localhost:5055/swagger` (enabled when `ASPNETCORE_ENVIRONMENT=Development`)
 **OpenAPI Specs:** [sprint-6-openapi.json](sprint-6-openapi.json), [sprint-7-openapi.json](sprint-7-openapi.json)
 
 ---
@@ -9,7 +9,7 @@
 ## 1. Authentication & Authorization
 
 ### 1.1 JWT Bearer Authentication
-All first-party endpoints require an `Authorization: Bearer <accessToken>` header obtained from `POST /api/auth/login` or `POST /api/auth/register` (unless explicitly marked anonymous such as `/api/auth/*` and `/health/*`). Every protected endpoint verifies the **current persisted account status (`ACTIVE`) and role** in PostgreSQL rather than trusting stale JWT claims.
+All first-party endpoints require an `Authorization: Bearer <accessToken>` header obtained from `POST /api/auth/login` or `POST /api/auth/register` (except register/login/refresh and the health probes; logout requires authentication). Every protected endpoint verifies the **current persisted account status (`ACTIVE`) and role** in PostgreSQL rather than trusting stale JWT claims.
 
 ### 1.2 External Partner API Key (`X-API-Key`)
 External integration endpoints under `/api/v1/delivery-orders` accept `X-API-Key: <secret>` provisioned by an Administrator via `POST /api/admin/integration-keys`. Keys are scoped (`orders:create`, `orders:read`), rate-limited (`429 Too Many Requests`), and cannot access first-party routes or `/hubs/tracking`.
@@ -73,7 +73,7 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 
 ---
 
-## 3. Complete Endpoint Reference
+## 3. Endpoint Reference
 
 ### 3.1 Health Checks & Auth (`auth-api.md`)
 
@@ -135,28 +135,28 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 | Method | Endpoint | Auth / Roles | Description |
 | :---: | :--- | :--- | :--- |
 | `GET` | `/api/landing-stations` | Authenticated | List landing stations (`MANAGER` can read list & availability only) |
-| `GET` | `/api/landing-stations/{id:guid}` | `ADMIN`, `DISPATCHER`, `OPERATOR` (own only) | Get station details |
+| `GET` | `/api/landing-stations/{id:guid}` | `ADMIN`, `DISPATCHER`, `STATION_OPERATOR` (own only) | Get station details |
 | `POST` | `/api/landing-stations` | `ADMIN` | Create landing station |
 | `PUT` | `/api/landing-stations/{id:guid}` | `ADMIN` | Update landing station |
-| `PUT` | `/api/landing-stations/{id:guid}/status` | `ADMIN` | Change station status (`OPERATIONAL` / `MAINTENANCE` / `OFFLINE`) |
+| `PUT` | `/api/landing-stations/{id:guid}/status` | `ADMIN`, `STATION_OPERATOR` (assigned station) | Change station status (`OPERATIONAL` / `MAINTENANCE` / `OFFLINE`) |
 | `GET` | `/api/landing-stations/{id:guid}/availability` | Authenticated | Get real-time station slot availability |
-| `GET` | `/api/landing-stations/{stationId:guid}/slots` | `ADMIN`, `DISPATCHER`, `OPERATOR` (own only) | List slots for a station |
-| `GET` | `/api/station-slots/{id:guid}` | `ADMIN`, `DISPATCHER`, `OPERATOR` (own only) | Get single slot detail |
+| `GET` | `/api/landing-stations/{stationId:guid}/slots` | `ADMIN`, `DISPATCHER`, `STATION_OPERATOR` (own only) | List slots for a station |
+| `GET` | `/api/station-slots/{id:guid}` | `ADMIN`, `DISPATCHER`, `STATION_OPERATOR` (own only) | Get single slot detail |
 | `POST` | `/api/landing-stations/{stationId:guid}/slots` | `ADMIN` | Add slot to station (max 20) |
 | `DELETE` | `/api/station-slots/{id:guid}` | `ADMIN` | Remove `EMPTY` slot |
-| `PUT` | `/api/station-slots/{id:guid}/status` | `ADMIN`, `OPERATOR` (own) | Toggle slot between `EMPTY` and `ERROR` |
+| `PUT` | `/api/station-slots/{id:guid}/status` | `ADMIN`, `STATION_OPERATOR` (own) | Toggle slot between `EMPTY` and `ERROR` |
 | `GET` | `/api/drones` | `ADMIN`, `DISPATCHER` | List drone fleet |
 | `GET` | `/api/drones/{id:guid}` | `ADMIN`, `DISPATCHER` | Get drone details |
-| `POST` | `/api/drones` | `ADMIN` | Register drone (`409` on duplicate serial) |
-| `PUT` | `/api/drones/{id:guid}` | `ADMIN` | Update drone specifications |
+| `POST` | `/api/drones` | `ADMIN`, `DISPATCHER` | Register drone (`409` on duplicate serial) |
+| `PUT` | `/api/drones/{id:guid}` | `ADMIN`, `DISPATCHER` | Update drone specifications |
 | `PUT` | `/api/drones/{id:guid}/maintenance` | `ADMIN`, `DISPATCHER` | Toggle drone maintenance (`409` if active mission) |
-| `GET` | `/api/landing-stations/{stationId:guid}/operations/orders/{trackingNumber}` | `ADMIN`, `OPERATOR` (own) | Look up order at station (masks phone & pickup code) |
-| `POST` | `/api/landing-stations/{stationId:guid}/operations/intake` | `ADMIN`, `OPERATOR` (own) | Physical intake & dimension check (`APPROVED -> READY_FOR_TAKEOFF`, slot `OCCUPIED`) |
-| `POST` | `/api/landing-stations/{stationId:guid}/operations/intake-reject` | `ADMIN`, `OPERATOR` (own) | Reject intake (`APPROVED -> FAILED`) |
-| `POST` | `/api/landing-stations/{stationId:guid}/operations/pickup` | `ADMIN`, `OPERATOR` (own) | Confirm recipient pickup (`ARRIVED -> DELIVERED`, releases slot, `423` on lockout) |
-| `POST` | `/api/landing-stations/{stationId:guid}/operations/validate-code` | `ADMIN`, `OPERATOR` (own) | Pre-validate `pickupSecureCode` (shares 3-attempt lockout state) |
-| `GET` | `/api/landing-stations/{stationId:guid}/operations/expired-parcels` | `ADMIN`, `OPERATOR` (own) | List expired/24h-timeout parcels still occupying destination slots |
-| `POST` | `/api/landing-stations/{stationId:guid}/operations/clear-expired-parcel` | `ADMIN`, `OPERATOR` (own) | Clear expired parcel and release destination slot |
+| `GET` | `/api/landing-stations/{stationId:guid}/operations/orders/{trackingNumber}` | `ADMIN`, `STATION_OPERATOR` (own) | Look up order at station (masks phone & pickup code) |
+| `POST` | `/api/landing-stations/{stationId:guid}/operations/intake` | `ADMIN`, `STATION_OPERATOR` (own) | Physical intake & dimension check (`APPROVED -> READY_FOR_TAKEOFF`, slot `OCCUPIED`) |
+| `POST` | `/api/landing-stations/{stationId:guid}/operations/intake-reject` | `ADMIN`, `STATION_OPERATOR` (own) | Reject intake (`APPROVED -> FAILED`) |
+| `POST` | `/api/landing-stations/{stationId:guid}/operations/pickup` | `ADMIN`, `STATION_OPERATOR` (own) | Confirm recipient pickup (`ARRIVED -> DELIVERED`, releases slot, `423` on lockout) |
+| `POST` | `/api/landing-stations/{stationId:guid}/operations/validate-code` | `ADMIN`, `STATION_OPERATOR` (own) | Pre-validate `pickupSecureCode` (shares 3-attempt lockout state) |
+| `GET` | `/api/landing-stations/{stationId:guid}/operations/expired-parcels` | `ADMIN`, `STATION_OPERATOR` (own) | List expired/24h-timeout parcels still occupying destination slots |
+| `POST` | `/api/landing-stations/{stationId:guid}/operations/clear-expired-parcel` | `ADMIN`, `STATION_OPERATOR` (own) | Clear expired parcel and release destination slot |
 
 ### 3.5 Dispatch Workflow, Telemetry, Tracking & Analytics (`delivery-workflow-api.md`, `sprint-6-api-contract.md`)
 
@@ -170,14 +170,14 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 | `PUT` | `/api/delivery-orders/{id}/schedule` | `DISPATCHER`, `ADMIN` | Set `scheduledDepartureTime` (`>= 15` min future) |
 | `GET` | `/api/delivery-orders/{id}/available-drones` | `DISPATCHER`, `ADMIN` | Evaluate drone payload/range/schedule eligibility |
 | `POST` | `/api/delivery-orders/{id}/flight-mission` | `DISPATCHER`, `ADMIN` | Assign drone (`PLANNED` mission, reserves destination slot) |
-| `GET` | `/api/dispatch/active-deliveries` | `DISPATCHER`, `ADMIN` | List active `IN_TRANSIT` deliveries |
+| `GET` | `/api/dispatch/active-deliveries` | `DISPATCHER`, `ADMIN`, `MANAGER` | List active `IN_TRANSIT` deliveries |
 | `POST` | `/api/delivery-orders/{id}/fail` | `DISPATCHER`, `ADMIN` | Report flight failure (`IN_TRANSIT/ARRIVED -> FAILED`) |
 | `GET` | `/api/dispatch/failed-orders` | `DISPATCHER`, `ADMIN` | List `FAILED` orders awaiting resolution |
 | `GET` | `/api/dispatch/failed-orders/{id}` | `DISPATCHER`, `ADMIN` | Get failure episode & resolution history |
 | `POST` | `/api/delivery-orders/{id}/resolve-failure` | `DISPATCHER`, `ADMIN` | Resolve failure (`RESCHEDULE`, `CANCEL`, `RETURN_TO_ORIGIN`) |
 | `POST` | `/api/flight-missions/{missionId:guid}/telemetry` | `ADMIN` | Ingest telemetry sample (for simulator/admin demo) |
-| `GET` | `/api/delivery-orders/{id}/tracking` | `CUSTOMER` (owner), `DISPATCHER`, `MANAGER` | Get tracking snapshot (`lastPosition`, `telemetryStale`) |
-| `SignalR` | `/hubs/tracking` | Authenticated | Real-time `Subscribe(orderId)` push (`PositionUpdated`, `StatusChanged`) |
+| `GET` | `/api/delivery-orders/{id}/tracking` | `CUSTOMER` (owner), `DISPATCHER`, `MANAGER`, `ADMIN` | Get tracking snapshot (`lastPosition`, `telemetryStale`) |
+| `SignalR` | `/hubs/tracking` | Same authorized viewers as tracking reads | Real-time `Subscribe(orderId)` push (`PositionUpdated`, `StatusChanged`) |
 | `GET` | `/api/analytics/dashboard` | `MANAGER` | Date-bounded (`UTC+07:00`, `<= 366` days) KPI dashboard |
 | `GET` | `/api/analytics/reports/deliveries` | `MANAGER` | Paginated delivery report rows |
 
@@ -202,3 +202,11 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 | `GET` | `/api/ai-assistant/sessions` | `CUSTOMER` | List owned assistant sessions |
 | `GET` | `/api/ai-assistant/sessions/{id:guid}/messages` | `CUSTOMER` | Read owned session messages (bigint decimal-string IDs) |
 | `DELETE` | `/api/ai-assistant/sessions/{id:guid}` | `CUSTOMER` | Delete owned session and messages atomically |
+
+### 3.8 Staff insight lookup
+
+`GET /api/delivery-insights/orders` accepts `DISPATCHER` or `MANAGER` JWTs. Search current/historical deliveries by tracking number, status and inclusive creation dates, with pagination. It returns a safe projection for ETA/summary pickers. Customer insight access remains limited to owned orders. See the [lookup contract](delivery-insight-lookup.md).
+
+## 4. Integration and runtime scope
+
+The endpoint catalog describes implemented source. It does not establish deployment, live AI quality, native-device or load acceptance. AI services remain explicitly gated; see [Gemini configuration and policy](../deployment/gemini-ai.md). For current role navigation and scoped image evidence see [screen flows](../design/ui-screen-flows.md). Performance work in [PR #252](https://github.com/nguyentuio1/learning_app/pull/252) is separate and has unresolved failing results.

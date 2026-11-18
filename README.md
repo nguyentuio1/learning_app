@@ -8,7 +8,7 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 
 ## Project status
 
-| Area | State (Sprint 7 integrated on `develop`) |
+| Area | Source state on `develop` |
 |---|---|
 | Authentication, profile, user/role management & audit logs | Implemented (backend, web admin pages, failed sign-in & action audit search) |
 | Customer addresses, packages, delivery orders & notifications | Implemented (backend, web, mobile) |
@@ -17,6 +17,8 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 | Real-time tracking (SignalR), delivery map, confirmation, analytics & v1 API | Implemented (backend, web, mobile, OpenAPI 3.0) |
 | AI ETA estimation, delivery summary & customer assistant | Implemented behind default-off configuration/retention gates (`docs/api/sprint-7-api-contract.md`) |
 | Docker full-stack deployment, health checks & backup/restore scripts | Implemented (`docker-compose.yml`, `/health/live`, `/health/ready`, `scripts/backup-db.*`) |
+
+Implementation is distinct from acceptance: native mobile, enabled-AI policy/quality, performance/load criteria and the full team rehearsal retain open evidence gates. See the [current screen flows](docs/design/ui-screen-flows.md) for the reviewed web journeys.
 
 > See [`docs/DeliverableList.md`](docs/DeliverableList.md), [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md), [`docs/operations/DeploymentGuide.md`](docs/operations/DeploymentGuide.md), and [`docs/guides/README.md`](docs/guides/README.md) for full documentation.
 

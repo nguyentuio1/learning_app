@@ -27,11 +27,16 @@ cd learning_app
 cp .env.example .env
 ```
 
-Open `.env` and fill in every required value:
+For PowerShell, use `Copy-Item .env.example .env`. Open `.env` and fill in every required value:
 - `POSTGRES_PASSWORD`: strong password (no spaces or `;`).
+- `MINIO_ROOT_USER`: retain the non-empty example value or choose your own.
 - `MINIO_ROOT_PASSWORD`: at least 8 characters.
 - `JWT_KEY`: random 32+ byte secret (e.g. `openssl rand -base64 48`).
 - `ADMIN_PASSWORD`: initial Administrator password (8–100 chars, letter + digit).
+
+For a disposable demonstration with seeded accounts and stations, set `ASPNETCORE_ENVIRONMENT=Development` in `.env`. Production is the default and creates only the configured initial administrator. Development data is gated by `Seed:DevelopmentData` (enabled in the Development settings). Verify the current accounts and station assignments in the [demo prerequisites](../demo/demo-script.md); do not enable demo data on a production database.
+
+Set `MINIO_PUBLIC_URL` to an address reachable by every browser/emulator/phone that will view photos, for example `http://<YOUR_HOST_LAN_IP>:9000`. The API uses `minio:9000` internally, but that container hostname is not a client photo URL. Changing Flutter's API address alone does not rewrite absolute photo URLs. See [MinIO photo verification](../testing/minio-photo-verification.md).
 
 ### Step 2: Build and Start All Containers
 
@@ -79,12 +84,21 @@ dotnet user-secrets set "Jwt:Key" "<at-least-32-random-bytes>"
 dotnet user-secrets set "Seed:AdminPassword" "<your-admin-password>"
 cd ../..
 
+dotnet user-secrets set --project backend/SmartDroneDelivery.Api "Minio:PublicBaseUrl" "http://<YOUR_HOST_LAN_IP>:9000"
 dotnet run --project backend/SmartDroneDelivery.Api/SmartDroneDelivery.Api.csproj --launch-profile http
+```
+
+Keep that API terminal running. In a second terminal at the repository root:
+
+```bash
+cp frontend/web/.env.example frontend/web/.env
 npm --prefix frontend/web ci
 npm --prefix frontend/web run dev
 ```
 
-Access the Vite dev server at `http://localhost:5173`.
+Access the Vite dev server at `http://localhost:5173`. The frontend `.env` points `VITE_API_BASE_URL` to the standalone API; API user-secrets are separate from Compose's `.env`.
+
+For a simulated delivery lifecycle, explicitly enable `DroneSimulator:Enabled` for the API process (or `DroneSimulator__Enabled=true` in Compose `.env`). See the [demo script](../demo/demo-script.md) for scheduling, required station data and the optional accelerated demo speed. AI generation remains off unless explicitly configured; [Gemini configuration](../deployment/gemini-ai.md) records the separate activation/retention gates.
 
 ---
 
@@ -125,7 +139,7 @@ flutter build apk --debug -t lib/main_operator.dart --flavor operator \
   --dart-define=API_BASE_URL=http://<YOUR_HOST_LAN_IP>:5055/api
 ```
 
-Install onto a connected device via ADB:
+These commands produce debug demonstration packages. Native emulator/device acceptance and production signing remain separate checks. Allow the API and MinIO host ports through the workstation firewall for the test LAN. Install onto a connected device via ADB:
 
 ```bash
 adb install -r build/app/outputs/flutter-apk/app-customer-debug.apk
