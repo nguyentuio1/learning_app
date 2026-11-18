@@ -1,7 +1,7 @@
 /* Draft motion: progressive enhancement; content is visible without animation. */
 .account-nav-marker { position:absolute; top:0; left:0; z-index:2; width:3px; height:20px; border-radius:0 3px 3px 0; background:#f5ca60; opacity:0; pointer-events:none; }
-.account-sidebar[data-motion-nav='ready'] > .account-nav-marker { opacity:1; }
-.account-sidebar[data-motion-nav='ready'] .account-current::before { visibility:hidden; }
+.account-sidebar nav[data-motion-nav='ready'] > .account-nav-marker { opacity:1; }
+.account-sidebar nav[data-motion-nav='ready'] .account-current::before { visibility:hidden; }
 .account-nav-link,.account-current { transition:background-color 180ms ease,color 180ms ease; }
 .account-sidebar .account-icon { transition:transform 180ms ease; }
 .account-sidebar a:hover > .account-icon { transform:translateX(2px); }
@@ -15,8 +15,8 @@
 .users-role-card a { transition:color 160ms ease,transform 180ms ease; }
 .users-role-card a:hover { transform:translateX(3px); }
 @media(max-width:760px) {
-  .account-sidebar > .account-nav-marker { display:none; }
-  .account-sidebar[data-motion-nav='ready'] .account-current::before { visibility:visible; }
+  .account-sidebar .account-nav-marker { display:none; }
+  .account-sidebar nav[data-motion-nav='ready'] .account-current::before { visibility:visible; }
 }
 @media(prefers-reduced-motion:reduce) {
   .account-nav-link,.account-current,.account-sidebar .account-icon,.users-page .ant-card,.users-primary-link,.users-page .ant-btn,.users-row-action,.users-page .ant-table-tbody > tr > td,.users-role-card a { transition:none; }

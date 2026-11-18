@@ -85,11 +85,13 @@ public class MinioPackageStorage : IPackageStorage
             if (!await _client.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket)))
             {
                 await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucket));
-                var policy = $$"""
-                    {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::{{bucket}}/*"]}]}
-                    """;
-                await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(bucket).WithPolicy(policy));
             }
+
+            // A provisioned bucket may exist without its read policy, including after a failed first upload.
+            var policy = $$"""
+                {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::{{bucket}}/*"]}]}
+                """;
+            await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(bucket).WithPolicy(policy));
 
             _bucketReady = true;
         }

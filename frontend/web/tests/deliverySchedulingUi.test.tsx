@@ -1,5 +1,5 @@
 // LA-138: Test delivery scheduling and drone assignment UI and integration
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'antd'
@@ -94,6 +94,8 @@ const mockStations = [
 let mock: MockAdapter
 
 beforeEach(() => {
+  const matchMedia = window.matchMedia
+  vi.stubGlobal('matchMedia', (query: string) => ({ ...matchMedia(query), matches: query.startsWith('(min-width:') }))
   session.clear()
   mock = new MockAdapter(apiClient)
   mock.onGet('/api/landing-stations').reply(200, mockStations)
@@ -108,7 +110,10 @@ beforeEach(() => {
   mock.onGet(`/api/delivery-orders/${orderId}/available-drones`).reply(200, candidateDrones)
 })
 
-afterEach(() => mock.restore())
+afterEach(() => {
+  mock.restore()
+  vi.unstubAllGlobals()
+})
 
 function show(path = '/dispatcher/scheduling') {
   render(
@@ -128,7 +133,7 @@ it('renders approved orders queue with routing, package and assignment status', 
   expect(await screen.findByText('DD-202611-0088')).toBeInTheDocument()
   expect(screen.getByText('Electronics')).toBeInTheDocument()
   expect(screen.getByText('1200 g')).toBeInTheDocument()
-  expect(screen.getByText(/Hub North → Hub South/)).toBeInTheDocument()
+  expect(screen.getAllByText(/Hub North → Hub South/).length).toBeGreaterThan(0)
   expect(screen.getByText('UNASSIGNED')).toBeInTheDocument()
   expect(screen.getByText('Not scheduled')).toBeInTheDocument()
 })
@@ -304,6 +309,6 @@ it('displays notice and disables scheduling when order is no longer in APPROVED 
   })
 
   show(`/dispatcher/scheduling/${orderId}`)
-  expect(await screen.findByText('This delivery is no longer approved. Scheduling and assignment are unavailable.')).toBeInTheDocument()
+  expect(await screen.findByText('Scheduling and assignment are available while the delivery is Approved.')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Save departure' })).not.toBeInTheDocument()
 })

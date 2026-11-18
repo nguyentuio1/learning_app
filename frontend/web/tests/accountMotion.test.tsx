@@ -5,7 +5,9 @@ import { useAccountMotion } from '../src/hooks/useAccountMotion'
 function Screen({ route = '/admin/users' }: { route?: string }) {
   const ref = useAccountMotion(route)
   return <div ref={ref}>
-    <aside className="account-sidebar"><span className="account-nav-marker" /><a href={route} aria-current="page">Current page</a></aside>
+    <aside className="account-sidebar">
+      <nav><span className="account-nav-marker" /><a href={route} aria-current="page">Current page</a></nav>
+    </aside>
     <main className="users-page"><header className="users-heading">Users</header><div className="ant-card"><input aria-label="Search" /></div></main>
   </div>
 }
@@ -44,5 +46,5 @@ it('skips movement with reduced motion and still aligns the active marker', () =
   const { animate } = mockAnimate()
   const { container } = render(<Screen />)
   expect(animate).not.toHaveBeenCalled()
-  expect(container.querySelector('.account-sidebar')).toHaveAttribute('data-motion-nav', 'ready')
+  expect(container.querySelector('.account-sidebar nav')).toHaveAttribute('data-motion-nav', 'ready')
 })

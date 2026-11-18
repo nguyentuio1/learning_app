@@ -58,6 +58,9 @@ services:
       # Optional: creates the first administrator on the first start (LA-328).
       Seed__AdminEmail: ${ADMIN_EMAIL:-admin@smartdronedelivery.com}
       Seed__AdminPassword: ${ADMIN_PASSWORD:-}
+      # Optional: demo simulator settings (LA-186 / LA-188); default off in non-demo runs.
+      DroneSimulator__Enabled: ${DroneSimulator__Enabled:-false}
+      DeliveryFlight__CruiseSpeedMps: ${DeliveryFlight__CruiseSpeedMps:-12}
     ports:
       # Same port as `dotnet run`, so the mobile apps work unchanged. Stop one before starting the other.
       - "${API_HOST_PORT:-5055}:8080"

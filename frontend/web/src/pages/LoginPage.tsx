@@ -4,7 +4,7 @@ import { Alert, Button, Form, Input, Spin } from 'antd'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LoginIllustration } from '../components/auth/LoginIllustration'
-import { operationDestination } from '../features/operations/navigation'
+import { operationDestination, workspaceDestination } from '../features/operations/navigation'
 import './login.css'
 
 export function LoginPage() {
@@ -24,17 +24,16 @@ export function LoginPage() {
   if (auth.status === 'loading') return <main className="page-shell"><Spin aria-label="Restoring session" /></main>
   if (auth.status === 'authenticated' && (!busy || transitionDone)) {
     // Accept only implemented internal destinations, never arbitrary redirect URLs.
-    const usesMobile = auth.user?.role.code === 'STATION_OPERATOR'
+    const role = auth.user?.role.code
     const requested = location.state?.from
-    const operation = operationDestination(requested, auth.user?.role.code)
+    const operation = operationDestination(requested, role)
     if (operation) return <Navigate to={operation} replace />
-    const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles)$/i.test(requested)
+    if (role === 'STATION_OPERATOR') return <Navigate to="/" replace />
+    const adminDestination = typeof requested === 'string' && /^\/admin\/(users(?:\/new|\/[0-9a-f-]{36})?|roles|audit-logs)$/i.test(requested)
     const customerDestination = typeof requested === 'string' && /^\/(?:(?:addresses|packages)(?:\/new|\/[0-9a-f-]{36})?|orders(?:\/new|\/[0-9a-f-]{36}(?:\/(?:edit|manage))?)?)$/i.test(requested)
-    const destination = auth.user?.role.code === 'CUSTOMER'
-      ? (customerDestination ? requested : '/addresses')
-      : auth.user?.role.code === 'ADMIN'
-      ? (adminDestination ? requested : requested === '/profile' ? '/profile' : '/admin/users')
-      : usesMobile || requested === '/' ? '/' : '/profile'
+    const destination = (role !== 'CUSTOMER' && requested === '/profile') ||
+      (role === 'CUSTOMER' && customerDestination) || (role === 'ADMIN' && adminDestination)
+      ? requested : workspaceDestination(role)
     return <Navigate to={destination} replace />
   }
   async function submit(values: { email: string; password: string }) {
