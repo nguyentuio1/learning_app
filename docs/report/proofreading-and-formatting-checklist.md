@@ -1,55 +1,45 @@
-# Proofreading, Formatting, and Terminology Checklist (LA-255)
+# Proofreading, formatting and publication checklist (LA-204 / LA-351)
 
-Owner: [LA-255](https://hungndemail.atlassian.net/browse/LA-255), Hung Nguyen. Parent story: [LA-204](https://hungndemail.atlassian.net/browse/LA-204) (TBA Review retains final report consolidation, export, and approval).
+Review packet: 19 November 2026, documentation baseline `a90668c`, combined application `10c77d0`. Earlier source baselines are historical. The existing six-chapter structure and chapter numbering are retained; current corrections distinguish implementation, integration, runtime, deployment and acceptance.
 
----
+## 1. Structure and terminology
 
-## 1. Cross-document structure and numbering
+The [report index](README.md) links Chapters I-VI and the existing Confluence pages. Customer app and Station Operator app remain distinct flavors. Canonical slot states are `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR`; manual transitions are `EMPTY <-> ERROR`. Order `ARRIVED` differs from `DELIVERED`; mission `IN_AIR` is not an order status. Diagrams/history remain on the original pages, with dated current corrections above earlier snapshots.
 
-| Report part | Repository source | Confluence target | Formatting & numbering status |
+## 2. Verification scope
+
+Application CI `44414947666` passed backend/web/mobile and its tested tree equals `10c77d0`; documentation CI `44417197181` passed before PR #284 merged as `a90668c`. Flutter: 425 passed, no analyzer warnings/errors (30 information findings). [PerformanceTestReport section 5.3](../testing/PerformanceTestReport.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) records scoped reference passes while preserving old FAIL outputs. Browser API evidence does not establish native installation or SignalR delivery through the loopback preview. Flutter MinIO, actual enabled AI and actual team rehearsal remain outstanding acceptance.
+
+Jira Sprint 8 (id 8) CLOSED at `2026-11-18T23:09:56.278Z` (06:09:56 on 19 November, Asia/Ho_Chi_Minh). Unfinished acceptance remains open in backlog; closure does not prove acceptance.
+
+## 3. Links and publication checks
+
+Published pages were read back in full HTML on 19 November 2026. Existing page IDs/history were preserved, including the original diagrams and links. Current source links are pinned to `a90668c`; historical sources remain pinned to their earlier commits. Repository relative-link and fence validation is recorded with this change. Full readbacks and generated DOCX/PDF review exports are in local `artifacts/la204-20261119`; exported copies are not signed/approved submissions.
+
+## 4. Proofreader confirmations and page/version ledger
+
+### 4.1 Human proofreading confirmations
+
+| Role | Actual member | Date | Exact review target | Decision | Status |
+|---|---|---|---|---|---|
+| Proofreader 1 | Pending distinct real member | Pending | Versions below and generated review artifact hash | Pending | **Open** |
+| Proofreader 2 | Pending distinct real member | Pending | Versions below and generated review artifact hash | Pending | **Open** |
+
+CI, authorship, Jira Done subtasks and automated agent review do not supply either human confirmation. Each reviewer must inspect the six parts, contents, numbering, links, diagrams and scope, then record actual findings/decision in the existing Overview record. LA-204 final approval must identify the final exported artifact and exact hash after findings are resolved. Preserve credit for completed contributor work.
+
+### 4.2 Confluence page/version ledger & remaining blockers
+
+| Page | Existing ID | Actual published/readback version | Result |
 |---|---|---|---|
-| **I. Project Introduction** | [01-project-introduction.md](01-project-introduction.md) | [Page 14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | Numbered `1.`–`6.` with sentence-case headings (`Checked`). |
-| **II. Project Management Plan** | [02-project-management-plan.md](02-project-management-plan.md) | [Page 11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | Numbered `1.`–`8.` with sentence-case headings (`Checked`). |
-| **III. Software Requirements Specification** | [SRS.md](../requirements/SRS.md) | Consolidated via LA-253 | Cross-referenced from Chapters I, II, and IV (`Checked`). |
-| **IV. Software Design Description** | [04-software-design-description.md](04-software-design-description.md) | [Page 11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | Numbered `1.`–`4.` (`4.3 Historical references`), sentence-case headings aligned with Chapters I–II (`Checked`). |
-| **V. Test Plan & Test Report** | [test-plan.md](../testing/test-plan.md) · [test-report.md](../testing/test-report.md) | [Chapter V](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | Linked from Chapter II and Chapter IV (`Checked`). |
-| **VI. Release Package & User Guides** | Deliverable package, installation guides, and user manual | [Page 14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) (v2) | Structure preserved; final export & TOC assembly remain a pending gate under LA-204. |
+| Overview | [98403](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=98403) | **v8** | Current baseline/evidence and actual Sprint 8 closure; two confirmations remain open |
+| I. Introduction | [14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | **v3** | Current pointer; old Sprint 7 plan explicitly historical |
+| II. Management plan | [11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | **v6** | Actual Sprint 8 closure; old active labels historical |
+| III. Requirements | [11993093](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993093) | **v14** | Current integration/runtime/performance scope; diagrams/history retained |
+| IV. Design | [11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | **v14** | Atomic allocator and current flows; diagrams/history retained |
+| V. Testing | [11927583](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | **v16** | Actual PR #252 merge/reference passes; old FAIL evidence retained |
+| VI. Release/guides | [14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) | **v9** | LA-48/203 integrated; actual runtime and remaining acceptance |
+| NFR | [11960371](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11960371) | **v9** | Original performance criterion unchanged; unsupported fixed test counts/scaling claims corrected |
 
-Formatting fixes applied in this pass:
-- Fixed missing spaces and added direct Confluence page links in [README.md](README.md) (`14188546`, `11927566`), and updated the chapter file count wording.
-- Harmonized [04-software-design-description.md](04-software-design-description.md) headings to sentence case (`1. System design`, `2. Database design`, `3. Detailed design`, `4. Handoff and review`, `4.3 Historical references`) to match Chapters I and II.
+Remaining report acceptance: two actual member confirmations and approved final export. LA-351 source PR still needs current review/CI/integration before reporting that story integrated. Publishing pages is a separate completed action.
 
----
-
-## 2. Mobile and station terminology consistency
-
-All repository report chapters and Sprint 7 mobile/station user-flow sources should use the following canonical terms:
-
-| Term / Symbol | Canonical usage | Notes / verified alignment |
-|---|---|---|
-| **Flutter Customer app** | `Customer app` (`AppFlavor.customer`) | Owns customer orders, tracking, delivery confirmation, ETA, and AI assistant (`LA-160`, `LA-167`, `LA-169`, `LA-171`). |
-| **Flutter Station Operator app** | `Station Operator app` (`AppFlavor.operator`) | Owns station availability, slot maintenance, origin intake, destination pickup, expired-parcel clearing, and operator notifications (`LA-170`). |
-| **Landing station & slot states** | `Landing station` with `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR` slots | Manual operator toggle is restricted to `EMPTY <-> ERROR`. |
-| **Order lifecycle transitions** | `APPROVED -> READY_FOR_TAKEOFF` (intake, requires `PLANNED` mission), `APPROVED -> FAILED` (intake rejection), `IN_TRANSIT -> ARRIVED` (station arrival), `ARRIVED -> DELIVERED` (recipient/pickup confirmation) | `IN_AIR` is a `FlightMission.FlightStatus` (not a `DeliveryOrder.Status`); do not mix order/mission states or use non-backend labels (`IN_ORIGIN_STATION`, `REJECTED`, `COMPLETED`). |
-
----
-
-## 3. Diagrams and links check
-
-- **Relative links in `docs/report/*.md`:** Audited against the `origin/develop` tree; 0 broken relative links.
-- **Mermaid diagrams in `docs/design/user-flows/*.md` and `docs/report/*.md`:** All `mermaid` code fences are properly closed and syntactically balanced.
-- **AI / release-gate disclaimer consistency:** Chapters I, II, and IV consistently state that default-off AI adapters, provider/model activation, chat retention, physical-device signing, and hardware flight control remain outside automated test/merge claims.
-
----
-
-## 4. Proofreader sign-off and Confluence export evidence (LA-204 gate)
-
-> [!IMPORTANT]
-> Per **LA-204** and **LA-255**, repository commits alone do not establish Confluence publication or final report acceptance. Record two distinct human proofreaders and the published Confluence page versions / final export link below before closing LA-204.
-
-| Gate item | Owner / Reviewer | Evidence / Confluence page & version | Status |
-|---|---|---|---|
-| Cross-document formatting & terminology pass | Hung Nguyen (`LA-255`) | This checklist + PR on `docs/LA-255-proofread-format-report` | Prepared for review |
-| Proofreader #1 sign-off | *Pending human reviewer 1* | *Record reviewer name, date, and notes* | Pending |
-| Proofreader #2 sign-off | *Pending human reviewer 2* | *Record reviewer name, date, and notes* | Pending |
-| Confluence publication & final export | TBA Review (`LA-204`) | *Record exported PDF/DOCX + Confluence page versions (`14188546`, `11927566`, `11993109`, Chapter V, `14024801`)* | Pending |
+Template review export 2 includes ten detailed child specifications and two real runtime figures. Cover metadata still requires actual student IDs, formal TBA Review name, supervisor/external-supervisor and academic project code. Expanded published targets: Acknowledgement `14024759 v2`, System Design `14090250 v3`, Database Design `14188589 v5`; Definitions `14024779 v1` retained.

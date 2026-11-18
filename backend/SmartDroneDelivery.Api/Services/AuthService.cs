@@ -69,11 +69,21 @@ public class AuthService : IAuthService
         var user = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == email);
 
         // Same message for an unknown email and a wrong password.
-        if (user is null || !_hasher.Verify(request.Password, user.PasswordHash))
+        if (user is null)
             throw new ApiException(StatusCodes.Status401Unauthorized, "Invalid email or password.");
 
+        // LA-177: failed sign-ins to an existing account are audited (unknown emails are not stored).
+        if (!_hasher.Verify(request.Password, user.PasswordHash))
+        {
+            await AddFailedLoginAsync(user.Id, "INVALID_PASSWORD", client);
+            throw new ApiException(StatusCodes.Status401Unauthorized, "Invalid email or password.");
+        }
+
         if (user.Status != "ACTIVE")
+        {
+            await AddFailedLoginAsync(user.Id, "ACCOUNT_NOT_ACTIVE", client);
             throw new ApiException(StatusCodes.Status403Forbidden, "This account is not active.");
+        }
 
         var response = IssueTokens(user, DateTime.UtcNow);
         AddAudit(user.Id, "LOGIN", client);
@@ -128,7 +138,7 @@ public class AuthService : IAuthService
             UserDto.From(user));
     }
 
-    private void AddAudit(Guid userId, string action, ClientInfo client)
+    private void AddAudit(Guid userId, string action, ClientInfo client, string? reason = null)
     {
         _db.AuditLogs.Add(new AuditLog
         {
@@ -137,8 +147,15 @@ public class AuthService : IAuthService
             EntityName = "User",
             EntityId = userId.ToString(),
             IpAddress = client.IpAddress,
-            UserAgent = client.UserAgent
+            UserAgent = client.UserAgent,
+            Reason = reason
         });
+    }
+
+    private async Task AddFailedLoginAsync(Guid userId, string reason, ClientInfo client)
+    {
+        AddAudit(userId, "LOGIN_FAILED", client, reason);
+        await _db.SaveChangesAsync();
     }
 
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();

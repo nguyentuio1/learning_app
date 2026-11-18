@@ -168,7 +168,11 @@ namespace SmartDroneDelivery.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("Action", "Timestamp");
+
+                    b.HasIndex("UserId", "Timestamp");
 
                     b.ToTable("audit_logs", (string)null);
                 });
@@ -392,6 +396,20 @@ namespace SmartDroneDelivery.Api.Migrations
                     b.HasIndex("OrderId");
 
                     b.ToTable("delivery_status_logs", (string)null);
+                });
+
+            modelBuilder.Entity("SmartDroneDelivery.Api.Entities.DeliveryTrackingCounter", b =>
+                {
+                    b.Property<string>("Month")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Month");
+
+                    b.ToTable("delivery_tracking_counters", (string)null);
                 });
 
             modelBuilder.Entity("SmartDroneDelivery.Api.Entities.Drone", b =>

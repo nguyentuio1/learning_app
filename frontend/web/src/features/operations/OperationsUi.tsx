@@ -4,7 +4,7 @@ import { operationError } from './feedback'
 import './operations.css'
 
 export function OperationsPage({ title, subtitle, action, children }: { title: string; subtitle: string; action?: ReactNode; children: ReactNode }) {
-  return <ConfigProvider theme={{ token: { colorPrimary: '#1e4f3c', colorText: '#203b30', colorBorder: '#cbd9c4', borderRadius: 8, controlHeight: 42 },
+  return <ConfigProvider theme={{ token: { colorPrimary: '#1e4f3c', colorText: '#203b30', colorTextDescription: '#546757', colorError: '#a83a32', colorErrorHover: '#8e2c28', colorBorder: '#cbd9c4', borderRadius: 8, controlHeight: 42 },
     components: { Table: { headerBg: '#e3eddc', rowHoverBg: '#f1f6eb', cellPaddingBlock: 18 }, Modal: { contentBg: '#fffffc' } } }}>
     <main className="operations-page">
       <header className="operations-heading"><div><h1>{title}</h1><p>{subtitle}</p></div>{action}</header>

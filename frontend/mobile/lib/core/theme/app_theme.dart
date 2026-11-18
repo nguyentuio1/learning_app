@@ -8,16 +8,33 @@ abstract final class AppTheme {
   static ThemeData dark(AppFlavor flavor) => _build(flavor, Brightness.dark);
 
   static ThemeData _build(AppFlavor flavor, Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(
+    final seedScheme = ColorScheme.fromSeed(
       seedColor: AppColors.seedFor(flavor),
       brightness: brightness,
     );
-    const radius = BorderRadius.all(Radius.circular(12));
+    final isCustomerLight =
+        flavor == AppFlavor.customer && brightness == Brightness.light;
+    final scheme = isCustomerLight
+        ? seedScheme.copyWith(
+            primary: AppColors.customerSeed,
+            onPrimary: Colors.white,
+            primaryContainer: AppColors.customerPrimaryContainer,
+            onPrimaryContainer: AppColors.customerSeed,
+            surface: AppColors.customerSurface,
+            onSurface: AppColors.customerTextPrimary,
+            onSurfaceVariant: AppColors.customerTextSecondary,
+            outlineVariant: AppColors.customerBorder,
+          )
+        : seedScheme;
+    const fieldRadius = BorderRadius.all(Radius.circular(12));
+    const cardRadius = BorderRadius.all(Radius.circular(16));
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
+      scaffoldBackgroundColor: isCustomerLight
+          ? AppColors.customerBackground
+          : scheme.surface,
       appBarTheme: AppBarTheme(
         centerTitle: false,
         backgroundColor: scheme.surface,
@@ -26,25 +43,36 @@ abstract final class AppTheme {
         scrolledUnderElevation: 1,
       ),
       inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(borderRadius: radius),
+        border: OutlineInputBorder(
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: AppColors.customerBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: AppColors.customerBorder),
+        ),
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
-          shape: const RoundedRectangleBorder(borderRadius: radius),
+          shape: const RoundedRectangleBorder(borderRadius: fieldRadius),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
-          shape: const RoundedRectangleBorder(borderRadius: radius),
+          shape: const RoundedRectangleBorder(borderRadius: fieldRadius),
         ),
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: radius),
+        color: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: cardRadius,
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
       ),
     );
   }

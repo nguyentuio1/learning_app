@@ -9,6 +9,8 @@ class PackageModel {
     required this.isFragile,
     this.packageImageUrl,
     this.createdAt,
+    this.isAssigned = false,
+    this.orderId,
   });
 
   final String id;
@@ -20,6 +22,8 @@ class PackageModel {
   final String? packageImageUrl;
   final bool isFragile;
   final String? createdAt;
+  final bool isAssigned;
+  final String? orderId;
 
   factory PackageModel.fromJson(Map<String, dynamic> json) => PackageModel(
     id: json['id'] as String,
@@ -31,6 +35,8 @@ class PackageModel {
     packageImageUrl: json['packageImageUrl'] as String?,
     isFragile: json['isFragile'] as bool? ?? false,
     createdAt: json['createdAt'] as String?,
+    isAssigned: json['isAssigned'] as bool? ?? false,
+    orderId: json['orderId'] as String?,
   );
 
   Map<String, dynamic> toJson() => {

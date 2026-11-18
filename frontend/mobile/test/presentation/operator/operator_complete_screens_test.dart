@@ -179,6 +179,21 @@ Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _enterMeasuredInspection(WidgetTester tester) async {
+  for (final field in <String, String>{
+    'intake-weight-input': '455', 'intake-length-input': '21',
+    'intake-width-input': '16', 'intake-height-input': '11',
+  }.entries) {
+    final finder = find.byKey(Key(field.key));
+    await tester.ensureVisible(finder);
+    await tester.enterText(finder, field.value);
+  }
+  final checkbox = find.byKey(const Key('intake-visual-checkbox'));
+  await tester.ensureVisible(checkbox);
+  await tester.tap(checkbox);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   const stationId = 'station-1';
   const trackingNumber = 'TRK-2026-0001';
@@ -346,7 +361,14 @@ void main() {
 
       expect(find.text('Medical Kit'), findsOneWidget);
       expect(find.text('Fragile handling required'), findsOneWidget);
+      expect(tester.widget<CheckboxListTile>(find.byKey(const Key('intake-visual-checkbox'))).value, isFalse);
+      for (final key in ['intake-weight-input', 'intake-length-input', 'intake-width-input', 'intake-height-input']) {
+        expect(tester.widget<TextFormField>(find.byKey(Key(key))).controller!.text, isEmpty);
+      }
+      expect(tester.widget<FilledButton>(find.byKey(const Key('intake-confirm-button'))).onPressed, isNull);
 
+
+      await _enterMeasuredInspection(tester);
       await _scrollAndTap(
         tester,
         find.byKey(const Key('intake-confirm-button')),
@@ -355,10 +377,31 @@ void main() {
       expect(fakeOps.lastIntakeRequest, isNotNull);
       expect(fakeOps.lastIntakeRequest!.trackingNumber, trackingNumber);
       expect(fakeOps.lastIntakeRequest!.slotId, 'slot-empty-1');
-      expect(fakeOps.lastIntakeRequest!.measuredWeightGram, 450);
+      expect(fakeOps.lastIntakeRequest!.measuredWeightGram, 455);
+      expect(fakeOps.lastIntakeRequest!.measuredLengthCm, 21);
       expect(fakeOps.lastIntakeRequest!.visualInspectionPassed, isTrue);
       expect(find.text('Package Intake Confirmed'), findsOneWidget);
       expect(stubNotifier.refreshCalls, 1);
+    });
+
+    testWidgets('station change clears the old intake lookup and inspection draft', (tester) async {
+      final fakeOps = _FakeStationOperationsApiService(orderInfo: buildOrder());
+      final stations = _StubStationAvailabilityNotifier(stationState);
+      await tester.pumpWidget(ProviderScope(overrides: [
+        stationOperationsApiServiceProvider.overrideWithValue(fakeOps),
+        stationAvailabilityNotifierProvider.overrideWith(() => stations),
+      ], child: const MaterialApp(home: PackageIntakePage())));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('intake-tracking-input')), trackingNumber);
+      await tester.tap(find.byKey(const Key('intake-lookup-button'))); await tester.pumpAndSettle();
+      await _enterMeasuredInspection(tester);
+      final other = LandingStation.fromJson({...station.toJson(), 'id': 'station-new'});
+      stations.emit(StationAvailabilityState(stations: [other], selectedStationId: other.id,
+        availability: null, detail: null));
+      await tester.pumpAndSettle();
+      expect(find.text('Medical Kit'), findsNothing);
+      expect(find.byKey(const Key('intake-visual-checkbox')), findsNothing);
+      expect(tester.widget<TextField>(find.byKey(const Key('intake-tracking-input'))).controller!.text, isEmpty);
     });
 
     testWidgets('rejects origin intake with reason dialog', (tester) async {
@@ -590,6 +633,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await _enterMeasuredInspection(tester);
       await _scrollAndTap(
         tester,
         find.byKey(const Key('intake-confirm-button')),
@@ -650,6 +694,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Slot #2'), findsOneWidget);
+      await _enterMeasuredInspection(tester);
       await _scrollAndTap(
         tester,
         find.byKey(const Key('intake-confirm-button')),

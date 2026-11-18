@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartDroneDelivery.Api.Data;
+using SmartDroneDelivery.Api.Health;
 using SmartDroneDelivery.Api.Middleware;
 using SmartDroneDelivery.Api.Options;
 using SmartDroneDelivery.Api.Services;
@@ -14,6 +15,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// LA-328: secrets come from environment variables or user-secrets; stop here when one is missing.
+RequiredConfiguration.Validate(builder.Configuration, builder.Environment);
 
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -37,13 +41,20 @@ builder.Services.AddSingleton<IPackageStorage, MinioPackageStorage>();
 builder.Services.AddScoped<IPackageService, PackageService>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddScoped<IDeliveryOrderQueryService, DeliveryOrderQueryService>();
+builder.Services.AddScoped<DeliveryInsightLookupService>();
 builder.Services.AddScoped<DeliveryEtaQueryService>();
 builder.Services.AddScoped<EtaPredictionService>();
+builder.Services.AddOptions<ModelProviderOptions>()
+    .Bind(builder.Configuration.GetSection(ModelProviderOptions.SectionName))
+    .Validate(o => o.HasValidConfiguration(), "ModelProvider must be Ollama or explicitly configured Gemini with a server-side API key.")
+    .ValidateOnStart();
+builder.Services.AddTransient<GeminiModelHandler>();
 builder.Services.AddOptions<EtaPredictionOptions>()
     .Bind(builder.Configuration.GetSection(EtaPredictionOptions.SectionName))
     .Validate(o => o.HasValidConfiguration(), "EtaPrediction requires bounded batches/intervals, a loopback model endpoint and an explicit model revision when enabled.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<IEtaModelGateway, LocalEtaModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .AddHttpMessageHandler<GeminiModelHandler>()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddHostedService<EtaPredictionWorker>();
 builder.Services.AddScoped<AnalyticsQueryService>();
@@ -64,6 +75,7 @@ builder.Services.AddOptions<DeliverySummaryOptions>()
     .Validate(o => o.HasValidConfiguration(), "DeliverySummary requires a loopback URL, model and immutable revision when enabled.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<ISummaryModelGateway, LocalSummaryModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .AddHttpMessageHandler<GeminiModelHandler>()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddOptions<DeliveryFlightOptions>()
     .Bind(builder.Configuration.GetSection(DeliveryFlightOptions.SectionName))
@@ -96,6 +108,7 @@ builder.Services.TryAddSingleton<AiGenerationSlots>();
 builder.Services.AddOptions<CustomerAssistantOptions>().Bind(builder.Configuration.GetSection(CustomerAssistantOptions.SectionName))
     .Validate(o => o.HasValidConfiguration(), "Assistant activation requires approved retention/backup settings and a configured local model.").ValidateOnStart();
 builder.Services.AddHttpClient<IAssistantModelGateway, LocalAssistantModelGateway>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .AddHttpMessageHandler(services => new GeminiModelHandler(services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ModelProviderOptions>>(), assistant: true))
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 builder.Services
@@ -140,6 +153,8 @@ builder.Services
     })
     .AddScheme<AuthenticationSchemeOptions, IntegrationKeyAuthenticationHandler>(IntegrationKeyAuthenticationHandler.SchemeName, _ => { });
 // Secure by default: an endpoint without [Authorize] or [AllowAnonymous] still needs a signed-in user.
+builder.Services.AddSystemHealthChecks();
+
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
@@ -223,6 +238,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapSystemHealthChecks();
 app.MapHub<TrackingHub>("/hubs/tracking", options => options.CloseOnAuthenticationExpiration = true);
 
 app.Run();

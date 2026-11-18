@@ -1,0 +1,52 @@
+{
+  "events": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "status": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/03af8888-4eb4-44d4-8a02-536eb519f40d/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/03af8888-4eb4-44d4-8a02-536eb519f40d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/03af8888-4eb4-44d4-8a02-536eb519f40d/operations/expired-parcels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/03af8888-4eb4-44d4-8a02-536eb519f40d/operations/orders/ORD-DEMO-003",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/landing-stations/03af8888-4eb4-44d4-8a02-536eb519f40d/operations/pickup",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "path": "/api/landing-stations/03af8888-4eb4-44d4-8a02-536eb519f40d/operations/pickup",
+      "status": 200
+    }
+  ],
+  "pageErrors": [],
+  "browser": "158.0.8127.36",
+  "limits": "Real operator confirmations against isolated PostgreSQL database; scheduled intake and ARRIVED pickup preconditions prepared, flight not executed."
+}

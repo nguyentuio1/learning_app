@@ -176,7 +176,7 @@ void main() {
 
     expect(service.cancellationReason, 'Changed plans');
     expect(find.text('Order cancelled successfully.'), findsOneWidget);
-    expect(find.text('CANCELLED'), findsOneWidget);
+    expect(find.text('Cancelled'), findsOneWidget);
     expect(find.text('Cancel order'), findsNothing);
   });
 

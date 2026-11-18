@@ -2,6 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+
+import 'dart:typed_data';
 
 import 'dart:async';
 
@@ -13,6 +17,27 @@ import 'package:smart_drone_delivery/presentation/customer/packages/add_edit_pac
 import 'package:smart_drone_delivery/presentation/customer/packages/packages_list_page.dart';
 
 class _FakePackageApiService extends PackageApiService {
+  int photoCreates = 0;
+  int photoUploads = 0;
+  bool photoFails = true;
+
+  @override
+  Future<PackageModel> createPackageRecord(PackageRequest request) async {
+    photoCreates++;
+    return _package(id: 'photo-created', request: request);
+  }
+
+  @override
+  Future<String> uploadImage(
+    String id, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    photoUploads++;
+    if (photoFails) throw const ApiException(message: 'Storage unavailable');
+    return 'https://example.com/uploaded.png';
+  }
+
   _FakePackageApiService({
     List<PackageModel>? initialPackages,
     this.getPackagesError,
@@ -97,7 +122,10 @@ Future<void> _pumpPage(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [packageApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        packageApiServiceProvider.overrideWithValue(service),
+        packageImagePickerProvider.overrideWithValue(_TestPhotoPicker()),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: Navigator(
@@ -116,6 +144,103 @@ Future<void> _pumpPage(
 }
 
 void main() {
+  testWidgets('saving a directly opened form returns to the package list', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final service = _FakePackageApiService();
+    final router = GoRouter(
+      initialLocation: '/add',
+      routes: [
+        GoRoute(path: '/add', builder: (_, _) => const AddEditPackagePage()),
+        GoRoute(
+          path: '/customer/packages',
+          builder: (_, _) => const Scaffold(body: Text('Saved package list')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [packageApiServiceProvider.overrideWithValue(service)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final entry in ['Parcel', '500', '20', '10', '8'].asMap().entries) {
+      await tester.enterText(_field(entry.key), entry.value);
+    }
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved package list'), findsOneWidget);
+  });
+
+  testWidgets('same-URL replacement rebuilds the displayed image', (
+    tester,
+  ) async {
+    final package = _package(
+      request: const PackageRequest(
+        packageName: 'Parcel',
+        weightGram: 500,
+        lengthCm: 20,
+        widthCm: 10,
+        heightCm: 8,
+        isFragile: false,
+        packageImageUrl: 'https://example.com/uploaded.png',
+      ),
+    );
+    final service = _FakePackageApiService(initialPackages: [package])
+      ..photoFails = false;
+    await _pumpPage(tester, AddEditPackagePage(package: package), service);
+    expect(
+      find.byKey(const ValueKey('package-photo-preview-0')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('package-upload-photo')));
+    await tester.pumpAndSettle();
+    expect(service.photoUploads, 1);
+    expect(
+      find.byKey(const ValueKey('package-photo-preview-1')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('package-photo-preview-0')), findsNothing);
+  });
+
+  testWidgets('retrying a failed upload reuses the saved package', (
+    tester,
+  ) async {
+    final service = _FakePackageApiService();
+    await _pumpPage(tester, const AddEditPackagePage(), service);
+    for (final entry in ['Parcel', '500', '20', '10', '8'].asMap().entries) {
+      await tester.enterText(_field(entry.key), entry.value);
+    }
+    await tester.tap(find.byKey(const Key('package-upload-photo')));
+    await tester.pumpAndSettle();
+    expect(service.photoCreates, 1);
+    expect(service.photoUploads, 1);
+    expect(
+      find.textContaining('Package saved; photo upload failed'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('package-upload-photo')));
+    await tester.pumpAndSettle();
+    expect(service.photoCreates, 1);
+    expect(service.photoUploads, 2);
+    expect(find.byType(AddEditPackagePage), findsOneWidget);
+  });
+  testWidgets('offers a real package photo upload action', (tester) async {
+    await _pumpPage(
+      tester,
+      const AddEditPackagePage(),
+      _FakePackageApiService(),
+    );
+    expect(find.byKey(const Key('package-upload-photo')), findsOneWidget);
+  });
+
   testWidgets('C18 shows loading indicator while packages load', (
     tester,
   ) async {
@@ -168,9 +293,13 @@ void main() {
 
     expect(find.text('Parcel'), findsOneWidget);
     expect(find.text('Shoes'), findsOneWidget);
-    expect(find.text('Dễ vỡ'), findsOneWidget);
-    expect(find.text('Edit'), findsNWidgets(2));
-    expect(find.text('Delete'), findsNWidgets(2));
+    expect(
+      find.descendant(of: find.byType(Card), matching: find.text('Fragile')),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Edit'), findsNWidgets(2));
+    expect(find.byTooltip('Delete'), findsNWidgets(2));
+    expect(find.text('Description (optional)'), findsNothing);
   });
 
   testWidgets('C18 confirms deletion before making the request', (
@@ -179,7 +308,7 @@ void main() {
     final service = _FakePackageApiService(initialPackages: [_package()]);
 
     await _pumpPage(tester, const PackagesListPage(), service);
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
 
     expect(find.text('Delete this package?'), findsOneWidget);
@@ -203,7 +332,7 @@ void main() {
     );
 
     await _pumpPage(tester, const PackagesListPage(), service);
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -241,8 +370,8 @@ void main() {
     final service = _FakePackageApiService();
 
     await _pumpPage(tester, const AddEditPackagePage(), service);
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 
@@ -258,7 +387,7 @@ void main() {
     await tester.enterText(_field(2), '0');
     await tester.enterText(_field(3), '0');
     await tester.enterText(_field(4), '0');
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
     expect(
       find.text('Weight and dimensions must be greater than zero.'),
@@ -269,7 +398,7 @@ void main() {
     await tester.enterText(_field(2), '30');
     await tester.enterText(_field(3), '20');
     await tester.enterText(_field(4), '15');
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(
@@ -282,7 +411,7 @@ void main() {
     await tester.enterText(_field(2), '30.01');
     await tester.enterText(_field(3), '20.01');
     await tester.enterText(_field(4), '15.01');
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(
@@ -320,11 +449,11 @@ void main() {
     await tester.enterText(_field(2), '20');
     await tester.enterText(_field(3), '10');
     await tester.enterText(_field(4), '8');
-    await tester.enterText(_field(5), 'not a URL');
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Add package photo (optional)'));
     await tester.pumpAndSettle();
-
+    await tester.enterText(find.byType(TextFormField).last, 'not a URL');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
     expect(find.text('Enter a valid public image URL.'), findsOneWidget);
     expect(service.lastMutation, isNull);
   });
@@ -345,8 +474,8 @@ void main() {
     await tester.enterText(_field(2), '20');
     await tester.enterText(_field(3), '10');
     await tester.enterText(_field(4), '8');
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(
@@ -366,10 +495,17 @@ void main() {
     await tester.enterText(_field(2), '30');
     await tester.enterText(_field(3), '20');
     await tester.enterText(_field(4), '15');
-    await tester.enterText(_field(5), 'https://example.com/package.jpg');
-    await tester.tap(find.text('Fragile'));
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Add package photo (optional)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextFormField).last,
+      'https://example.com/package.jpg',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fragile package'));
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(service.lastMutation, 'create');
@@ -393,7 +529,7 @@ void main() {
 
     await _pumpPage(tester, AddEditPackagePage(package: package), service);
 
-    expect(find.text('Edit package'), findsOneWidget);
+    expect(find.text('Edit Package'), findsOneWidget);
     expect(find.text('Parcel'), findsOneWidget);
     await tester.ensureVisible(find.text('Save changes'));
     await tester.tap(find.text('Save changes'));
@@ -413,9 +549,25 @@ void main() {
       service,
     );
 
-    expect(find.text('Edit package'), findsOneWidget);
+    expect(find.text('Edit Package'), findsOneWidget);
     expect(find.text('Parcel'), findsOneWidget);
   });
 }
 
 Finder _field(int index) => find.byType(TextFormField).at(index);
+
+class _TestPhotoPicker extends ImagePicker {
+  @override
+  Future<XFile?> pickImage({
+    required ImageSource source,
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool requestFullMetadata = true,
+  }) async => XFile.fromData(
+    Uint8List.fromList([137, 80, 78, 71]),
+    name: 'parcel.png',
+    mimeType: 'image/png',
+  );
+}

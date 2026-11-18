@@ -1,0 +1,35 @@
+{
+  "sourceCommit": "97b8113276670be2f7ef7378304e09ac7c8e28b4",
+  "flutter": "3.47.8",
+  "runtime": "Chrome headless, Flutter release web, 390x844",
+  "http": "Synthetic HTTP fixtures only; no live AI/cloud policy changed",
+  "builds": [
+    {
+      "variant": "disabled",
+      "command": [
+        "C:/Users/tbare/dev/flutter/bin/flutter.bat",
+        "build",
+        "web",
+        "--no-pub",
+        "--target",
+        "lib/main_customer.dart",
+        "--dart-define=API_BASE_URL=http://127.0.0.1:5055/api"
+      ],
+      "exit": 0
+    },
+    {
+      "variant": "enabled",
+      "command": [
+        "C:/Users/tbare/dev/flutter/bin/flutter.bat",
+        "build",
+        "web",
+        "--no-pub",
+        "--target",
+        "lib/main_customer.dart",
+        "--dart-define=API_BASE_URL=http://127.0.0.1:5055/api",
+        "--dart-define=AI_CHAT_ENABLED=true"
+      ],
+      "exit": 0
+    }
+  ]
+}

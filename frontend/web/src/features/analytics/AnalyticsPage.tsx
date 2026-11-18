@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Alert, Button, ConfigProvider, Form, Table, Tabs, Tag, type ThemeConfig } from 'antd'
 import dayjs from 'dayjs'
 import { CalendarDayPicker } from '../../components/CalendarPicker'
@@ -7,6 +8,8 @@ import { OperationsPage, ResourceState } from '../operations/OperationsUi'
 import { useResource } from '../operations/useResource'
 import { validationFields } from '../operations/feedback'
 import { analyticsApi, type DashboardResult, type PeriodQuery, type ReportingPeriod, type ReportRow } from './analyticsApi'
+import type { InsightRouteState } from '../operations/deliveryInsight'
+import { presetPeriod, reportingPeriodError, reportingPresets, reportingStartError, reportingTimeZone, type PresetDays } from './reportingPeriod'
 import './analytics.css'
 
 const lastReportingDate = dayjs('9999-12-30')
@@ -17,17 +20,9 @@ const analyticsTheme: ThemeConfig = {
   },
 }
 
-const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= '0001-01-01' && Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value
-function dateError(from: string | undefined, to: string | undefined) {
-  if (!from || !to) return 'Choose both reporting dates.'
-  if (!validDate(from) || !validDate(to)) return 'Enter valid calendar dates.'
-  if (from > to) return 'The start date must not be after the end date.'
-  if (to >= '9999-12-31') return 'The end date must allow a representable next day.'
-  if ((Date.parse(to + 'T00:00:00Z') - Date.parse(from + 'T00:00:00Z')) / 86400000 + 1 > 366) return 'Choose a period of no more than 366 inclusive days.'
-}
 const number = (value: number | null) => value === null ? 'N/A' : value.toFixed(2)
 function time(value: string | null) {
-  return value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not available'
+  return value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat('en-GB', { timeZone: reportingTimeZone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not available'
 }
 function Status({ value }: { value: string }) {
   const colors: Record<string, string> = { DELIVERED: 'green', FAILED: 'red', CANCELLED: 'default', IN_TRANSIT: 'cyan', ARRIVED: 'blue', PENDING: 'gold', APPROVED: 'gold', READY_FOR_TAKEOFF: 'orange' }
@@ -40,19 +35,54 @@ function PeriodStamp({ period, asOf, definition }: { period: ReportingPeriod; as
 export function AnalyticsPage() {
   const { user } = useAuth()
   const [form] = Form.useForm<PeriodQuery>()
-  const [applied, setApplied] = useState<(PeriodQuery & { revision: number })>()
+  const [params, setParams] = useSearchParams()
+  const [defaultPeriod] = useState(() => presetPeriod(30))
+  const [revision, setRevision] = useState(0)
+  const fromDate = params.get('fromDate')
+  const toDate = params.get('toDate')
+  const customPeriod = fromDate && toDate && !reportingPeriodError(fromDate, toDate)
+  const applied = useMemo(() => customPeriod ? { fromDate, toDate } : defaultPeriod, [customPeriod, defaultPeriod, fromDate, toDate])
+  const activePreset = customPeriod ? Number(params.get('preset')) : 30
+  const tab = params.get('tab') === 'reports' ? 'reports' : 'dashboard'
   const handleValidation = useCallback((error: unknown) => form.setFields(validationFields(error, ['fromDate', 'toDate'] as const)), [form])
-  const [tab, setTab] = useState('dashboard')
-  function apply(period: PeriodQuery) { setApplied(previous => ({ ...period, revision: (previous?.revision ?? 0) + 1 })) }
+
+  useEffect(() => form.setFieldsValue(applied), [applied, form])
+
+  function apply(period: PeriodQuery, days?: PresetDays) {
+    const next = new URLSearchParams({ fromDate: period.fromDate, toDate: period.toDate })
+    if (days) next.set('preset', String(days))
+    if (tab === 'reports') next.set('tab', tab)
+    setParams(next)
+    setRevision(value => value + 1)
+  }
+
+  function selectTab(key: string) {
+    const next = new URLSearchParams(params)
+    if (key === 'reports') next.set('tab', key)
+    else next.delete('tab')
+    setParams(next)
+  }
+
   return <div className="analytics-feature"><OperationsPage title="Dashboard & reports" subtitle="Review delivery outcomes for a reporting period.">
     <ConfigProvider theme={analyticsTheme}>
-      <Form form={form} layout="vertical" className="analytics-filter" onFinish={apply}>
+      <Form form={form} layout="vertical" className="analytics-filter" initialValues={applied} onFinish={period => apply(period)}>
+        <div className="analytics-presets" role="group" aria-label="Reporting period presets">
+          {reportingPresets.map(({ days, label }) => (
+            <Button key={days} htmlType="button" type={activePreset === days ? 'primary' : 'default'}
+              aria-pressed={activePreset === days} onClick={() => apply(presetPeriod(days), days)}>
+              {label}
+            </Button>
+          ))}
+        </div>
         <Form.Item
           name="fromDate"
           label="From date"
           rules={[
             { required: true, message: 'Choose a start date.' },
-            { validator: (_, value) => !value || validDate(value) ? Promise.resolve() : Promise.reject(new Error('Enter a valid start date.')) },
+            { validator: (_, value) => {
+              const error = value ? reportingStartError(value) : undefined
+              return error ? Promise.reject(new Error(error)) : Promise.resolve()
+            } },
           ]}
         >
           <CalendarDayPicker maxDate={lastReportingDate} placeholder="Start date" />
@@ -64,7 +94,7 @@ export function AnalyticsPage() {
           rules={[
             { required: true, message: 'Choose an end date.' },
             { validator: (_, value) => {
-              const error = value ? dateError(form.getFieldValue('fromDate'), value) : undefined
+              const error = value ? reportingPeriodError(form.getFieldValue('fromDate'), value) : undefined
               return error ? Promise.reject(new Error(error)) : Promise.resolve()
             } },
           ]}
@@ -72,15 +102,20 @@ export function AnalyticsPage() {
           <CalendarDayPicker maxDate={lastReportingDate} placeholder="End date" />
         </Form.Item>
         <Button type="primary" htmlType="submit">Apply period</Button>
-        <p>Inclusive calendar days | Asia/Ho_Chi_Minh (UTC+07) | Up to 366 days</p>
+        <p>
+          <strong>{customPeriod ? 'Applied period' : 'Default period · Last 30 days'}</strong>
+          {' · '}{applied.fromDate} → {applied.toDate}
+          <br />Inclusive calendar days | {reportingTimeZone} (UTC+07) | Up to 366 days
+        </p>
       </Form>
-    <Tabs activeKey={tab} onChange={setTab} items={[{ key: 'dashboard', label: 'Dashboard' }, { key: 'reports', label: 'Delivery report' }]} />
-    {!applied ? <section className="analytics-card analytics-start"><h2>Start with a reporting period</h2><p>Choose both dates to view statistics and reports.</p></section> : <Results key={`${user?.id}:${applied.fromDate}:${applied.toDate}:${applied.revision}`} period={applied} tab={tab} onValidation={handleValidation}/>}
+      <Tabs activeKey={tab} onChange={selectTab} items={[{ key: 'dashboard', label: 'Dashboard' }, { key: 'reports', label: 'Delivery report' }]} />
+      {tab === 'dashboard' ? (
+        <Dashboard key={`${user?.id}:${revision}`} period={applied} onValidation={handleValidation} />
+      ) : (
+        <Report key={`${user?.id}:${revision}`} period={applied} onValidation={handleValidation} />
+      )}
     </ConfigProvider>
   </OperationsPage></div>
-}
-function Results({ period, tab, onValidation }: { period: PeriodQuery; tab: string; onValidation: (error: unknown) => void }) {
-  return tab === 'dashboard' ? <Dashboard period={period} onValidation={onValidation}/> : <Report period={period} onValidation={onValidation}/>
 }
 function Dashboard({ period, onValidation }: { period: PeriodQuery; onValidation: (error: unknown) => void }) {
   const load = useCallback(async (signal: AbortSignal) => {
@@ -111,19 +146,47 @@ function StationThroughput({ result }: { result: DashboardResult }) {
   ]}/><p className="analytics-muted">An order may count at both its origin and destination. Totals across stations need not equal the overall order count.</p></section>
 }
 function Report({ period, onValidation }: { period: PeriodQuery; onValidation: (error: unknown) => void }) {
-  const [paging, setPaging] = useState({ page: 1, pageSize: 20 })
+  const [params, setParams] = useSearchParams()
+  const requestedPage = Number(params.get('page'))
+  const requestedSize = Number(params.get('pageSize'))
+  const page = Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= 2_147_483_647 ? requestedPage : 1
+  const pageSize = [10, 20, 50, 100].includes(requestedSize) ? requestedSize : 20
+
+  function paginate(nextPage: number, nextSize: number) {
+    const next = new URLSearchParams(params)
+    next.set('page', String(nextSize === pageSize ? nextPage : 1))
+    next.set('pageSize', String(nextSize))
+    setParams(next)
+  }
+
+  function insightContext(row: ReportRow): InsightRouteState {
+    const search = new URLSearchParams(params)
+    search.set('fromDate', period.fromDate)
+    search.set('toDate', period.toDate)
+    return { trackingNumber: row.trackingNumber, reportSearch: '?' + search.toString() }
+  }
   const load = useCallback(async (signal: AbortSignal) => {
-    try { return await analyticsApi.report(period, paging.page, paging.pageSize, signal) }
+    try { return await analyticsApi.report(period, page, pageSize, signal) }
     catch (error) { if (!signal.aborted) onValidation(error); throw error }
-  }, [period, paging, onValidation])
+  }, [period, page, pageSize, onValidation])
   const resource = useResource(load), result = resource.data
   return <>
     <div className="analytics-refresh"><Button onClick={resource.reload} loading={resource.loading}>Refresh report</Button></div>
     <ResourceState loading={resource.loading} error={resource.error} retry={resource.reload}/>
     {result && <><PeriodStamp period={result.period} asOf={result.asOf} definition={result.metricDefinition}/><section className="analytics-card"><h2>Delivery report</h2><p>{result.totalCount} orders · newest created orders first</p><Table<ReportRow> rowKey="orderId" dataSource={result.items} scroll={{ x: 1120 }} locale={{ emptyText: <span className="analytics-empty">No orders in this reporting period.</span> }}
-      pagination={{ current: result.page, pageSize: result.pageSize, total: result.totalCount, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100], onChange: (page, pageSize) => setPaging({ page: pageSize === paging.pageSize ? page : 1, pageSize }) }}
+      pagination={{ current: result.page, pageSize: result.pageSize, total: result.totalCount, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100], onChange: paginate }}
       columns={[
-        { title: 'Tracking number', dataIndex: 'trackingNumber' }, { title: 'Status', dataIndex: 'status', render: value => <Status value={value}/> },
+        { title: 'Tracking number', key: 'trackingNumber', render: (_, row) => {
+          const state = insightContext(row)
+          return <>
+            <strong>{row.trackingNumber}</strong>
+            <div className="analytics-insight-links">
+              <Link className="insight-link" aria-label={`View ETA for ${row.trackingNumber}`} to={`/delivery-eta/${row.orderId}`} state={state}>ETA</Link>
+              <Link className="insight-link" aria-label={`View summary for ${row.trackingNumber}`} to={`/delivery-summary/${row.orderId}`} state={state}>Summary</Link>
+            </div>
+          </>
+        } },
+        { title: 'Status', dataIndex: 'status', render: value => <Status value={value}/> },
         { title: 'Route', key: 'route', render: (_, row) => <>{row.originStation.name}<span className="analytics-muted block">→ {row.destinationStation.name}</span></> },
         { title: 'Created (UTC+07)', dataIndex: 'createdAt', render: time }, { title: 'Departed (UTC+07)', dataIndex: 'actualDepartureTime', render: time },
         { title: 'Delivered (UTC+07)', dataIndex: 'actualDeliveryTime', render: time }, { title: 'Duration', dataIndex: 'durationMinutes', render: value => value === null ? 'N/A' : `${number(value)} min` },

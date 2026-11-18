@@ -4,10 +4,22 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_exception.dart';
 import '../../../data/models/delivery_order.dart';
-import '../../../data/models/delivery_order_filter_params.dart';
 import '../../../routes/route_paths.dart';
 import '../../common/widgets/empty_state_view.dart';
+import 'widgets/order_status_badge.dart';
 import 'my_orders_provider.dart';
+
+const _visibleStatusOptions = <String, String>{
+  'ALL': 'All',
+  'PENDING': 'Pending',
+  'APPROVED': 'Approved',
+  'READY_FOR_TAKEOFF': 'Ready for takeoff',
+  'IN_TRANSIT': 'In transit',
+  'ARRIVED': 'Arrived',
+  'DELIVERED': 'Delivered',
+  'CANCELLED': 'Cancelled',
+  'FAILED': 'Failed',
+};
 
 class MyOrdersPage extends ConsumerStatefulWidget {
   const MyOrdersPage({super.key});
@@ -43,7 +55,6 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('My orders'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -65,30 +76,70 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            height: 56,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final status in deliveryOrderStatuses)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                      label: Text(
-                        status == 'ALL' ? 'All' : status.replaceAll('_', ' '),
-                      ),
-                      selected: filters.status == status,
-                      onSelected: (_) => ref
-                          .read(deliveryOrderFilterParamsProvider.notifier)
-                          .setStatus(status),
-                    ),
+                Text(
+                  'My Orders',
+                  style: Theme.of(context).textTheme.headlineMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Track and manage your deliveries.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search tracking number',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  tooltip: 'Clear search',
+                  onPressed: () {
+                    _searchController.clear();
+                    ref
+                        .read(deliveryOrderFilterParamsProvider.notifier)
+                        .setSearchKeyword('');
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (keyword) => ref
+                  .read(deliveryOrderFilterParamsProvider.notifier)
+                  .setSearchKeyword(keyword),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final entry in _visibleStatusOptions.entries)
+                  ChoiceChip(
+                    label: Text(entry.value),
+                    selected: filters.status == entry.key,
+                    onSelected: (_) => ref
+                        .read(deliveryOrderFilterParamsProvider.notifier)
+                        .setStatus(entry.key),
                   ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Wrap(
@@ -116,31 +167,6 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
                     ),
                 ],
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: TextField(
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                labelText: 'Search tracking number',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  tooltip: 'Clear search',
-                  onPressed: () {
-                    _searchController.clear();
-                    ref
-                        .read(deliveryOrderFilterParamsProvider.notifier)
-                        .setSearchKeyword('');
-                  },
-                  icon: const Icon(Icons.clear),
-                ),
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (keyword) => ref
-                  .read(deliveryOrderFilterParamsProvider.notifier)
-                  .setSearchKeyword(keyword),
             ),
           ),
           Expanded(
@@ -225,20 +251,64 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
           });
         }
         final order = items[index];
+        final colorScheme = Theme.of(context).colorScheme;
         return Card(
-          child: ListTile(
-            title: Text(
-              order.trackingNumber ?? 'Order ${order.id}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              '${order.recipientName} · ${order.status}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: const Icon(Icons.chevron_right),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
             onTap: () => _openOrder(order),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          order.trackingNumber ?? 'Order ${order.id}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      OrderStatusBadge(status: order.status),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    order.packageName?.trim().isNotEmpty == true
+                        ? order.packageName!
+                        : 'Delivery package',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_stationLabel(order.originStationName, 'Origin station')}'
+                    ' → '
+                    '${_stationLabel(order.destinationStationName, 'Destination station')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _orderSummaryTime(order),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -322,9 +392,7 @@ class _LoadError extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(120, 48),
-              ),
+              style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
               onPressed: onRetry,
               child: const Text('Retry'),
             ),
@@ -343,3 +411,32 @@ String _listErrorMessage(Object error) {
 String _displayDate(DateTime date) =>
     '${date.day.toString().padLeft(2, '0')}/'
     '${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+String _stationLabel(String? value, String fallback) =>
+    value?.trim().isNotEmpty == true ? value! : fallback;
+
+String _orderSummaryTime(DeliveryOrder order) {
+  final status = order.status.toUpperCase();
+  if (status == 'ARRIVED' ||
+      status == 'DELIVERED' ||
+      status == 'CANCELLED' ||
+      status == 'FAILED') {
+    return status[0] + status.substring(1).toLowerCase();
+  }
+  final eta = order.estimatedDeliveryTime;
+  if (eta != null) {
+    return 'ETA ${_displayDate(eta.toLocal())} ${_displayClock(eta.toLocal())}';
+  }
+  if (status == 'APPROVED' || status == 'IN_TRANSIT') {
+    return 'ETA unavailable';
+  }
+  final createdAt = order.createdAt;
+  return createdAt == null
+      ? 'Time unavailable'
+      : 'Created ${_displayDate(createdAt.toLocal())} '
+            '${_displayClock(createdAt.toLocal())}';
+}
+
+String _displayClock(DateTime date) =>
+    '${date.hour.toString().padLeft(2, '0')}:'
+    '${date.minute.toString().padLeft(2, '0')}';

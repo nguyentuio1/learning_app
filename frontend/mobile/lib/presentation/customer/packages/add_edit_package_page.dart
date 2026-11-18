@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/error/error_message.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/package_model.dart';
 import '../../../data/providers/package_providers.dart';
+import '../../../routes/route_paths.dart';
 import 'package_notifier.dart';
 
 class EditPackageRoute extends ConsumerWidget {
@@ -69,11 +73,15 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   late final TextEditingController _heightController;
   late final TextEditingController _imageUrlController;
   late bool _isFragile;
+  String? _savedPackageId;
+  bool _uploadingPhoto = false;
+  int _photoRevision = 0;
 
   @override
   void initState() {
     super.initState();
     final package = widget.package;
+    _savedPackageId = package?.id;
     _nameController = TextEditingController(text: package?.packageName ?? '');
     _weightController = TextEditingController(
       text: package?.weightGram.toString() ?? '',
@@ -106,66 +114,194 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(packageNotifierProvider).isLoading;
+    final isLoading =
+        ref.watch(packageNotifierProvider).isLoading || _uploadingPhoto;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.package == null ? 'Add package' : 'Edit package'),
+        toolbarHeight: 84,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: AppColors.customerSurface,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.of(context).maybePop(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.customerBorder),
+                    ),
+                    child: const Icon(Icons.arrow_back, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.package == null ? 'Add Package' : 'Edit Package',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Enter your package details.',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.customerTextSecondary),
+            ),
+          ],
+        ),
       ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
-              TextFormField(
-                controller: _nameController,
-                maxLength: 200,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Package name'),
-                validator: _validateName,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _weightController,
-                label: 'Weight (g)',
-                maximum: 3000,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _lengthController,
-                label: 'Length (cm)',
-                maximum: 30,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _widthController,
-                label: 'Width (cm)',
-                maximum: 20,
-              ),
-              const SizedBox(height: 12),
-              _numberField(
-                controller: _heightController,
-                label: 'Height (cm)',
-                maximum: 15,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _imageUrlController,
-                keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'Package image URL (optional)',
+              _labeledField(
+                'Package name',
+                TextFormField(
+                  controller: _nameController,
+                  inputFormatters: [LengthLimitingTextInputFormatter(200)],
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(),
+                  validator: _validateName,
                 ),
-                validator: _validateImageUrl,
+              ),
+              const SizedBox(height: 12),
+              _labeledField(
+                'Weight (g)',
+                _numberField(controller: _weightController, maximum: 3000),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _labeledField(
+                      'Length (cm)',
+                      _numberField(controller: _lengthController, maximum: 30),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _labeledField(
+                      'Width (cm)',
+                      _numberField(controller: _widthController, maximum: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _labeledField(
+                      'Height (cm)',
+                      _numberField(controller: _heightController, maximum: 15),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_imageUrlController.text.isNotEmpty) ...[
+                Image.network(
+                  _imageUrlController.text,
+                  key: ValueKey('package-photo-preview-$_photoRevision'),
+                  height: 150,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Text(
+                    'Photo could not load. Check your connection or replace it.',
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              OutlinedButton.icon(
+                key: const Key('package-upload-photo'),
+                onPressed: isLoading ? null : _uploadPhoto,
+                icon: _uploadingPhoto
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.photo_library_outlined),
+                label: Text(
+                  _uploadingPhoto
+                      ? 'Uploading photo...'
+                      : 'Upload package photo',
+                ),
+              ),
+              const Text(
+                'JPEG, PNG or WebP, up to 5 MB. Uploading saves a new package first.',
               ),
               const SizedBox(height: 8),
+              InkWell(
+                onTap: isLoading ? null : _editImageUrl,
+                borderRadius: BorderRadius.circular(12),
+                child: CustomPaint(
+                  foregroundPainter: const _DashedBorderPainter(
+                    color: AppColors.customerSeed,
+                    radius: 12,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.camera_alt_outlined,
+                          color: AppColors.customerSeed,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _imageUrlController.text.isEmpty
+                                ? 'Add package photo (optional)'
+                                : _imageUrlController.text,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.customerSeed,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.add_circle_outline,
+                          color: AppColors.customerSeed,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Fragile'),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 value: _isFragile,
                 onChanged: (value) =>
                     setState(() => _isFragile = value ?? false),
                 controlAffinity: ListTileControlAffinity.leading,
+                title: const Text(
+                  'Fragile package',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Handle with extra care.'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.customerBorder),
+                ),
               ),
               const SizedBox(height: 16),
               FilledButton(
@@ -178,9 +314,15 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
                       )
                     : Text(
                         widget.package == null
-                            ? 'Save package'
+                            ? 'Save Package'
                             : 'Save changes',
                       ),
+              ),
+              TextButton(
+                onPressed: isLoading
+                    ? null
+                    : () => Navigator.of(context).maybePop(),
+                child: const Text('Cancel'),
               ),
             ],
           ),
@@ -191,14 +333,24 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
 
   TextFormField _numberField({
     required TextEditingController controller,
-    required String label,
     required double maximum,
   }) => TextFormField(
     controller: controller,
     keyboardType: const TextInputType.numberWithOptions(decimal: true),
     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.-]'))],
-    decoration: InputDecoration(labelText: label),
+    decoration: const InputDecoration(),
     validator: (value) => _validateMeasurement(value, maximum),
+  );
+
+  Widget _labeledField(String label, Widget field) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8, left: 2),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ),
+      field,
+    ],
   );
 
   String? _validateName(String? value) {
@@ -233,8 +385,28 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     return null;
   }
 
+  Future<void> _editImageUrl() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => _PackageImageUrlDialog(
+        initialValue: _imageUrlController.text,
+        validator: _validateImageUrl,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => _imageUrlController.text = result);
+    }
+  }
+
   Future<void> _submit() async {
+    if (_uploadingPhoto) return;
     if (!_formKey.currentState!.validate()) return;
+    final imageUrlError = _validateImageUrl(_imageUrlController.text);
+    if (imageUrlError != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(imageUrlError)));
+      return;
+    }
 
     final weight = double.tryParse(_weightController.text.trim());
     final length = double.tryParse(_lengthController.text.trim());
@@ -256,10 +428,10 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
       isFragile: _isFragile,
     );
     final notifier = ref.read(packageNotifierProvider.notifier);
-    if (widget.package == null) {
+    if (_savedPackageId == null) {
       await notifier.createPackage(request);
     } else {
-      await notifier.updatePackage(widget.package!.id, request);
+      await notifier.updatePackage(_savedPackageId!, request);
     }
 
     if (!mounted) return;
@@ -272,6 +444,157 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Package saved successfully.')),
     );
-    Navigator.of(context).pop(true);
+    final router = GoRouter.maybeOf(context);
+    if (router != null && !router.canPop()) {
+      router.go(RoutePaths.customerPackages);
+    } else {
+      Navigator.of(context).pop(true);
+    }
   }
+
+  Future<void> _uploadPhoto() async {
+    if (_uploadingPhoto || !_formKey.currentState!.validate()) return;
+    setState(() => _uploadingPhoto = true);
+    try {
+      final selected = await ref
+          .read(packageImagePickerProvider)
+          .pickImage(source: ImageSource.gallery);
+      if (!mounted || selected == null) return;
+      if (await selected.length() > 5 * 1024 * 1024) {
+        throw const FormatException(
+          'Photo exceeds 5 MB. Choose a smaller image.',
+        );
+      }
+      final bytes = await selected.readAsBytes();
+      if (!mounted) return;
+      final service = ref.read(packageApiServiceProvider);
+      if (_savedPackageId == null) {
+        final record = await service.createPackageRecord(
+          PackageRequest(
+            packageName: _nameController.text.trim(),
+            weightGram: double.parse(_weightController.text.trim()),
+            lengthCm: double.parse(_lengthController.text.trim()),
+            widthCm: double.parse(_widthController.text.trim()),
+            heightCm: double.parse(_heightController.text.trim()),
+            isFragile: _isFragile,
+            packageImageUrl: _imageUrlController.text.isEmpty
+                ? null
+                : _imageUrlController.text,
+          ),
+        );
+        if (!mounted) return;
+        _savedPackageId = record.id;
+      }
+      final imageUrl = await service.uploadImage(
+        _savedPackageId!,
+        bytes: bytes,
+        filename: selected.name,
+      );
+      if (!mounted) return;
+      await NetworkImage(imageUrl).evict();
+      if (!mounted) return;
+      setState(() {
+        _imageUrlController.text = imageUrl;
+        _photoRevision++;
+      });
+      await ref.read(packageNotifierProvider.notifier).refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo uploaded successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      final prefix = widget.package == null && _savedPackageId != null
+          ? 'Package saved; photo upload failed. Retry without creating another package. '
+          : '';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$prefix${errorMessage(error)}')));
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
+      );
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = (distance + 6).clamp(0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance = next + 4;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
+}
+
+class _PackageImageUrlDialog extends StatefulWidget {
+  const _PackageImageUrlDialog({
+    required this.initialValue,
+    required this.validator,
+  });
+  final String initialValue;
+  final String? Function(String?) validator;
+  @override
+  State<_PackageImageUrlDialog> createState() => _PackageImageUrlDialogState();
+}
+
+class _PackageImageUrlDialogState extends State<_PackageImageUrlDialog> {
+  late final controller = TextEditingController(text: widget.initialValue);
+  final formKey = GlobalKey<FormState>();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Package photo'),
+    content: Form(
+      key: formKey,
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.url,
+        decoration: const InputDecoration(
+          labelText: 'Image URL (optional)',
+          hintText: 'https://',
+        ),
+        validator: widget.validator,
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          if (formKey.currentState!.validate()) {
+            Navigator.pop(context, controller.text.trim());
+          }
+        },
+        child: const Text('Save'),
+      ),
+    ],
+  );
 }

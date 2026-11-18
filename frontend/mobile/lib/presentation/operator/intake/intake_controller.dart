@@ -33,22 +33,23 @@ class IntakeState {
     bool clearCompletedIntake = false,
     RejectIntakeResponse? completedRejection,
     bool clearCompletedRejection = false,
-  }) =>
-      IntakeState(
-        orderInfo: clearOrderInfo ? null : (orderInfo ?? this.orderInfo),
-        isLoading: isLoading ?? this.isLoading,
-        isSubmitting: isSubmitting ?? this.isSubmitting,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-        completedIntake: clearCompletedIntake
-            ? null
-            : (completedIntake ?? this.completedIntake),
-        completedRejection: clearCompletedRejection
-            ? null
-            : (completedRejection ?? this.completedRejection),
-      );
+  }) => IntakeState(
+    orderInfo: clearOrderInfo ? null : (orderInfo ?? this.orderInfo),
+    isLoading: isLoading ?? this.isLoading,
+    isSubmitting: isSubmitting ?? this.isSubmitting,
+    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    completedIntake: clearCompletedIntake
+        ? null
+        : (completedIntake ?? this.completedIntake),
+    completedRejection: clearCompletedRejection
+        ? null
+        : (completedRejection ?? this.completedRejection),
+  );
 }
 
 class IntakeController extends Notifier<IntakeState> {
+  int _generation = 0;
+  bool _isCurrent(int generation) => ref.mounted && generation == _generation;
   @override
   IntakeState build() => const IntakeState();
 
@@ -59,6 +60,7 @@ class IntakeController extends Notifier<IntakeState> {
     required String stationId,
     required String trackingNumber,
   }) async {
+    final generation = ++_generation;
     final normalized = PickupController.normalizeTrackingNumber(trackingNumber);
     if (normalized.isEmpty) {
       state = const IntakeState(
@@ -73,10 +75,13 @@ class IntakeController extends Notifier<IntakeState> {
         stationId: stationId,
         trackingNumber: normalized,
       );
+      if (!_isCurrent(generation)) return;
       state = IntakeState(orderInfo: info);
     } on ApiException catch (error) {
+      if (!_isCurrent(generation)) return;
       state = IntakeState(errorMessage: error.message);
     } catch (error) {
+      if (!_isCurrent(generation)) return;
       state = IntakeState(errorMessage: error.toString());
     }
   }
@@ -91,6 +96,26 @@ class IntakeController extends Notifier<IntakeState> {
     required double measuredHeightCm,
     required bool visualInspectionPassed,
   }) async {
+    if (state.isLoading ||
+        state.isSubmitting ||
+        state.completedIntake != null ||
+        state.completedRejection != null) {
+      return false;
+    }
+    if (!visualInspectionPassed) {
+      state = state.copyWith(
+        errorMessage:
+            'Confirm physical inspection before accepting this parcel.',
+      );
+      return false;
+    }
+    if (state.orderInfo?.isEligibleForIntake != true) {
+      state = state.copyWith(
+        errorMessage: 'Look up an APPROVED origin parcel before intake.',
+      );
+      return false;
+    }
+    final generation = ++_generation;
     final normalized = PickupController.normalizeTrackingNumber(trackingNumber);
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
@@ -106,18 +131,19 @@ class IntakeController extends Notifier<IntakeState> {
           visualInspectionPassed: visualInspectionPassed,
         ),
       );
+      if (!_isCurrent(generation)) return false;
       state = state.copyWith(
         isSubmitting: false,
         completedIntake: response,
+        clearOrderInfo: true,
       );
       return true;
     } on ApiException catch (error) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorMessage: error.message,
-      );
+      if (!_isCurrent(generation)) return false;
+      state = state.copyWith(isSubmitting: false, errorMessage: error.message);
       return false;
     } catch (error) {
+      if (!_isCurrent(generation)) return false;
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: error.toString(),
@@ -131,6 +157,14 @@ class IntakeController extends Notifier<IntakeState> {
     required String trackingNumber,
     required String reason,
   }) async {
+    if (state.isLoading ||
+        state.isSubmitting ||
+        state.completedIntake != null ||
+        state.completedRejection != null) {
+      return false;
+    }
+    if (state.orderInfo?.isEligibleForIntake != true) return false;
+    final generation = ++_generation;
     final trimmedReason = reason.trim();
     if (trimmedReason.isEmpty) {
       state = state.copyWith(
@@ -149,18 +183,19 @@ class IntakeController extends Notifier<IntakeState> {
           reason: trimmedReason,
         ),
       );
+      if (!_isCurrent(generation)) return false;
       state = state.copyWith(
         isSubmitting: false,
         completedRejection: response,
+        clearOrderInfo: true,
       );
       return true;
     } on ApiException catch (error) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorMessage: error.message,
-      );
+      if (!_isCurrent(generation)) return false;
+      state = state.copyWith(isSubmitting: false, errorMessage: error.message);
       return false;
     } catch (error) {
+      if (!_isCurrent(generation)) return false;
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: error.toString(),
@@ -170,12 +205,13 @@ class IntakeController extends Notifier<IntakeState> {
   }
 
   void reset() {
+    _generation++;
     state = const IntakeState();
   }
 }
 
 final intakeControllerProvider =
-    NotifierProvider<IntakeController, IntakeState>(
-  IntakeController.new,
-  name: 'intakeController',
-);
+    NotifierProvider.autoDispose<IntakeController, IntakeState>(
+      IntakeController.new,
+      name: 'intakeController',
+    );

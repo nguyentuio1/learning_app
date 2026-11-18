@@ -127,3 +127,12 @@ final orderDetailProvider = AsyncNotifierProvider.autoDispose
       OrderDetailNotifier.new,
       name: 'orderDetail',
     );
+
+/// Bounded recent dashboard data, independent of the full order-list filters.
+final customerDashboardOrdersProvider =
+    FutureProvider.autoDispose<List<DeliveryOrder>>((ref) async {
+      final page = await ref
+          .watch(deliveryOrderApiServiceProvider)
+          .getOrders(const DeliveryOrderFilterParams(pageSize: 100));
+      return page.items;
+    }, name: 'customerDashboardOrders');

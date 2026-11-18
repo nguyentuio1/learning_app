@@ -8,16 +8,25 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 
 ## Project status
 
-| Area | State (end of Sprint 3) |
+| Area | Integrated source at Sprint 8 review |
 |---|---|
-| Authentication, profile, user and role management | Implemented (backend, web admin pages) |
-| Customer addresses and packages | Implemented (backend, web, mobile) |
-| Customer orders: create, list, details, update, cancel | Implemented (backend, web, mobile) |
-| Landing stations | Only a read-only list (`GET /api/landing-stations`); station management is planned (Sprint 4) |
-| Dispatcher approval, scheduling, drone assignment | Planned (Sprint 5); design documents exist |
-| Station pickup, secure code confirmation, live tracking, dashboard, AI services | Planned (Sprints 6 and 7); design documents exist |
+| Authentication, profile, user/role management & audit logs | Implemented (backend, web admin pages, failed sign-in & action audit search) |
+| Customer addresses, packages, delivery orders & notifications | Implemented (backend, web, mobile) |
+| Landing stations, slots, availability, drones & station intake/pickup | Implemented (backend, web, station operator mobile app, 24h timeout) |
+| Dispatcher approval, state machine, scheduling, drone assignment & failures | Implemented (backend, web, software flight simulator) |
+| Real-time tracking (SignalR), delivery map, confirmation, analytics & v1 API | Implemented (backend, web, mobile, OpenAPI 3.0) |
+| AI ETA estimation, delivery summary & customer assistant | Implemented behind default-off configuration/retention gates (`docs/api/sprint-7-api-contract.md`) |
+| Docker full-stack deployment, health checks & backup/restore scripts | Implemented (`docker-compose.yml`, `/health/live`, `/health/ready`, `scripts/backup-db.*`) |
 
-An order stays in `PENDING` after creation. Today the customer can only view, edit (while `PENDING`) or cancel it (`PENDING` or `APPROVED`). The dispatcher screens that approve and schedule it do not exist yet.
+Reviewed application baseline: `develop` at [`10c77d0`](https://github.com/nguyentuio1/learning_app/commit/10c77d0781ff38448b07211da07731cf12598e27), including the completed Customer and Station Operator journeys. The combined Flutter suite passed **425 tests**, and backend, web and mobile CI passed on the same integration tree. Actual API-backed browser walkthroughs are recorded for [Customer](docs/testing/LA363-customer-completion.md) and [Operator](docs/testing/LA364-operator-completion.md).
+
+Additional candidate verification now includes [actual Flutter package-photo/avatar upload and MinIO display](docs/testing/LA346-flutter-photo-completion.md), with **432 combined Flutter tests passed**, and [real Gemini ETA/summary/assistant calls with synthetic data](docs/deployment/LA-348-synthetic-acceptance-20261119.md). The [71-page UTH report review packet](docs/report/final-review-manifest.json) records exact export hashes and published Confluence versions.
+
+Acceptance remains scoped to its evidence. Native-device installation, production cloud-chat approval/quality/concurrency acceptance, actual team rehearsal and two-member report proofreading remain incomplete. The preview walkthrough verified HTTP tracking fallback, not healthy SignalR WebSocket delivery or a physical flight. The [performance report](docs/testing/PerformanceTestReport.md) preserves earlier failures and records later reference-environment passes; those results do not establish every deployment's performance.
+
+See the [current screen flows](docs/design/ui-screen-flows.md) and [Sprint 8 integration review](docs/testing/Sprint8IntegrationReview.md) for integration status and remaining acceptance gates. Closing a sprint does not change these evidence boundaries.
+
+> See [`docs/DeliverableList.md`](docs/DeliverableList.md), [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md), [`docs/operations/DeploymentGuide.md`](docs/operations/DeploymentGuide.md), and [`docs/guides/README.md`](docs/guides/README.md) for full documentation.
 
 ## Repository layout
 
@@ -33,7 +42,7 @@ docs/
   architecture/                architecture, ERD (erd.md, erd.dbml)
   design/                      sequence, class and activity diagrams, user flows, wireframes
   requirements/                SRS, use cases, business rules, functions, messages
-docker-compose.yml             PostgreSQL 16 and MinIO for local development
+docker-compose.yml             Full system (PostgreSQL 16, MinIO, API, web portal); see "Run everything with Docker"
 ```
 
 ## Prerequisites
@@ -43,29 +52,63 @@ docker-compose.yml             PostgreSQL 16 and MinIO for local development
 - A current Node.js LTS and npm (the project was built with Node 24)
 - Flutter with a Dart SDK matching `frontend/mobile/pubspec.yaml` (only for the mobile apps)
 
+## Run everything with Docker
+
+One command builds and starts PostgreSQL, MinIO, the API and the web portal (LA-47):
+
+```bash
+cp .env.example .env        # fill in every empty value; .env is ignored by git
+docker compose up -d --build --wait     # returns once the API reports healthy
+```
+
+| Service | Address |
+|---|---|
+| Web portal | <http://localhost:8080> (forwards `/api` and `/hubs` to the API) |
+| API (mobile apps, scripts) | <http://localhost:5055> |
+| MinIO console | <http://localhost:9001> |
+
+The API runs in the `Production` environment: no Swagger and no demo accounts; the administrator is created from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`. Set `ASPNETCORE_ENVIRONMENT=Development` in `.env` for Swagger and the demo accounts below. `docker compose down` stops everything and keeps the data; `docker compose down -v` also deletes it. Host ports can be changed in `.env` (`API_HOST_PORT`, `WEB_HOST_PORT`, ...). [`scripts/docker-smoke-test.sh`](scripts/docker-smoke-test.sh) starts the stack from scratch and checks the portal, login, a database read and an avatar upload to MinIO; the `Docker package` workflow runs it on pull requests that touch the package.
+
+### Health and monitoring
+
+| Endpoint | Anonymous | Checks | Status |
+|---|---|---|---|
+| `GET /health/live` | yes | the API process answers | `200` |
+| `GET /health/ready` | yes | PostgreSQL connection and MinIO (`/minio/health/live`) | `200` when all are healthy, otherwise `503` |
+
+Both return JSON such as `{"status":"Healthy","totalDurationMs":4,"checks":[{"name":"database","status":"Healthy","durationMs":3},{"name":"storage","status":"Healthy","durationMs":1}]}` with no host names, connection strings or error text; the reason for a failure is written to the API log. In Docker the `api` service uses `/health/ready` as its health check and `web` starts only after it is healthy: `docker compose ps` shows the state and `docker compose logs api` the log (LA-178).
+
 ## Run it locally
 
 ### 1. Infrastructure
 
 ```bash
-docker compose up -d
+cp .env.example .env        # fill in every empty value; .env is ignored by git
+docker compose up -d postgres minio
 ```
 
 | Service | Host port | Credentials |
 |---|---|---|
-| PostgreSQL 16, database `drone_delivery_db` | 5433 | `postgres` / `Password123!` |
-| MinIO (S3 API / console) | 9000 / 9001 | `minioadmin` / `minioadminpassword` |
+| PostgreSQL 16, database `drone_delivery_db` | 5433 | `postgres` / `POSTGRES_PASSWORD` from `.env` |
+| MinIO (S3 API / console) | 9000 / 9001 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` from `.env` |
 
-These are development-only values (also in `backend/SmartDroneDelivery.Api/appsettings.json`).
+`docker compose` stops with "required variable ... is missing a value" when `.env` is missing a password.
 
 ### 2. Backend
 
+The repository holds no secret (LA-328), so give the backend its settings once with `dotnet user-secrets` (stored in your user profile, outside the repository). Use the same passwords as in `.env`:
+
 ```bash
 cd backend/SmartDroneDelivery.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=drone_delivery_db;Username=postgres;Password=<POSTGRES_PASSWORD>"
+dotnet user-secrets set "Minio:AccessKey" "<MINIO_ROOT_USER>"
+dotnet user-secrets set "Minio:SecretKey" "<MINIO_ROOT_PASSWORD>"
+dotnet user-secrets set "Jwt:Key" "<at least 32 random bytes, for example: openssl rand -base64 48>"
+dotnet user-secrets set "Seed:AdminPassword" "<your administrator password>"
 dotnet run --launch-profile http
 ```
 
-The API listens on <http://localhost:5055> and Swagger is at <http://localhost:5055/swagger>. On start it applies the EF Core migrations and seeds the five roles and one administrator account.
+The API listens on <http://localhost:5055> and Swagger is at <http://localhost:5055/swagger>. On start it applies the EF Core migrations and seeds the five roles and the administrator account (see [Configuration and secrets](#configuration-and-secrets)).
 
 ### 3. Web portal
 
@@ -90,14 +133,16 @@ The API address defaults to `http://10.0.2.2:5055/api` on the Android emulator a
 
 ## Accounts and test data
 
-When the backend runs in the **Development** environment (`dotnet run` does this by default), it creates the accounts and stations below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. Nothing is created in any other environment, and `Seed:DevelopmentData` in `appsettings.Development.json` switches it off.
+When the backend runs in the **Development** environment (`dotnet run` does this by default) with `Seed:DevelopmentData` enabled, it creates the demo accounts, stations, addresses, drones and orders below on start. It is safe to start many times: anything that already exists is left as it is, so your own changes are kept. This demo data is not created in any other environment; set `Seed:DevelopmentData` to `false` in `appsettings.Development.json` to switch it off.
 
 | Role | Email | Password |
 |---|---|---|
-| System administrator | `admin@smartdronedelivery.com` | `Admin@123456` (also created outside Development: change it for any shared environment) |
+| System administrator | `admin@smartdronedelivery.com` (`Seed:AdminEmail`) | the value of `Seed:AdminPassword`; created in every environment, but only when that setting is present |
 | Customer | `customer@smartdronedelivery.com` | `Customer@123456` |
 | Dispatcher | `dispatcher@smartdronedelivery.com` | `Dispatcher@123456` |
-| Station operator | `operator@smartdronedelivery.com` | `Operator@123456` (assigned to `HCM-01`) |
+| Station operator (HCM-01) | `operator@smartdronedelivery.com` | `Operator@123456` |
+| Station operator (HCM-02) | `operator2@smartdronedelivery.com` | `Operator@123456` |
+| Logistics manager (`MANAGER`) | `manager@smartdronedelivery.com` | `Manager@123456` |
 
 | Station | Name | Status | Slots |
 |---|---|---|---|
@@ -105,15 +150,39 @@ When the backend runs in the **Development** environment (`dotnet run` does this
 | `HCM-02` | Thu Duc Hub | `OPERATIONAL` | 4 |
 | `HCM-03` | Binh Thanh Hub | `MAINTENANCE` | 2 |
 
-So a customer can sign in and create an order right after `docker compose up` and `dotnet run`, with no SQL. `HCM-03` is there to check that a station in maintenance is refused.
+Demo data also includes two customer addresses (`Home - District 1` and `Office - Thu Duc`), four drones, and three sample deliveries:
 
-Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
+| Type | Demo records |
+|---|---|
+| Drones | `DRONE-HCM-001` (`IDLE`, HCM-01, 3000 g), `DRONE-HCM-002` (`IDLE`, HCM-02, 2500 g), `DRONE-HCM-003` (`CHARGING`, HCM-01, 3000 g), `DRONE-HCM-004` (`MAINTENANCE`, HCM-03, 2700 g) |
+| Orders | `ORD-DEMO-001` (`PENDING`), `ORD-DEMO-002` (`APPROVED`), `ORD-DEMO-003` (`DELIVERED`, with a completed flight mission) |
+
+So a customer can sign in and create an order right after docker compose up -d postgres minio and dotnet run (or the full Docker stack with ASPNETCORE_ENVIRONMENT=Development), with no SQL. HCM-03 is there to check that a station in maintenance is refused.
+
+`ORD-DEMO-003` uses timestamps relative to `DateTime.UtcNow` at its first seed and they are not rewritten on restart. If you run the demo on another date and want the dashboard's "today" filter to include this order, create a fresh database volume before the demo.
+
+Visitors can create another **Customer** account from **Register** on the web portal login page or **Create a customer account** in the Customer mobile app. Registration validates the email, password, name and phone number; a successful registration signs the customer in automatically. Outside the Development demo seed, staff accounts are created by the administrator in the web portal (Users, New user). The public API can also be used from Swagger (<http://localhost:5055/swagger>, `POST /api/auth/register`) or with curl:
 
 ```bash
 curl -X POST http://localhost:5055/api/auth/register -H "Content-Type: application/json"   -d '{"email":"customer2@example.com","password":"Passw0rd123","fullName":"Second Customer","phoneNumber":"0900000010"}'
 ```
 
-Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md). Other staff accounts (Dispatcher, Logistics Manager, Administrator) are created by the administrator in the web portal (Users, New user).
+Request and response details are in [`docs/api/auth-api.md`](docs/api/auth-api.md).
+
+## Configuration and secrets
+
+No working secret is committed (LA-328). `appsettings.json` keeps the secret settings empty, and the API stops on start with a message naming each missing setting:
+
+| Setting | Environment variable | Notes |
+|---|---|---|
+| `ConnectionStrings:DefaultConnection` | `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
+| `Jwt:Key` | `Jwt__Key` | at least 32 bytes; changing it signs every user out |
+| `Minio:AccessKey`, `Minio:SecretKey` | `Minio__AccessKey`, `Minio__SecretKey` | MinIO user and password |
+| `Seed:AdminPassword` (optional) | `Seed__AdminPassword` | creates the first administrator (`Seed:AdminEmail`) if it does not exist yet; 8 to 100 characters with a letter and a digit. Without it no administrator is created and a warning is logged. Change the password after the first sign-in (Profile, Change password). |
+
+In Development, `dotnet user-secrets` is the simplest place for them (see "Run it locally"); in any other environment use environment variables or the deployment's secret store. Outside Development the API also refuses the values that were committed before LA-328 (the old JWT key, PostgreSQL, MinIO and administrator passwords), because they remain readable in the git history: rotate them on every environment that used them.
+
+A PostgreSQL volume keeps the password it was created with; `POSTGRES_PASSWORD` only applies to a new volume. To rotate a local database either run `ALTER USER postgres PASSWORD '...'` in the container or recreate the volume (`docker compose down -v`, which deletes the local data).
 
 ## Using the application today
 
@@ -125,28 +194,53 @@ Sign in as a **customer** (web or mobile):
 4. **Update**: change recipient, destination station or address while the order is `PENDING`.
 5. **Cancel**: with a reason (up to 500 characters) while the order is `PENDING` or `APPROVED`.
 
-Sign in as the **administrator** (web) to manage users and roles. Approval by a dispatcher, scheduling, drone assignment, station pickup and tracking are not implemented yet (see the status table).
+Continue the delivery through the permitted staff roles:
+
+1. **Dispatcher (web)**: review/approve the request, schedule departure and assign an eligible drone. Approval is a dispatcher action; the AI does not approve orders automatically.
+2. **Origin station operator (Flutter or web)**: use the assigned station's **Origin Intake**, look up the approved parcel, enter actual measurements, explicitly acknowledge physical inspection and assign an empty slot.
+3. **Delivery tracking**: view order progress, origin/destination map and ETA. For software demonstration, explicitly enable the simulator as described in the [demo script](docs/demo/demo-script.md); source code and seeded records do not prove a performed flight.
+4. **Destination operator / customer**: once the order is `ARRIVED`, use the authorized pickup/receipt flow with the one-time secure code. Successful handover marks the order `DELIVERED` and releases its occupied slot. Preserve the code when it is first shown; it is not returned by later order-detail reads.
+5. **Logistics manager (web)**: inspect delivery statistics and reports. **Administrator (web)**: manage users, roles, audit and configuration. Staff can look up historical deliveries by tracking number for the available ETA/summary actions.
+
+Follow the [five-role user manual](docs/guides/UserManual.md) for detailed steps, permissions and failure/expired-parcel recovery. AI stays disabled until the relevant server configuration and policy gates are satisfied; see [Gemini setup](docs/deployment/gemini-ai.md).
 
 ## Tests
 
+For an explicitly selected local **Development** API with demo seeding and the
+simulator enabled, `python scripts/demo-smoke.py --base-url http://localhost:5055
+--wait-for-flight` creates a labelled parcel, approves/schedules/assigns it,
+performs origin intake and waits for real simulator tracking before destination
+pickup. Run the command on one line. It uses the documented development accounts
+and creates data, so it is restricted to loopback hosts. It prints identifiers
+and status evidence, never tokens or the pickup code. Allow 25–30 minutes: the
+normal minimum 15-minute scheduling lead time remains enforced. Omit
+`--wait-for-flight` to stop at `READY_FOR_TAKEOFF`; that is **not** proof of a
+completed flight. This API smoke check does not replace web/Flutter UI acceptance.
+
 ```bash
-# Backend (xUnit, EF Core InMemory; no database needed)
-cd backend && dotnet test
+# Backend, from the repository root (most tests use InMemory).
+dotnet test backend/SmartDroneDelivery.sln --configuration Release
 
 # Backend, including the concurrency tests that need a real PostgreSQL (LA-322).
 # Start `docker compose up -d postgres` first. Each run creates its own database on the server and drops it again.
-TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=Password123!" dotnet test
+TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=$POSTGRES_PASSWORD" dotnet test backend/SmartDroneDelivery.sln --configuration Release
 
 # Web
-cd frontend/web && npm test && npm run lint && npm run build
+npm --prefix frontend/web ci
+npm --prefix frontend/web test
+npm --prefix frontend/web run lint
+npm --prefix frontend/web run build
 
 # Mobile
-cd frontend/mobile && flutter test && flutter analyze
+cd frontend/mobile
+flutter pub get
+flutter analyze --no-fatal-infos
+flutter test
 ```
 
 ### Continuous integration
 
-Every pull request into `develop` or `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It shows three checks, one for each command block above:
+Every pull request into `develop`, `main` or a shared `story/**` branch runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It shows three checks, one for each command block above:
 
 | Check | Runs |
 |---|---|
@@ -154,17 +248,17 @@ Every pull request into `develop` or `main` runs [`.github/workflows/ci.yml`](.g
 | `Web lint, test and build` | `npm ci`, `npm run lint`, `npm test`, `npm run build` |
 | `Mobile analyze and test` | `flutter pub get`, `flutter analyze --no-fatal-infos`, `flutter test` |
 
-A new push to the pull request cancels the run that is still going. A failing check only blocks the merge once the three names are required in the branch ruleset of `develop` (Settings, Rules); until then, look at the checks before you merge.
+A new push cancels an older run for the same pull request. The active `develop` ruleset requires these three checks, one approving review and resolved review threads. Review and test the current combined integration head before merging. Applicable Docker package changes also run the isolated Docker smoke workflow. Merge into `develop` records integration; deployment and release to `main` are separate actions.
 
 ## Documentation
 
 - Sprint 6 API handoff (LA-341): [`docs/api/sprint-6-api-contract.md`](docs/api/sprint-6-api-contract.md) and [OpenAPI schemas](docs/api/sprint-6-openapi.json). Includes branch availability, tracking/SignalR, confirmation, and explicitly proposed analytics/external contracts for mocks.
-- Sprint 7 AI handoff (LA-342): [`docs/api/sprint-7-api-contract.md`](docs/api/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/sprint-7-openapi.json). Proposed ETA, delivery summary and customer assistant interfaces; implementation, consumer approval and production policy gates are tracked separately.
-- API contracts: [`docs/api/auth-api.md`](docs/api/auth-api.md), [`docs/api/customer-order-api.md`](docs/api/customer-order-api.md), [`docs/api/station-api.md`](docs/api/station-api.md), [`docs/api/drone-api.md`](docs/api/drone-api.md) (the order, station and drone contracts are still marked proposed)
+- Sprint 7 AI handoff (LA-342): [`docs/api/sprint-7-api-contract.md`](docs/api/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/sprint-7-openapi.json). Implemented source availability and enabled-service/policy acceptance are tracked separately.
+- Current API index: [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md). The individual auth/order/station/drone contracts also retain historical design material; use the index and running Swagger to establish current endpoint availability.
 - Architecture and database: [`docs/architecture/`](docs/architecture/)
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
 - Design diagrams: [`docs/design/`](docs/design/)
-- AI service design (LA-201 / LA-241–244): [ETA](docs/design/sequence-ai-eta-estimation.md), [delivery summary](docs/design/sequence-ai-delivery-summarization.md), [customer assistant](docs/design/sequence-ai-customer-assistant.md), [class diagram](docs/design/class-diagram-ai-services.md) and [specification](docs/design/class-specification-ai-services.md). Proposed Sprint 7 implementation; existing entities are distinguished from future services.
+- AI service design (LA-201 / LA-241–244): [ETA](docs/design/sequence-ai-eta-estimation.md), [delivery summary](docs/design/sequence-ai-delivery-summarization.md), [customer assistant](docs/design/sequence-ai-customer-assistant.md), [class diagram](docs/design/class-diagram-ai-services.md) and [specification](docs/design/class-specification-ai-services.md). These are historical design references; consult integrated code and the AI configuration guide for implemented behavior and activation gates.
 - Real-time tracking sequence (LA-238): [telemetry intake, SignalR and web/mobile updates](docs/design/sequence-real-time-tracking.md)
 - Dashboard sequence (LA-240): [filtered statistics queries and web results](docs/design/sequence-dashboard.md)
 

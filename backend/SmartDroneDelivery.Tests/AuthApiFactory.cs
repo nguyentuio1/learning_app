@@ -22,8 +22,7 @@ public class AuthApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
         // appsettings.Development.json turns the demo data on for `dotnet run`; the tests build their own data.
-        builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["Seed:DevelopmentData"] = "false" }));
+        TestSettings.Apply(builder);
         // Test-only controller with one endpoint per role rule.
         builder.ConfigureServices(services => services.AddControllers().AddApplicationPart(typeof(RbacProbeController).Assembly));
         builder.ConfigureServices(services =>
