@@ -56,6 +56,7 @@
 .customer-form-page .ant-upload-wrapper .ant-upload-drag { border-color:#c5d3bc; background:#f6f9f1; border-radius:9px; transition:border-color 160ms ease,background-color 160ms ease; }
 .customer-form-page .ant-upload-wrapper .ant-upload-drag:hover { border-color:#7e9f80; background:#eff5e9; }
 .customer-form-page .ant-upload-wrapper .ant-upload-drag-icon { color:#2d6949; font-size:24px; }
+.customer-form-page .ant-upload-wrapper .ant-upload-drag p.ant-upload-hint { color:#546757; }
 .customer-form-page .ant-upload-wrapper .ant-upload-text { color:#203b30; font-weight:650; }
 @media (max-width: 760px) { .customer-page { padding: 24px 16px 40px; } .customer-heading { flex-direction: column; } .customer-form-grid { grid-template-columns: 1fr; } .customer-primary-link { width:100%; } }
 @media (prefers-reduced-motion:reduce) { .customer-primary-link,.customer-package-card,.customer-page .ant-btn { transition:none; } }

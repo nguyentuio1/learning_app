@@ -7,7 +7,7 @@ export function OrderUiProvider({ children }: { children: ReactNode }) {
   return <ConfigProvider
     theme={{ token: {
       colorPrimary: '#1e4f3c', colorPrimaryHover: '#365f45', colorPrimaryActive: '#163f2f',
-      colorText: '#254434', colorTextSecondary: '#627365', colorTextPlaceholder: '#73816e',
+      colorText: '#254434', colorTextSecondary: '#546757', colorTextDescription: '#546757', colorTextPlaceholder: '#546757',
       colorBorder: '#c5d3bc', colorBgContainer: '#fffffc', colorBgElevated: '#fffffc',
       colorError: '#a34b3c', colorWarning: '#a17927', colorInfo: '#4b7353', colorSuccess: '#4c7a56',
       controlOutline: '#4c7a561c', controlHeight: 42, borderRadius: 8, borderRadiusLG: 14,
