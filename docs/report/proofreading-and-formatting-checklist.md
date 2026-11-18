@@ -31,7 +31,7 @@ CI, authorship, Jira Done subtasks and automated agent review do not supply eith
 
 | Page | Existing ID | Actual published/readback version | Result |
 |---|---|---|---|
-| Overview | [98403](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=98403) | **v7** | Current baseline/evidence and actual Sprint 8 closure; two confirmations remain open |
+| Overview | [98403](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=98403) | **v8** | Current baseline/evidence and actual Sprint 8 closure; two confirmations remain open |
 | I. Introduction | [14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | **v3** | Current pointer; old Sprint 7 plan explicitly historical |
 | II. Management plan | [11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | **v6** | Actual Sprint 8 closure; old active labels historical |
 | III. Requirements | [11993093](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993093) | **v14** | Current integration/runtime/performance scope; diagrams/history retained |
@@ -41,3 +41,5 @@ CI, authorship, Jira Done subtasks and automated agent review do not supply eith
 | NFR | [11960371](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11960371) | **v9** | Original performance criterion unchanged; unsupported fixed test counts/scaling claims corrected |
 
 Remaining report acceptance: two actual member confirmations and approved final export. LA-351 source PR still needs current review/CI/integration before reporting that story integrated. Publishing pages is a separate completed action.
+
+Template review export 2 includes ten detailed child specifications and two real runtime figures. Cover metadata still requires actual student IDs, formal TBA Review name, supervisor/external-supervisor and academic project code. Expanded published targets: Acknowledgement `14024759 v2`, System Design `14090250 v3`, Database Design `14188589 v5`; Definitions `14024779 v1` retained.
