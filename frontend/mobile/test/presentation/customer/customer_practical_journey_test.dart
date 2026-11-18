@@ -110,12 +110,12 @@ void main() {
       expect(find.text('Find a station'), findsNothing);
       expect(find.text('Create delivery'), findsOneWidget);
       expect(find.text('DD-1001'), findsOneWidget);
-      expect(find.text('Recipient: Alex Recipient'), findsOneWidget);
+      expect(find.text('Delivery package'), findsNWidgets(3));
       expect(find.text('DD-1002'), findsOneWidget);
       expect(find.text('DD-1003'), findsOneWidget);
       expect(find.text('My deliveries'), findsOneWidget);
       expect(find.text('Recent deliveries'), findsOneWidget);
-      expect(find.text('Track'), findsNWidgets(3));
+      expect(find.byType(InkWell), findsWidgets);
       expect(find.text('Confirm receipt'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('My deliveries')).dy,
@@ -319,6 +319,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('ONE-TIME-4821'), findsOneWidget);
+    expect(find.textContaining('shown only once'), findsOneWidget);
+    expect(find.textContaining('Save it before leaving'), findsOneWidget);
     await tester.ensureVisible(
       find.byKey(const Key('order-view-detail-button')),
     );

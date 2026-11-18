@@ -125,7 +125,7 @@ Future<void> _completeForm(WidgetTester tester, {String? phone}) async {
   await _selectStation(tester, 'order-destination', 'Destination · DS-01');
   await _enter(tester, 'order-recipient-name', 'Customer Name');
   await _enter(tester, 'order-recipient-phone', phone ?? '123456789');
-  await _enter(tester, 'order-instructions', 'Leave at the front desk.');
+  expect(find.byKey(const Key('order-instructions')), findsNothing);
   await tester.ensureVisible(find.byKey(const Key('order-review')));
   await tester.tap(find.byKey(const Key('order-review')));
   await tester.pumpAndSettle();
@@ -150,12 +150,7 @@ void main() {
     await _completeForm(tester);
 
     expect(find.text('Review Delivery'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Leave at the front desk.'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Leave at the front desk.'), findsOneWidget);
+    expect(find.text('Delivery Instructions'), findsNothing);
     await tester.tap(find.byKey(const Key('order-submit')));
     await tester.pumpAndSettle();
 

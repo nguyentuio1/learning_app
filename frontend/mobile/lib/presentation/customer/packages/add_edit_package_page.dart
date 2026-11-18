@@ -69,7 +69,6 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   late final TextEditingController _widthController;
   late final TextEditingController _heightController;
   late final TextEditingController _imageUrlController;
-  late final TextEditingController _descriptionController;
   late bool _isFragile;
 
   @override
@@ -92,7 +91,6 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     _imageUrlController = TextEditingController(
       text: package?.packageImageUrl ?? '',
     );
-    _descriptionController = TextEditingController();
     _isFragile = package?.isFragile ?? false;
   }
 
@@ -104,7 +102,6 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     _widthController.dispose();
     _heightController.dispose();
     _imageUrlController.dispose();
-    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -167,6 +164,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
                 'Package name',
                 TextFormField(
                   controller: _nameController,
+                  inputFormatters: [LengthLimitingTextInputFormatter(200)],
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(),
                   validator: _validateName,
@@ -204,20 +202,6 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
                 ],
               ),
               const SizedBox(height: 12),
-              _labeledField(
-                'Description (optional)',
-                TextFormField(
-                  controller: _descriptionController,
-                  minLines: 3,
-                  maxLines: 5,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    hintText: 'Add any helpful package details',
-                    alignLabelWithHint: true,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
               InkWell(
                 onTap: _editImageUrl,
                 borderRadius: BorderRadius.circular(12),
@@ -362,43 +346,16 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   }
 
   Future<void> _editImageUrl() async {
-    final controller = TextEditingController(text: _imageUrlController.text);
-    final formKey = GlobalKey<FormState>();
     final result = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Package photo'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-              labelText: 'Image URL (optional)',
-              hintText: 'https://',
-            ),
-            validator: _validateImageUrl,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              Navigator.pop(dialogContext, controller.text.trim());
-            },
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (_) => _PackageImageUrlDialog(
+        initialValue: _imageUrlController.text,
+        validator: _validateImageUrl,
       ),
     );
     if (result != null && mounted) {
       setState(() => _imageUrlController.text = result);
     }
-    controller.dispose();
   }
 
   Future<void> _submit() async {
@@ -479,4 +436,55 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
       oldDelegate.color != color || oldDelegate.radius != radius;
+}
+
+class _PackageImageUrlDialog extends StatefulWidget {
+  const _PackageImageUrlDialog({
+    required this.initialValue,
+    required this.validator,
+  });
+  final String initialValue;
+  final String? Function(String?) validator;
+  @override
+  State<_PackageImageUrlDialog> createState() => _PackageImageUrlDialogState();
+}
+
+class _PackageImageUrlDialogState extends State<_PackageImageUrlDialog> {
+  late final controller = TextEditingController(text: widget.initialValue);
+  final formKey = GlobalKey<FormState>();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Package photo'),
+    content: Form(
+      key: formKey,
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.url,
+        decoration: const InputDecoration(
+          labelText: 'Image URL (optional)',
+          hintText: 'https://',
+        ),
+        validator: widget.validator,
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          if (formKey.currentState!.validate())
+            Navigator.pop(context, controller.text.trim());
+        },
+        child: const Text('Save'),
+      ),
+    ],
+  );
 }

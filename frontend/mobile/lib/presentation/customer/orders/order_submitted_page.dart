@@ -150,7 +150,7 @@ class OrderSubmittedPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Share this code only with the recipient. They need it to open the compartment.',
+                      'This pickup code is shown only once. Save it before leaving this screen. Share this code only with the recipient; present it to the station operator at pickup.',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,

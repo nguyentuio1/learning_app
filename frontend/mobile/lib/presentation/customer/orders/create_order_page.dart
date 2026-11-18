@@ -23,7 +23,6 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
-  late final TextEditingController _instructions;
 
   @override
   void initState() {
@@ -31,14 +30,12 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
     final state = ref.read(createOrderNotifierProvider);
     _name = TextEditingController(text: state.recipientName);
     _phone = TextEditingController(text: state.recipientPhone);
-    _instructions = TextEditingController(text: state.instructions);
   }
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
-    _instructions.dispose();
     super.dispose();
   }
 
@@ -455,35 +452,6 @@ class _CreateOrderPageState extends ConsumerState<CreateOrderPage> {
               RouteEtaPreviewCard(preview: routePreview),
             ],
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Text(
-                  'Delivery Instructions',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  ' (optional)',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              key: const Key('order-instructions'),
-              controller: _instructions,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Add special instructions',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: ref
-                  .read(createOrderNotifierProvider.notifier)
-                  .setInstructions,
-            ),
             if (state.error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),

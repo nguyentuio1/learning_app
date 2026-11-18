@@ -276,6 +276,11 @@ void main() {
     expect(find.text('555-0100'), findsOneWidget);
     expect(find.text('24 minutes'), findsOneWidget);
     expect(find.text('— → PENDING'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('APPROVED → IN_TRANSIT'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('APPROVED → IN_TRANSIT'), findsOneWidget);
     expect(find.text('Order created'), findsOneWidget);
     expect(find.text('Drone departed'), findsOneWidget);

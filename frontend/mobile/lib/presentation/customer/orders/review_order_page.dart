@@ -133,26 +133,6 @@ class ReviewOrderPage extends ConsumerWidget {
               onEdit: returnToEdit,
             ),
             const SizedBox(height: 24),
-            Text(
-              'Delivery Instructions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.customerTextPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _ReviewCard(
-              child: Text(
-                order.instructions.trim().isEmpty
-                    ? 'No special instructions'
-                    : order.instructions.trim(),
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: order.instructions.trim().isEmpty
-                      ? AppColors.customerTextSecondary
-                      : AppColors.customerTextPrimary,
-                ),
-              ),
-            ),
           ],
         ),
       ),
