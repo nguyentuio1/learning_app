@@ -1,0 +1,535 @@
+[
+  {
+    "file": "customer-tracking-map-desktop-1440px.png",
+    "role": "CUSTOMER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5267/orders/440d45d7-5724-4a8e-b5da-2dfdb301c00a/map",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:04:36.051Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "basemap": "OpenStreetMap contributors; tiles served by tile.openstreetmap.de via VITE_MAP_TILE_URL",
+    "note": "Owned order ORD-DEMO-002; selected map with simulated telemetry persisted in PostgreSQL.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1189
+    }
+  },
+  {
+    "file": "customer-packages-desktop-1440px.png",
+    "role": "CUSTOMER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/packages",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:04.242Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "All demo package dimensions validated against limits via the live package read.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  {
+    "file": "customer-order-detail-desktop-1440px.png",
+    "role": "CUSTOMER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/orders/bb7b1756-9bbf-49e8-bd77-0a1ba163a932",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:05.315Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-003 actual departure 2026-11-18T10:22:58.185815Z; rendered in Asia/Ho_Chi_Minh.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1556
+    }
+  },
+  {
+    "file": "dispatcher-delivery-map-desktop-1440px.png",
+    "role": "DISPATCHER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5267/delivery-map/440d45d7-5724-4a8e-b5da-2dfdb301c00a",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:04:41.865Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "basemap": "OpenStreetMap contributors; tiles served by tile.openstreetmap.de via VITE_MAP_TILE_URL",
+    "note": "ORD-DEMO-002 selected map with simulated telemetry persisted in PostgreSQL.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1189
+    }
+  },
+  {
+    "file": "dispatcher-delivery-tracking-desktop-1440px.png",
+    "role": "DISPATCHER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/delivery-tracking",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:09.660Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-002 IN_TRANSIT / IN_AIR with a recent simulated telemetry sample.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  {
+    "file": "operator-station-slots-desktop-1440px.png",
+    "role": "STATION_OPERATOR",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/station-slots",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:12.896Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Assigned station HCM-01 selected; inventory or capacity read from PostgreSQL.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  {
+    "file": "operator-station-availability-desktop-1440px.png",
+    "role": "STATION_OPERATOR",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/station-availability",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:14.343Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Assigned station HCM-01 selected; inventory or capacity read from PostgreSQL.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  {
+    "file": "manager-analytics-dashboard-desktop-1440px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/manager/analytics",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:17.228Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Vietnam reporting form and applied cohort both 2026-10-21 through 2026-11-19.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1746
+    }
+  },
+  {
+    "file": "manager-analytics-presets-desktop-1440px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/manager/analytics?fromDate=2026-11-13&toDate=2026-11-19&preset=7",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:17.610Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Vietnam reporting form and applied cohort both 2026-11-13 through 2026-11-19.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1746
+    }
+  },
+  {
+    "file": "manager-delivery-report-desktop-1440px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/manager/analytics?fromDate=2026-11-13&toDate=2026-11-19&preset=7&tab=reports",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:17.973Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Vietnam reporting form and applied cohort both 2026-11-13 through 2026-11-19; ORD-DEMO-003 departed 2026-11-18T10:22:58.185815Z",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1274
+    }
+  },
+  {
+    "file": "manager-delivery-summary-desktop-1440px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/delivery-summary/bb7b1756-9bbf-49e8-bd77-0a1ba163a932",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:19.119Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-003 delivery record; AI provider intentionally disabled. No generated narrative.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  {
+    "file": "manager-delivery-eta-desktop-1440px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/delivery-eta/440d45d7-5724-4a8e-b5da-2dfdb301c00a",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:20.123Z",
+    "cssViewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "dpr": 1,
+    "touch": 0,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-002 schedule-derived ETA; no model-generated estimate or confidence score.",
+    "pngDimensions": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  {
+    "file": "customer-tracking-map-narrow-390px.png",
+    "role": "CUSTOMER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5267/orders/440d45d7-5724-4a8e-b5da-2dfdb301c00a/map",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:04:46.345Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "basemap": "OpenStreetMap contributors; tiles served by tile.openstreetmap.de via VITE_MAP_TILE_URL",
+    "note": "Owned order ORD-DEMO-002; selected map with simulated telemetry persisted in PostgreSQL.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 1481
+    }
+  },
+  {
+    "file": "customer-packages-narrow-390px.png",
+    "role": "CUSTOMER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/packages",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:24.066Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "All demo package dimensions validated against limits via the live package read.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 964
+    }
+  },
+  {
+    "file": "customer-order-detail-narrow-390px.png",
+    "role": "CUSTOMER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/orders/bb7b1756-9bbf-49e8-bd77-0a1ba163a932",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:25.153Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-003 actual departure 2026-11-18T10:22:58.185815Z; rendered in Asia/Ho_Chi_Minh.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 2230
+    }
+  },
+  {
+    "file": "dispatcher-delivery-map-narrow-390px.png",
+    "role": "DISPATCHER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5267/delivery-map/440d45d7-5724-4a8e-b5da-2dfdb301c00a",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:04:51.136Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "basemap": "OpenStreetMap contributors; tiles served by tile.openstreetmap.de via VITE_MAP_TILE_URL",
+    "note": "ORD-DEMO-002 selected map with simulated telemetry persisted in PostgreSQL.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 1505
+    }
+  },
+  {
+    "file": "dispatcher-delivery-tracking-narrow-390px.png",
+    "role": "DISPATCHER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/delivery-tracking",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:29.231Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-002 IN_TRANSIT / IN_AIR with a recent simulated telemetry sample.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  {
+    "file": "operator-station-slots-narrow-390px.png",
+    "role": "STATION_OPERATOR",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/station-slots",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:32.187Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Assigned station HCM-01 selected; inventory or capacity read from PostgreSQL.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 1587
+    }
+  },
+  {
+    "file": "operator-station-availability-narrow-390px.png",
+    "role": "STATION_OPERATOR",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/station-availability",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:33.563Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Assigned station HCM-01 selected; inventory or capacity read from PostgreSQL.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 1076
+    }
+  },
+  {
+    "file": "manager-analytics-dashboard-narrow-390px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/manager/analytics",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:36.406Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Vietnam reporting form and applied cohort both 2026-10-21 through 2026-11-19.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 2728
+    }
+  },
+  {
+    "file": "manager-delivery-report-narrow-390px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/manager/analytics?tab=reports",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:36.691Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "Vietnam reporting form and applied cohort both 2026-10-21 through 2026-11-19; ORD-DEMO-003 departed 2026-11-18T10:22:58.185815Z",
+    "pngDimensions": {
+      "width": 390,
+      "height": 1475
+    }
+  },
+  {
+    "file": "manager-delivery-summary-narrow-390px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/delivery-summary/bb7b1756-9bbf-49e8-bd77-0a1ba163a932",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:37.713Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-003 delivery record; AI provider intentionally disabled. No generated narrative.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  {
+    "file": "manager-delivery-eta-narrow-390px.png",
+    "role": "MANAGER",
+    "sourceSha": "ef7ddecf4875b6504ce2352468a2f3e8fda6a90c",
+    "ui": "http://127.0.0.1:5266/delivery-eta/440d45d7-5724-4a8e-b5da-2dfdb301c00a",
+    "api": "http://127.0.0.1:5265",
+    "chrome": "157.0.8103.79",
+    "capturedAtUtc": "2026-11-18T17:00:38.736Z",
+    "cssViewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 1,
+    "touch": 1,
+    "timeZone": "Asia/Saigon",
+    "apiMode": "local ASP.NET Core and isolated PostgreSQL; no HTTP mocks",
+    "aiMode": "provider disabled; no model output",
+    "note": "ORD-DEMO-002 schedule-derived ETA; no model-generated estimate or confidence score.",
+    "pngDimensions": {
+      "width": 390,
+      "height": 846
+    }
+  }
+]

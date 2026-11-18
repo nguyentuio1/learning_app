@@ -68,7 +68,7 @@ it('renders the pending orders queue with order details and route', async () => 
   vi.stubGlobal('matchMedia', (query: string) => ({ ...matchMedia(query), matches: query.startsWith('(min-width:') }))
   show()
   expect(await screen.findByText('DD-202611-0012')).toBeInTheDocument()
-  expect(screen.getByText('Tran Thi Mai')).toBeInTheDocument()
+  expect(await screen.findByText('Tran Thi Mai')).toBeInTheDocument()
   expect(screen.getByText('0901234567')).toBeInTheDocument()
   expect(screen.getByText('Medical Supplies')).toBeInTheDocument()
   expect(screen.getByText(/450 g · 25 × 18 × 10 cm · Fragile/)).toBeInTheDocument()

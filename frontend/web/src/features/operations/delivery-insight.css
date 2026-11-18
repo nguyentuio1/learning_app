@@ -4,6 +4,71 @@
   max-width: 34rem;
 }
 
+.insight-lookup {
+  display: grid;
+  gap: 16px;
+}
+
+.insight-lookup-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  max-width: 42rem;
+}
+
+.insight-lookup-filters .ant-form-item {
+  margin-bottom: 0;
+}
+
+.insight-lookup-filters .ant-picker {
+  width: 100%;
+}
+
+.insight-lookup-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.insight-lookup-actions > span {
+  color: #617167;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 480px) {
+  .insight-lookup-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.insight-lookup-results {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight-lookup-results li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid #e2e9da;
+}
+
+.insight-lookup-results li > div {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 14rem;
+}
+
+.insight-lookup-results li > div > span {
+  color: #617167;
+}
+
 .insight-grid {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);

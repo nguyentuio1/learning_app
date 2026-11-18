@@ -1,0 +1,33 @@
+# Sanitized API Log Excerpt — Live k6 Run (SHA f67aa52, PostgreSQL 18)
+#
+# Summary of API log entries during the k6 run (docs/testing/evidence/k6-live-run.txt):
+# - Matching log lines for "IX_delivery_orders_TrackingNumber" (SqlState 23505): 13,069 log occurrences
+#   (raw un-deduplicated line count; a single handled exception/retry inside DeliveryOrderService.CreateAsync
+#   with MaxSaveAttempts = 5 can emit multiple EF Core log categories/stack lines, so this is not a count of distinct requests).
+# - Other fail: categories in API log: 0.
+# - Note: appsettings.json configures Microsoft.AspNetCore at Warning level, so per-request
+#   HTTP 409 / status-code access logs were not emitted.
+
+fail: Microsoft.EntityFrameworkCore.Update[10000]
+      An exception occurred in the database while saving changes for context type 'SmartDroneDelivery.Api.Data.AppDbContext'.
+      Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+       ---> Npgsql.PostgresException (0x80004005): 23505: duplicate key value violates unique constraint "IX_delivery_orders_TrackingNumber"
+
+      DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+         at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+         at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+         at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+         at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+         at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+         at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+         at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+         at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+         at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+        Exception data:
+          Severity: ERROR
+          SqlState: 23505
+          MessageText: duplicate key value violates unique constraint "IX_delivery_orders_TrackingNumber"
+          Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+          SchemaName: public
+          TableName: delivery_orders
