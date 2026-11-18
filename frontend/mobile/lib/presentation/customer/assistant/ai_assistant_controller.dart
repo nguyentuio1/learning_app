@@ -1,16 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/session/auth_controller.dart';
 import '../../../data/models/ai_assistant_models.dart';
 import '../../../data/providers/ai_assistant_providers.dart';
 import '../../../data/services/ai_assistant_api_service.dart';
 
 class AiAssistantContext {
-  const AiAssistantContext({
-    this.orderId,
-    this.trackingNumber,
-    this.sessionId,
-  });
+  const AiAssistantContext({this.orderId, this.trackingNumber, this.sessionId});
 
   final String? orderId;
   final String? trackingNumber;
@@ -136,6 +133,20 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
   @override
   AiAssistantState build() {
+    ref.listen(currentUserProvider, (previous, next) {
+      if (previous != null &&
+          (previous.id != next?.id ||
+              next?.status != 'ACTIVE' ||
+              next?.roleCode.toUpperCase() != 'CUSTOMER')) {
+        _handleAccessLost(
+          const ApiException(
+            message:
+                'Your session changed. Sign in again to use the assistant.',
+            statusCode: 401,
+          ),
+        );
+      }
+    });
     final initialState = AiAssistantState(
       selectedOrderId: _nullIfEmpty(initialContext.orderId),
       selectedTrackingNumber: _nullIfEmpty(initialContext.trackingNumber),
@@ -258,10 +269,7 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
     try {
       final api = ref.read(aiAssistantApiServiceProvider);
-      var result = await api.getSessionMessages(
-        sessionId,
-        page: page ?? 1,
-      );
+      var result = await api.getSessionMessages(sessionId, page: page ?? 1);
       if (!ref.mounted || generation != _messagesGeneration) return false;
 
       // On initial load (page == null), jump to the newest page if more than 1 page exists.
@@ -352,6 +360,12 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         state.uncertainSendPendingRecovery) {
       return false;
     }
+    if (!ref.read(aiAssistantChatEnabledProvider)) {
+      state = state.copyWith(
+        errorMessage: 'Chat is not available in this app. You can still track your deliveries.',
+      );
+      return false;
+    }
 
     final trimmed = rawText.trim();
     final runeCount = trimmed.runes.length;
@@ -392,10 +406,10 @@ class AiAssistantController extends Notifier<AiAssistantState> {
           messageText: trimmed,
           createdAt: response.reply.createdAt,
         );
-        final updatedMessages = _mergeMessages(
-          state.messages,
-          [userMsg, response.reply],
-        );
+        final updatedMessages = _mergeMessages(state.messages, [
+          userMsg,
+          response.reply,
+        ]);
         final isNewSession =
             state.activeSessionId == null && response.sessionId != null;
 
@@ -418,7 +432,11 @@ class AiAssistantController extends Notifier<AiAssistantState> {
         messageText: trimmed,
         createdAt: response.reply.createdAt,
       );
-      final updatedMessages = [...state.messages, transientUserMsg, response.reply];
+      final updatedMessages = [
+        ...state.messages,
+        transientUserMsg,
+        response.reply,
+      ];
       state = state.copyWith(
         messages: List.unmodifiable(updatedMessages),
         isSending: false,
@@ -433,7 +451,9 @@ class AiAssistantController extends Notifier<AiAssistantState> {
 
       final isUncertain = error is ApiException
           ? (error.isNetwork ||
-              (error.statusCode != null && error.statusCode! >= 500))
+                (error.statusCode != null &&
+                    error.statusCode! >= 500 &&
+                    error.statusCode != 503))
           : true;
 
       state = state.copyWith(

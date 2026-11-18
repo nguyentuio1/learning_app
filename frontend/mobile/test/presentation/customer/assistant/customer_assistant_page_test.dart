@@ -6,6 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
 import 'package:smart_drone_delivery/core/network/logging_interceptor.dart';
+import 'package:smart_drone_delivery/core/session/auth_controller.dart';
+import 'package:smart_drone_delivery/domain/entities/user.dart';
+import 'package:go_router/go_router.dart';
+import 'package:smart_drone_delivery/core/config/app_config.dart';
+import 'package:smart_drone_delivery/core/theme/app_theme.dart';
 import 'package:smart_drone_delivery/data/models/ai_assistant_models.dart';
 import 'package:smart_drone_delivery/data/providers/ai_assistant_providers.dart';
 import 'package:smart_drone_delivery/data/services/ai_assistant_api_service.dart';
@@ -120,6 +125,8 @@ Future<void> _pumpAssistantPage(
   String? orderId = _orderId1,
   String? trackingNumber = 'DD-202610-0985',
   String? sessionId,
+  bool? chatEnabled = true,
+  bool productionTheme = false,
 }) async {
   tester.view.physicalSize = const Size(800, 1600);
   tester.view.devicePixelRatio = 1;
@@ -128,8 +135,13 @@ Future<void> _pumpAssistantPage(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        aiAssistantApiServiceProvider.overrideWithValue(service),
+        if (chatEnabled != null)
+          aiAssistantChatEnabledProvider.overrideWithValue(chatEnabled),
+      ],
       child: MaterialApp(
+        theme: productionTheme ? AppTheme.light(AppFlavor.customer) : null,
         home: CustomerAssistantPage(
           orderId: orderId,
           trackingNumber: trackingNumber,
@@ -376,6 +388,249 @@ void main() {
   });
 
   group('LA-167 review regressions', () {
+    testWidgets('composer fits beside Send under the production full-width button theme', (tester) async {
+      await _pumpAssistantPage(tester, _FakeAiAssistantApiService(), productionTheme: true);
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byKey(const Key('assistant-message-input'))).width,
+          greaterThan(200));
+      expect(tester.getSize(find.byKey(const Key('assistant-send-button'))).width,
+          lessThanOrEqualTo(80));
+    });
+
+    testWidgets(
+      'default-off chat disables input, suggestions and direct sends without losing history',
+      (tester) async {
+        final service = _FakeAiAssistantApiService();
+        await _pumpAssistantPage(
+          tester,
+          service,
+          chatEnabled: null,
+          sessionId: _sessionId1,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('assistant-message-input')),
+              )
+              .enabled,
+          isFalse,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('assistant-send-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+        for (final chip in tester.widgetList<ActionChip>(
+          find.byType(ActionChip),
+        )) {
+          expect(chip.onPressed, isNull);
+        }
+        expect(
+          find.byKey(const Key('assistant-unavailable-notice')),
+          findsOneWidget,
+        );
+        expect(find.text('When will it arrive?'), findsOneWidget);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(CustomerAssistantPage)),
+        );
+        final notifier = container.read(
+          aiAssistantControllerProvider(
+            const AiAssistantContext(
+              orderId: _orderId1,
+              trackingNumber: 'DD-202610-0985',
+              sessionId: _sessionId1,
+            ),
+          ).notifier,
+        );
+        expect(await notifier.sendMessage('Do not send'), isFalse);
+        expect(service.sendCallCount, 0);
+      },
+    );
+
+    testWidgets('disabled assistant provides a working tracking action', (
+      tester,
+    ) async {
+      final router = GoRouter(
+        initialLocation: '/assistant',
+        routes: [
+          GoRoute(
+            path: '/assistant',
+            builder: (_, _) => const CustomerAssistantPage(orderId: _orderId1),
+          ),
+          GoRoute(
+            path: '/customer/orders/tracking/:orderId',
+            builder: (_, state) => Scaffold(
+              body: Text('Tracking ${state.pathParameters['orderId']}'),
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            aiAssistantApiServiceProvider.overrideWithValue(
+              _FakeAiAssistantApiService(),
+            ),
+            aiAssistantChatEnabledProvider.overrideWithValue(false),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('assistant-track-order-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Tracking $_orderId1'), findsOneWidget);
+    });
+
+    testWidgets(
+      '504 still requires history recovery and never retries automatically',
+      (tester) async {
+        final service = _FakeAiAssistantApiService()
+          ..sendError = const ApiException(
+            message: 'Gateway timeout',
+            statusCode: 504,
+          );
+        await _pumpAssistantPage(tester, service);
+        await tester.tap(find.text('Where is my order?'));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('assistant-recover-button')),
+          findsOneWidget,
+        );
+        expect(service.sendCallCount, 1);
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('assistant-send-button')),
+              )
+              .onPressed,
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'sign-out clears protected history and discards an in-flight reply',
+      () async {
+        final service = _FakeAiAssistantApiService();
+        final pending = Completer<AiAssistantSendResponse>();
+        service.pendingSendCompleter = pending;
+        final container = ProviderContainer(
+          overrides: [
+            aiAssistantApiServiceProvider.overrideWithValue(service),
+            aiAssistantChatEnabledProvider.overrideWithValue(true),
+          ],
+        );
+        addTearDown(container.dispose);
+        container
+            .read(currentUserProvider.notifier)
+            .setUser(
+              User(
+                id: 'customer-a',
+                email: 'test@example.invalid',
+                fullName: 'Test',
+                phoneNumber: '',
+                status: 'ACTIVE',
+                roleCode: 'CUSTOMER',
+                createdAt: DateTime.utc(2026),
+              ),
+            );
+        const ctx = AiAssistantContext(sessionId: _sessionId1);
+        final sub = container.listen(
+          aiAssistantControllerProvider(ctx),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+        final notifier = container.read(
+          aiAssistantControllerProvider(ctx).notifier,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(aiAssistantControllerProvider(ctx)).messages,
+          isNotEmpty,
+        );
+        final sending = notifier.sendMessage('Pending question');
+        container.read(currentUserProvider.notifier).setUser(null);
+        expect(
+          container.read(aiAssistantControllerProvider(ctx)).messages,
+          isEmpty,
+        );
+        pending.complete(
+          AiAssistantSendResponse(
+            outcome: AiAssistantOutcome.answered,
+            sessionId: _sessionId1,
+            userMessageId: 'u-late',
+            reply: AiAssistantMessage(
+              id: 'b-late',
+              senderType: 'BOT',
+              messageText: 'Late reply',
+              createdAt: DateTime.utc(2026),
+            ),
+          ),
+        );
+        expect(await sending, isFalse);
+        final state = container.read(aiAssistantControllerProvider(ctx));
+        expect(state.accessLost, isTrue);
+        expect(state.messages, isEmpty);
+        expect(state.activeSessionId, isNull);
+      },
+    );
+
+    testWidgets(
+      '503 keeps the draft and permits a deliberate retry without history recovery',
+      (tester) async {
+        final service = _FakeAiAssistantApiService()
+          ..sendError = const ApiException(
+            message: 'The assistant is temporarily unavailable.',
+            statusCode: 503,
+          );
+        await _pumpAssistantPage(tester, service);
+        await tester.enterText(
+          find.byKey(const Key('assistant-message-input')),
+          'Any update?',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('assistant-send-button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('assistant-recover-button')), findsNothing);
+        expect(
+          find.text('The assistant is temporarily unavailable.'),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const Key('assistant-message-input')),
+              )
+              .controller!
+              .text,
+          'Any update?',
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const Key('assistant-send-button')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+        expect(service.sendCallCount, 1);
+        service.sendError = null;
+        await tester.tap(find.byKey(const Key('assistant-send-button')));
+        await tester.pumpAndSettle();
+        expect(service.sendCallCount, 2);
+        expect(
+          find.text('Your order is in transit and expected at 14:48.'),
+          findsOneWidget,
+        );
+      },
+    );
+
     const sessionId2 = '94fd5231-7499-437a-91b8-d9c738009e43';
 
     test('ignores stale POST completion after switching sessions', () async {
@@ -392,7 +647,10 @@ void main() {
       service.pendingSendCompleter = completer;
 
       final container = ProviderContainer(
-        overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+        overrides: [
+        aiAssistantApiServiceProvider.overrideWithValue(service),
+        aiAssistantChatEnabledProvider.overrideWithValue(true),
+      ],
       );
       addTearDown(container.dispose);
 
@@ -433,7 +691,10 @@ void main() {
       service.pendingSendCompleter = completer;
 
       final container = ProviderContainer(
-        overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+        overrides: [
+        aiAssistantApiServiceProvider.overrideWithValue(service),
+        aiAssistantChatEnabledProvider.overrideWithValue(true),
+      ],
       );
       addTearDown(container.dispose);
 
@@ -474,7 +735,10 @@ void main() {
       service.pendingSendCompleter = completer;
 
       final container = ProviderContainer(
-        overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+        overrides: [
+        aiAssistantApiServiceProvider.overrideWithValue(service),
+        aiAssistantChatEnabledProvider.overrideWithValue(true),
+      ],
       );
       addTearDown(container.dispose);
 
@@ -521,7 +785,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [aiAssistantApiServiceProvider.overrideWithValue(service)],
+          overrides: [
+        aiAssistantApiServiceProvider.overrideWithValue(service),
+        aiAssistantChatEnabledProvider.overrideWithValue(true),
+      ],
           child: const MaterialApp(
             home: CustomerAssistantPage(sessionId: _sessionId1),
           ),
