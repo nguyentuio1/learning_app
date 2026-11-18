@@ -356,20 +356,46 @@ class _StationActionQueueCard extends ConsumerWidget {
                 ],
               ),
               data: (items) => items.isEmpty
-                  ? const Text('No overdue pickups')
-                  : Row(
+                  ? const Text('No pickup timeout alerts.')
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: Text('${items.length} pickup timeout alerts'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${items.length} pickup timeout alerts',
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                context.push<void>(
+                                  RoutePaths.operatorExpiredParcelsFor(
+                                    stationId,
+                                  ),
+                                );
+                              },
+                              child: const Text('Review expired'),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () {
-                            context.push<void>(
-                              RoutePaths.operatorExpiredParcelsFor(stationId),
-                            );
-                          },
-                          child: const Text('Review expired'),
-                        ),
+                        for (final alert in items)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.warning_amber_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            title: Text(alert.title),
+                            subtitle: Text(
+                              '${alert.trackingNumber}: ${alert.message}',
+                            ),
+                            onTap: () {
+                              context.push<void>(
+                                RoutePaths.operatorExpiredParcelsFor(stationId),
+                              );
+                            },
+                          ),
                       ],
                     ),
             ),
