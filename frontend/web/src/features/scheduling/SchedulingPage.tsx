@@ -7,7 +7,7 @@ import { CalendarPicker } from '../../components/CalendarPicker'
 import { OperationsPage, ResourceState, StatusTag } from '../operations/OperationsUi'
 import { operationError, uncertainMutation, validationFields } from '../operations/feedback'
 import { useResource } from '../operations/useResource'
-import { orderTime } from '../../utils/orderDisplay'
+import { orderStatusLabel, orderTime } from '../../utils/orderDisplay'
 import { schedulingApi, type DispatchOrder, type QueueFilters } from './schedulingApi'
 import { ApprovedOrders } from './ApprovedOrders'
 import './scheduling.css'
@@ -30,6 +30,7 @@ export function SchedulingPage() {
   </OperationsPage></div>
 }
 function ScheduleDelivery({ id, onChanged }: { id: string; onChanged: () => void }) {
+  const navigate = useNavigate()
   const load = useCallback((signal: AbortSignal) => schedulingApi.order(id, signal), [id])
   const resource = useResource(load)
   const [notice, setNotice] = useState('')
@@ -45,6 +46,8 @@ function ScheduleDelivery({ id, onChanged }: { id: string; onChanged: () => void
     if (unknown || (axios.isAxiosError(cause) && [404, 409].includes(cause.response?.status || 0))) refresh()
   }
   const order = resource.data
+  const canTrack = order && (order.assignmentStatus === 'ASSIGNED' || !!order.currentMission ||
+    ['READY_FOR_TAKEOFF', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED'].includes(order.status))
   return <>
     {notice && <Alert type="success" showIcon title={notice} />}
     {error && <Alert type="error" showIcon title={error} />}
@@ -53,13 +56,16 @@ function ScheduleDelivery({ id, onChanged }: { id: string; onChanged: () => void
       action={<Button disabled={!order || saving} onClick={() => setUncertain(false)}>I have reviewed the current delivery</Button>} />}
     <ResourceState loading={resource.loading} error={resource.error} retry={refresh} />
     {order && <>
-      <section className="operations-panel"><h2>{order.trackingNumber}</h2><StatusTag status={order.status} /> <StatusTag status={order.assignmentStatus} />
+      <section className="operations-panel"><h2>{order.trackingNumber}</h2><StatusTag status={orderStatusLabel(order.status)} /> <StatusTag status={order.assignmentStatus} />
         <div className="scheduling-route"><strong>{order.originStation.name}</strong><span aria-hidden="true">→</span><strong>{order.destinationStation.name}</strong></div>
         <dl className="operations-facts"><div><dt>Package</dt><dd>{order.package.packageName} · {order.package.weightGram} g</dd></div>
           <div><dt>Dimensions</dt><dd>{order.package.lengthCm} × {order.package.widthCm} × {order.package.heightCm} cm{order.package.isFragile ? ' · Fragile' : ''}</dd></div>
           <div><dt>Departure</dt><dd>{order.scheduledDepartureTime ? orderTime(order.scheduledDepartureTime) : 'Not scheduled'}</dd></div>
           <div><dt>Estimated arrival</dt><dd>{order.estimatedDeliveryTime ? orderTime(order.estimatedDeliveryTime) : 'Not available'}</dd></div>
-        </dl><div className="operations-actions"><Button disabled={saving} onClick={refresh}>Refresh delivery</Button></div>
+        </dl><div className="operations-actions">
+          {canTrack && <Button type="primary" onClick={() => navigate(`/delivery-tracking/${encodeURIComponent(id)}`)}>Track delivery</Button>}
+          <Button disabled={saving} onClick={refresh}>Refresh delivery</Button>
+        </div>
       </section>
       {order.currentMission && <section className="operations-panel"><h2>Current flight mission</h2>
         <dl className="operations-facts"><div><dt>Drone</dt><dd>{order.currentMission.drone.serialNumber} · {order.currentMission.drone.modelName}</dd></div>
@@ -68,7 +74,7 @@ function ScheduleDelivery({ id, onChanged }: { id: string; onChanged: () => void
           <div><dt>Destination slot</dt><dd>{order.currentMission.destinationSlotId || 'Not recorded'}</dd></div></dl>
         <p className="operations-small">This delivery already has an active assignment. Changing the schedule or drone is unavailable.</p>
       </section>}
-      {order.status !== 'APPROVED' ? <Alert type="info" showIcon title="This delivery is no longer approved. Scheduling and assignment are unavailable." />
+      {order.status !== 'APPROVED' ? <Alert type="info" showIcon title="Scheduling and assignment are available while the delivery is Approved." />
         : order.assignmentStatus === 'ASSIGNED' || order.currentMission ? null : <div className="operations-grid">
           <ScheduleForm key={'schedule-' + order.updatedAt + (order.scheduledDepartureTime || '')} order={order} disabled={saving || uncertain} onBusy={setSaving} onSaved={changed} onError={failed} />
           {order.scheduledDepartureTime ? <CandidatePicker key={'candidates-' + order.updatedAt + order.scheduledDepartureTime} id={id} disabled={saving || uncertain} onBusy={setSaving} onSaved={changed} onError={failed} />
@@ -100,7 +106,7 @@ function ScheduleForm({ order, disabled, onBusy, onSaved, onError }: MutationPro
   return <section className="operations-panel"><h2>01 · Schedule departure</h2><p>Choose a time at least 15 minutes from now. Times are shown in your local timezone.</p>
     <Form form={form} layout="vertical" onFinish={save} disabled={disabled} initialValues={{ departure: order.scheduledDepartureTime ? dayjs(order.scheduledDepartureTime) : undefined }}>
       <Form.Item name="departure" label="Scheduled departure" rules={[{ required: true, message: 'Choose a departure time.' }]}><CalendarPicker showTime /></Form.Item>
-      <Button type="primary" htmlType="submit" disabled={disabled} loading={saving}>Save departure</Button>
+      <Button type={order.scheduledDepartureTime ? 'default' : 'primary'} htmlType="submit" disabled={disabled} loading={saving}>{order.scheduledDepartureTime ? 'Update departure' : 'Save departure'}</Button>
     </Form>
   </section>
 }
