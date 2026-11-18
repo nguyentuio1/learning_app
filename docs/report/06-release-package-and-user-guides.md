@@ -1,10 +1,10 @@
 # VI. Release Package & User Guides
 
-> **Current Integration & Handoff Status (`LA-359` — 18 November 2026, `origin/develop` `e3c647c`):**
-> - **Merged into `develop` (`e3c647c`):** Full-stack Docker deployment and [DeploymentGuide.md](../operations/DeploymentGuide.md) ([PR #260](https://github.com/nguyentuio1/learning_app/pull/260), `LA-47`/`LA-182`), verified PostgreSQL backup & safe restore ([PR #269](https://github.com/nguyentuio1/learning_app/pull/269), `LA-46`/`LA-179`), MinIO photo URL fix ([PR #263](https://github.com/nguyentuio1/learning_app/pull/263), `LA-346`), configurable Gemini AI transport and [gemini-ai.md](../deployment/gemini-ai.md) ([PR #265](https://github.com/nguyentuio1/learning_app/pull/265), `LA-348`), and demo/rehearsal updates ([PR #261](https://github.com/nguyentuio1/learning_app/pull/261), [PR #266](https://github.com/nguyentuio1/learning_app/pull/266), [PR #268](https://github.com/nguyentuio1/learning_app/pull/268)).
-> - **Merged into Story Branches (Pending Integration into `develop`):** [PR #255](https://github.com/nguyentuio1/learning_app/pull/255) (`LA-183`) & [PR #258](https://github.com/nguyentuio1/learning_app/pull/258) (`LA-184`) on `story/LA-48-technical-documentation`; [PR #256](https://github.com/nguyentuio1/learning_app/pull/256) (`LA-249`), [PR #257](https://github.com/nguyentuio1/learning_app/pull/257) (`LA-250`), & [PR #259](https://github.com/nguyentuio1/learning_app/pull/259) (`LA-251`) on `story/LA-203-release-package-user-guide`. Earlier closed PRs #248 and #249 are superseded. Backup scripts or guides in a story or `develop` do **not** claim a live production deployment or scheduled production backups.
+> **Current handoff alignment (LA-351 - 19 November 2026):** Integrated documentation baseline [`a90668c`](https://github.com/nguyentuio1/learning_app/commit/a90668c), combined application `10c77d0`. LA-48 technical documentation and LA-203 guides are integrated, including [PR #280](https://github.com/nguyentuio1/learning_app/pull/280); prior pending-story labels for PRs #255?#259 are superseded. Standalone [InstallationGuide](../guides/InstallationGuide.md), [UserManual](../guides/UserManual.md), [DeploymentGuide](../operations/DeploymentGuide.md), and [DatabaseBackupGuide](../operations/DatabaseBackupGuide.md) are available in this integrated source.
+>
+> Supported API-backed browser [Customer](../testing/LA363-customer-completion.md) and [Operator](../testing/LA364-operator-completion.md) runs are recorded with prepared ARRIVED fixtures disclosed. Native Android/iOS, Flutter MinIO upload/display (LA-346), enabled-AI policy/quality/latency (LA-348), and actual whole-team rehearsal (LA-49/LA-188) remain separate acceptance scopes. Preview HTTP fallback does not establish SignalR WebSocket delivery. Two actual proofreaders and a final approved export remain LA-204 gates.
 
-This chapter describes the reviewed software at integration baseline [`e3c647c`](https://github.com/nguyentuio1/learning_app/commit/e3c647c) (following the Sprint 7 Flutter integration in [PR #235](https://github.com/nguyentuio1/learning_app/pull/235)). The package is a source and documentation handoff. Build instructions below describe how to prepare distributable files; they do not assert that a signed mobile package, production deployment or new release tag has been published. The existing GitHub release `v0.3.0` is an earlier Sprint 3 pre-release.
+The package is a source and documentation handoff. Build instructions describe how to prepare distributable files; they do not assert a signed mobile package, production deployment or new release tag. The existing `v0.3.0` release is an earlier Sprint 3 pre-release. Dated historical sources retain their original scope.
 
 ## 1. Deliverable package
 
@@ -21,7 +21,7 @@ To package a checkout, record the exact commit and use the committed lockfiles. 
 
 ```powershell
 New-Item -ItemType Directory -Force artifacts/release
-git archive --format=zip --output=artifacts/release/source.zip e3c647c
+git archive --format=zip --output=artifacts/release/source.zip a90668c
 dotnet publish backend/SmartDroneDelivery.Api/SmartDroneDelivery.Api.csproj -c Release -o artifacts/release/api
 npm --prefix frontend/web ci
 npm --prefix frontend/web run build

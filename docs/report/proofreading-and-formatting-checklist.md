@@ -1,67 +1,43 @@
-# Proofreading, Formatting, and Terminology Checklist (LA-255 / LA-362)
+# Proofreading, formatting and publication checklist (LA-204 / LA-351)
 
-Owners: [LA-255](https://hungndemail.atlassian.net/browse/LA-255) & [LA-362](https://hungndemail.atlassian.net/browse/LA-362), Hung Nguyen. Parent stories: [LA-204](https://hungndemail.atlassian.net/browse/LA-204) / [LA-351](https://hungndemail.atlassian.net/browse/LA-351) (TBA Review retains final report consolidation, export, and approval).
+Review packet: 19 November 2026, documentation baseline `a90668c`, combined application `10c77d0`. Earlier source baselines are historical. The existing six-chapter structure and chapter numbering are retained; current corrections distinguish implementation, integration, runtime, deployment and acceptance.
 
----
+## 1. Structure and terminology
 
-## 1. Cross-document structure and numbering
+The [report index](README.md) links Chapters I-VI and the existing Confluence pages. Customer app and Station Operator app remain distinct flavors. Canonical slot states are `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR`; manual transitions are `EMPTY <-> ERROR`. Order `ARRIVED` differs from `DELIVERED`; mission `IN_AIR` is not an order status. Diagrams/history remain on the original pages, with dated current corrections above earlier snapshots.
 
-| Report part | Repository source | Confluence target | Formatting, numbering & reconciliation status |
-|---|---|---|---|
-| **Overview / Contents** | [README.md](README.md) | [Page 98403](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=98403) | Reconciled in repo to `develop` `ef7ddec` (18 Nov 2026); Confluence `98403` `v5` still points to `07f38d1`. |
-| **I. Project Introduction** | [01-project-introduction.md](01-project-introduction.md) | [Page 14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | Numbered `1.`–`6.` with sentence-case headings (`Checked`; dated baseline `8413d84` retained as snapshot). |
-| **II. Project Management Plan** | [02-project-management-plan.md](02-project-management-plan.md) | [Page 11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | Numbered `1.`–`8.` with sentence-case headings (`Checked`; dated baseline `8413d84` retained as snapshot). |
-| **III. Software Requirements Specification** | [SRS.md](../requirements/SRS.md) | [Page 11993093](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993093) | Cross-referenced from Chapters I, II, and IV (`Checked`). |
-| **IV. Software Design Description** | [04-software-design-description.md](04-software-design-description.md) | [Page 11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | Numbered `1.`–`4.` (`4.3 Historical references`), sentence-case headings aligned with Chapters I–II (`Checked`; §4.1 at `894ceab` preserved as historical baseline). |
-| **V. Software Testing Documentation** | [05-software-testing-documentation.md](05-software-testing-documentation.md) · [test-plan.md](../testing/test-plan.md) · [test-report.md](../testing/test-report.md) | [Page 11927583](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | Linked to Chapter V ledger (`07f38d1`); final alignment with `LA-175` / `LA-188` live results pending execution. |
-| **VI. Release Package & User Guides** | [06-release-package-and-user-guides.md](06-release-package-and-user-guides.md) | [Page 14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) | Linked to Chapter VI (`07f38d1`); final export & TOC assembly remain a pending gate under LA-204. |
+## 2. Verification scope
 
----
+Application CI `44414947666` passed backend/web/mobile and its tested tree equals `10c77d0`; documentation CI `44417197181` passed before PR #284 merged as `a90668c`. Flutter: 425 passed, no analyzer warnings/errors (30 information findings). [PerformanceTestReport section 5.3](../testing/PerformanceTestReport.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) records scoped reference passes while preserving old FAIL outputs. Browser API evidence does not establish native installation or SignalR delivery through the loopback preview. Flutter MinIO, actual enabled AI and actual team rehearsal remain outstanding acceptance.
 
-## 2. Mobile and station terminology consistency
+Jira Sprint 8 (id 8) CLOSED at `2026-11-18T23:09:56.278Z` (06:09:56 on 19 November, Asia/Ho_Chi_Minh). Unfinished acceptance remains open in backlog; closure does not prove acceptance.
 
-All repository report chapters and Sprint 7–8 mobile/station user-flow sources should use the following canonical terms:
+## 3. Links and publication checks
 
-| Term / Symbol | Canonical usage | Notes / verified alignment |
-|---|---|---|
-| **Flutter Customer app** | `Customer app` (`AppFlavor.customer`) | Owns customer orders, tracking, delivery confirmation, ETA, and AI assistant (`LA-160`, `LA-167`, `LA-169`, `LA-171`). |
-| **Flutter Station Operator app** | `Station Operator app` (`AppFlavor.operator`) | Owns station availability, slot maintenance, origin intake, destination pickup, expired-parcel clearing, and operator notifications (`LA-170`). |
-| **Landing station & slot states** | `Landing station` with `EMPTY`, `OCCUPIED`, `RESERVED`, `ERROR` slots | Manual operator toggle is restricted to `EMPTY <-> ERROR`. |
-| **Order lifecycle transitions** | `APPROVED -> READY_FOR_TAKEOFF` (intake, requires `PLANNED` mission), `APPROVED -> FAILED` (intake rejection), `IN_TRANSIT -> ARRIVED` (station arrival), `ARRIVED -> DELIVERED` (recipient/pickup confirmation) | `IN_AIR` is a `FlightMission.FlightStatus` (not a `DeliveryOrder.Status`); do not mix order/mission states or use non-backend labels (`IN_ORIGIN_STATION`, `REJECTED`, `COMPLETED`). |
+Published pages were read back in full HTML on 19 November 2026. Existing page IDs/history were preserved, including the original diagrams and links. Current source links are pinned to `a90668c`; historical sources remain pinned to their earlier commits. Repository relative-link and fence validation is recorded with this change. Full readbacks and generated DOCX/PDF review exports are in local `artifacts/la204-20261119`; exported copies are not signed/approved submissions.
 
----
-
-## 3. Diagrams, links, and status-distinction check
-
-- **Relative links in `docs/report/*.md`:** Audited against `origin/develop` (`b5e54fa`); 0 broken relative links.
-- **Mermaid diagrams in `docs/design/user-flows/*.md` and `docs/report/*.md`:** All `mermaid` code fences are properly closed and syntactically balanced.
-- **Implementation vs. integration vs. deployment vs. acceptance:** [README.md](README.md) explicitly separates merged `develop` code (`ef7ddec`), Docker smoke packaging (`LA-47`), and open live acceptance/rehearsal gates (`LA-175`, `LA-188`).
-
----
-
-## 4. Proofreader confirmations & Confluence page/version ledger (LA-362 / LA-204)
-
-> [!IMPORTANT]
-> Per **LA-362** and **LA-204**, CI runs, authorship, and automated agent reviews do **not** count as human proofreading confirmations. Leave Proofreader #1 and Proofreader #2 open until two distinct team members record their actual confirmation on the published report/page versions.
+## 4. Proofreader confirmations and page/version ledger
 
 ### 4.1 Human proofreading confirmations
 
-| Role | Reviewer name | Date | Target page(s) / version(s) | Decision & notes | Status |
+| Role | Actual member | Date | Exact review target | Decision | Status |
 |---|---|---|---|---|---|
-| Formatting & index reconciliation | Hung Nguyen (`LA-255` / `LA-362`) | 2026-11-18 | Repo `docs/report/*` at `develop` `ef7ddec` (prior pass: PR #233 merged `229d1cf`) | Cross-document numbering, terminology, and link pass prepared in repo; does **not** constitute `Overview 98403` publication or final proofreading | Source prepared; human proofreaders pending |
-| Proofreader #1 | *Pending distinct member* | *Pending* | *Exact Confluence page IDs/versions* | *Record actual decision/notes* | **Open** |
-| Proofreader #2 | *Pending distinct member* | *Pending* | *Exact Confluence page IDs/versions* | *Record actual decision/notes* | **Open** |
+| Proofreader 1 | Pending distinct real member | Pending | Versions below and generated review artifact hash | Pending | **Open** |
+| Proofreader 2 | Pending distinct real member | Pending | Versions below and generated review artifact hash | Pending | **Open** |
+
+CI, authorship, Jira Done subtasks and automated agent review do not supply either human confirmation. Each reviewer must inspect the six parts, contents, numbering, links, diagrams and scope, then record actual findings/decision in the existing Overview record. LA-204 final approval must identify the final exported artifact and exact hash after findings are resolved. Preserve credit for completed contributor work.
 
 ### 4.2 Confluence page/version ledger & remaining blockers
 
-Repository index edits do **not** equate to `Overview 98403` publication or final proofreading completion.
+| Page | Existing ID | Actual published/readback version | Result |
+|---|---|---|---|
+| Overview | [98403](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=98403) | **v7** | Current baseline/evidence and actual Sprint 8 closure; two confirmations remain open |
+| I. Introduction | [14188546](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14188546) | **v3** | Current pointer; old Sprint 7 plan explicitly historical |
+| II. Management plan | [11927566](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566) | **v6** | Actual Sprint 8 closure; old active labels historical |
+| III. Requirements | [11993093](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993093) | **v14** | Current integration/runtime/performance scope; diagrams/history retained |
+| IV. Design | [11993109](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11993109) | **v14** | Atomic allocator and current flows; diagrams/history retained |
+| V. Testing | [11927583](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927583) | **v16** | Actual PR #252 merge/reference passes; old FAIL evidence retained |
+| VI. Release/guides | [14024801](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14024801) | **v9** | LA-48/203 integrated; actual runtime and remaining acceptance |
+| NFR | [11960371](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11960371) | **v9** | Original performance criterion unchanged; unsupported fixed test counts/scaling claims corrected |
 
-| Confluence page | Page ID | Last observed / readback version | Sync status against `develop` `ef7ddec` | Remaining blocker |
-|---|---|---|---|---|
-| Overview (Six-chapter index) | `98403` | `v5` (live readback, 18 Nov 2026; points to old `07f38d1`) | Out of sync with `develop` `ef7ddec`; repo edits do not update Confluence | Manual sync of `98403` (`LA-362` / `LA-204`) + 2 human proofreaders |
-| I. Project Introduction | `14188546` | `v2` (live readback, 18 Nov 2026) | Published (`LA-252`) | Human proofreader confirmation & final export |
-| II. Project Management Plan | `11927566` | `v5` (live readback, 18 Nov 2026) | Published (`LA-252`) | Human proofreader confirmation & final export |
-| III. Software Requirement Specification | `11993093` | `v13` (LA-360 readback, 18 Nov 2026) | Published (`LA-360`, includes lookup & backup updates) | Human proofreader confirmation on updated version |
-| IV. Software Design Description | `11993109` | `v13` (LA-360 readback, 18 Nov 2026; sibling readbacks: Database `1507330` `v8`, AI Handoff `18579461` `v7`) | Published (`LA-360`) | Human proofreader confirmation on updated version |
-| V. Software Testing Documentation | `11927583` | `v15` (live readback, 18 Nov 2026) | Published | Align with actual `LA-175` & `LA-188` live results + human proofreader confirmation |
-| VI. Release Package & User Guides | `14024801` | `v8` (published by Khai, live readback 18 Nov 2026) | Published | Final export & `LA-204` human proofreader approval |
+Remaining report acceptance: two actual member confirmations and approved final export. LA-351 source PR still needs current review/CI/integration before reporting that story integrated. Publishing pages is a separate completed action.

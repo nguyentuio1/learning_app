@@ -2,7 +2,7 @@
 
 ## Six-part contents
 
-The consolidated report follows the existing six-chapter course structure. **LA-362** (under **LA-351**) reconciles this index against the current integrated `develop` source baseline [`ef7ddec`](https://github.com/nguyentuio1/learning_app/commit/ef7ddecf4875b6504ce2352468a2f3e8fda6a90c) (18 November 2026), while preserving earlier dated chapter baselines (`8413d84`, `894ceab`, `07f38d1`) as historical snapshots.
+The consolidated report follows the existing six-chapter course structure. LA-351 reconciliation on **19 November 2026** uses integrated documentation baseline [`a90668c`](https://github.com/nguyentuio1/learning_app/commit/a90668c) and combined application baseline [`10c77d0`](https://github.com/nguyentuio1/learning_app/commit/10c77d0). Earlier dated chapter sources remain historical snapshots. The current published pages are a review copy; final two-member proofreading and the approved export remain open under LA-204.
 
 | Part | Repository source | Existing Confluence chapter |
 |---|---|---|
@@ -17,9 +17,11 @@ The existing [Confluence Overview (98403)](https://hungndemail.atlassian.net/wik
 
 ## Implementation, integration, deployment, and acceptance status
 
-- **Implementation & integration (`develop` `ef7ddec`):** Sprint 7 stories (`LA-40`–`LA-43`) and Sprint 8 additions (`LA-47` Docker packaging, `LA-46` / PR #269 audit, monitoring, and backup/restore guards at [`e3c647c`](https://github.com/nguyentuio1/learning_app/commit/e3c647c24878aa1b24a8b4eec137e0fde289ffcb), `LA-349` / PR #271 customer web journey, `LA-350` / PR #276 staff insight lookup, `LA-177`, `LA-178`, `LA-186`, `LA-187`, and `LA-188` rehearsal runbook PR #266 at [`b5e54fa`](https://github.com/nguyentuio1/learning_app/commit/b5e54fa00cab689c548fb1dcba97d6e80820ea73)) are merged into `develop`. Earlier open-PR labels in dated chapter snapshots (`04-software-design-description.md` §4.1 at `894ceab`) remain historical baseline records.
-- **Deployment packaging:** Docker Compose packaging and smoke verification pass in CI; production hosting, Android/iOS release signing, and cloud AI retention-policy approval remain separate release gates.
-- **Acceptance & live rehearsal (`LA-175`, `LA-188`):** Repository CI verifies automated tests and builds. Final test execution acceptance (`LA-175`) and live team demo rehearsal evidence (`LA-188`, [LA-188-demo-rehearsal.md](../testing/LA-188-demo-rehearsal.md)) remain open until executed and recorded.
+- **Integrated source:** LA-45 performance/test evidence (PR #252, merge `8466a47`), LA-48 technical documentation, LA-203 installation/user guides (PR #280), LA-366 atomic tracking numbers (PR #281), Customer journey (PR #277), Operator journey (PR #278), assistant availability (PR #282) and station scope (PR #283) are in `develop`. LA-351 itself still requires its story PR review, current CI and integration.
+- **Executed verification:** [Application CI 44414947666](https://github.com/nguyentuio1/learning_app/actions/runs/44414947666) passed backend, web and mobile; the tested tree equals actual application merge `10c77d0`. Full combined Flutter suite: **425 passed**; analyzer: no warnings/errors, 30 existing information findings. [Documentation CI 44417197181](https://github.com/nguyentuio1/learning_app/actions/runs/44417197181) passed before PR #284 merged as `a90668c`. [Integration review](../testing/Sprint8IntegrationReview.md) records exact source scope.
+- **Scoped performance:** [PerformanceTestReport section 5.3](../testing/PerformanceTestReport.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) records unchanged source `f7502b7`, application `10700d2`: three barrier repeats each 15/15 PASS; PostgreSQL16 Docker mixed k6 all 15 thresholds PASS and 0/17111 HTTP failures. BCrypt cost11 and the original p95 <3000 ms criterion were unchanged. Earlier FAIL outputs remain historical; no authentication fix or every-machine guarantee is inferred.
+- **Actual client runtime:** Supported API-backed browser [Customer](../testing/LA363-customer-completion.md) and [Operator](../testing/LA364-operator-completion.md) evidence includes disclosed ARRIVED fixtures. The loopback preview's HTTP snapshot/fallback passed; it does not forward SignalR WebSockets. Native Android/iOS installation, physical flight and a whole-team rehearsal are separate scopes.
+- **Remaining acceptance:** LA-346 Flutter MinIO upload/display; LA-348 actual enabled-AI policy/quality/concurrency/latency; LA-49/LA-188 actual team rehearsal; LA-204 two real proofreaders and final approved export. Production hosting and mobile release signing remain separate release decisions. AI defaults remain disabled. Do not merge the held LA-49 branch indirectly.
 
 ## Ownership, publication ledger, and blockers
 
@@ -29,9 +31,12 @@ The existing [Confluence Overview (98403)](https://hungndemail.atlassian.net/wik
 - **LA-255 / LA-362** maintain this reconciled index and [proofreading-and-formatting-checklist.md](proofreading-and-formatting-checklist.md) (including the Confluence page/version ledger and human proofreader gate).
 - **LA-204 (TBA Review)** retains final synthesis, Confluence `98403` publication, and report approval.
 
-Remaining blockers before closing **LA-362** / **LA-204**:
-1. Align chapters and Confluence `98403` with final `LA-175` / `LA-188` execution results (live rehearsal itself remains `LA-188`).
-2. Obtain two actual distinct member proofreading confirmations (name, date, decision/notes) on the exact updated report/page versions—CI, authorship, and agent review do not count.
-3. Publish the updated chapters to the existing Confluence pages above and record each published page version in the ledger.
+## Review packet and actual publication
 
-Publication is manual and explicit. A repository commit does not prove Confluence synchronization. Do not invent academic identifiers, meeting attendance, deployment results, page versions, or model accuracy.
+Existing Confluence pages were updated in place and read back on 19 November 2026 (Asia/Ho_Chi_Minh). Historical text and diagrams were retained and marked as superseded by the dated current correction. Returned published versions: Overview **98403 v7**, I **14188546 v3**, III **11993093 v14**, IV **11993109 v14**, V **11927583 v16**, VI **14024801 v9**, NFR **11960371 v9**. II **11927566 v6** records the actual Sprint 8 closure. [The publication ledger](proofreading-and-formatting-checklist.md#42-confluence-pageversion-ledger--remaining-blockers) records the review targets.
+
+Two distinct team members must review these exact versions (chapters I-VI plus Overview/NFR), check chapter consistency, terminology, evidence scope, links and retained diagrams, then record their real name, date, decision and findings in the existing Overview proofreading record. Both confirmations remain **Open**; authorship, CI and agent review are not human sign-off. Resolve findings and identify the final approved export artifact/version under LA-204. This index and its linked chapters are the concrete review packet; publication alone does not approve the report.
+
+No academic identifiers, meeting attendance, deployment results, page versions, reviewer decisions or model accuracy have been invented.
+
+The generated 35-page PDF and DOCX review copies are available in local `artifacts/la204-20261119/SmartDroneDelivery-LA204-review.*`. [The export manifest](final-review-manifest.json) records their exact SHA-256 hashes, chapter/page versions and validation. Collapsed historical appendices remain on the linked Confluence pages.

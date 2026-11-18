@@ -1,0 +1,66 @@
+{
+  "reviewPacket": "LA204-20261119-review-1",
+  "status": "REVIEW COPY; two actual human proofreading confirmations pending",
+  "documentationBaseline": "a90668c",
+  "applicationBaseline": "10c77d0",
+  "relativeLinksChecked": 96,
+  "brokenLinks": [],
+  "pdfPages": 35,
+  "pdfAllChapters": true,
+  "pdfCurrent425Evidence": true,
+  "pdfHumanGate": true,
+  "docxParagraphs": 324,
+  "files": {
+    "SmartDroneDelivery-LA204-review.docx": {
+      "bytes": 76398,
+      "sha256": "aec3d29c95ec91d986aa2be8e475446d98a83fd864d4d5e40d4f205aa3a926ff"
+    },
+    "SmartDroneDelivery-LA204-review.pdf": {
+      "bytes": 285555,
+      "sha256": "0686fe9e849a10eabccb078481d24cd07b56be9ee680e5b4e12d98d4a445a24b"
+    }
+  },
+  "publishedVersions": [
+    {
+      "id": "98403",
+      "title": "Overview",
+      "version": 7
+    },
+    {
+      "id": "14188546",
+      "title": "I. Project Introduction",
+      "version": 3
+    },
+    {
+      "id": "11927566",
+      "title": "II. Project Management Plan",
+      "version": 6
+    },
+    {
+      "id": "11993093",
+      "title": "III. Software Requirement Specification",
+      "version": 14
+    },
+    {
+      "id": "11993109",
+      "title": "IV. Software Design Description",
+      "version": 14
+    },
+    {
+      "id": "11927583",
+      "title": "V. Software Testing Documentation",
+      "version": 16
+    },
+    {
+      "id": "14024801",
+      "title": "VI. Release Package & User Guides",
+      "version": 9
+    },
+    {
+      "id": "11960371",
+      "title": "4. Non-Functional Requirements (NFR)",
+      "version": 9
+    }
+  ],
+  "exportScope": "Six existing chapter HTML readbacks; collapsed historical appendices remain on linked Confluence pages. Not a signed/approved submission."
+}
