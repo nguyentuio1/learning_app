@@ -8,7 +8,7 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 
 ## Project status
 
-| Area | Source state on `develop` |
+| Area | Integrated source at Sprint 8 review |
 |---|---|
 | Authentication, profile, user/role management & audit logs | Implemented (backend, web admin pages, failed sign-in & action audit search) |
 | Customer addresses, packages, delivery orders & notifications | Implemented (backend, web, mobile) |
@@ -18,7 +18,11 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 | AI ETA estimation, delivery summary & customer assistant | Implemented behind default-off configuration/retention gates (`docs/api/sprint-7-api-contract.md`) |
 | Docker full-stack deployment, health checks & backup/restore scripts | Implemented (`docker-compose.yml`, `/health/live`, `/health/ready`, `scripts/backup-db.*`) |
 
-Implementation is distinct from acceptance: native mobile, enabled-AI policy/quality, performance/load criteria and the full team rehearsal retain open evidence gates. See the [current screen flows](docs/design/ui-screen-flows.md) for the reviewed web journeys.
+Reviewed application baseline: `develop` at [`10c77d0`](https://github.com/nguyentuio1/learning_app/commit/10c77d0781ff38448b07211da07731cf12598e27), including the completed Customer and Station Operator journeys. The combined Flutter suite passed **425 tests**, and backend, web and mobile CI passed on the same integration tree. Actual API-backed browser walkthroughs are recorded for [Customer](docs/testing/LA363-customer-completion.md) and [Operator](docs/testing/LA364-operator-completion.md).
+
+Acceptance remains scoped to its evidence. Flutter MinIO photo upload/client URL checks (LA-346), enabled-AI policy/quality acceptance (LA-348), native-device installation, actual team rehearsal and two-member report proofreading remain incomplete. Web MinIO flows are implemented; the Flutter package form currently accepts an existing image URL. The preview walkthrough verified HTTP tracking fallback, not healthy SignalR WebSocket delivery or a physical flight. The [performance report](docs/testing/PerformanceTestReport.md) preserves earlier failures and records later reference-environment passes; those results do not establish every deployment's performance.
+
+See the [current screen flows](docs/design/ui-screen-flows.md) and [Sprint 8 integration review](docs/testing/Sprint8IntegrationReview.md) for integration status and remaining acceptance gates. Closing a sprint does not change these evidence boundaries.
 
 > See [`docs/DeliverableList.md`](docs/DeliverableList.md), [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md), [`docs/operations/DeploymentGuide.md`](docs/operations/DeploymentGuide.md), and [`docs/guides/README.md`](docs/guides/README.md) for full documentation.
 
@@ -188,7 +192,15 @@ Sign in as a **customer** (web or mobile):
 4. **Update**: change recipient, destination station or address while the order is `PENDING`.
 5. **Cancel**: with a reason (up to 500 characters) while the order is `PENDING` or `APPROVED`.
 
-Sign in as the **administrator** (web) to manage users and roles. Approval by a dispatcher, scheduling, drone assignment, station pickup and tracking are not implemented yet (see the status table).
+Continue the delivery through the permitted staff roles:
+
+1. **Dispatcher (web)**: review/approve the request, schedule departure and assign an eligible drone. Approval is a dispatcher action; the AI does not approve orders automatically.
+2. **Origin station operator (Flutter or web)**: use the assigned station's **Origin Intake**, look up the approved parcel, enter actual measurements, explicitly acknowledge physical inspection and assign an empty slot.
+3. **Delivery tracking**: view order progress, origin/destination map and ETA. For software demonstration, explicitly enable the simulator as described in the [demo script](docs/demo/demo-script.md); source code and seeded records do not prove a performed flight.
+4. **Destination operator / customer**: once the order is `ARRIVED`, use the authorized pickup/receipt flow with the one-time secure code. Successful handover marks the order `DELIVERED` and releases its occupied slot. Preserve the code when it is first shown; it is not returned by later order-detail reads.
+5. **Logistics manager (web)**: inspect delivery statistics and reports. **Administrator (web)**: manage users, roles, audit and configuration. Staff can look up historical deliveries by tracking number for the available ETA/summary actions.
+
+Follow the [five-role user manual](docs/guides/UserManual.md) for detailed steps, permissions and failure/expired-parcel recovery. AI stays disabled until the relevant server configuration and policy gates are satisfied; see [Gemini setup](docs/deployment/gemini-ai.md).
 
 ## Tests
 
@@ -204,23 +216,29 @@ normal minimum 15-minute scheduling lead time remains enforced. Omit
 completed flight. This API smoke check does not replace web/Flutter UI acceptance.
 
 ```bash
-# Backend (xUnit, EF Core InMemory; no database needed)
-cd backend && dotnet test
+# Backend, from the repository root (most tests use InMemory).
+dotnet test backend/SmartDroneDelivery.sln --configuration Release
 
 # Backend, including the concurrency tests that need a real PostgreSQL (LA-322).
 # Start `docker compose up -d postgres` first. Each run creates its own database on the server and drops it again.
-TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=$POSTGRES_PASSWORD" dotnet test
+TEST_POSTGRES_CONNECTION="Host=localhost;Port=5433;Username=postgres;Password=$POSTGRES_PASSWORD" dotnet test backend/SmartDroneDelivery.sln --configuration Release
 
 # Web
-cd frontend/web && npm test && npm run lint && npm run build
+npm --prefix frontend/web ci
+npm --prefix frontend/web test
+npm --prefix frontend/web run lint
+npm --prefix frontend/web run build
 
 # Mobile
-cd frontend/mobile && flutter test && flutter analyze
+cd frontend/mobile
+flutter pub get
+flutter analyze --no-fatal-infos
+flutter test
 ```
 
 ### Continuous integration
 
-Every pull request into `develop` or `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It shows three checks, one for each command block above:
+Every pull request into `develop`, `main` or a shared `story/**` branch runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on GitHub Actions. It shows three checks, one for each command block above:
 
 | Check | Runs |
 |---|---|
@@ -228,17 +246,17 @@ Every pull request into `develop` or `main` runs [`.github/workflows/ci.yml`](.g
 | `Web lint, test and build` | `npm ci`, `npm run lint`, `npm test`, `npm run build` |
 | `Mobile analyze and test` | `flutter pub get`, `flutter analyze --no-fatal-infos`, `flutter test` |
 
-A new push to the pull request cancels the run that is still going. A failing check only blocks the merge once the three names are required in the branch ruleset of `develop` (Settings, Rules); until then, look at the checks before you merge.
+A new push cancels an older run for the same pull request. The active `develop` ruleset requires these three checks, one approving review and resolved review threads. Review and test the current combined integration head before merging. Applicable Docker package changes also run the isolated Docker smoke workflow. Merge into `develop` records integration; deployment and release to `main` are separate actions.
 
 ## Documentation
 
 - Sprint 6 API handoff (LA-341): [`docs/api/sprint-6-api-contract.md`](docs/api/sprint-6-api-contract.md) and [OpenAPI schemas](docs/api/sprint-6-openapi.json). Includes branch availability, tracking/SignalR, confirmation, and explicitly proposed analytics/external contracts for mocks.
-- Sprint 7 AI handoff (LA-342): [`docs/api/sprint-7-api-contract.md`](docs/api/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/sprint-7-openapi.json). Proposed ETA, delivery summary and customer assistant interfaces; implementation, consumer approval and production policy gates are tracked separately.
-- API contracts: [`docs/api/auth-api.md`](docs/api/auth-api.md), [`docs/api/customer-order-api.md`](docs/api/customer-order-api.md), [`docs/api/station-api.md`](docs/api/station-api.md), [`docs/api/drone-api.md`](docs/api/drone-api.md) (the order, station and drone contracts are still marked proposed)
+- Sprint 7 AI handoff (LA-342): [`docs/api/sprint-7-api-contract.md`](docs/api/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/sprint-7-openapi.json). Implemented source availability and enabled-service/policy acceptance are tracked separately.
+- Current API index: [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md). The individual auth/order/station/drone contracts also retain historical design material; use the index and running Swagger to establish current endpoint availability.
 - Architecture and database: [`docs/architecture/`](docs/architecture/)
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
 - Design diagrams: [`docs/design/`](docs/design/)
-- AI service design (LA-201 / LA-241–244): [ETA](docs/design/sequence-ai-eta-estimation.md), [delivery summary](docs/design/sequence-ai-delivery-summarization.md), [customer assistant](docs/design/sequence-ai-customer-assistant.md), [class diagram](docs/design/class-diagram-ai-services.md) and [specification](docs/design/class-specification-ai-services.md). Proposed Sprint 7 implementation; existing entities are distinguished from future services.
+- AI service design (LA-201 / LA-241–244): [ETA](docs/design/sequence-ai-eta-estimation.md), [delivery summary](docs/design/sequence-ai-delivery-summarization.md), [customer assistant](docs/design/sequence-ai-customer-assistant.md), [class diagram](docs/design/class-diagram-ai-services.md) and [specification](docs/design/class-specification-ai-services.md). These are historical design references; consult integrated code and the AI configuration guide for implemented behavior and activation gates.
 - Real-time tracking sequence (LA-238): [telemetry intake, SignalR and web/mobile updates](docs/design/sequence-real-time-tracking.md)
 - Dashboard sequence (LA-240): [filtered statistics queries and web results](docs/design/sequence-dashboard.md)
 
