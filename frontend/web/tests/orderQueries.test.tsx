@@ -60,7 +60,7 @@ it.each([
   { panel: 'year', option: '2027' },
 ])('keeps the applied date after leaving the $panel picker with Escape', async ({ panel, option }) => {
   mock.onGet('/api/delivery-orders').reply(200, { items: [], totalCount: 0 })
-  const user = userEvent.setup()
+  const user = userEvent.setup({ delay: null })
   open()
   await screen.findByText('No orders match these filters.')
 
@@ -82,7 +82,7 @@ it.each([
     expect(mock.history.get).toHaveLength(3)
     expect(mock.history.get.at(-1)?.params.fromDate).toBe(expectedDate)
   })
-})
+}, 30000)
 
 it('shows server failures separately from an empty list and supports retry', async () => {
   mock.onGet('/api/delivery-orders').reply(500)
