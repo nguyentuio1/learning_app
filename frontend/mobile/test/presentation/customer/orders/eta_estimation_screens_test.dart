@@ -174,165 +174,150 @@ class _FakeDeliveryMapRepository implements DeliveryMapRepository {
 
 void main() {
   group('OrderEtaEstimate and RouteEtaPreview models (LA-40 / LA-160)', () {
-    test(
-      'validates positive distance/duration, [0,1] confidence, and never invents weather or timestamp',
-      () {
-        final now = DateTime.utc(2026, 11, 16, 1, 10);
-        final detailWithoutTimestampOrWeather = _buildDetail(
-          status: 'APPROVED',
-          distanceKm: 4.25,
-          durationMinutes: 18,
-          weather: '   ',
-          confidence: 0.88,
-          estimatedDeliveryTime: null,
-        );
+    test('validates positive distance/duration, [0,1] confidence, and never invents weather or timestamp', () {
+      final now = DateTime.utc(2026, 11, 16, 1, 10);
+      final detailWithoutTimestampOrWeather = _buildDetail(
+        status: 'APPROVED',
+        distanceKm: 4.25,
+        durationMinutes: 18,
+        weather: '   ',
+        confidence: 0.88,
+        estimatedDeliveryTime: null,
+      );
 
-        final estimate = OrderEtaEstimate.fromOrderDetail(
-          detailWithoutTimestampOrWeather,
-          now: now,
-        );
+      final estimate = OrderEtaEstimate.fromOrderDetail(
+        detailWithoutTimestampOrWeather,
+        now: now,
+      );
 
-        expect(estimate.calculatedDistanceKm, 4.25);
-        expect(estimate.predictedDurationMinutes, 18);
-        expect(estimate.weatherCondition, isNull);
-        expect(estimate.confidenceScore, 0.88);
-        expect(estimate.confidencePercentage, 88);
-        // Must not fabricate an arrival timestamp when server estimatedDeliveryTime is null
-        expect(estimate.estimatedDeliveryTime, isNull);
-        expect(estimate.remainingMinutes, isNull);
-        expect(estimate.freshnessStatus, EtaFreshnessStatus.current);
+      expect(estimate.calculatedDistanceKm, 4.25);
+      expect(estimate.predictedDurationMinutes, 18);
+      expect(estimate.weatherCondition, isNull);
+      expect(estimate.confidenceScore, 0.88);
+      expect(estimate.confidencePercentage, 88);
+      // Must not fabricate an arrival timestamp when server estimatedDeliveryTime is null
+      expect(estimate.estimatedDeliveryTime, isNull);
+      expect(estimate.remainingMinutes, isNull);
+      expect(estimate.freshnessStatus, EtaFreshnessStatus.current);
 
-        // Reject negative/zero durations and out-of-bounds confidence scores
-        final invalidDetail = _buildDetail(
+      // Reject negative/zero durations and out-of-bounds confidence scores
+      final invalidDetail = _buildDetail(
+        status: 'IN_TRANSIT',
+        distanceKm: -2.0,
+        durationMinutes: 0,
+        confidence: 1.5,
+        estimatedDeliveryTime: null,
+      );
+      final invalidEstimate = OrderEtaEstimate.fromOrderDetail(
+        invalidDetail,
+        now: now,
+      );
+      expect(invalidEstimate.hasPrediction, false);
+      expect(invalidEstimate.confidenceScore, isNull);
+      expect(invalidEstimate.freshnessStatus, EtaFreshnessStatus.unavailable);
+    });
+
+    test('distinguishes PENDING, active, stale, ARRIVED, DELIVERED, and CANCELLED/FAILED states', () {
+      final now = DateTime.utc(2026, 11, 16, 1, 30);
+
+      final pending = OrderEtaEstimate.fromOrderDetail(
+        _buildDetail(status: 'PENDING', includePrediction: false),
+        now: now,
+      );
+      expect(pending.freshnessStatus, EtaFreshnessStatus.waitingForApproval);
+      expect(pending.isLiveEstimateActive, false);
+
+      final pastEstimate = OrderEtaEstimate.fromOrderDetail(
+        _buildDetail(
           status: 'IN_TRANSIT',
-          distanceKm: -2.0,
-          durationMinutes: 0,
-          confidence: 1.5,
-          estimatedDeliveryTime: null,
-        );
-        final invalidEstimate = OrderEtaEstimate.fromOrderDetail(
-          invalidDetail,
-          now: now,
-        );
-        expect(invalidEstimate.hasPrediction, false);
-        expect(invalidEstimate.confidenceScore, isNull);
-        expect(
-          invalidEstimate.freshnessStatus,
-          EtaFreshnessStatus.unavailable,
-        );
-      },
-    );
+          estimatedDeliveryTime: now.subtract(const Duration(minutes: 5)),
+        ),
+        now: now,
+      );
+      expect(pastEstimate.freshnessStatus, EtaFreshnessStatus.stale);
+      expect(pastEstimate.remainingMinutes, isNull);
 
-    test(
-      'distinguishes PENDING, active, stale, ARRIVED, DELIVERED, and CANCELLED/FAILED states',
-      () {
-        final now = DateTime.utc(2026, 11, 16, 1, 30);
+      final arrived = OrderEtaEstimate.fromOrderDetail(
+        _buildDetail(
+          status: 'ARRIVED',
+          estimatedDeliveryTime: now.add(const Duration(minutes: 10)),
+        ),
+        now: now,
+      );
+      expect(arrived.freshnessStatus, EtaFreshnessStatus.arrivedAtDestination);
+      expect(arrived.remainingMinutes, isNull);
 
-        final pending = OrderEtaEstimate.fromOrderDetail(
-          _buildDetail(status: 'PENDING', includePrediction: false),
-          now: now,
-        );
-        expect(pending.freshnessStatus, EtaFreshnessStatus.waitingForApproval);
-        expect(pending.isLiveEstimateActive, false);
+      final delivered = OrderEtaEstimate.fromOrderDetail(
+        _buildDetail(
+          status: 'DELIVERED',
+          estimatedDeliveryTime: now.add(const Duration(minutes: 10)),
+          actualDeliveryTime: now,
+        ),
+        now: now,
+      );
+      expect(delivered.freshnessStatus, EtaFreshnessStatus.completed);
+      expect(delivered.remainingMinutes, isNull);
+      expect(delivered.actualDeliveryTime, now);
 
-        final pastEstimate = OrderEtaEstimate.fromOrderDetail(
-          _buildDetail(
-            status: 'IN_TRANSIT',
-            estimatedDeliveryTime: now.subtract(const Duration(minutes: 5)),
-          ),
-          now: now,
-        );
-        expect(pastEstimate.freshnessStatus, EtaFreshnessStatus.stale);
-        expect(pastEstimate.remainingMinutes, isNull);
+      final cancelled = OrderEtaEstimate.fromOrderDetail(
+        _buildDetail(
+          status: 'CANCELLED',
+          estimatedDeliveryTime: now.add(const Duration(minutes: 10)),
+        ),
+        now: now,
+      );
+      expect(cancelled.freshnessStatus, EtaFreshnessStatus.inactive);
+      expect(cancelled.remainingMinutes, isNull);
+    });
 
-        final arrived = OrderEtaEstimate.fromOrderDetail(
-          _buildDetail(
-            status: 'ARRIVED',
-            estimatedDeliveryTime: now.add(const Duration(minutes: 10)),
-          ),
-          now: now,
-        );
-        expect(
-          arrived.freshnessStatus,
-          EtaFreshnessStatus.arrivedAtDestination,
-        );
-        expect(arrived.remainingMinutes, isNull);
+    test('RouteEtaPreview computes great-circle distance and payload-adjusted duration within limits', () {
+      final lightPreview = RouteEtaPreview.compute(
+        originLatitude: 10.8538,
+        originLongitude: 106.6278,
+        destinationLatitude: 10.8411,
+        destinationLongitude: 106.8099,
+        weightGram: 500,
+        isFragile: false,
+      );
+      final heavyFragilePreview = RouteEtaPreview.compute(
+        originLatitude: 10.8538,
+        originLongitude: 106.6278,
+        destinationLatitude: 10.8411,
+        destinationLongitude: 106.8099,
+        weightGram: 2800,
+        isFragile: true,
+      );
 
-        final delivered = OrderEtaEstimate.fromOrderDetail(
-          _buildDetail(
-            status: 'DELIVERED',
-            estimatedDeliveryTime: now.add(const Duration(minutes: 10)),
-            actualDeliveryTime: now,
-          ),
-          now: now,
-        );
-        expect(delivered.freshnessStatus, EtaFreshnessStatus.completed);
-        expect(delivered.remainingMinutes, isNull);
-        expect(delivered.actualDeliveryTime, now);
+      expect(lightPreview, isNotNull);
+      expect(heavyFragilePreview, isNotNull);
+      expect(lightPreview!.distanceKm, greaterThan(15));
+      expect(
+        heavyFragilePreview!.estimatedDurationMinutes,
+        greaterThanOrEqualTo(lightPreview.estimatedDurationMinutes),
+      );
 
-        final cancelled = OrderEtaEstimate.fromOrderDetail(
-          _buildDetail(
-            status: 'CANCELLED',
-            estimatedDeliveryTime: now.add(const Duration(minutes: 10)),
-          ),
-          now: now,
-        );
-        expect(cancelled.freshnessStatus, EtaFreshnessStatus.inactive);
-        expect(cancelled.remainingMinutes, isNull);
-      },
-    );
-
-    test(
-      'RouteEtaPreview computes great-circle distance and payload-adjusted duration within limits',
-      () {
-        final lightPreview = RouteEtaPreview.compute(
+      // Over-weight (> 3000g) or identical stations return null
+      expect(
+        RouteEtaPreview.compute(
           originLatitude: 10.8538,
           originLongitude: 106.6278,
           destinationLatitude: 10.8411,
           destinationLongitude: 106.8099,
-          weightGram: 500,
-          isFragile: false,
-        );
-        final heavyFragilePreview = RouteEtaPreview.compute(
+          weightGram: 3500,
+        ),
+        isNull,
+      );
+      expect(
+        RouteEtaPreview.compute(
           originLatitude: 10.8538,
           originLongitude: 106.6278,
-          destinationLatitude: 10.8411,
-          destinationLongitude: 106.8099,
-          weightGram: 2800,
-          isFragile: true,
-        );
-
-        expect(lightPreview, isNotNull);
-        expect(heavyFragilePreview, isNotNull);
-        expect(lightPreview!.distanceKm, greaterThan(15));
-        expect(
-          heavyFragilePreview!.estimatedDurationMinutes,
-          greaterThanOrEqualTo(lightPreview.estimatedDurationMinutes),
-        );
-
-        // Over-weight (> 3000g) or identical stations return null
-        expect(
-          RouteEtaPreview.compute(
-            originLatitude: 10.8538,
-            originLongitude: 106.6278,
-            destinationLatitude: 10.8411,
-            destinationLongitude: 106.8099,
-            weightGram: 3500,
-          ),
-          isNull,
-        );
-        expect(
-          RouteEtaPreview.compute(
-            originLatitude: 10.8538,
-            originLongitude: 106.6278,
-            destinationLatitude: 10.8538,
-            destinationLongitude: 106.6278,
-            weightGram: 1000,
-          ),
-          isNull,
-        );
-      },
-    );
+          destinationLatitude: 10.8538,
+          destinationLongitude: 106.6278,
+          weightGram: 1000,
+        ),
+        isNull,
+      );
+    });
   });
 
   group('EtaEstimationController and Screens (LA-40 / LA-160)', () {
@@ -362,9 +347,7 @@ void main() {
               deliveryOrderApiServiceProvider.overrideWithValue(service),
               deliveryMapRepositoryProvider.overrideWithValue(mapRepo),
             ],
-            child: const MaterialApp(
-              home: OrderDetailPage(orderId: _orderId),
-            ),
+            child: const MaterialApp(home: OrderDetailPage(orderId: _orderId)),
           ),
         );
         await tester.pumpAndSettle();
@@ -446,10 +429,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Completed'), findsOneWidget);
-        expect(
-          find.textContaining('Delivery completed'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Delivery completed'), findsOneWidget);
       },
     );
 
@@ -486,9 +466,7 @@ void main() {
               deliveryOrderApiServiceProvider.overrideWithValue(service),
               deliveryMapRepositoryProvider.overrideWithValue(mapRepo),
             ],
-            child: const MaterialApp(
-              home: OrderDetailPage(orderId: _orderId),
-            ),
+            child: const MaterialApp(home: OrderDetailPage(orderId: _orderId)),
           ),
         );
         await tester.pumpAndSettle();
@@ -818,6 +796,9 @@ void main() {
         await tester.tap(find.byKey(const Key('order-destination')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('SHTP Lab Station · SHTP-02').last);
+        await tester.pumpAndSettle();
+
+        await tester.drag(find.byType(ListView), const Offset(0, -300));
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('route-eta-preview-card')), findsOneWidget);

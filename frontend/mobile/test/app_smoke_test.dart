@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:smart_drone_delivery/app/app.dart';
 import 'package:smart_drone_delivery/app/providers.dart';
 import 'package:smart_drone_delivery/core/error/api_exception.dart';
+import 'package:smart_drone_delivery/data/models/delivery_order.dart';
 import 'package:smart_drone_delivery/data/models/landing_station.dart';
 import 'package:smart_drone_delivery/data/providers/landing_station_providers.dart';
 import 'package:smart_drone_delivery/data/providers/notification_providers.dart';
 import 'package:smart_drone_delivery/core/theme/app_theme.dart';
 import 'package:smart_drone_delivery/data/services/landing_station_api_service.dart';
 import 'package:smart_drone_delivery/presentation/auth/login_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,8 +25,12 @@ class _EmptyStationService extends LandingStationApiService {
   Future<List<LandingStation>> getStations({
     String? status,
     String? search,
-  }) async =>
-      const [];
+  }) async => const [];
+}
+
+class _EmptyOrdersNotifier extends MyOrdersNotifier {
+  @override
+  Future<List<DeliveryOrder>> build() async => [];
 }
 
 Future<void> _pump(
@@ -40,6 +46,7 @@ Future<void> _pump(
         tokenStorageProvider.overrideWithValue(storage),
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
         userStorageProvider.overrideWithValue(InMemoryUserStorage()),
+        myOrdersProvider.overrideWith(_EmptyOrdersNotifier.new),
         unreadNotificationsCountProvider.overrideWith((ref) async => 0),
         ...extra,
       ],
@@ -57,15 +64,14 @@ Future<InMemoryTokenStorage> _loggedIn() async {
 
 /// Override station service so the Operator home loads without a backend.
 List<Override> _operatorOverrides() => [
-      landingStationApiServiceProvider.overrideWithValue(
-        _EmptyStationService(),
-      ),
-    ];
+  landingStationApiServiceProvider.overrideWithValue(_EmptyStationService()),
+];
 
 void main() {
   testWidgets('Customer đã đăng nhập -> vào Customer home', (tester) async {
     await _pump(tester, AppConfig.customer(), await _loggedIn());
-    expect(find.text('Customer app'), findsOneWidget);
+    expect(find.text('Customer Home'), findsOneWidget);
+    expect(find.text('Create delivery'), findsWidgets);
   });
 
   testWidgets('Operator đã đăng nhập -> vào Operator home', (tester) async {
@@ -82,7 +88,8 @@ void main() {
   testWidgets('Chưa đăng nhập -> bị chuyển tới Login', (tester) async {
     await _pump(tester, AppConfig.customer(), InMemoryTokenStorage());
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.text('Customer app'), findsNothing);
+    expect(find.text('Customer Home'), findsNothing);
+    expect(find.text('Create delivery'), findsNothing);
   });
 
   testWidgets('Register validates inline and link returns to Login', (
@@ -123,7 +130,7 @@ void main() {
             ),
           ),
           userStorageProvider.overrideWithValue(InMemoryUserStorage()),
-        unreadNotificationsCountProvider.overrideWith((ref) async => 0),
+          unreadNotificationsCountProvider.overrideWith((ref) async => 0),
         ],
         child: const App(),
       ),
@@ -143,7 +150,7 @@ void main() {
     expect(find.text('Email is already registered.'), findsOneWidget);
   });
 
-  testWidgets('successful registration signs in and opens My orders', (
+  testWidgets('successful registration signs in and opens Customer home', (
     tester,
   ) async {
     await _pump(tester, AppConfig.customer(), InMemoryTokenStorage());
@@ -157,7 +164,8 @@ void main() {
     await tester.tap(find.text('Register'));
     await tester.pumpAndSettle();
 
-    expect(find.text('My orders'), findsOneWidget);
+    expect(find.text('Customer Home'), findsOneWidget);
+    expect(find.text('Your orders'), findsOneWidget);
   });
 
   testWidgets('Đăng xuất -> router đưa về Login', (tester) async {
