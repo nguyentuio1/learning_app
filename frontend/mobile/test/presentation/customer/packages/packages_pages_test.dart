@@ -147,6 +147,10 @@ void main() {
   testWidgets('saving a directly opened form returns to the package list', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final service = _FakePackageApiService();
     final router = GoRouter(
       initialLocation: '/add',
