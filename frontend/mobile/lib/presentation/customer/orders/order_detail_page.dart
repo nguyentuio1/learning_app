@@ -54,6 +54,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         });
         ref.invalidate(orderDetailProvider(widget.detailId));
         ref.invalidate(myOrdersProvider);
+        ref.invalidate(customerDashboardOrdersProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Order cancelled successfully.')),
         );
@@ -526,6 +527,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     ref.invalidate(orderDetailProvider(widget.detailId));
     ref.invalidate(myOrdersProvider);
+    ref.invalidate(customerDashboardOrdersProvider);
   }
 
   Future<void> _editOrder(DeliveryOrder order) async {

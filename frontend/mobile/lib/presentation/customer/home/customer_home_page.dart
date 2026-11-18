@@ -19,7 +19,7 @@ class CustomerHomePage extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final unreadCountAsync = ref.watch(unreadNotificationsCountProvider);
     final unreadCount = unreadCountAsync.value ?? 0;
-    final ordersAsync = ref.watch(myOrdersProvider);
+    final ordersAsync = ref.watch(customerDashboardOrdersProvider);
     final rawName = ref.watch(currentUserProvider)?.fullName.trim() ?? '';
     final displayName = rawName.isEmpty ? 'Customer' : rawName;
 
@@ -159,7 +159,8 @@ class CustomerHomePage extends ConsumerWidget {
                     children: [
                       Text(errorMessage(error), textAlign: TextAlign.center),
                       TextButton(
-                        onPressed: () => ref.invalidate(myOrdersProvider),
+                        onPressed: () =>
+                            ref.invalidate(customerDashboardOrdersProvider),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -235,10 +236,13 @@ class CustomerHomePage extends ConsumerWidget {
           const SizedBox(height: 20),
         ],
         Text(
-          'My deliveries',
+          'Recent delivery overview',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
+        ),
+        const Text(
+          'Counts below cover the latest 100 orders. See all for full history.',
         ),
         const SizedBox(height: 12),
         Row(

@@ -152,6 +152,9 @@ void main() {
     ProviderScope(
       overrides: [
         myOrdersProvider.overrideWith(_PreviewOrdersNotifier.new),
+        customerDashboardOrdersProvider.overrideWith(
+          (ref) async => _sampleOrders,
+        ),
         unreadNotificationsCountProvider.overrideWith((ref) async => 2),
         orderPackagesProvider.overrideWith((ref) async => _samplePackages),
         orderStationsProvider.overrideWith((ref) async => _sampleStations),

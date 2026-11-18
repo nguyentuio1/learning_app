@@ -154,6 +154,7 @@ class CreateOrderNotifier extends Notifier<CreateOrderState> {
           .read(deliveryOrderApiServiceProvider)
           .createOrder(dto);
       ref.invalidate(myOrdersProvider);
+      ref.invalidate(customerDashboardOrdersProvider);
       state = state.copyWith(isSubmitting: false);
       return result;
     } on ApiException catch (error) {

@@ -88,6 +88,7 @@ Widget _homeScope({
 }) => ProviderScope(
   overrides: [
     myOrdersProvider.overrideWith(() => _TestOrdersNotifier(loadOrders)),
+    customerDashboardOrdersProvider.overrideWith((ref) => loadOrders()),
     unreadNotificationsCountProvider.overrideWith((ref) async => 0),
   ],
   child: MaterialApp(home: child),
@@ -113,12 +114,12 @@ void main() {
       expect(find.text('Delivery package'), findsNWidgets(3));
       expect(find.text('DD-1002'), findsOneWidget);
       expect(find.text('DD-1003'), findsOneWidget);
-      expect(find.text('My deliveries'), findsOneWidget);
+      expect(find.text('Recent delivery overview'), findsOneWidget);
       expect(find.text('Recent deliveries'), findsOneWidget);
       expect(find.byType(InkWell), findsWidgets);
       expect(find.text('Confirm receipt'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.text('My deliveries')).dy,
+        tester.getTopLeft(find.text('Recent delivery overview')).dy,
         lessThan(tester.getTopLeft(find.text('Recent deliveries')).dy),
       );
     });

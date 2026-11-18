@@ -480,8 +480,9 @@ class _PackageImageUrlDialogState extends State<_PackageImageUrlDialog> {
       ),
       FilledButton(
         onPressed: () {
-          if (formKey.currentState!.validate())
+          if (formKey.currentState!.validate()) {
             Navigator.pop(context, controller.text.trim());
+          }
         },
         child: const Text('Save'),
       ),

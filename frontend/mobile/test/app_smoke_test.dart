@@ -47,6 +47,7 @@ Future<void> _pump(
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
         userStorageProvider.overrideWithValue(InMemoryUserStorage()),
         myOrdersProvider.overrideWith(_EmptyOrdersNotifier.new),
+        customerDashboardOrdersProvider.overrideWith((ref) async => []),
         unreadNotificationsCountProvider.overrideWith((ref) async => 0),
         ...extra,
       ],

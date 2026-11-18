@@ -13,6 +13,7 @@ const _visibleStatusOptions = <String, String>{
   'ALL': 'All',
   'PENDING': 'Pending',
   'APPROVED': 'Approved',
+  'READY_FOR_TAKEOFF': 'Ready for takeoff',
   'IN_TRANSIT': 'In transit',
   'ARRIVED': 'Arrived',
   'DELIVERED': 'Delivered',
