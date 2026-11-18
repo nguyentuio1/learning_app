@@ -50,7 +50,9 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
 
     /// <summary>Connection string of that database, for tests that need their own connection (for example to hold a row lock).</summary>
     public string DatabaseConnectionString =>
-        new NpgsqlConnectionStringBuilder(ServerConnectionString ?? throw new InvalidOperationException($"{ConnectionVariable} is not set.")) { Database = _databaseName }.ConnectionString;
+        new NpgsqlConnectionStringBuilder(ServerConnectionString ?? throw new InvalidOperationException($"{ConnectionVariable} is not set.")) { Database = _databaseName, MaxPoolSize = MaximumPoolSize }.ConnectionString;
+
+    public int MaximumPoolSize { get; set; } = 100;
 
     public FakeAvatarStorage Avatars { get; } = new();
     public FakePackageStorage Packages { get; } = new();
@@ -59,7 +61,7 @@ public sealed class PostgresApiFactory : WebApplicationFactory<Program>
     {
         var server = ServerConnectionString
             ?? throw new InvalidOperationException($"{ConnectionVariable} is not set.");
-        var appConnection = new NpgsqlConnectionStringBuilder(server) { Database = _databaseName }.ConnectionString;
+        var appConnection = new NpgsqlConnectionStringBuilder(server) { Database = _databaseName, MaxPoolSize = MaximumPoolSize }.ConnectionString;
         CreateDatabase(server);
 
         builder.UseEnvironment("Development");

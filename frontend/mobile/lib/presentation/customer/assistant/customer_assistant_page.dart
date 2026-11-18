@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/session/auth_controller.dart';
 import '../../../data/models/ai_assistant_models.dart';
+import '../../../data/providers/ai_assistant_providers.dart';
 import '../../../routes/route_paths.dart';
 import 'ai_assistant_controller.dart';
 
@@ -67,6 +68,7 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
       aiAssistantControllerProvider(_contextKey).notifier,
     );
     final currentUser = ref.watch(currentUserProvider);
+    final chatEnabled = ref.watch(aiAssistantChatEnabledProvider);
 
     if (state.accessLost) {
       return Scaffold(
@@ -82,19 +84,23 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
 
     final theme = Theme.of(context);
     final trimmedInput = _inputController.text.trim();
-    final canSend = trimmedInput.isNotEmpty &&
+    final canSend =
+        chatEnabled &&
+        trimmedInput.isNotEmpty &&
         !state.isSending &&
         !state.uncertainSendPendingRecovery;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('AI Assistant'),
+            const Text('AI Assistant'),
             Text(
-              'How can I help with your deliveries?',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              chatEnabled
+                  ? 'How can I help with your deliveries?'
+                  : 'Delivery help and saved conversations',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
         ),
@@ -135,6 +141,7 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
               padding: const EdgeInsets.all(16),
               children: [
                 _WelcomeBanner(
+                  chatEnabled: chatEnabled,
                   userName: currentUser?.fullName,
                   orderId: state.selectedOrderId,
                   trackingNumber: state.selectedTrackingNumber,
@@ -142,6 +149,43 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                       ? null
                       : notifier.clearOrderContext,
                 ),
+                if (!chatEnabled) ...[
+                  const SizedBox(height: 12),
+                  Semantics(
+                    liveRegion: true,
+                    child: Column(
+                      key: const Key('assistant-unavailable-notice'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chat is not available in this app.',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'You can still track your deliveries and view saved conversations. For delivery help, open an order to see its status and next steps.',
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton.tonalIcon(
+                          key: const Key('assistant-track-order-button'),
+                          icon: const Icon(Icons.local_shipping_outlined),
+                          label: Text(
+                            state.selectedOrderId == null
+                                ? 'View my deliveries'
+                                : 'Track this delivery',
+                          ),
+                          onPressed: () => context.go(
+                            state.selectedOrderId == null
+                                ? RoutePaths.customerOrders
+                                : RoutePaths.customerOrderTrackingFor(
+                                    state.selectedOrderId!,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (state.activeSessionId != null &&
                     state.messagesPage > 1) ...[
                   const SizedBox(height: 8),
@@ -164,8 +208,7 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                   const Center(child: CircularProgressIndicator()),
                 ],
                 const SizedBox(height: 12),
-                for (final msg in state.messages)
-                  _MessageBubble(message: msg),
+                for (final msg in state.messages) _MessageBubble(message: msg),
                 if (state.isSending)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
@@ -197,7 +240,9 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                     for (final suggestion in _suggestions)
                       ActionChip(
                         label: Text(suggestion),
-                        onPressed: state.isSending ||
+                        onPressed:
+                            !chatEnabled ||
+                                state.isSending ||
                                 state.uncertainSendPendingRecovery
                             ? null
                             : () => _submitText(notifier, suggestion),
@@ -232,8 +277,8 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                   if (state.uncertainSendPendingRecovery)
                     TextButton(
                       key: const Key('assistant-recover-button'),
-                      onPressed: state.isLoadingMessages ||
-                              state.isLoadingSessions
+                      onPressed:
+                          state.isLoadingMessages || state.isLoadingSessions
                           ? null
                           : notifier.recoverAfterUncertainSend,
                       child: Text(
@@ -269,7 +314,10 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                         child: TextField(
                           key: const Key('assistant-message-input'),
                           controller: _inputController,
-                          enabled: !state.isSending,
+                          enabled:
+                              chatEnabled &&
+                              !state.isSending &&
+                              !state.uncertainSendPendingRecovery,
                           minLines: 1,
                           maxLines: 4,
                           textInputAction: TextInputAction.send,
@@ -288,16 +336,22 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
                       const SizedBox(width: 8),
                       FilledButton(
                         key: const Key('assistant-send-button'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(52, 52),
+                          padding: const EdgeInsets.all(12),
+                        ),
                         onPressed: canSend
                             ? () => _submitText(notifier, _inputController.text)
                             : null,
-                        child: const Icon(Icons.send),
+                        child: const Icon(Icons.send, semanticLabel: 'Send message'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Answers use your real order data.',
+                    chatEnabled
+                        ? 'Do not send pickup codes, credentials or contact details.'
+                        : 'Tracking remains available without AI chat.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -311,10 +365,7 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
     );
   }
 
-  Future<void> _submitText(
-    AiAssistantController notifier,
-    String text,
-  ) async {
+  Future<void> _submitText(AiAssistantController notifier, String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
     final ok = await notifier.sendMessage(trimmed);
@@ -454,6 +505,7 @@ class _CustomerAssistantPageState extends ConsumerState<CustomerAssistantPage> {
 
 class _WelcomeBanner extends StatelessWidget {
   const _WelcomeBanner({
+    required this.chatEnabled,
     this.userName,
     this.orderId,
     this.trackingNumber,
@@ -461,6 +513,7 @@ class _WelcomeBanner extends StatelessWidget {
   });
 
   final String? userName;
+  final bool chatEnabled;
   final String? orderId;
   final String? trackingNumber;
   final VoidCallback? onClearOrder;
@@ -472,7 +525,9 @@ class _WelcomeBanner extends StatelessWidget {
     final greeting = (greetingName != null && greetingName.isNotEmpty)
         ? 'Hi $greetingName! '
         : 'Hi! ';
-    final bodyText = orderId != null
+    final bodyText = !chatEnabled
+        ? '${greeting}Your delivery information is still available.'
+        : orderId != null
         ? '${greeting}Ask me about this order or any of your deliveries.'
         : '${greeting}Ask me about your deliveries, tracking status, or ETA.';
 
@@ -563,10 +618,7 @@ class _MessageBubble extends StatelessWidget {
 }
 
 class _AccessLostView extends StatelessWidget {
-  const _AccessLostView({
-    required this.message,
-    required this.onBack,
-  });
+  const _AccessLostView({required this.message, required this.onBack});
 
   final String message;
   final VoidCallback onBack;
@@ -588,10 +640,7 @@ class _AccessLostView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: onBack,
-              child: const Text('Back'),
-            ),
+            FilledButton(onPressed: onBack, child: const Text('Back')),
           ],
         ),
       ),

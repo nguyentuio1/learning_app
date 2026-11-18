@@ -1,0 +1,21 @@
+{
+  "productSource": "9c14be83bed677a41d5eee22d9a21d3cff199f9d",
+  "previewCommit": "7da01f71ae4c8ab8cf879726f263e63008d3c279",
+  "previewIncludes": "PR278 head3186da0177701abad215905cfbfdd29b55485b78 for local viewing only; PR278 remains held",
+  "backend": "Existing API on127.0.0.1:5055; deployed backend commit not asserted",
+  "entryPoint": "lib/main_operator.dart",
+  "flutter": "3.47.8",
+  "dart": "3.13.7",
+  "ui": "http://127.0.0.1:18731",
+  "gateway": "Loopback-only gateway18731 -> Flutter18730 or API5055; does not relax server CORS/auth policies",
+  "productionFilesVerified": [
+    {
+      "path": "frontend/mobile/lib/data/models/user_model.dart",
+      "gitBlob": "106ad44c1ab5279dc3d777642d9a69f0e21a5a33"
+    },
+    {
+      "path": "frontend/mobile/lib/presentation/operator/home/station_availability_providers.dart",
+      "gitBlob": "b5f11bb98199c97e2ffa6429e032e936b6ceedef"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+Resolving dependencies...
+Downloading packages...
+  code_assets 1.2.1 (2.2.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  hooks 2.0.2 (2.2.0 available)
+  image_picker 1.1.2 (1.2.4 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.3 (1.19.0 available)
+  objective_c 9.5.0 (9.6.4 available)
+  record_use 0.6.0 (1.1.1 available)
+  sse_channel 0.1.1 (0.2.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  vector_math 2.4.0 (2.4.4 available)
+Got dependencies!
+12 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing mobile...                                             
+
+   info - The import of '../storage/auth_tokens.dart' is unnecessary because all of the used elements are also provided by the import of '../storage/storage_providers.dart'. Try removing the import directive - lib\core\session\auth_controller.dart:6:8 - unnecessary_import
+   info - The import of '../../core/storage/auth_tokens.dart' is unnecessary because all of the used elements are also provided by the import of '../../core/storage/token_storage.dart'. Try removing the import directive - lib\data\repositories\auth_repository_impl.dart:6:8 - unnecessary_import
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:462:17 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:534:50 - deprecated_member_use
+   info - 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:711:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:711:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:759:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:761:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:959:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:962:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:988:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:1145:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\home\operator_home_page.dart:1172:34 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement - lib\presentation\operator\intake\package_intake_page.dart:360:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\change_password_page.dart:90:65 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\change_password_page.dart:94:60 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\presentation\profile\edit_profile_page.dart:111:30 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\edit_profile_page.dart:228:53 - deprecated_member_use
+   info - 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\profile_page.dart:173:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\profile_page.dart:173:65 - deprecated_member_use
+   info - 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\profile_page.dart:226:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\presentation\profile\profile_page.dart:226:65 - deprecated_member_use
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\presentation\profile\widgets\avatar_widget.dart:44:35 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores. Try using '_' - lib\presentation\profile\widgets\avatar_widget.dart:44:39 - unnecessary_underscores
+   info - The import of 'package:smart_drone_delivery/core/session/auth_controller.dart' is unnecessary because all of the used elements are also provided by the import of 'package:smart_drone_delivery/app/providers.dart'. Try removing the import directive - test\core\di\di_wiring_test.dart:3:8 - unnecessary_import
+   info - The import of 'package:smart_drone_delivery/core/storage/storage_providers.dart' is unnecessary because all of the used elements are also provided by the import of 'package:smart_drone_delivery/app/providers.dart'. Try removing the import directive - test\core\di\di_wiring_test.dart:4:8 - unnecessary_import
+   info - The import of 'package:smart_drone_delivery/core/storage/token_storage.dart' is unnecessary because all of the used elements are also provided by the import of 'package:smart_drone_delivery/app/providers.dart'. Try removing the import directive - test\core\di\di_wiring_test.dart:5:8 - unnecessary_import
+   info - The import of 'package:smart_drone_delivery/core/storage/auth_tokens.dart' is unnecessary because all of the used elements are also provided by the import of 'package:smart_drone_delivery/app/providers.dart'. Try removing the import directive - test\core\di\di_wiring_test.dart:6:8 - unnecessary_import
+   info - The import of 'package:smart_drone_delivery/core/storage/auth_tokens.dart' is unnecessary because all of the used elements are also provided by the import of 'package:smart_drone_delivery/core/storage/storage_providers.dart'. Try removing the import directive - test\presentation\profile\change_password_page_test.dart:6:8 - unnecessary_import
+   info - The import of 'package:smart_drone_delivery/core/storage/auth_tokens.dart' is unnecessary because all of the used elements are also provided by the import of 'package:smart_drone_delivery/core/storage/token_storage.dart'. Try removing the import directive - test\support\test_helpers.dart:2:8 - unnecessary_import
+
+30 issues found. (ran in 5.2s)

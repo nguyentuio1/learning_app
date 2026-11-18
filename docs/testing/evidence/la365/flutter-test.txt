@@ -1,0 +1,556 @@
+00:00 +0: loading C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart
+00:00 +0: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +1: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +2: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +3: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +4: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +5: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +6: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:00 +7: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Customer đã đăng nhập -> vào Customer home
+00:01 +8: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Operator đã đăng nhập -> vào Operator home
+00:01 +9: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Chưa đăng nhập -> bị chuyển tới Login
+00:01 +10: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Register validates inline and link returns to Login
+00:02 +11: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Register shows 409 API error in a snackbar
+00:02 +12: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: successful registration signs in and opens My orders
+00:03 +13: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +14: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +15: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +16: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +17: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +18: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +19: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +20: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +21: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +22: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +23: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +24: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +25: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +26: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +27: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +28: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +29: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Đăng xuất -> router đưa về Login
+00:03 +30: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/app_smoke_test.dart: Mỗi flavor có màu theme khác nhau
+00:04 +31: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: attaches Authorization header when token exists
+00:04 +32: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: skips Authorization header when skipAuth is true
+00:04 +33: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: 401 triggers refresh with camelCase refreshToken and retries request
+00:04 +34: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: invalid refresh token clears storage and invokes onSessionExpired
+00:04 +35: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: network error during refresh preserves stored tokens and session
+00:04 +36: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/auth_interceptor_test.dart: 401 on request with skipRefresh does not trigger refresh or session expired
+00:05 +37: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/dio_client_test.dart: BaseOptions: baseUrl, 3 loại timeout và header mặc định
+00:05 +38: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/dio_client_test.dart: enableLogging=false -> không có AppLogInterceptor
+00:05 +39: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/dio_client_test.dart: enableLogging=true -> log đứng TRƯỚC AuthInterceptor
+00:05 +40: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/dio_client_test.dart: baseUrl sai -> ném ArgumentError ngay khi tạo client
+00:05 +41: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/dio_client_test.dart: timeout được đổi thành ApiException.isNetwork
+00:05 +42: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/dio_client_test.dart: path được nối đúng sau baseUrl (giữ /v1)
+00:05 +43: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: log request/response và che Authorization, password, token
+00:05 +44: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: che pickupSecureCode và secureCode trong log (BR-LS-22)
+00:05 +45: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: log lỗi 500 kèm status và body
+00:05 +46: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: body dài bị cắt
+00:05 +47: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: logBodies=false thì không log body
+00:05 +48: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/core/network/logging_interceptor_test.dart: LogRedactor che key nhạy cảm ở mọi cấp lồng nhau
+00:05 +49: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.login sends email and password to ApiEndpoints.login with skipAuth
+00:05 +50: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.login maps 401 unauthorized to ApiException with detail message
+00:05 +51: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.login maps 403 forbidden to ApiException for inactive account
+00:05 +52: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.register sends registration fields publicly and maps AuthResponse
+00:05 +53: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.register maps duplicate email and phone 409 details
+00:05 +54: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.getMe sends GET /users/me and saves/returns user
+00:05 +55: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.getMe getMe throws ApiException on 401
+00:05 +56: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.logout sends refreshToken to ApiEndpoints.logout and clears userStorage
+00:05 +57: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/auth_repository_impl_test.dart: AuthRepositoryImpl.logout best-effort: suppresses server error on logout
+00:06 +58: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl getProfile returns User entity on 200
+00:06 +59: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl getProfile throws ApiException on error
+00:06 +60: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl updateProfile sends PUT /users/me and returns updated user
+00:06 +61: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl changePassword sends PUT /users/me/password with skipRefresh
+00:06 +62: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/repositories/profile_repository_impl_test.dart: ProfileRepositoryImpl uploadAvatar sends multipart POST /users/me/avatar and returns avatarUrl
+00:07 +63: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: requests the tracking snapshot and parses nullable UTC telemetry
+00:08 +64: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: preserves a null position and estimated delivery time
+00:08 +65: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 400 to ApiException
+00:08 +66: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 401 to ApiException
+00:08 +67: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 403 to ApiException
+00:08 +68: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_remote_data_source_test.dart: maps HTTP 404 to ApiException
+00:09 +69: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_signalr_service_test.dart: registers events before start and subscribes the selected order
+00:09 +70: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/delivery_map_signalr_service_test.dart: forwards position/status and resubscribes after reconnect
+00:10 +71: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: filters timeout failures from the expired-parcels endpoint
+00:10 +72: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: posts validated clear request to station operations
+00:10 +73: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: rejects invalid clear request values
+00:10 +74: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: maps RFC 7807 HTTP 403 to a clear-specific error
+00:10 +75: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: maps RFC 7807 HTTP 409 to a clear-specific error
+00:10 +76: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/expired_parcel_api_service_test.dart: includes RFC 7807 detail with clear-specific conflict message
+00:11 +77: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: loads failed orders with contract query parameter names
+00:11 +78: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: loads failure detail and parses both histories
+00:11 +79: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: posts exact report-failure contract
+00:11 +80: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: posts exact resolve-failure body keys and parses decision
+00:11 +81: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 400
+00:11 +82: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 403
+00:11 +83: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 404
+00:11 +84: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/failure_api_service_test.dart: preserves RFC 7807 detail for HTTP 409
+00:12 +85: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: requests the tracking endpoint and parses nullable telemetry fields
+00:12 +86: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: maps HTTP 401 to ApiException
+00:12 +87: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: maps HTTP 403 to ApiException
+00:12 +88: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: maps HTTP 404 to ApiException
+00:12 +89: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_remote_data_source_test.dart: a failed snapshot request can be retried successfully
+00:13 +90: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_signalr_service_test.dart: builds hub URL from API base URL without the /api suffix
+00:13 +91: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_signalr_service_test.dart: registers event handlers before connect and subscribes with JWT
+00:13 +92: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/data/services/tracking_signalr_service_test.dart: forwards telemetry and status events and re-subscribes on reconnect
+00:14 +93: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders title, description and default icon
+00:14 +94: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView renders custom icon and triggers action callback on CTA tap
+00:14 +95: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: EmptyStateView does not overflow on narrow 320x568 viewport
+00:14 +96: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: AsyncValueView renders data when AsyncValue is AsyncData and not empty
+00:14 +97: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: AsyncValueView renders emptyBuilder when AsyncData satisfies isEmpty
+00:14 +98: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: AsyncValueView displays network icon for network error and triggers onRetry
+00:14 +99: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: AsyncValueView displays error_outline icon for non-network error
+00:14 +100: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: AsyncValueView never renders emptyBuilder or data when state is AsyncError (Trap 7 guard)
+00:14 +101: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/common/widgets/empty_and_error_views_test.dart: AsyncValueView does not overflow on narrow 320x568 viewport
+00:16 +102: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays addresses and the default badge
+00:16 +103: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 confirms delete before making the API call
+00:17 +104: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 reloads and displays the newly selected default
+00:17 +105: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays the API 404 for an address outside the owner scope
+00:18 +106: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +107: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +108: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +109: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +110: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +111: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +112: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +113: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C20 displays a delete 404 instead of treating it as success
+00:18 +114: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 validates required fields and phone format
+00:18 +115: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 validates required fields and phone format
+00:18 +116: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 validates required fields and phone format
+00:19 +117: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:19 +118: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) displays order context, sends message via suggestion chip, and updates active session on ANSWERED
+00:19 +119: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 creates address with coordinates and default flag
+00:20 +120: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) handles REFUSED / CLARIFICATION_REQUIRED without mutating activeSessionId
+00:20 +121: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 loads existing fields and submits an update
+00:20 +122: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/assistant/customer_assistant_page_test.dart: CustomerAssistantPage and AiAssistantController (LA-42 / LA-167) does not auto-retry uncertain POST failure and offers history/session recovery
+00:20 +123: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:20 +124: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:20 +125: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:20 +126: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:21 +127: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:21 +128: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:21 +129: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/addresses/addresses_pages_test.dart: C21 displays RFC 7807 400 and 409 validation errors
+00:21 +130: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +131: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +132: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +133: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +134: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +135: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +136: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +137: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +138: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +139: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +140: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +141: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +142: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +143: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +144: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +145: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C10 Order History renders audit transitions, actor, UTC timestamp and remarks
+00:21 +146: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:21 +147: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:21 +148: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +149: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +150: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +151: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +152: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +153: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +154: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +155: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +156: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +157: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +158: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +159: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +160: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:22 +161: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+00:23 +162: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: renders station markers and route polyline without telemetry
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +163: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: renders notifications list and allows marking as read
+00:23 +164: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C27 applies System, Light, and Dark theme modes immediately
+00:23 +164: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: shows a drone only in transit and displays stale banner
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +165: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C27 applies System, Light, and Dark theme modes immediately
+00:23 +166: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C27 applies System, Light, and Dark theme modes immediately
+00:23 +167: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/delivery_map/delivery_map_widget_test.dart: focus and fit controls are tappable without layout overflow
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:23 +168: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: loads later pages beyond 50 items and marks item 51 as read
+00:23 +169: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C07/C08 order detail actions open history and assistant (PENDING)
+00:23 +170: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C07/C08 order detail actions open history and assistant (PENDING)
+00:23 +171: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/notifications/notifications_page_test.dart: ignores stale loadMore response when filter changes while page 2 is in flight
+00:24 +172: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C07/C08 order detail actions open history and assistant (ARRIVED)
+00:24 +173: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects empty and whitespace-only reasons inline
+00:24 +173: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:25 +174: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C06 tracking actions pass order context to assistant/history
+00:25 +175: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: rejects a reason longer than 500 characters
+00:25 +176: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C22 order notification opens its order details
+00:25 +177: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: disables controls and shows progress while request is pending
+00:25 +178: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C24 profile links to AI Assistant and Theme Settings
+00:25 +179: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/customer_completion_screens_test.dart: C24 profile links to AI Assistant and Theme Settings
+00:25 +180: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/cancel_order_sheet_test.dart: submits a valid reason and closes the sheet on success
+00:26 +181: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: DeliveryConfirmationController rejects malformed codes and non-ARRIVED orders without calling API
+00:26 +182: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: DeliveryConfirmationController surfaces 400 attemptsRemaining and 423 lockout with 0 attempts remaining
+00:26 +183: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: DeliveryConfirmationController marks requiresOrderRefresh on 409 Conflict and network errors, and accessLost on 403/404
+00:26 +184: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) navigates from ARRIVED OrderDetailPage to ConfirmDeliveryPage, enters code via keypad, and completes delivery
+00:27 +185: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) shows remaining attempts on 400 and disables confirmation on 423 lockout
+00:28 +186: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) unlocks form and re-enables submission automatically when 423 lockout expires
+00:28 +187: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) recomputes a 3-strike lockout from its absolute expiry on app resume
+00:28 +188: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:29 +189: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:29 +190: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:29 +191: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:29 +192: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/confirm_delivery_page_test.dart: Delivery Confirmation Screens (C08 -> C11/C12 -> C13) gates submission after uncertain POST failure while refresh GET is pending or fails, and re-enables only after fresh ARRIVED read
+00:29 +193: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +194: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +195: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +196: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +197: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +198: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +199: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +200: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +201: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +202: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +203: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +204: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +205: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +206: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +207: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +208: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +209: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +210: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +211: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +212: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +213: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +214: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +215: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:30 +216: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: C14 to C16 to C17 displays status, tracking and one-time code
+00:31 +217: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows inline validation when recipient phone is invalid
+00:31 +218: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows inline validation when recipient phone is invalid
+00:31 +219: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows inline validation when recipient phone is invalid
+00:31 +220: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/create_order_page_test.dart: shows inline validation when recipient phone is invalid
+00:32 +221: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +222: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +223: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +224: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +225: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +226: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +227: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +228: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +229: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +230: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +231: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +232: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +233: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:32 +234: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +235: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +236: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +237: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +238: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +239: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +240: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +241: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +242: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +243: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +244: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +245: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +246: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +247: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+00:33 +248: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) displays ETA estimate on OrderDetailPage and updates across PENDING -> APPROVED -> IN_TRANSIT -> ARRIVED -> DELIVERED via repository StatusChanged events
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:33 +249: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: renders orders, changes status filter, and refreshes
+00:33 +250: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/order_update_cancel_pages_test.dart: C07 shows Edit Order only for PENDING orders
+00:33 +251: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/order_update_cancel_pages_test.dart: C07 shows Edit Order only for PENDING orders
+00:33 +252: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/packages/packages_pages_test.dart: C18 shows loading indicator while packages load
+00:33 +253: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) detects corrected estimatedDeliveryTime while remaining IN_TRANSIT and fresh via both screen map refresh and direct notifier call
+00:33 +254: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) detects corrected estimatedDeliveryTime while remaining IN_TRANSIT and fresh via both screen map refresh and direct notifier call
+00:33 +255: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) detects corrected estimatedDeliveryTime while remaining IN_TRANSIT and fresh via both screen map refresh and direct notifier call
+00:33 +256: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/eta_estimation_screens_test.dart: EtaEstimationController and Screens (LA-40 / LA-160) detects corrected estimatedDeliveryTime while remaining IN_TRANSIT and fresh via both screen map refresh and direct notifier call
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:34 +257: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +258: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +259: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +260: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +261: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +262: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +263: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +264: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +265: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +266: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:34 +267: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +268: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +269: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +270: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +271: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +271: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: shows Retry after an API error and retries the snapshot
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:35 +272: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +273: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +273: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: shows a loading indicator while the first snapshot is pending
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:35 +274: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +274: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: renders in-transit tracking details and drone map marker
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:35 +275: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +276: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:35 +276: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: stale telemetry banner clears when a fresh position arrives
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:35 +277: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +277: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: keeps telemetry card visible when an in-transit drone has no fix
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:36 +278: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +279: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +279: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: READY_FOR_TAKEOFF without telemetry hides live drone data
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:36 +280: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +280: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: ARRIVED without telemetry hides live drone data
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:36 +281: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +281: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_page_test.dart: DELIVERED without telemetry hides live drone data
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:36 +282: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +283: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:36 +283: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: opens tracking from an order card
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:37 +284: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:37 +284: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: opens full order details directly with chronological history
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:37 +285: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:37 +286: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:37 +287: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:38 +287: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/orders/order_list_detail_pages_test.dart: shows delivery map and telemetry for in-transit details
+  [1m[flutter_map][0m
+    We want to help keep OpenStreetMap available for everyone. Our examples
+    and demo app use the public tile servers, but they are NOT free to use by
+    everyone! Please review whether the OpenStreetMap tile servers are suitable
+    for your project.
+    See:
+      * https://operations.osmfoundation.org/policies/tiles (OSM Tile Usage Policy)
+      * https://docs.fleaflet.dev/osm-warn for more information about this warning
+00:38 +288: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:38 +289: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:38 +290: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:38 +291: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +292: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +293: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +294: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +295: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +296: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +297: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +298: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +299: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:39 +300: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:40 +301: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:40 +302: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:40 +303: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:41 +304: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:41 +305: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:41 +306: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:42 +307: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:42 +308: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:42 +309: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:42 +310: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:43 +311: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:43 +312: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:44 +313: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:44 +314: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:45 +315: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:45 +316: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:45 +317: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +318: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +319: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +320: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +321: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +322: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +323: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +324: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +325: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +326: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:46 +327: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +328: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +329: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +330: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +331: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +332: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +333: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:47 +334: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:48 +335: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:48 +336: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/customer/tracking/order_tracking_controller_test.dart: uses five-second fallback polling with one in-flight request
+00:49 +337: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +338: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +339: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +340: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +341: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +342: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +343: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +344: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +345: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/pickup_timeout_alerts_refresh_test.dart: manual Home refresh updates alerts and navigates to O10
+00:49 +346: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: validates required note inline without sending request
+00:49 +347: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: validates required note inline without sending request
+00:49 +348: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: validates required note inline without sending request
+00:50 +349: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: rejects notes longer than 500 characters inline
+00:50 +350: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: requires package verification only when rescheduling
+00:50 +351: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: submits the exact action and closes after success
+00:50 +352: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +353: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +354: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +355: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +356: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +357: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +358: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +359: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +360: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/resolve_failure_sheet_test.dart: disables submission and shows progress while request is pending
+00:50 +361: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier selectStation clears old detail if new station detail returns 403/error
+00:50 +362: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier setSlotFilter filters slots properly
+00:50 +363: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier operator without assigned station shows isUnassignedOperator state
+00:50 +364: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier periodic polling updates availability and slots without manual refresh
+00:51 +365: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier polling stops after container / notifier is disposed
+00:51 +366: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier stale poll in flight does not overwrite newer station selection
+00:51 +367: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: StationAvailabilityNotifier silent polling failure does not clear or disrupt current display data
+00:51 +368: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: OperatorHomePage Widget renders station availability and slot breakdown
+00:51 +369: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/operator/station_availability_test.dart: OperatorHomePage Widget renders No station assigned screen when operator has no station
+00:52 +370: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/profile/change_password_page_test.dart: ChangePasswordPage flows thành công -> gọi signOut() và hiện thông báo đăng nhập lại
+00:53 +371: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/profile/change_password_page_test.dart: ChangePasswordPage flows thành công -> gọi signOut() và hiện thông báo đăng nhập lại
+00:53 +372: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/profile/change_password_page_test.dart: ChangePasswordPage flows thành công -> gọi signOut() và hiện thông báo đăng nhập lại
+00:53 +373: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/profile/change_password_page_test.dart: ChangePasswordPage flows thành công -> gọi signOut() và hiện thông báo đăng nhập lại
+00:53 +374: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/profile/change_password_page_test.dart: ChangePasswordPage flows thành công -> gọi signOut() và hiện thông báo đăng nhập lại
+00:53 +375: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/presentation/profile/edit_profile_page_test.dart: EditProfilePage tests Lỗi 409 trùng số điện thoại hiện thông báo thân thiện và set lỗi input
+00:53 +376: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:54 +377: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query order and persisted session
+00:54 +378: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with DeliveryOrder extra from customer screens
+00:54 +379: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: customer router opens API assistant with query overrides extra order and keeps extra session
+00:54 +380: C:/Users/tbare/Downloads/learning_app/artifacts/worktrees/la365-assistant-20261119/frontend/mobile/test/routes/sprint7_router_integration_test.dart: operator router keeps intake and pickup destinations after assistant merge
+00:54 +381: All tests passed!

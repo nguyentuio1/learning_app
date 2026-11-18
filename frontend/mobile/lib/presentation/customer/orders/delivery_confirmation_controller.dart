@@ -192,6 +192,7 @@ class DeliveryConfirmationController
     state = state.copyWith(requiresOrderRefresh: true);
     ref.invalidate(orderDetailProvider(orderId));
     ref.invalidate(myOrdersProvider);
+    ref.invalidate(customerDashboardOrdersProvider);
 
     try {
       final detail = await ref.read(orderDetailProvider(orderId).future);
@@ -285,6 +286,7 @@ class DeliveryConfirmationController
       );
       ref.invalidate(orderDetailProvider(orderId));
       ref.invalidate(myOrdersProvider);
+      ref.invalidate(customerDashboardOrdersProvider);
       return true;
     } on ApiException catch (e) {
       if (!ref.mounted) return false;
@@ -303,6 +305,7 @@ class DeliveryConfirmationController
         _cancelLockoutTimer();
         ref.invalidate(orderDetailProvider(orderId));
         ref.invalidate(myOrdersProvider);
+        ref.invalidate(customerDashboardOrdersProvider);
         state = state.copyWith(
           isSubmitting: false,
           errorMessage: accessDeniedMessage(e),
