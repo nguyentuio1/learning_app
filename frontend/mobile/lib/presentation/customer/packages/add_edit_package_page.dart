@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/error/error_message.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/package_model.dart';
 import '../../../data/providers/package_providers.dart';
+import '../../../routes/route_paths.dart';
 import 'package_notifier.dart';
 
 class EditPackageRoute extends ConsumerWidget {
@@ -70,11 +73,15 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   late final TextEditingController _heightController;
   late final TextEditingController _imageUrlController;
   late bool _isFragile;
+  String? _savedPackageId;
+  bool _uploadingPhoto = false;
+  int _photoRevision = 0;
 
   @override
   void initState() {
     super.initState();
     final package = widget.package;
+    _savedPackageId = package?.id;
     _nameController = TextEditingController(text: package?.packageName ?? '');
     _weightController = TextEditingController(
       text: package?.weightGram.toString() ?? '',
@@ -107,7 +114,8 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(packageNotifierProvider).isLoading;
+    final isLoading =
+        ref.watch(packageNotifierProvider).isLoading || _uploadingPhoto;
 
     return Scaffold(
       appBar: AppBar(
@@ -202,8 +210,40 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
                 ],
               ),
               const SizedBox(height: 12),
+              if (_imageUrlController.text.isNotEmpty) ...[
+                Image.network(
+                  _imageUrlController.text,
+                  key: ValueKey('package-photo-preview-$_photoRevision'),
+                  height: 150,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Text(
+                    'Photo could not load. Check your connection or replace it.',
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              OutlinedButton.icon(
+                key: const Key('package-upload-photo'),
+                onPressed: isLoading ? null : _uploadPhoto,
+                icon: _uploadingPhoto
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.photo_library_outlined),
+                label: Text(
+                  _uploadingPhoto
+                      ? 'Uploading photo...'
+                      : 'Upload package photo',
+                ),
+              ),
+              const Text(
+                'JPEG, PNG or WebP, up to 5 MB. Uploading saves a new package first.',
+              ),
+              const SizedBox(height: 8),
               InkWell(
-                onTap: _editImageUrl,
+                onTap: isLoading ? null : _editImageUrl,
                 borderRadius: BorderRadius.circular(12),
                 child: CustomPaint(
                   foregroundPainter: const _DashedBorderPainter(
@@ -359,6 +399,7 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
   }
 
   Future<void> _submit() async {
+    if (_uploadingPhoto) return;
     if (!_formKey.currentState!.validate()) return;
     final imageUrlError = _validateImageUrl(_imageUrlController.text);
     if (imageUrlError != null) {
@@ -387,10 +428,10 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
       isFragile: _isFragile,
     );
     final notifier = ref.read(packageNotifierProvider.notifier);
-    if (widget.package == null) {
+    if (_savedPackageId == null) {
       await notifier.createPackage(request);
     } else {
-      await notifier.updatePackage(widget.package!.id, request);
+      await notifier.updatePackage(_savedPackageId!, request);
     }
 
     if (!mounted) return;
@@ -403,7 +444,75 @@ class _AddEditPackagePageState extends ConsumerState<AddEditPackagePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Package saved successfully.')),
     );
-    Navigator.of(context).pop(true);
+    final router = GoRouter.maybeOf(context);
+    if (router != null && !router.canPop()) {
+      router.go(RoutePaths.customerPackages);
+    } else {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _uploadPhoto() async {
+    if (_uploadingPhoto || !_formKey.currentState!.validate()) return;
+    setState(() => _uploadingPhoto = true);
+    try {
+      final selected = await ref
+          .read(packageImagePickerProvider)
+          .pickImage(source: ImageSource.gallery);
+      if (!mounted || selected == null) return;
+      if (await selected.length() > 5 * 1024 * 1024) {
+        throw const FormatException(
+          'Photo exceeds 5 MB. Choose a smaller image.',
+        );
+      }
+      final bytes = await selected.readAsBytes();
+      if (!mounted) return;
+      final service = ref.read(packageApiServiceProvider);
+      if (_savedPackageId == null) {
+        final record = await service.createPackageRecord(
+          PackageRequest(
+            packageName: _nameController.text.trim(),
+            weightGram: double.parse(_weightController.text.trim()),
+            lengthCm: double.parse(_lengthController.text.trim()),
+            widthCm: double.parse(_widthController.text.trim()),
+            heightCm: double.parse(_heightController.text.trim()),
+            isFragile: _isFragile,
+            packageImageUrl: _imageUrlController.text.isEmpty
+                ? null
+                : _imageUrlController.text,
+          ),
+        );
+        if (!mounted) return;
+        _savedPackageId = record.id;
+      }
+      final imageUrl = await service.uploadImage(
+        _savedPackageId!,
+        bytes: bytes,
+        filename: selected.name,
+      );
+      if (!mounted) return;
+      await NetworkImage(imageUrl).evict();
+      if (!mounted) return;
+      setState(() {
+        _imageUrlController.text = imageUrl;
+        _photoRevision++;
+      });
+      await ref.read(packageNotifierProvider.notifier).refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo uploaded successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      final prefix = widget.package == null && _savedPackageId != null
+          ? 'Package saved; photo upload failed. Retry without creating another package. '
+          : '';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$prefix${errorMessage(error)}')));
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 }
 

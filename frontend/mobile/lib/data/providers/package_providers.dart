@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/network/network_providers.dart';
 import '../models/package_model.dart';
 import '../services/package_api_service.dart';
+
+final packageImagePickerProvider = Provider<ImagePicker>(
+  (ref) => ImagePicker(),
+);
 
 final packageApiServiceProvider = Provider<PackageApiService>(
   (ref) => PackageApiService(ref.watch(dioProvider)),

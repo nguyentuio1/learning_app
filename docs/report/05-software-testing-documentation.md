@@ -1,6 +1,15 @@
 # V. Software Testing Documentation
 
-This chapter consolidates observed evidence at integrated source [`07f38d1`](https://github.com/nguyentuio1/learning_app/commit/07f38d1b2630e7414ad114887029c94b3b48acc6), checked on 17 November 2026. Earlier dated test plans and ledgers remain historical sources. A test definition, an executed run, a Jira completion record and a deployed service describe different evidence and are identified separately below.
+> **Current verification alignment (LA-351 - 19 November 2026):** Documentation baseline `a90668c`, combined application baseline `10c77d0`. This correction supersedes the historical open/FAIL-only status below.
+>
+> - LA-45 system-testing/performance source is integrated; [PR #252](https://github.com/nguyentuio1/learning_app/pull/252) merged as `8466a47`. [PerformanceTestReport section 5.3](../testing/PerformanceTestReport.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) records unchanged source `f7502b7` on application `10700d2`: three reference-workstation barrier repeats each 15/15 PASS, login100 p95 1177.3/1234.4/1202.2 ms; PostgreSQL16 Docker mixed k6 all 15 thresholds PASS, 0/17111 HTTP failures and 17107/17107 checks. BCrypt cost11 and the <3000 ms criterion are unchanged. Earlier 14/15 FAIL, PostgreSQL18 and Linux results remain historical; no authentication-code fix or every-machine acceptance is claimed.
+> - [Application CI 44414947666](https://github.com/nguyentuio1/learning_app/actions/runs/44414947666) passed backend/web/mobile and its tested tree equals actual merge `10c77d0`; combined Flutter suite **425 passed**, analyzer no warnings/errors (30 information findings). [Documentation CI 44417197181](https://github.com/nguyentuio1/learning_app/actions/runs/44417197181) passed before PR #284 merged as `a90668c`.
+> - Actual supported API-backed browser evidence: [Customer](../testing/LA363-customer-completion.md), [Operator](../testing/LA364-operator-completion.md). Prepared ARRIVED fixtures are disclosed. Loopback preview HTTP snapshot/fallback is verified; SignalR WebSockets are not forwarded. Native installation, physical flights and team rehearsal are unverified.
+> - Remaining acceptance is explicitly tracked in the [integration review](../testing/Sprint8IntegrationReview.md): Flutter MinIO (LA-346), actual enabled AI (LA-348), actual team rehearsal (LA-49/LA-188), and two-member report proofreading/final approved export (LA-204). Source merge/CI do not replace those results.
+
+## Historical consolidated ledger (17 November 2026)
+
+The sections below consolidate observed evidence at the earlier integrated source [`07f38d1`](https://github.com/nguyentuio1/learning_app/commit/07f38d1b2630e7414ad114887029c94b3b48acc6), checked on 17 November 2026. Earlier dated test plans and ledgers remain historical sources. A test definition, an executed run, a Jira completion record and a deployed service describe different evidence and are identified separately below.
 
 ## 1. Scope and strategy
 

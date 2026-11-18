@@ -1,0 +1,99 @@
+{
+  "reviewPacket": "LA204-20261119-review-4-user-UTH-logo",
+  "status": "REVIEW COPY; two actual human proofreading confirmations pending",
+  "documentationBaseline": "a90668c",
+  "applicationBaseline": "10c77d0",
+  "relativeLinksChecked": 96,
+  "brokenLinks": [],
+  "pdfPages": 71,
+  "pdfAllChapters": true,
+  "pdfCurrent425Evidence": true,
+  "pdfHumanGate": true,
+  "docxParagraphs": 324,
+  "files": {
+    "SmartDroneDelivery-LA204-review.docx": {
+      "bytes": 267626,
+      "sha256": "e5dc3ad91995d33650090056a9d4a9ba8b35caa7db9c6d5209bdeca350281f61"
+    },
+    "SmartDroneDelivery-LA204-review.pdf": {
+      "bytes": 2377263,
+      "sha256": "5a4d88f5b28cd25b05d6a1ecf3c20be75f91da61f9112b8329a031a47529d021"
+    }
+  },
+  "publishedVersions": [
+    {
+      "id": "98403",
+      "title": "Overview",
+      "version": 8
+    },
+    {
+      "id": "14188546",
+      "title": "I. Project Introduction",
+      "version": 3
+    },
+    {
+      "id": "11927566",
+      "title": "II. Project Management Plan",
+      "version": 6
+    },
+    {
+      "id": "11993093",
+      "title": "III. Software Requirement Specification",
+      "version": 14
+    },
+    {
+      "id": "11993109",
+      "title": "IV. Software Design Description",
+      "version": 14
+    },
+    {
+      "id": "11927583",
+      "title": "V. Software Testing Documentation",
+      "version": 16
+    },
+    {
+      "id": "14024801",
+      "title": "VI. Release Package & User Guides",
+      "version": 9
+    },
+    {
+      "id": "11960371",
+      "title": "4. Non-Functional Requirements (NFR)",
+      "version": 9
+    },
+    {
+      "id": "14024759",
+      "title": "Acknowledgement",
+      "version": 2
+    },
+    {
+      "id": "14024779",
+      "title": "Definitions and Acronyms",
+      "version": 1
+    },
+    {
+      "id": "14090250",
+      "title": "1. System Design",
+      "version": 3
+    },
+    {
+      "id": "14188589",
+      "title": "2. Database Design",
+      "version": 5
+    }
+  ],
+  "exportScope": "Six chapters plus Acknowledgement/Definitions, ten substantive existing child specifications (actors/usecases/rules/messages/architecture/schema/detailed-design), and two actual browser-runtime figures. Template cover geometry/table preserved; all FPT text/logos removed and replaced by exact user-provided UTH University text with explicit metadata placeholders. Historical diagram embeds remain linked on Confluence; no human approval inferred.",
+  "template": "C:/Users/tbare/Downloads/Copy of Final_Project_Report_PDCMS.docx.pdf; first three pages inspected: cover and detailed contents",
+  "missingAcademicMetadata": [
+    "Student IDs for all five contributors",
+    "Formal name behind TBA Review display name",
+    "Supervisor name(s)",
+    "External supervisor name or confirmed not applicable",
+    "Academic capstone project code"
+  ],
+  "institution": "UTH University, with actual user-provided Logo_UTH.png inspected and embedded",
+  "userLogo": {
+    "source": "artifacts/la204-20261119/Logo_UTH.png",
+    "sha256": "57bdc96c91026f98da8980b839d1ed7cf52bdb8764580f806f8745fce27964d1"
+  }
+}
