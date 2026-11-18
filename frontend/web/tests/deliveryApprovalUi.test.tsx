@@ -1,5 +1,5 @@
 // LA-133: Test delivery request approval UI and integration
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'antd'
@@ -45,7 +45,10 @@ beforeEach(() => {
   })
 })
 
-afterEach(() => mock.restore())
+afterEach(() => {
+  mock.restore()
+  vi.unstubAllGlobals()
+})
 
 function show() {
   render(
@@ -53,6 +56,7 @@ function show() {
       <MemoryRouter initialEntries={['/dispatch/approvals']}>
         <Routes>
           <Route path="/dispatch/approvals" element={<ApprovalQueuePage />} />
+          <Route path={`/dispatcher/scheduling/${pendingOrder.orderId}`} element={<h1>Schedule this delivery</h1>} />
         </Routes>
       </MemoryRouter>
     </ConfigProvider>,
@@ -60,13 +64,15 @@ function show() {
 }
 
 it('renders the pending orders queue with order details and route', async () => {
+  const matchMedia = window.matchMedia
+  vi.stubGlobal('matchMedia', (query: string) => ({ ...matchMedia(query), matches: query.startsWith('(min-width:') }))
   show()
   expect(await screen.findByText('DD-202611-0012')).toBeInTheDocument()
   expect(screen.getByText('Tran Thi Mai')).toBeInTheDocument()
   expect(screen.getByText('0901234567')).toBeInTheDocument()
   expect(screen.getByText('Medical Supplies')).toBeInTheDocument()
   expect(screen.getByText(/450 g · 25 × 18 × 10 cm · Fragile/)).toBeInTheDocument()
-  expect(screen.getByText(/District 1 Hub → Thu Duc Hub/)).toBeInTheDocument()
+  expect(screen.getAllByText(/District 1 Hub → Thu Duc Hub/).length).toBeGreaterThan(0)
   expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument()
 })
@@ -160,7 +166,9 @@ it('executes approval flow successfully and refreshes the queue', async () => {
     expect(mock.history.post[0].url).toBe(`/api/delivery-orders/${pendingOrder.orderId}/approve`)
   })
 
-  expect(await screen.findByText(/DD-202611-0012: APPROVED\. The queue has been refreshed\./)).toBeInTheDocument()
+  expect(await screen.findByText('DD-202611-0012 · Approved')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Schedule delivery' }))
+  expect(await screen.findByRole('heading', { name: 'Schedule this delivery' })).toBeVisible()
 })
 
 it('requires a reason before rejecting and executes rejection flow', async () => {
@@ -197,7 +205,8 @@ it('requires a reason before rejecting and executes rejection flow', async () =>
     })
   })
 
-  expect(await screen.findByText(/DD-202611-0012: CANCELLED\. The queue has been refreshed\./)).toBeInTheDocument()
+  expect(await screen.findByText('DD-202611-0012 · Cancelled')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Schedule delivery' })).not.toBeInTheDocument()
 })
 
 it('handles 409 conflict when order is already reviewed or cancelled', async () => {
