@@ -76,7 +76,7 @@ void main() {
       extra: _operatorOverrides(),
     );
     // Operator home shows the availability dashboard title.
-    expect(find.text('Station availability'), findsOneWidget);
+    expect(find.text('Station operations'), findsOneWidget);
   });
 
   testWidgets('Chưa đăng nhập -> bị chuyển tới Login', (tester) async {

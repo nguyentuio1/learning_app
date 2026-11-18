@@ -61,6 +61,8 @@ class _StubStationAvailabilityNotifier extends StationAvailabilityNotifier {
 
   @override
   Future<StationAvailabilityState> build() async => _initialState;
+
+  void emit(StationAvailabilityState next) => state = AsyncData(next);
 }
 
 void main() {
@@ -474,6 +476,7 @@ void main() {
       expect(find.text('500 g'), findsOneWidget);
       expect(find.text('20.5 x 15.25 x 10 cm'), findsOneWidget);
 
+      final enteredCode = tester.widget<TextField>(find.byType(TextField).last).controller!;
       // Enter 6-digit secure code and confirm
       await tester.enterText(find.byType(TextField).last, '123456');
       await tester.tap(find.text('Confirm Pickup & Release Slot'));
@@ -481,6 +484,36 @@ void main() {
 
       expect(find.text('Handover Completed'), findsOneWidget);
       expect(find.textContaining('is now marked DELIVERED'), findsOneWidget);
+      expect(find.text('ARRIVED'), findsNothing);
+      expect(find.text('2. Verify Secure Code'), findsNothing);
+      expect(find.text('Confirm Pickup & Release Slot'), findsNothing);
+      expect(enteredCode.text, isEmpty);
+
+    });
+
+    testWidgets('station change removes the previous parcel and entered secure code', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      addTearDown(tester.view.resetPhysicalSize);
+      final stations = _StubStationAvailabilityNotifier(const StationAvailabilityState(
+        stations: [assignedStation], selectedStationId: assignedStationId,
+        availability: null, detail: null,
+      ));
+      await tester.pumpWidget(ProviderScope(overrides: [
+        stationOperationsApiServiceProvider.overrideWithValue(fakeService),
+        stationAvailabilityNotifierProvider.overrideWith(() => stations),
+      ], child: const MaterialApp(home: PackagePickupPage())));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, trackingNumber);
+      await tester.tap(find.text('Look up parcel')); await tester.pumpAndSettle();
+      final code = tester.widget<TextField>(find.byType(TextField).last).controller!;
+      await tester.enterText(find.byType(TextField).last, '123456');
+      final other = LandingStation.fromJson({...assignedStation.toJson(), 'id': 'station-new'});
+      stations.emit(StationAvailabilityState(stations: [other], selectedStationId: other.id,
+        availability: null, detail: null));
+      await tester.pumpAndSettle();
+      expect(find.text('2. Verify Secure Code'), findsNothing);
+      expect(code.text, isEmpty);
+      expect(tester.widget<TextField>(find.byType(TextField).first).controller!.text, isEmpty);
     });
 
     testWidgets('shows No station assigned when operator has no assigned station',

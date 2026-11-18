@@ -149,6 +149,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Station Action Queue'), findsOneWidget);
+      expect(tester.getTopLeft(find.byKey(const Key('operator-intake-button'))).dy,
+          lessThan(tester.getTopLeft(find.byKey(const Key('operator-action-queue-card'))).dy));
       expect(find.text('2 pickup timeout alerts'), findsOneWidget);
       expect(find.text('Review expired'), findsOneWidget);
       expect(find.text('2 empty slots ready for intake'), findsOneWidget);

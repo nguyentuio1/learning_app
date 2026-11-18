@@ -27,7 +27,7 @@ class OperatorHomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Station availability'),
+        title: const Text('Station operations'),
         actions: [
           if (canManageFailures)
             IconButton(
@@ -208,14 +208,6 @@ class OperatorHomePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                if (state.selectedStationId != null) ...[
-                  _StationActionQueueCard(
-                    stationId: state.selectedStationId!,
-                    availability: availability,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
                 // Quick Actions: Origin Package Intake & Destination Pickup
                 Row(
                   children: [
@@ -257,6 +249,15 @@ class OperatorHomePage extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                if (state.selectedStationId != null) ...[
+                  _StationActionQueueCard(
+                    stationId: state.selectedStationId!,
+                    availability: availability,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
 
                 // Availability Metrics Card
                 if (availability != null) ...[
