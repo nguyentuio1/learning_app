@@ -135,6 +135,7 @@ void main() {
           appConfigProvider.overrideWithValue(AppConfig.customer()),
           authControllerProvider.overrideWith(_SignedIn.new),
           currentUserProvider.overrideWith(() => _CurrentUser('CUSTOMER')),
+          aiAssistantChatEnabledProvider.overrideWithValue(true),
           aiAssistantApiServiceProvider.overrideWithValue(
             AiAssistantApiService(dio),
           ),

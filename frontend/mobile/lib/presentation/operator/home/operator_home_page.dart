@@ -9,9 +9,9 @@ import '../../../data/models/station_availability.dart';
 import '../../../data/models/station_detail.dart';
 import '../../../data/models/station_operation_models.dart';
 import '../../../data/models/station_slot.dart';
+import '../../../data/providers/expired_parcel_providers.dart';
 import '../../../data/providers/landing_station_providers.dart';
 import '../../../data/providers/notification_providers.dart';
-import '../expired_parcels/pickup_timeout_alerts_card.dart';
 import '../../../routes/route_paths.dart';
 import 'station_availability_providers.dart';
 
@@ -27,7 +27,7 @@ class OperatorHomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Station availability'),
+        title: const Text('Station operations'),
         actions: [
           if (canManageFailures)
             IconButton(
@@ -197,6 +197,7 @@ class OperatorHomePage extends ConsumerWidget {
                   selectedStationId: state.selectedStationId,
                   currentStation: currentStation,
                   detail: detail,
+                  isStationOperator: roleCode == 'STATION_OPERATOR',
                   onStationChanged: (id) {
                     if (id != null) {
                       ref
@@ -207,19 +208,22 @@ class OperatorHomePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                if (state.selectedStationId != null) ...[
-                  PickupTimeoutAlertsCard(stationId: state.selectedStationId!),
-                  const SizedBox(height: 12),
-                ],
-
                 // Quick Actions: Origin Package Intake & Destination Pickup
                 Row(
                   children: [
                     Expanded(
                       child: FilledButton.tonalIcon(
                         key: const Key('operator-intake-button'),
-                        onPressed: () =>
-                            context.push(RoutePaths.operatorIntake),
+                        onPressed: () async {
+                          await context.push<void>(RoutePaths.operatorIntake);
+                          if (context.mounted) {
+                            await ref
+                                .read(
+                                  stationAvailabilityNotifierProvider.notifier,
+                                )
+                                .refresh();
+                          }
+                        },
                         icon: const Icon(Icons.inventory_2_outlined),
                         label: const Text('Origin Intake'),
                       ),
@@ -228,8 +232,16 @@ class OperatorHomePage extends ConsumerWidget {
                     Expanded(
                       child: FilledButton.icon(
                         key: const Key('operator-pickup-button'),
-                        onPressed: () =>
-                            context.push(RoutePaths.operatorPickup),
+                        onPressed: () async {
+                          await context.push<void>(RoutePaths.operatorPickup);
+                          if (context.mounted) {
+                            await ref
+                                .read(
+                                  stationAvailabilityNotifierProvider.notifier,
+                                )
+                                .refresh();
+                          }
+                        },
                         icon: const Icon(Icons.mark_email_read_outlined),
                         label: const Text('Confirm Pickup'),
                       ),
@@ -237,6 +249,15 @@ class OperatorHomePage extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                if (state.selectedStationId != null) ...[
+                  _StationActionQueueCard(
+                    stationId: state.selectedStationId!,
+                    availability: availability,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
 
                 // Availability Metrics Card
                 if (availability != null) ...[
@@ -297,12 +318,113 @@ class OperatorHomePage extends ConsumerWidget {
   }
 }
 
+class _StationActionQueueCard extends ConsumerWidget {
+  const _StationActionQueueCard({
+    required this.stationId,
+    required this.availability,
+  });
+
+  final String stationId;
+  final StationAvailability? availability;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final alerts = ref.watch(pickupTimeoutAlertsProvider(stationId));
+
+    return Card(
+      key: const Key('operator-action-queue-card'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Station Action Queue',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            alerts.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(errorMessage(error)),
+                  TextButton(
+                    onPressed: () =>
+                        ref.invalidate(expiredParcelsProvider(stationId)),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+              data: (items) => items.isEmpty
+                  ? const Text('No pickup timeout alerts.')
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${items.length} pickup timeout alerts',
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                context.push<void>(
+                                  RoutePaths.operatorExpiredParcelsFor(
+                                    stationId,
+                                  ),
+                                );
+                              },
+                              child: const Text('Review expired'),
+                            ),
+                          ],
+                        ),
+                        for (final alert in items)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.warning_amber_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            title: Text(alert.title),
+                            subtitle: Text(
+                              '${alert.trackingNumber}: ${alert.message}',
+                            ),
+                            onTap: () {
+                              context.push<void>(
+                                RoutePaths.operatorExpiredParcelsFor(stationId),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 12),
+            if (availability == null)
+              const Text('Slot availability unavailable.')
+            else ...[
+              Text(
+                availability!.emptySlots > 0
+                    ? '${availability!.emptySlots} empty slots ready for intake'
+                    : 'No empty slots for intake',
+              ),
+              Text('${availability!.occupiedSlots} active slots in station'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StationHeaderCard extends StatelessWidget {
   const _StationHeaderCard({
     required this.stations,
     required this.selectedStationId,
     required this.currentStation,
     required this.detail,
+    required this.isStationOperator,
     required this.onStationChanged,
   });
 
@@ -310,6 +432,7 @@ class _StationHeaderCard extends StatelessWidget {
   final String? selectedStationId;
   final LandingStation? currentStation;
   final StationDetail? detail;
+  final bool isStationOperator;
   final ValueChanged<String?> onStationChanged;
 
   @override
@@ -371,6 +494,14 @@ class _StationHeaderCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      if (isStationOperator && stations.length == 1) ...[
+                        const SizedBox(height: 8),
+                        const Chip(
+                          key: Key('operator-assigned-station-badge'),
+                          label: Text('Assigned station'),
+                        ),
+                        const Text('Defaulted to your assigned station'),
+                      ],
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
@@ -951,8 +1082,7 @@ class _SlotDetailsModalBodyState extends ConsumerState<_SlotDetailsModalBody> {
   bool get _canToggle =>
       widget.slot.status == 'EMPTY' || widget.slot.status == 'ERROR';
 
-  String get _targetStatus =>
-      widget.slot.status == 'EMPTY' ? 'ERROR' : 'EMPTY';
+  String get _targetStatus => widget.slot.status == 'EMPTY' ? 'ERROR' : 'EMPTY';
 
   Future<void> _toggleStatus() async {
     setState(() {
@@ -985,7 +1115,10 @@ class _SlotDetailsModalBodyState extends ConsumerState<_SlotDetailsModalBody> {
   @override
   Widget build(BuildContext context) {
     final slot = widget.slot;
-    final (color, icon) = OperatorHomePage._slotStatusStyle(context, slot.status);
+    final (color, icon) = OperatorHomePage._slotStatusStyle(
+      context,
+      slot.status,
+    );
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
@@ -1019,15 +1152,13 @@ class _SlotDetailsModalBodyState extends ConsumerState<_SlotDetailsModalBody> {
                     children: [
                       Text(
                         'Slot #${slot.slotNumber}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'ID: ${slot.id}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: Colors.grey.shade600),
                       ),
                     ],
                   ),

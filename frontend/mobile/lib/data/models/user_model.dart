@@ -23,7 +23,7 @@ class UserModel {
   final DateTime createdAt;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final role = json['role'];
+    final role = json['role'] ?? json['roleCode'];
     final roleCode = role is Map<String, dynamic>
         ? (role['code'] as String? ?? 'CUSTOMER')
         : (role?.toString() ?? 'CUSTOMER');

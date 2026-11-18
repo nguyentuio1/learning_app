@@ -1,0 +1,50 @@
+{
+  "orders": [
+    {
+      "trackingNumber": "ORD-DEMO-002",
+      "status": "READY_FOR_TAKEOFF"
+    },
+    {
+      "trackingNumber": "ORD-DEMO-003",
+      "status": "DELIVERED"
+    }
+  ],
+  "destinationSlots": [
+    {
+      "id": "45641f7b-98f6-4e17-a99a-7795b53b2d6b",
+      "stationId": "03af8888-4eb4-44d4-8a02-536eb519f40d",
+      "slotNumber": 1,
+      "status": "EMPTY",
+      "lastUpdated": "2026-11-18T22:25:52.779941Z",
+      "currentOrderId": null,
+      "currentMissionId": null
+    },
+    {
+      "id": "fec5c3d9-52ab-4081-a1ac-d3d58a4e6daa",
+      "stationId": "03af8888-4eb4-44d4-8a02-536eb519f40d",
+      "slotNumber": 2,
+      "status": "RESERVED",
+      "lastUpdated": "2026-11-18T22:10:40.067212Z",
+      "currentOrderId": "42d454d3-db6b-4a51-9d1f-8015036154d5",
+      "currentMissionId": "ac4fdf97-794a-4378-a260-36245edd0195"
+    },
+    {
+      "id": "14aa893f-fe61-4200-bb53-b4c07460ffb4",
+      "stationId": "03af8888-4eb4-44d4-8a02-536eb519f40d",
+      "slotNumber": 3,
+      "status": "EMPTY",
+      "lastUpdated": "2026-11-18T22:02:43.615677Z",
+      "currentOrderId": null,
+      "currentMissionId": null
+    },
+    {
+      "id": "8e53da27-6266-45e3-9198-c5248c85b8ca",
+      "stationId": "03af8888-4eb4-44d4-8a02-536eb519f40d",
+      "slotNumber": 4,
+      "status": "EMPTY",
+      "lastUpdated": "2026-11-18T22:02:43.615678Z",
+      "currentOrderId": null,
+      "currentMissionId": null
+    }
+  ]
+}
