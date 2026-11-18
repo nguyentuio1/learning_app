@@ -269,6 +269,17 @@ class _PackageCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (package.packageImageUrl?.isNotEmpty == true) ...[
+              Image.network(
+                package.packageImageUrl!,
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) =>
+                    const Text('Package photo unavailable'),
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Container(

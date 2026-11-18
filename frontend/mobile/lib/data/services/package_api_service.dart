@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../core/constants/api_endpoints.dart';
+import '../../core/error/api_exception.dart';
 import '../../core/network/error_interceptor.dart';
 import '../models/package_model.dart';
 
@@ -37,6 +38,48 @@ class PackageApiService {
   Future<void> createPackage(PackageRequest package) async {
     try {
       await _dio.post<void>(ApiEndpoints.packages, data: package.toJson());
+    } on DioException catch (error) {
+      throw error.apiException;
+    }
+  }
+
+  Future<PackageModel> createPackageRecord(PackageRequest package) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.packages,
+        data: package.toJson(),
+      );
+      return _packageFromData(response.data);
+    } on DioException catch (error) {
+      throw error.apiException;
+    }
+  }
+
+  Future<String> uploadImage(
+    String id, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+      throw const ApiException(
+        message: 'Choose an image between 1 byte and 5 MB.',
+      );
+    }
+    try {
+      final response = await _dio.post<dynamic>(
+        '${ApiEndpoints.packages}/$id/image',
+        data: FormData.fromMap({
+          'file': MultipartFile.fromBytes(bytes, filename: filename),
+        }),
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      final value = response.data;
+      if (value is! Map ||
+          value['imageUrl'] is! String ||
+          (value['imageUrl'] as String).isEmpty) {
+        throw const FormatException('The server did not return a photo URL.');
+      }
+      return value['imageUrl'] as String;
     } on DioException catch (error) {
       throw error.apiException;
     }

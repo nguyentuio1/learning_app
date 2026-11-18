@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
+
+import 'dart:typed_data';
 
 import 'dart:async';
 
@@ -13,6 +16,27 @@ import 'package:smart_drone_delivery/presentation/customer/packages/add_edit_pac
 import 'package:smart_drone_delivery/presentation/customer/packages/packages_list_page.dart';
 
 class _FakePackageApiService extends PackageApiService {
+  int photoCreates = 0;
+  int photoUploads = 0;
+  bool photoFails = true;
+
+  @override
+  Future<PackageModel> createPackageRecord(PackageRequest request) async {
+    photoCreates++;
+    return _package(id: 'photo-created', request: request);
+  }
+
+  @override
+  Future<String> uploadImage(
+    String id, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    photoUploads++;
+    if (photoFails) throw const ApiException(message: 'Storage unavailable');
+    return 'https://example.com/uploaded.png';
+  }
+
   _FakePackageApiService({
     List<PackageModel>? initialPackages,
     this.getPackagesError,
@@ -97,7 +121,10 @@ Future<void> _pumpPage(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [packageApiServiceProvider.overrideWithValue(service)],
+      overrides: [
+        packageApiServiceProvider.overrideWithValue(service),
+        packageImagePickerProvider.overrideWithValue(_TestPhotoPicker()),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: Navigator(
@@ -116,6 +143,37 @@ Future<void> _pumpPage(
 }
 
 void main() {
+  testWidgets('retrying a failed upload reuses the saved package', (
+    tester,
+  ) async {
+    final service = _FakePackageApiService();
+    await _pumpPage(tester, const AddEditPackagePage(), service);
+    for (final entry in ['Parcel', '500', '20', '10', '8'].asMap().entries) {
+      await tester.enterText(_field(entry.key), entry.value);
+    }
+    await tester.tap(find.byKey(const Key('package-upload-photo')));
+    await tester.pumpAndSettle();
+    expect(service.photoCreates, 1);
+    expect(service.photoUploads, 1);
+    expect(
+      find.textContaining('Package saved; photo upload failed'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('package-upload-photo')));
+    await tester.pumpAndSettle();
+    expect(service.photoCreates, 1);
+    expect(service.photoUploads, 2);
+    expect(find.byType(AddEditPackagePage), findsOneWidget);
+  });
+  testWidgets('offers a real package photo upload action', (tester) async {
+    await _pumpPage(
+      tester,
+      const AddEditPackagePage(),
+      _FakePackageApiService(),
+    );
+    expect(find.byKey(const Key('package-upload-photo')), findsOneWidget);
+  });
+
   testWidgets('C18 shows loading indicator while packages load', (
     tester,
   ) async {
@@ -168,7 +226,10 @@ void main() {
 
     expect(find.text('Parcel'), findsOneWidget);
     expect(find.text('Shoes'), findsOneWidget);
-    expect(find.descendant(of: find.byType(Card), matching: find.text('Fragile')), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(Card), matching: find.text('Fragile')),
+      findsOneWidget,
+    );
     expect(find.byTooltip('Edit'), findsNWidgets(2));
     expect(find.byTooltip('Delete'), findsNWidgets(2));
     expect(find.text('Description (optional)'), findsNothing);
@@ -427,3 +488,19 @@ void main() {
 }
 
 Finder _field(int index) => find.byType(TextFormField).at(index);
+
+class _TestPhotoPicker extends ImagePicker {
+  @override
+  Future<XFile?> pickImage({
+    required ImageSource source,
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool requestFullMetadata = true,
+  }) async => XFile.fromData(
+    Uint8List.fromList([137, 80, 78, 71]),
+    name: 'parcel.png',
+    mimeType: 'image/png',
+  );
+}
