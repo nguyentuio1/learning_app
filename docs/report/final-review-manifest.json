@@ -1,5 +1,5 @@
 {
-  "reviewPacket": "LA204-20261119-review-3-UTH",
+  "reviewPacket": "LA204-20261119-review-4-user-UTH-logo",
   "status": "REVIEW COPY; two actual human proofreading confirmations pending",
   "documentationBaseline": "a90668c",
   "applicationBaseline": "10c77d0",
@@ -12,12 +12,12 @@
   "docxParagraphs": 324,
   "files": {
     "SmartDroneDelivery-LA204-review.docx": {
-      "bytes": 231378,
-      "sha256": "36174dab76bb49bc1d759b8143fc208ed6f6fd51963e92dc8d160f89ffb7791e"
+      "bytes": 267626,
+      "sha256": "e5dc3ad91995d33650090056a9d4a9ba8b35caa7db9c6d5209bdeca350281f61"
     },
     "SmartDroneDelivery-LA204-review.pdf": {
-      "bytes": 1613989,
-      "sha256": "2fe831ea0789c54ec2b8c32fdff884d1ffb7321f3b68fea42a220036be3c9ec0"
+      "bytes": 2377263,
+      "sha256": "5a4d88f5b28cd25b05d6a1ecf3c20be75f91da61f9112b8329a031a47529d021"
     }
   },
   "publishedVersions": [
@@ -91,5 +91,9 @@
     "External supervisor name or confirmed not applicable",
     "Academic capstone project code"
   ],
-  "institution": "UTH University (exact user-provided text); no logo or formal expansion inferred"
+  "institution": "UTH University, with actual user-provided Logo_UTH.png inspected and embedded",
+  "userLogo": {
+    "source": "artifacts/la204-20261119/Logo_UTH.png",
+    "sha256": "57bdc96c91026f98da8980b839d1ed7cf52bdb8764580f806f8745fce27964d1"
+  }
 }
