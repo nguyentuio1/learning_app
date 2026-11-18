@@ -8,6 +8,12 @@ class DeliveryOrder {
     required this.status,
     this.deliveryAddressId,
     this.trackingNumber,
+    this.packageName,
+    this.originStationName,
+    this.destinationStationName,
+    this.createdAt,
+    this.estimatedDeliveryTime,
+    this.actualDeliveryTime,
   });
 
   final String id;
@@ -18,6 +24,12 @@ class DeliveryOrder {
   final String status;
   final String? deliveryAddressId;
   final String? trackingNumber;
+  final String? packageName;
+  final String? originStationName;
+  final String? destinationStationName;
+  final DateTime? createdAt;
+  final DateTime? estimatedDeliveryTime;
+  final DateTime? actualDeliveryTime;
 
   factory DeliveryOrder.fromJson(Map<String, dynamic> json) => DeliveryOrder(
     id: json['id'] as String,
@@ -28,8 +40,17 @@ class DeliveryOrder {
     status: json['status'] as String? ?? '',
     deliveryAddressId: json['deliveryAddressId'] as String?,
     trackingNumber: json['trackingNumber'] as String?,
+    packageName: json['packageName'] as String?,
+    originStationName: json['originStationName'] as String?,
+    destinationStationName: json['destinationStationName'] as String?,
+    createdAt: _parseOrderDate(json['createdAt']),
+    estimatedDeliveryTime: _parseOrderDate(json['estimatedDeliveryTime']),
+    actualDeliveryTime: _parseOrderDate(json['actualDeliveryTime']),
   );
 }
+
+DateTime? _parseOrderDate(dynamic value) =>
+    value == null ? null : DateTime.parse(value as String).toUtc();
 
 class CreateDeliveryOrderDto {
   const CreateDeliveryOrderDto({

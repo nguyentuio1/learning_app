@@ -19,6 +19,16 @@ const _package = PackageModel(
   heightCm: 8,
   isFragile: false,
 );
+const _assignedPackage = PackageModel(
+  id: '33333333-3333-3333-3333-333333333333',
+  packageName: 'Parcel',
+  weightGram: 2000,
+  lengthCm: 20,
+  widthCm: 10,
+  heightCm: 8,
+  isFragile: false,
+  isAssigned: true,
+);
 
 class _FakeOrderService extends DeliveryOrderApiService {
   _FakeOrderService() : super(Dio());
@@ -84,6 +94,24 @@ void main() {
       'MSG-P-CO-14',
     );
     expect(service.request, isNull);
+  });
+
+  test('rejects packages already assigned to an order', () async {
+    _fillOrder(container);
+    container
+        .read(createOrderNotifierProvider.notifier)
+        .selectPackage(_assignedPackage);
+
+    final result = await container
+        .read(createOrderNotifierProvider.notifier)
+        .submit();
+
+    expect(result, isNull);
+    expect(service.request, isNull);
+    expect(
+      container.read(createOrderNotifierProvider).error?.message,
+      'This package is already linked to an order.',
+    );
   });
 
   test('requires recipient name and phone and checks phone length', () async {

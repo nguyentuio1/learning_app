@@ -87,6 +87,13 @@ class CreateOrderNotifier extends Notifier<CreateOrderState> {
     if (order.package == null || !_guidPattern.hasMatch(order.package!.id)) {
       return const ApiException(message: 'Select a package.');
     }
+    if (order.package!.isAssigned || order.package!.orderId != null) {
+      return const ApiException(
+        message: 'This package is already linked to an order.',
+        statusCode: 409,
+        code: 'MSG-P-CO-11',
+      );
+    }
     if (!_guidPattern.hasMatch(order.originStationId) ||
         !_guidPattern.hasMatch(order.destinationStationId)) {
       return const ApiException(
@@ -147,6 +154,7 @@ class CreateOrderNotifier extends Notifier<CreateOrderState> {
           .read(deliveryOrderApiServiceProvider)
           .createOrder(dto);
       ref.invalidate(myOrdersProvider);
+      ref.invalidate(customerDashboardOrdersProvider);
       state = state.copyWith(isSubmitting: false);
       return result;
     } on ApiException catch (error) {

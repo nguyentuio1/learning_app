@@ -13,6 +13,9 @@ import 'package:smart_drone_delivery/data/services/delivery_order_api_service.da
 import 'package:smart_drone_delivery/domain/entities/delivery_map_snapshot.dart';
 import 'package:smart_drone_delivery/domain/repositories/delivery_map_repository.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/orders/my_orders_provider.dart';
+import 'package:smart_drone_delivery/presentation/customer/home/customer_home_page.dart';
+import 'package:smart_drone_delivery/data/providers/notification_providers.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/tracking/order_tracking_page.dart';
 import 'package:smart_drone_delivery/routes/route_paths.dart';
@@ -173,6 +176,42 @@ Future<void> _pumpOrders(
 }
 
 void main() {
+  testWidgets('home query ignores persistent order-list filters', (
+    tester,
+  ) async {
+    final service = _FakeOrderService();
+    final container = ProviderContainer(
+      overrides: [
+        deliveryOrderApiServiceProvider.overrideWithValue(service),
+        unreadNotificationsCountProvider.overrideWith((ref) async => 0),
+      ],
+    );
+    addTearDown(container.dispose);
+    final filters = container.read(deliveryOrderFilterParamsProvider.notifier);
+    filters.setStatus('DELIVERED');
+    filters.setSearchKeyword('old parcel');
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: CustomerHomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(service.requests.last.status, 'ALL');
+    expect(service.requests.last.searchKeyword, isNull);
+  });
+  testWidgets('ready-for-takeoff filter sends the backend status', (
+    tester,
+  ) async {
+    final service = _FakeOrderService();
+    await _pumpOrders(tester, service);
+    final chip = find.widgetWithText(ChoiceChip, 'Ready for takeoff');
+    await tester.ensureVisible(chip);
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(service.requests.last.status, 'READY_FOR_TAKEOFF');
+  });
+
   testWidgets('renders orders, changes status filter, and refreshes', (
     tester,
   ) async {
@@ -180,7 +219,7 @@ void main() {
     await _pumpOrders(tester, service);
     expect(find.text('TRACK-1'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'IN TRANSIT'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'In transit'));
     await tester.pumpAndSettle();
     expect(service.requests.last.status, 'IN_TRANSIT');
     expect(service.requests.last.page, 1);
@@ -276,6 +315,11 @@ void main() {
     expect(find.text('555-0100'), findsOneWidget);
     expect(find.text('24 minutes'), findsOneWidget);
     expect(find.text('— → PENDING'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('APPROVED → IN_TRANSIT'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('APPROVED → IN_TRANSIT'), findsOneWidget);
     expect(find.text('Order created'), findsOneWidget);
     expect(find.text('Drone departed'), findsOneWidget);
