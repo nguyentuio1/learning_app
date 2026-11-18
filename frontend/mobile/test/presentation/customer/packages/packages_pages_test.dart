@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 import 'dart:typed_data';
 
@@ -143,17 +144,69 @@ Future<void> _pumpPage(
 }
 
 void main() {
-  testWidgets('same-URL replacement rebuilds the displayed image', (tester) async {
-    final package = _package(request: const PackageRequest(
-      packageName: 'Parcel', weightGram: 500, lengthCm: 20, widthCm: 10,
-      heightCm: 8, isFragile: false, packageImageUrl: 'https://example.com/uploaded.png'));
-    final service = _FakePackageApiService(initialPackages: [package])..photoFails = false;
+  testWidgets('saving a directly opened form returns to the package list', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final service = _FakePackageApiService();
+    final router = GoRouter(
+      initialLocation: '/add',
+      routes: [
+        GoRoute(path: '/add', builder: (_, _) => const AddEditPackagePage()),
+        GoRoute(
+          path: '/customer/packages',
+          builder: (_, _) => const Scaffold(body: Text('Saved package list')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [packageApiServiceProvider.overrideWithValue(service)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final entry in ['Parcel', '500', '20', '10', '8'].asMap().entries) {
+      await tester.enterText(_field(entry.key), entry.value);
+    }
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved package list'), findsOneWidget);
+  });
+
+  testWidgets('same-URL replacement rebuilds the displayed image', (
+    tester,
+  ) async {
+    final package = _package(
+      request: const PackageRequest(
+        packageName: 'Parcel',
+        weightGram: 500,
+        lengthCm: 20,
+        widthCm: 10,
+        heightCm: 8,
+        isFragile: false,
+        packageImageUrl: 'https://example.com/uploaded.png',
+      ),
+    );
+    final service = _FakePackageApiService(initialPackages: [package])
+      ..photoFails = false;
     await _pumpPage(tester, AddEditPackagePage(package: package), service);
-    expect(find.byKey(const ValueKey('package-photo-preview-0')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('package-photo-preview-0')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('package-upload-photo')));
     await tester.pumpAndSettle();
     expect(service.photoUploads, 1);
-    expect(find.byKey(const ValueKey('package-photo-preview-1')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('package-photo-preview-1')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('package-photo-preview-0')), findsNothing);
   });
 
