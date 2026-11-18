@@ -13,13 +13,15 @@ The later [performance reference validation](PerformanceTestReport.md#53-recorde
 
 Execution results are separated strictly by **Baseline / PR**, **Environment**, **Commit SHA**, **Test Result**, and **Evidence URL** so local `develop` runs are never mixed with feature PR CI runs. Passing automated/fake-provider tests establish API/UI contract and boundary behavior; they do not claim live AI model quality, chat retention approval, physical drone hardware control, or production deployment acceptance.
 
-### 1.1 `origin/develop` Baseline (Local Verification)
+### 1.1 `origin/develop` Baselines (Local Verification)
 
 | Baseline / PR | Layer | Environment | Commit SHA | Test Result | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| `origin/develop` (Sprint 5 snapshot) | Backend (.NET 8, `dotnet test`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `636f9a4` | **372 Passed, 0 Failed, 21 Skipped** (393 total; 21 `[PostgresFact]` skipped locally) | [backend-develop-test-run.txt](evidence/backend-develop-test-run.txt) |
-| `origin/develop` (Sprint 5 snapshot) | Web (Vitest, 20 files / 183 tests) | Local Windows, `jsdom` | `636f9a4` | **183 Passed, 0 Failed** (15 files / 117 tests passed in parallel; 5 AntD-heavy files / 66 tests passed 66/66 with `--no-file-parallelism`) | Local CLI run on `636f9a4`; CI Web job on PR #176 (`c9ce9bc`): https://github.com/nguyentuio1/learning_app/actions/runs/43678283005/job/132703130618 |
-| `origin/develop` (Sprint 5 snapshot) | Mobile (Flutter, 26 test files) | Local Windows (Flutter SDK not installed locally) | `636f9a4` | Not executed locally; verified via GitHub Actions CI | CI Mobile job on PR #176 (`c9ce9bc`): https://github.com/nguyentuio1/learning_app/actions/runs/43678283005/job/132703130839 |
+| `origin/develop` (Sprint 8 current) | Backend (.NET 8, `dotnet test backend/SmartDroneDelivery.sln`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `2148e50` | **1,040 Passed, 0 Failed, 99 Skipped** (1,139 total; 99 `[PostgresFact]` skipped locally; 0 warnings/errors) | [backend-develop-test-run.txt](evidence/backend-develop-test-run.txt) |
+| `origin/develop` (Sprint 8 current) | Web (`eslint .`, `vitest run --no-file-parallelism`, `vite build`) | Local Windows, `jsdom` | `2148e50` | **31 files / 245 Passed, 0 Failed**; ESLint 0 errors; Vite build succeeded (`1.78s`) | [web-develop-test-run.txt](evidence/web-develop-test-run.txt), [web-develop-lint-build.txt](evidence/web-develop-lint-build.txt) |
+| `PR #252` (`LA-176` on `2148e50`) | Performance & Concurrency (`LA-176`, `10 / 50 / 100` concurrent requests) | Local Windows, ASP.NET Core `TestServer` (`AuthApiFactory`, `-c Release`) | `6c2c02c` | **FAIL (14/15 passed, 0 HTTP errors)**: 14/15 endpoint-tier combinations `< 3,000 ms`; `POST /api/auth/login` at 100 VUs **FAILED** (`p95 = 3,608.0 ms`, `max = 3,695.3 ms`) | [PerformanceTestReport.md](PerformanceTestReport.md), [perf-benchmark-run.txt](evidence/perf-benchmark-run.txt) (in PR #252) |
+| `origin/develop` (Sprint 5 snapshot) | Backend (.NET 8, `dotnet test`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `636f9a4` | **372 Passed, 0 Failed, 21 Skipped** (393 total; 21 `[PostgresFact]` skipped locally) | Historical Sprint 5 snapshot |
+| `origin/develop` (Sprint 5 snapshot) | Web (Vitest, 20 files / 183 tests) | Local Windows, `jsdom` | `636f9a4` | **183 Passed, 0 Failed** (15 files / 117 tests passed in parallel; 5 AntD-heavy files / 66 tests passed 66/66 with `--no-file-parallelism`) | CI Web job on PR #176 (`c9ce9bc`) |
 
 ### 1.2 Sprint 5 Feature PR Verification
 
