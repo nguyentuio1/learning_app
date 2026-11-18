@@ -290,7 +290,7 @@ Response `201 Created`: `DeliveryOrderDetail` with status `PENDING`, one `status
 ```
 This is the only time the code is returned, so the app must show it to the customer right away (see section 8, point 5).
 
-One database transaction does all of this: create the order, generate the tracking number and the code, write the first status log, and create the customer notification. If any step fails, nothing is saved.
+One database transaction saves the order, its pickup code, the first status log and the customer notification together. Tracking-number allocation is a separate atomic PostgreSQL monthly counter reservation; a failed order can consume a number, but leaves no partial order/status/notification artifacts. Numbers are unique, not gapless. See [allocation and migration notes](../operations/tracking-number-allocation.md).
 
 Errors
 - `400` recipient data invalid, package over the drone limits, a station is not `OPERATIONAL`, origin equals destination.
@@ -383,7 +383,7 @@ These points were open when the contract was proposed. The team decided them in 
 1. **Address limit and deletion (BR-CO-04, BR-CO-05).** Decided: at most 10 addresses per customer (`409` above that); an address used by an order cannot be deleted (`409`); deleting the default address is allowed and leaves the customer without a default.
 2. **Package reuse (BR-CO-08, D-03).** Decided: one package, one order, never reused, even after the order is cancelled or delivered. The customer creates a new package.
 3. **Status filter.** Decided: one status per request. Several statuses (`status=PENDING,APPROVED`) can be added later without breaking the current form.
-4. **Tracking number format.** Decided: `DD-YYYYMM-NNNN`, the next number of the month starting at `0001`.
+4. **Tracking number format.** Decided: `DD-YYYYMM-NNNN`, the next reserved number of the UTC month, starting at `0001` for a new month. `NNNN` is a minimum four-digit numeric suffix (after `9999` comes `10000`); gaps are allowed. Existing numbers are preserved during migration.
 5. **Seeing the pickup code again.** Decided: the code is returned once at creation and never in the detail, and it is also sent in the creation notification to the customer only (never to staff, never in a log; BR-LS-22). **Implementation gap:** the notification created today ("Your delivery order ... was created and is waiting for review.") does not contain the code yet; adding it is a separate change to `DeliveryOrderService`.
 6. **Stations endpoint.** Decided: `GET /api/landing-stations` is read-only and was added with LA-103; Sprint 4 extends it in [station-api.md](station-api.md). In a fresh database the stations are created by an `ADMIN` through that API (LA-26, LA-115), and for development the stations and demo accounts come from the `Seed:DevelopmentData` seed (LA-325), so the order screens can be used without manual SQL.
 7. **Lockout status code.** Decided: the 10-minute lockout after 3 wrong pickup codes uses `423 Locked` (documented in [station-api.md](station-api.md) section 4.4).
