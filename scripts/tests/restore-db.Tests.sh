@@ -3,7 +3,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -f -- "$FIXTURE_DIR/stub" "$FIXTURE_DIR/docker" "$FIXTURE_DIR/psql" "$FIXTURE_DIR/pg_restore" "$FIXTURE_DIR/backup.dump" "$FIXTURE_DIR/output" "$FIXTURE_DIR/invocations"; rmdir -- "$FIXTURE_DIR"' EXIT
+trap 'rm -f -- "$FIXTURE_DIR/stub" "$FIXTURE_DIR/docker" "$FIXTURE_DIR/psql" "$FIXTURE_DIR/createdb" "$FIXTURE_DIR/pg_restore" "$FIXTURE_DIR/backup.dump" "$FIXTURE_DIR/output" "$FIXTURE_DIR/invocations"; rmdir -- "$FIXTURE_DIR"' EXIT
 touch "$FIXTURE_DIR/backup.dump"
 cat > "$FIXTURE_DIR/stub" <<'STUB'
 #!/usr/bin/env bash
@@ -17,7 +17,7 @@ if [[ "${0##*/}" == pg_restore || "$*" == *pg_restore* ]]; then
 fi
 exit 0
 STUB
-for command in docker psql pg_restore; do cp "$FIXTURE_DIR/stub" "$FIXTURE_DIR/$command"; chmod +x "$FIXTURE_DIR/$command"; done
+for command in docker psql createdb pg_restore; do cp "$FIXTURE_DIR/stub" "$FIXTURE_DIR/$command"; chmod +x "$FIXTURE_DIR/$command"; done
 export PATH="$FIXTURE_DIR:$PATH" POSTGRES_DB=source_db
 export RESTORE_TEST_LOG="$FIXTURE_DIR/invocations"
 failures=0
@@ -41,10 +41,10 @@ for mode in direct docker; do
     esac
     case "$case_name" in
       invalid|long|source) [[ ! -s "$RESTORE_TEST_LOG" ]] || bad+=' commands before validation;';;
-      existing|lookup-error) ! grep -Eq 'CREATE DATABASE|pg_restore|docker cp' "$RESTORE_TEST_LOG" || bad+=' unsafe command after denial;';;
+      existing|lookup-error) ! grep -Eq 'createdb|pg_restore|docker cp' "$RESTORE_TEST_LOG" || bad+=' unsafe command after denial;';;
     esac
-    if [[ "$case_name" == missing ]]; then grep -Fq 'CREATE DATABASE "verify_db";' "$RESTORE_TEST_LOG" || bad+=' missing create;'; fi
-    if [[ "$case_name" == allow ]]; then ! grep -q 'CREATE DATABASE' "$RESTORE_TEST_LOG" || bad+=' recreated existing database;'; fi
+    if [[ "$case_name" == missing ]]; then grep -Eq 'createdb .*--maintenance-db=postgres verify_db' "$RESTORE_TEST_LOG" || bad+=' missing create;'; fi
+    if [[ "$case_name" == allow ]]; then ! grep -q 'createdb' "$RESTORE_TEST_LOG" || bad+=' recreated existing database;'; fi
     case "$case_name" in
       missing|allow|restore-error) grep -Eq 'pg_restore .*--exit-on-error' "$RESTORE_TEST_LOG" || bad+=' restore must stop on SQL errors;';;
     esac

@@ -34,8 +34,8 @@ if ((Get-Command pg_restore -ErrorAction SilentlyContinue) -and -not [string]::I
     if ($exists -eq "1" -and -not $AllowOverwrite) { throw "Refusing to overwrite existing database '$TargetDatabase'. Pass -AllowOverwrite explicitly." }
     if ($exists -ne "" -and $exists -ne "1") { throw "Unexpected database lookup result; restore refused." }
     if ($exists -eq "") {
-        & psql -X -v ON_ERROR_STOP=1 -h $env:PGHOST -p $port -U $User -d postgres -c "CREATE DATABASE `"$TargetDatabase`";"
-        if ($LASTEXITCODE -ne 0) { throw "CREATE DATABASE failed with exit code $LASTEXITCODE" }
+        & createdb -h $env:PGHOST -p $port -U $User --maintenance-db=postgres $TargetDatabase
+        if ($LASTEXITCODE -ne 0) { throw "createdb failed with exit code $LASTEXITCODE" }
     }
     & pg_restore -h $env:PGHOST -p $port -U $User -d $TargetDatabase --exit-on-error --clean --if-exists --no-owner $BackupFile
     if ($LASTEXITCODE -ne 0) {
@@ -50,8 +50,8 @@ if ((Get-Command pg_restore -ErrorAction SilentlyContinue) -and -not [string]::I
     if ($exists -eq "1" -and -not $AllowOverwrite) { throw "Refusing to overwrite existing database '$TargetDatabase'. Pass -AllowOverwrite explicitly." }
     if ($exists -ne "" -and $exists -ne "1") { throw "Unexpected database lookup result; restore refused." }
     if ($exists -eq "") {
-        & docker exec $ContainerName psql -X -v ON_ERROR_STOP=1 -U $User -d postgres -c "CREATE DATABASE `"$TargetDatabase`";"
-        if ($LASTEXITCODE -ne 0) { throw "docker exec CREATE DATABASE failed with exit code $LASTEXITCODE" }
+        & docker exec $ContainerName createdb -U $User --maintenance-db=postgres $TargetDatabase
+        if ($LASTEXITCODE -ne 0) { throw "docker exec createdb failed with exit code $LASTEXITCODE" }
     }
     & docker cp $BackupFile "${ContainerName}:${tmpContainerDump}"
     if ($LASTEXITCODE -ne 0) { throw "docker cp failed with exit code $LASTEXITCODE" }

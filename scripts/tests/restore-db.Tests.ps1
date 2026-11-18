@@ -17,6 +17,7 @@ function global:Invoke-RestoreStub {
 }
 function global:docker { Invoke-RestoreStub 'docker' $args }
 function global:psql { Invoke-RestoreStub 'psql' $args }
+function global:createdb { Invoke-RestoreStub 'createdb' $args }
 function global:pg_restore { Invoke-RestoreStub 'pg_restore' $args }
 try {
     $env:POSTGRES_DB = 'source_db'
@@ -38,17 +39,17 @@ try {
             if ($case -in @('existing', 'source', 'invalid', 'long', 'lookup-error', 'restore-error') -and -not $rejected) { $bad += 'expected refusal/failure' }
             if ($case -in @('missing', 'allow') -and $rejected) { $bad += 'expected success' }
             if ($case -in @('invalid', 'long', 'source') -and $global:restoreTestCalls.Count -ne 0) { $bad += 'commands ran before validation' }
-            if ($case -in @('existing', 'lookup-error') -and $invocations -match 'CREATE DATABASE|pg_restore|docker cp') { $bad += 'unsafe commands after denial' }
-            if ($case -eq 'missing' -and $invocations -notmatch 'CREATE DATABASE "verify_db";') { $bad += 'missing database was not created' }
+            if ($case -in @('existing', 'lookup-error') -and $invocations -match 'createdb|pg_restore|docker cp') { $bad += 'unsafe commands after denial' }
+            if ($case -eq 'missing' -and $invocations -notmatch 'createdb .*--maintenance-db=postgres verify_db') { $bad += 'missing database was not created' }
             if ($case -in @('missing', 'allow', 'restore-error') -and $invocations -notmatch 'pg_restore .*--exit-on-error') { $bad += 'restore must stop on SQL errors' }
-            if ($case -eq 'allow' -and $invocations -match 'CREATE DATABASE') { $bad += 'existing database recreated' }
+            if ($case -eq 'allow' -and $invocations -match 'createdb') { $bad += 'existing database recreated' }
             if ($bad.Count) { $failures++; Write-Host "FAIL $mode/$case`: $($bad -join ', ')" }
             else { Write-Host "PASS $mode/$case" }
         }
     }
 } finally {
     Remove-Item -LiteralPath $fixture
-    Remove-Item Function:/docker, Function:/psql, Function:/pg_restore, Function:/Invoke-RestoreStub
+    Remove-Item Function:/docker, Function:/psql, Function:/createdb, Function:/pg_restore, Function:/Invoke-RestoreStub
 }
 if ($failures) { throw "$failures restore guard regression checks failed." }
 

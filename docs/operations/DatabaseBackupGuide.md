@@ -14,6 +14,8 @@
 
 Both script pairs automatically detect whether a direct PostgreSQL host (`PGHOST` + local `pg_dump`/`pg_restore`) is configured; otherwise they execute `pg_dump` / `pg_restore` inside the `drone_postgres` Docker container.
 
+Direct restores require the PostgreSQL client utilities `psql`, `createdb` and `pg_restore` on `PATH`. New targets are created by `createdb` using the `postgres` maintenance database. Passing the target as a separate argument lets PostgreSQL preserve mixed-case names and handle SQL keywords correctly, including when Windows PowerShell 5.1 invokes the native client.
+
 ---
 
 ## 2. Running a Manual Backup
@@ -103,11 +105,12 @@ docker exec -it drone_postgres psql -U postgres -d drone_delivery_db_verify -c "
 2. Store off-site backup copies with server-side encryption (e.g., encrypted S3/MinIO bucket or encrypted volume).
 3. Restrict filesystem permissions on backup directories (`chmod 700 /var/backups/smartdrone`).
 4. Non-destructive guard regressions run with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/restore-db.Tests.ps1` and `bash scripts/tests/restore-db.Tests.sh`. They stub all database/Docker commands and exercise existing-target denial, source denial, invalid/oversized identifiers, fresh target creation, explicit overwrite, lookup errors and restore errors in both direct-host and Docker branches.
+5. On Windows, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tests/restore-db.Native.Tests.ps1` too. It compiles native command stubs and exercises actual PowerShell argument marshalling for mixed-case and SQL-keyword database names, in both direct and Docker branches. It requires no database, Docker daemon or credentials.
 
 ## 6. Local verification evidence (2026-11-18)
 
-Windows PowerShell 5.1 ran the actual backup and restore scripts against local PostgreSQL in `drone_postgres`, reading only the synthetic `drone_integration_20261118` source. The custom-format dump used a container file and `docker cp` for binary transfer; it was never passed through a PowerShell text pipeline. Restoration used a fresh `la46_verify_<GUID>` database. All 22 table counts and row contents, migration history, columns, constraints and indexes matched. PostgreSQL rewrites equivalent ARRAY casts when deparsing the existing `flight_missions` partial index after restore; the schema comparison normalized that expression only.
+Windows PowerShell 5.1 ran the actual backup and restore scripts against local PostgreSQL in `drone_postgres`, reading only the synthetic `drone_integration_20261118` source. The custom-format dump used a container file and `docker cp` for binary transfer; it was never passed through a PowerShell text pipeline. Restoration used a fresh `la46_verify_<GUID>_Upper` database and verified that its mixed-case name was preserved exactly. All 22 table counts and row contents, migration history, columns, constraints and indexes matched. PostgreSQL rewrites equivalent ARRAY casts when deparsing the existing `flight_missions` partial index after restore; the schema comparison normalized that expression only.
 
-An additional restore attempt against that owned existing target was refused and preserved its sentinel table. A final read-only comparison found the source unchanged. The verification database was then dropped. Both shells also passed 16 command-stub guard checks each; Bash was executed using Git Bash, while the live database round trip covered the PowerShell Docker path. Direct-host live restoration and a live Bash restoration were not exercised.
+An additional restore attempt against that owned existing target was refused and preserved its sentinel table. A final read-only comparison found the source unchanged. The verification database was then dropped. Both shells also passed 16 command-stub guard checks each, and Windows PowerShell passed four compiled native argument checks. Bash was executed using Git Bash, while the live database round trip covered the PowerShell Docker path. Direct-host live restoration and a live Bash restoration were not exercised.
 
 Local ignored evidence is retained under `artifacts/LA-46/` in the LA-46 integration worktree: `restore-verification.json`, `restore-live-powershell.txt`, source/restored schema comparison files and the custom-format dump. RED and GREEN command-stub outputs are retained there too. These results establish local synthetic backup restorability and restore safeguards. They do not establish production backup scheduling, off-host retention, a production recovery drill or deployment acceptance; the schedule above remains operational guidance.

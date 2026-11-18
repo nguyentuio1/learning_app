@@ -34,9 +34,11 @@ fi
 if command -v pg_restore >/dev/null 2>&1 && [[ -n "${PGHOST:-}" ]]; then
   echo "[restore] Ensuring target database '${TARGET_DB}' exists on ${PGHOST}:${PGPORT:-5432}"
   PSQL=(psql -X -v ON_ERROR_STOP=1 -h "${PGHOST}" -p "${PGPORT:-5432}" -U "${DB_USER}" -d postgres)
+  CREATEDB=(createdb -h "${PGHOST}" -p "${PGPORT:-5432}" -U "${DB_USER}" --maintenance-db=postgres)
 else
   echo "[restore] Ensuring target database '${TARGET_DB}' exists in Docker container '${CONTAINER_NAME}'"
   PSQL=(docker exec "${CONTAINER_NAME}" psql -X -v ON_ERROR_STOP=1 -U "${DB_USER}" -d postgres)
+  CREATEDB=(docker exec "${CONTAINER_NAME}" createdb -U "${DB_USER}" --maintenance-db=postgres)
 fi
 
 # An unsuccessful lookup is an error, never evidence that a database is absent.
@@ -53,7 +55,7 @@ if [[ -n "$exists" && "$exists" != 1 ]]; then
   exit 1
 fi
 if [[ -z "$exists" ]]; then
-  "${PSQL[@]}" -c "CREATE DATABASE \"${TARGET_DB}\";"
+  "${CREATEDB[@]}" "${TARGET_DB}"
 fi
 if command -v pg_restore >/dev/null 2>&1 && [[ -n "${PGHOST:-}" ]]; then
   pg_restore -h "${PGHOST}" -p "${PGPORT:-5432}" -U "${DB_USER}" -d "${TARGET_DB}" --exit-on-error --clean --if-exists --no-owner "${BACKUP_FILE}"
