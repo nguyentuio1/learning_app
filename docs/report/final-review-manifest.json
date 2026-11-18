@@ -12,12 +12,12 @@
   "docxParagraphs": 324,
   "files": {
     "SmartDroneDelivery-LA204-review.docx": {
-      "bytes": 76398,
-      "sha256": "aec3d29c95ec91d986aa2be8e475446d98a83fd864d4d5e40d4f205aa3a926ff"
+      "bytes": 76424,
+      "sha256": "34ce506990d3959dfe0e8776d758e97a45cc3b8192058380243d13a0a4a6439d"
     },
     "SmartDroneDelivery-LA204-review.pdf": {
-      "bytes": 285555,
-      "sha256": "0686fe9e849a10eabccb078481d24cd07b56be9ee680e5b4e12d98d4a445a24b"
+      "bytes": 286026,
+      "sha256": "90d40f51e567a9ea21a0d055d8f42a22ee40547a13c46c5dbd7920a867493fe1"
     }
   },
   "publishedVersions": [
