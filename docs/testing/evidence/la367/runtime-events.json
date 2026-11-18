@@ -1,0 +1,109 @@
+{
+  "browser": "158.0.8127.36",
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "mode": "Live local API through loopback same-origin gateway; no HTTP fixtures",
+  "api": "http://127.0.0.1:5055",
+  "ui": "http://127.0.0.1:18731",
+  "events": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "status": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/operations/expired-parcels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/operations/expired-parcels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/operations/expired-parcels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a/operations/expired-parcels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/06949f3e-d175-4802-8a60-cf9c5aa9391a",
+      "status": 200
+    }
+  ],
+  "pageErrors": [],
+  "outcomes": [
+    "Operator demo login succeeded",
+    "Assigned-station scope remained restricted after manual refresh",
+    "Intake and Pickup routes opened; returning to home preserved assigned-station scope"
+  ],
+  "limits": "Navigation/read-only validation; no intake/pickup confirmation or administrative reassignment was executed against live data. LA-364 journey findings remain open."
+}

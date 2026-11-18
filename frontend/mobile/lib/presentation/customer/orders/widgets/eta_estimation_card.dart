@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
+
 import '../../../../data/models/eta_estimation_model.dart';
 import '../eta_estimation_controller.dart';
 
@@ -284,14 +286,14 @@ class RouteEtaPreviewCard extends StatelessWidget {
     final handling = preview.isFragile ? ' · fragile handling' : '';
     return Card(
       key: const Key('route-eta-preview-card'),
-      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.45),
+      color: AppColors.customerPrimaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
             Icon(
               Icons.auto_awesome_outlined,
-              color: theme.colorScheme.primary,
+              color: AppColors.customerSeed,
             ),
             const SizedBox(width: 12),
             Expanded(

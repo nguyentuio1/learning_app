@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_message.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/delivery_order.dart';
 import '../../../data/models/delivery_order_detail_response_dto.dart';
 import '../../../data/models/station_operation_models.dart';
@@ -18,6 +19,7 @@ import 'cancel_order_sheet.dart';
 import 'confirm_delivery_page.dart';
 import 'my_orders_provider.dart';
 import 'widgets/eta_estimation_card.dart';
+import 'widgets/order_status_badge.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   const OrderDetailPage({DeliveryOrder? order, String? orderId, super.key})
@@ -52,6 +54,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         });
         ref.invalidate(orderDetailProvider(widget.detailId));
         ref.invalidate(myOrdersProvider);
+        ref.invalidate(customerDashboardOrdersProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Order cancelled successfully.')),
         );
@@ -150,74 +153,114 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           ),
           const SizedBox(height: 8),
         ],
-        _detail('Tracking number', order.trackingNumber ?? order.id),
-        _detail('Status', order.status),
-        _detail('Recipient', order.recipientName),
-        _detail('Phone', order.recipientPhone),
-        _detail('Origin station', _stationLabel(origin, order.originStationId)),
-        _detail(
-          'Destination station',
-          _stationLabel(destination, order.destinationStationId),
-        ),
-        if (package != null) ...[
-          const SizedBox(height: 8),
-          Text('Package', style: Theme.of(context).textTheme.titleMedium),
-          if (package.packageName != null)
-            _detail('Package name', package.packageName!),
-          if (package.weightGram != null)
-            _detail('Weight', '${package.weightGram} g'),
-          if (package.lengthCm != null &&
-              package.widthCm != null &&
-              package.heightCm != null)
-            _detail(
-              'Dimensions',
-              '${package.lengthCm} × ${package.widthCm} × '
-                  '${package.heightCm} cm',
+        _detailCard(
+          title: null,
+          children: [
+            Text(
+              'Tracking number',
+              style: Theme.of(context).textTheme.labelLarge
+                  ?.copyWith(color: AppColors.customerTextSecondary),
             ),
-          if (package.isFragile == true) _detail('Handling', 'Fragile'),
-        ],
-        if (address != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Delivery address',
-            style: Theme.of(context).textTheme.titleMedium,
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    order.trackingNumber ?? order.id,
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                OrderStatusBadge(status: order.status),
+              ],
+            ),
+          ],
+        ),
+        if (package != null)
+          _detailCard(
+            title: 'Package Details',
+            children: [
+              if (package.packageName != null)
+                _detail('Package name', package.packageName!),
+              if (package.weightGram != null)
+                _detail('Weight', '${package.weightGram} g'),
+              if (package.lengthCm != null &&
+                  package.widthCm != null &&
+                  package.heightCm != null)
+                _detail(
+                  'Dimensions',
+                  '${package.lengthCm} × ${package.widthCm} × '
+                      '${package.heightCm} cm',
+                ),
+              _detail(
+                'Handling',
+                package.isFragile == true ? 'Fragile' : 'Non-fragile',
+              ),
+            ],
           ),
-          if (address.addressLabel != null)
-            _detail('Label', address.addressLabel!),
-          if (address.streetAddress != null)
-            _detail('Address', address.streetAddress!),
-          if (address.recipientName != null)
-            _detail('Address recipient', address.recipientName!),
-          if (address.recipientPhone != null)
-            _detail('Address phone', address.recipientPhone!),
-        ] else if (order.deliveryAddressId != null) ...[
-          _detail('Delivery address', order.deliveryAddressId!),
-        ],
-        const SizedBox(height: 8),
+        _detailCard(
+          title: 'Delivery Route',
+          children: [
+            _detail(
+              'Origin station',
+              _stationLabel(origin, order.originStationId),
+            ),
+            _detail(
+              'Destination station',
+              _stationLabel(destination, order.destinationStationId),
+            ),
+          ],
+        ),
+        _detailCard(
+          title: 'Recipient Information',
+          children: [
+            _detail('Recipient name', order.recipientName),
+            _detail('Phone', order.recipientPhone),
+            if (address?.addressLabel != null)
+              _detail('Address label', address!.addressLabel!),
+            if (address?.streetAddress != null)
+              _detail('Address', address!.streetAddress!),
+            if (address?.recipientName != null)
+              _detail('Address recipient', address!.recipientName!),
+            if (address?.recipientPhone != null)
+              _detail('Address phone', address!.recipientPhone!),
+            if (address == null && order.deliveryAddressId != null)
+              _detail('Delivery address', order.deliveryAddressId!),
+          ],
+        ),
         EtaEstimationCard(orderId: order.id),
-        const SizedBox(height: 12),
-        if (detail.scheduledDepartureTime != null)
-          _detail(
-            'Scheduled departure',
-            _formatTimestamp(detail.scheduledDepartureTime!),
+        if (detail.scheduledDepartureTime != null ||
+            detail.actualDepartureTime != null ||
+            detail.estimatedDeliveryTime != null ||
+            detail.actualDeliveryTime != null ||
+            detail.cancelReason != null)
+          _detailCard(
+            title: 'Order Updates',
+            children: [
+              if (detail.scheduledDepartureTime != null)
+                _detail(
+                  'Scheduled departure',
+                  _formatTimestamp(detail.scheduledDepartureTime!),
+                ),
+              if (detail.actualDepartureTime != null)
+                _detail(
+                  'Actual departure',
+                  _formatTimestamp(detail.actualDepartureTime!),
+                ),
+              if (detail.estimatedDeliveryTime != null)
+                _detail(
+                  'Estimated delivery',
+                  _formatTimestamp(detail.estimatedDeliveryTime!),
+                ),
+              if (detail.actualDeliveryTime != null)
+                _detail(
+                  'Actual delivery',
+                  _formatTimestamp(detail.actualDeliveryTime!),
+                ),
+              if (detail.cancelReason != null)
+                _detail('Cancellation reason', detail.cancelReason!),
+            ],
           ),
-        if (detail.actualDepartureTime != null)
-          _detail(
-            'Actual departure',
-            _formatTimestamp(detail.actualDepartureTime!),
-          ),
-        if (detail.estimatedDeliveryTime != null)
-          _detail(
-            'Estimated delivery',
-            _formatTimestamp(detail.estimatedDeliveryTime!),
-          ),
-        if (detail.actualDeliveryTime != null)
-          _detail(
-            'Actual delivery',
-            _formatTimestamp(detail.actualDeliveryTime!),
-          ),
-        if (detail.cancelReason != null)
-          _detail('Cancellation reason', detail.cancelReason!),
         const SizedBox(height: 8),
         Text('Status history', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
@@ -417,6 +460,30 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     ),
   );
 
+  Widget _detailCard({
+    required String? title,
+    required List<Widget> children,
+  }) => Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title != null) ...[
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+          ],
+          ...children,
+        ],
+      ),
+    ),
+  );
+
   Future<void> _confirmCancellation(DeliveryOrder order) async {
     _cancellingOrder = order;
     _cancelSheetOpen = true;
@@ -460,6 +527,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
     ref.invalidate(orderDetailProvider(widget.detailId));
     ref.invalidate(myOrdersProvider);
+    ref.invalidate(customerDashboardOrdersProvider);
   }
 
   Future<void> _editOrder(DeliveryOrder order) async {

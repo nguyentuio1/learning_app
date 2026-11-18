@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { Alert, Button, Checkbox, Form, Input, Modal, Select, Spin } from 'antd'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { orderCreationApi } from '../services/orderCreationApi'
 import type { CreatedOrder, CreateOrderValues, OrderAddress, OrderPackage, OrderStation } from '../types/orderCreation'
 import { orderFeedback } from '../utils/orderFeedback'
@@ -8,6 +9,9 @@ import { OrderReveal } from '../components/orders/OrderReveal'
 import './customer-orders.css'
 
 export function CreateDeliveryOrderPage() {
+  const navigate = useNavigate()
+  const { state } = useLocation()
+  const draft = useRef<{ originStationId?: string; destinationStationId?: string; packageId?: string }>(state?.orderDraft ?? {})
   const [form] = Form.useForm<CreateOrderValues>()
   const values = Form.useWatch([], form) as Partial<CreateOrderValues> | undefined
   const [packages, setPackages] = useState<OrderPackage[]>([])
@@ -32,9 +36,12 @@ export function CreateDeliveryOrderPage() {
         setPackages(p); setAddresses(a); setStations(operational)
         // A refresh after a conflict must not retain a removed or unavailable choice.
         for (const [field, choices] of [['packageId', p], ['originStationId', operational], ['destinationStationId', operational], ['deliveryAddressId', a]] as const) {
-          const selected = form.getFieldValue(field)
-          if (selected && !choices.some(choice => choice.id === selected)) form.setFieldValue(field, undefined)
+          const selected = form.getFieldValue(field) ?? (field === 'deliveryAddressId' ? undefined : draft.current[field])
+          if (typeof selected === 'string') {
+            form.setFieldValue(field, choices.some(choice => choice.id === selected) ? selected : undefined)
+          }
         }
+        draft.current = {}
       }).catch(error => { if (!controller.signal.aborted) setLoadIssue(orderFeedback(error, 'Unable to load the choices for this order.')) })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
@@ -54,20 +61,30 @@ export function CreateDeliveryOrderPage() {
       } else setIssue(orderFeedback(error, 'Unable to create the order.'))
     } finally { submitting.current = false; setSaving(false) }
   }
+  function addPackage() {
+    const { originStationId, destinationStationId } = form.getFieldsValue()
+    navigate('/packages/new', { state: { orderDraft: { originStationId, destinationStationId } } })
+  }
   if (created) return <main className="order-page order-success"><OrderReveal><section className="order-panel">
     <span className="order-eyebrow">ORDER RECEIVED</span><h1>Ready for review</h1>
     <p>Your order <strong>{created.trackingNumber}</strong> has been submitted.</p>
     <Alert type="warning" showIcon title="Save your pickup code now" description="This code is shown only once. Keep it private and share it only with the recipient." />
     {/^\d{6}$/.test(created.pickupSecureCode) ? <output className="order-code" aria-label="Pickup code">{created.pickupSecureCode}</output> : <Alert type="error" title="The server did not return a valid pickup code. Contact support with your tracking number. Do not create the same order again." />}
     <Checkbox checked={notedCode} onChange={e => setNotedCode(e.target.checked)}>I have saved the tracking number and pickup information.</Checkbox>
-    <p><Button disabled={!notedCode} onClick={() => { setCreated(null); setNotedCode(false); form.resetFields(); reload() }}>Create another order</Button></p>
+    <div className="order-actions">
+      <Button type="primary" disabled={!notedCode} onClick={() => navigate(`/orders/${encodeURIComponent(created.id)}`, { replace: true })}>View this order</Button>
+      <Button disabled={!notedCode} onClick={() => navigate('/orders', { replace: true })}>Back to orders</Button>
+      <Button disabled={!notedCode} onClick={() => { setCreated(null); setNotedCode(false); form.resetFields(); reload() }}>Create another order</Button>
+    </div>
   </section></OrderReveal></main>
   return <main className="order-page">
     <header className="order-heading"><div><span className="order-eyebrow">YOUR DELIVERY</span><h1>Create delivery order</h1><p className="order-subtitle">Choose your package, plan the route and tell us who will receive it.</p></div></header>
     {loadIssue ? <Alert type="error" showIcon title={loadIssue} action={<Button onClick={reload}>Try again</Button>} /> : loading ? <div className="order-loading" role="status"><Spin description="Loading order choices" /></div> :
       <Form form={form} layout="vertical" onFinish={setReview} disabled={saving || uncertain} initialValues={{ deliveryAddressId: null }}>
         {issue && <Alert type="error" showIcon title={issue} action={uncertain ? <Button disabled={false} onClick={() => { setUncertain(false); setIssue(''); reload() }}>I checked my orders</Button> : <Button onClick={reload}>Refresh choices</Button>} />}
-        {(!packages.length || stations.length < 2) && <Alert type="info" showIcon title={!packages.length ? 'Add a package before creating an order.' : 'Two operational stations are needed to create a delivery.'} />}
+        {!packages.length && <Alert type="info" showIcon title="Add a package before creating an order."
+          action={<Button type="primary" onClick={addPackage}>Add package</Button>} />}
+        {stations.length < 2 && <Alert type="info" showIcon title="Two operational stations are needed to create a delivery." />}
         <div className="order-columns"><div>
           <OrderReveal><section className="order-panel"><h2><span className="order-step">01</span>Package & route</h2>
             <Form.Item name="packageId" label="Package" rules={[{ required: true, message: 'Choose a package.' }]}><Select placeholder="Choose a saved package" options={packages.map(p => ({ value: p.id, label: p.packageName + ' · ' + p.weightGram + ' g', disabled: p.weightGram <= 0 || p.weightGram > 3000 || p.lengthCm <= 0 || p.lengthCm > 30 || p.widthCm <= 0 || p.widthCm > 20 || p.heightCm <= 0 || p.heightCm > 15 }))} /></Form.Item>

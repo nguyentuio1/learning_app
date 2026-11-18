@@ -1,0 +1,75 @@
+{
+  "sourceSha": "f7502b711a1c31f4d4da296bd4576fe351e574b4",
+  "applicationCodeBaseline": "10700d25666845d2865d8db0fb04d633d2e41ff9",
+  "recordedUtc": "2026-11-18T18:42:31.974698+00:00",
+  "hostCpu": {
+    "Name": "13th Gen Intel(R) Core(TM) i5-13420H",
+    "NumberOfCores": 8,
+    "NumberOfLogicalProcessors": 12
+  },
+  "barrier": {
+    "runtime": "Windows .NET8.0.31, SDK8.0.425, Release, TestServer and EFInMemory",
+    "command": "RUN_PERFORMANCE_BENCHMARKS=true dotnet test backend/SmartDroneDelivery.Tests/SmartDroneDelivery.Tests.csproj -c Release --no-restore --filter FullyQualifiedName~PerformanceBenchmarkTests --logger console;verbosity=detailed",
+    "concurrency": [
+      10,
+      50,
+      100
+    ],
+    "requiredP95Ms": 3000,
+    "requiredHttpErrors": 0,
+    "bcryptCost": 11,
+    "threadPoolOrProcessorEnvironmentOverrides": {},
+    "runs": [
+      {
+        "run": 1,
+        "raw": "perf-reference-barrier-1.txt",
+        "exitCode": 0,
+        "logFinalWriteUtc": "2026-11-18T18:33:10.321211+00:00",
+        "sha256": "fd89bd384b15b1d09c0a898840be98f3f65fae5f5193a41f419f20ca8e27b61b",
+        "capturedFileSha256BeforeGitNormalization": "1a37cee0c1e328dd13f6a48cbdb055b0ddb7a67f0be1ff58f7eed38a827f34cb"
+      },
+      {
+        "run": 2,
+        "raw": "perf-reference-barrier-2.txt",
+        "exitCode": 0,
+        "logFinalWriteUtc": "2026-11-18T18:33:16.555025+00:00",
+        "sha256": "664ec889a82b1e92764261f18c0e9b793a28f44b86e0704c3ebadc5cc738dd73",
+        "capturedFileSha256BeforeGitNormalization": "2ea6b22b81b62fe035b3bff4934804f302f95e527b8b4267e5126066ea774a32"
+      },
+      {
+        "run": 3,
+        "raw": "perf-reference-barrier-3.txt",
+        "exitCode": 0,
+        "logFinalWriteUtc": "2026-11-18T18:33:22.511960+00:00",
+        "sha256": "fbd8822c1db7124f9259eaaf7e293655912c3500a17e6e3c00ec2df93cd4ec48",
+        "capturedFileSha256BeforeGitNormalization": "f1e25efb8558ac6de10e8e67b3199b62bb1bcc58be202d1654a10e9734f2e50a"
+      }
+    ],
+    "sdkVersionVerification": "dotnet --version from the benchmark worktree: 8.0.425"
+  },
+  "dockerMixed": {
+    "sourceSha": "f7502b711a1c31f4d4da296bd4576fe351e574b4",
+    "apiCodeBaseline": "10700d25666845d2865d8db0fb04d633d2e41ff9",
+    "profile": "unchanged scripts/k6-load-test.js,15s/20s/20s mixed constant-VU",
+    "dockerServer": "29.8.1",
+    "dockerNcpu": 12,
+    "dockerMemoryBytes": 16629112832,
+    "postgresVersion": "postgres (PostgreSQL) 16.15",
+    "k6Version": "k6 v2.4.0 (commit/dd9395906d, go1.27.3, linux/amd64)",
+    "apiRuntime": "Microsoft.AspNetCore.App 8.0.34 [/usr/share/dotnet/shared/Microsoft.AspNetCore.App]\nMicrosoft.NETCore.App 8.0.34 [/usr/share/dotnet/shared/Microsoft.NETCore.App]",
+    "startedUtc": "2026-11-18T18:36:57Z",
+    "data": "fresh disposable database; synthetic customer; no AI activation",
+    "resourceLimits": "no explicit container CPU/memory limits; shared Docker Desktop12CPUs; log driver unchanged",
+    "k6ExitCode": 0,
+    "finishedUtc": "2026-11-18T18:38:03Z",
+    "trackingConstraintOccurrences": 1,
+    "raw": "k6-reference-docker-pg16.txt",
+    "rawSha256": "5c3003ed520a595b898b692c3cb4b96128b3bd8373eb9c406fa64ea2d829c390",
+    "apiSql23505Occurrences": 0,
+    "apiFailCategoryOccurrences": 0,
+    "trackingConstraintOccurrencesNote": "One occurrence is the migration CREATE UNIQUE INDEX statement, not an exception."
+  },
+  "scope": "Reference-workstation results; same tests/workloads and source, no authentication/BCrypt/threshold changes. Shared workstation background load was not controlled. Earlier FAIL runs remain valid historical measurements; cause of their difference is not established. No native/AI/deployment release acceptance is implied.",
+  "hashRepresentation": "sha256/rawSha256 address UTF-8 LF-normalized Git blobs; original capture hash retained when line-ending normalization changed bytes.",
+  "executedBy": "TBA Review / Codex; reference runs, separate from Khai historical runs"
+}

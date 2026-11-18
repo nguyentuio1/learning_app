@@ -168,9 +168,10 @@ void main() {
 
     expect(find.text('Parcel'), findsOneWidget);
     expect(find.text('Shoes'), findsOneWidget);
-    expect(find.text('Dễ vỡ'), findsOneWidget);
-    expect(find.text('Edit'), findsNWidgets(2));
-    expect(find.text('Delete'), findsNWidgets(2));
+    expect(find.descendant(of: find.byType(Card), matching: find.text('Fragile')), findsOneWidget);
+    expect(find.byTooltip('Edit'), findsNWidgets(2));
+    expect(find.byTooltip('Delete'), findsNWidgets(2));
+    expect(find.text('Description (optional)'), findsNothing);
   });
 
   testWidgets('C18 confirms deletion before making the request', (
@@ -179,7 +180,7 @@ void main() {
     final service = _FakePackageApiService(initialPackages: [_package()]);
 
     await _pumpPage(tester, const PackagesListPage(), service);
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
 
     expect(find.text('Delete this package?'), findsOneWidget);
@@ -203,7 +204,7 @@ void main() {
     );
 
     await _pumpPage(tester, const PackagesListPage(), service);
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
@@ -241,8 +242,8 @@ void main() {
     final service = _FakePackageApiService();
 
     await _pumpPage(tester, const AddEditPackagePage(), service);
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 
@@ -258,7 +259,7 @@ void main() {
     await tester.enterText(_field(2), '0');
     await tester.enterText(_field(3), '0');
     await tester.enterText(_field(4), '0');
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
     expect(
       find.text('Weight and dimensions must be greater than zero.'),
@@ -269,7 +270,7 @@ void main() {
     await tester.enterText(_field(2), '30');
     await tester.enterText(_field(3), '20');
     await tester.enterText(_field(4), '15');
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(
@@ -282,7 +283,7 @@ void main() {
     await tester.enterText(_field(2), '30.01');
     await tester.enterText(_field(3), '20.01');
     await tester.enterText(_field(4), '15.01');
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(
@@ -320,11 +321,11 @@ void main() {
     await tester.enterText(_field(2), '20');
     await tester.enterText(_field(3), '10');
     await tester.enterText(_field(4), '8');
-    await tester.enterText(_field(5), 'not a URL');
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Add package photo (optional)'));
     await tester.pumpAndSettle();
-
+    await tester.enterText(find.byType(TextFormField).last, 'not a URL');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
     expect(find.text('Enter a valid public image URL.'), findsOneWidget);
     expect(service.lastMutation, isNull);
   });
@@ -345,8 +346,8 @@ void main() {
     await tester.enterText(_field(2), '20');
     await tester.enterText(_field(3), '10');
     await tester.enterText(_field(4), '8');
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(
@@ -366,10 +367,17 @@ void main() {
     await tester.enterText(_field(2), '30');
     await tester.enterText(_field(3), '20');
     await tester.enterText(_field(4), '15');
-    await tester.enterText(_field(5), 'https://example.com/package.jpg');
-    await tester.tap(find.text('Fragile'));
-    await tester.ensureVisible(find.text('Save package'));
-    await tester.tap(find.text('Save package'));
+    await tester.tap(find.text('Add package photo (optional)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextFormField).last,
+      'https://example.com/package.jpg',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fragile package'));
+    await tester.ensureVisible(find.text('Save Package'));
+    await tester.tap(find.text('Save Package'));
     await tester.pumpAndSettle();
 
     expect(service.lastMutation, 'create');
@@ -393,7 +401,7 @@ void main() {
 
     await _pumpPage(tester, AddEditPackagePage(package: package), service);
 
-    expect(find.text('Edit package'), findsOneWidget);
+    expect(find.text('Edit Package'), findsOneWidget);
     expect(find.text('Parcel'), findsOneWidget);
     await tester.ensureVisible(find.text('Save changes'));
     await tester.tap(find.text('Save changes'));
@@ -413,7 +421,7 @@ void main() {
       service,
     );
 
-    expect(find.text('Edit package'), findsOneWidget);
+    expect(find.text('Edit Package'), findsOneWidget);
     expect(find.text('Parcel'), findsOneWidget);
   });
 }

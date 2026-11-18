@@ -9,9 +9,9 @@ import '../../../data/services/station_operations_api_service.dart';
 
 final stationOperationsApiServiceProvider =
     Provider<StationOperationsApiService>(
-  (ref) => StationOperationsApiService(ref.watch(dioProvider)),
-  name: 'stationOperationsApiService',
-);
+      (ref) => StationOperationsApiService(ref.watch(dioProvider)),
+      name: 'stationOperationsApiService',
+    );
 
 class PickupState {
   const PickupState({
@@ -50,29 +50,30 @@ class PickupState {
     bool? isLocked,
     int? lockoutSecondsRemaining,
     DateTime? lockoutExpiresAt,
-  }) =>
-      PickupState(
-        orderInfo: clearOrderInfo ? null : (orderInfo ?? this.orderInfo),
-        isLoading: isLoading ?? this.isLoading,
-        isConfirming: isConfirming ?? this.isConfirming,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-        completedPickup: clearCompletedPickup
-            ? null
-            : (completedPickup ?? this.completedPickup),
-        remainingAttempts: clearLockout
-            ? null
-            : (remainingAttempts ?? this.remainingAttempts),
-        isLocked: clearLockout ? false : (isLocked ?? this.isLocked),
-        lockoutSecondsRemaining: clearLockout
-            ? null
-            : (lockoutSecondsRemaining ?? this.lockoutSecondsRemaining),
-        lockoutExpiresAt: clearLockout
-            ? null
-            : (lockoutExpiresAt ?? this.lockoutExpiresAt),
-      );
+  }) => PickupState(
+    orderInfo: clearOrderInfo ? null : (orderInfo ?? this.orderInfo),
+    isLoading: isLoading ?? this.isLoading,
+    isConfirming: isConfirming ?? this.isConfirming,
+    errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    completedPickup: clearCompletedPickup
+        ? null
+        : (completedPickup ?? this.completedPickup),
+    remainingAttempts: clearLockout
+        ? null
+        : (remainingAttempts ?? this.remainingAttempts),
+    isLocked: clearLockout ? false : (isLocked ?? this.isLocked),
+    lockoutSecondsRemaining: clearLockout
+        ? null
+        : (lockoutSecondsRemaining ?? this.lockoutSecondsRemaining),
+    lockoutExpiresAt: clearLockout
+        ? null
+        : (lockoutExpiresAt ?? this.lockoutExpiresAt),
+  );
 }
 
 class PickupController extends Notifier<PickupState> {
+  int _generation = 0;
+  bool _isCurrent(int generation) => ref.mounted && generation == _generation;
   @override
   PickupState build() => const PickupState();
 
@@ -86,6 +87,7 @@ class PickupController extends Notifier<PickupState> {
     required String stationId,
     required String trackingNumber,
   }) async {
+    final generation = ++_generation;
     final normalized = normalizeTrackingNumber(trackingNumber);
     if (normalized.isEmpty) {
       state = const PickupState(
@@ -101,13 +103,13 @@ class PickupController extends Notifier<PickupState> {
         stationId: stationId,
         trackingNumber: normalized,
       );
+      if (!_isCurrent(generation)) return;
       state = PickupState(orderInfo: info, isLoading: false);
     } on ApiException catch (e) {
-      state = PickupState(
-        isLoading: false,
-        errorMessage: e.message,
-      );
+      if (!_isCurrent(generation)) return;
+      state = PickupState(isLoading: false, errorMessage: e.message);
     } catch (_) {
+      if (!_isCurrent(generation)) return;
       state = const PickupState(
         isLoading: false,
         errorMessage: 'Failed to look up order. Check tracking number.',
@@ -120,22 +122,28 @@ class PickupController extends Notifier<PickupState> {
     required String trackingNumber,
     required String secureCode,
   }) async {
-    if (state.isLocked) {
+    if (state.isLocked ||
+        state.isLoading ||
+        state.isConfirming ||
+        state.completedPickup != null) {
       return false;
     }
 
     final currentOrder = state.orderInfo;
-    if (currentOrder != null && !currentOrder.isEligibleForPickup) {
+    if (currentOrder == null) {
       state = state.copyWith(
-        errorMessage: eligibilityMessage(currentOrder),
+        errorMessage: 'Look up a destination parcel before confirming pickup.',
       );
       return false;
     }
+    if (!currentOrder.isEligibleForPickup) {
+      state = state.copyWith(errorMessage: eligibilityMessage(currentOrder));
+      return false;
+    }
 
-    final normalizedTracking =
-        currentOrder != null && currentOrder.trackingNumber.isNotEmpty
-            ? normalizeTrackingNumber(currentOrder.trackingNumber)
-            : normalizeTrackingNumber(trackingNumber);
+    final normalizedTracking = currentOrder.trackingNumber.isNotEmpty
+        ? normalizeTrackingNumber(currentOrder.trackingNumber)
+        : normalizeTrackingNumber(trackingNumber);
     final code = secureCode.trim();
     if (!RegExp(r'^\d{6}$').hasMatch(code)) {
       state = state.copyWith(
@@ -144,6 +152,7 @@ class PickupController extends Notifier<PickupState> {
       return false;
     }
 
+    final generation = ++_generation;
     state = state.copyWith(isConfirming: true, clearError: true);
     try {
       final response = await _apiService.confirmPickup(
@@ -153,14 +162,18 @@ class PickupController extends Notifier<PickupState> {
           pickupSecureCode: code,
         ),
       );
+      if (!_isCurrent(generation)) return false;
       state = state.copyWith(
         isConfirming: false,
         completedPickup: response,
+        clearOrderInfo: true,
         clearLockout: true,
       );
       return true;
     } on ApiException catch (e) {
-      final locked = e.statusCode == 423 ||
+      if (!_isCurrent(generation)) return false;
+      final locked =
+          e.statusCode == 423 ||
           e.lockoutExpiresAt != null ||
           e.retryAfterSeconds != null;
       final expiresAt = e.lockoutExpiresAt;
@@ -169,7 +182,9 @@ class PickupController extends Notifier<PickupState> {
         final diff = expiresAt.difference(DateTime.now().toUtc()).inSeconds;
         lockoutSeconds = diff > 0 ? diff : 0;
       }
-      final attempts = locked ? (e.attemptsRemaining ?? 0) : e.attemptsRemaining;
+      final attempts = locked
+          ? (e.attemptsRemaining ?? 0)
+          : e.attemptsRemaining;
 
       state = state.copyWith(
         isConfirming: false,
@@ -181,9 +196,11 @@ class PickupController extends Notifier<PickupState> {
       );
       return false;
     } catch (_) {
+      if (!_isCurrent(generation)) return false;
       state = state.copyWith(
         isConfirming: false,
-        errorMessage: 'An unexpected error occurred during pickup confirmation.',
+        errorMessage:
+            'An unexpected error occurred during pickup confirmation.',
       );
       return false;
     }
@@ -199,12 +216,13 @@ class PickupController extends Notifier<PickupState> {
   }
 
   void reset() {
+    _generation++;
     state = const PickupState();
   }
 }
 
 final pickupControllerProvider =
     NotifierProvider.autoDispose<PickupController, PickupState>(
-  PickupController.new,
-  name: 'pickupController',
-);
+      PickupController.new,
+      name: 'pickupController',
+    );

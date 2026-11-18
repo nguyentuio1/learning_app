@@ -26,15 +26,20 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(stationAvailabilityNotifierProvider, (previous, next) {
+      if (previous?.value?.selectedStationId != next.value?.selectedStationId) {
+        _trackingController.clear();
+        _codeController.clear();
+        ref.read(pickupControllerProvider.notifier).reset();
+      }
+    });
     final stationAsync = ref.watch(stationAvailabilityNotifierProvider);
     final state = ref.watch(pickupControllerProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('Package pickup confirmation'),
-      ),
+      appBar: AppBar(title: const Text('Package pickup confirmation')),
       body: stationAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -134,16 +139,14 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer
-                        .withValues(alpha: 0.4),
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.4,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.security,
-                        color: theme.colorScheme.primary,
-                      ),
+                      Icon(Icons.security, color: theme.colorScheme.primary),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
@@ -172,6 +175,8 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: _trackingController,
+                          key: const Key('pickup-tracking-input'),
+                          enabled: !state.isLoading && !state.isConfirming,
                           decoration: const InputDecoration(
                             labelText: 'Tracking Number',
                             hintText: 'e.g. DD-202611-0001',
@@ -181,7 +186,7 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                         ),
                         const SizedBox(height: 12),
                         FilledButton.icon(
-                          onPressed: state.isLoading
+                          onPressed: state.isLoading || state.isConfirming
                               ? null
                               : () {
                                   _codeController.clear();
@@ -197,8 +202,9 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(Icons.search),
                           label: const Text('Look up parcel'),
@@ -294,13 +300,16 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                             const SizedBox(height: 8),
                             const Text(
                               'Ask the recipient for the 6-digit numeric pickup secure code generated in their app.',
-                              style:
-                                  TextStyle(fontSize: 13, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             TextField(
                               controller: _codeController,
-                              enabled: !state.isLocked,
+                              key: const Key('pickup-secure-code-input'),
+                              enabled: !state.isLocked && !state.isConfirming,
                               keyboardType: TextInputType.number,
                               maxLength: 6,
                               decoration: const InputDecoration(
@@ -317,11 +326,13 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                               onPressed: (state.isConfirming || state.isLocked)
                                   ? null
                                   : () async {
-                                      final messenger =
-                                          ScaffoldMessenger.of(context);
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
                                       final success = await ref
                                           .read(
-                                              pickupControllerProvider.notifier)
+                                            pickupControllerProvider.notifier,
+                                          )
                                           .confirmPickup(
                                             stationId: stationId,
                                             trackingNumber:
@@ -329,10 +340,12 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                                             secureCode: _codeController.text,
                                           );
                                       if (success && mounted) {
+                                        _codeController.clear();
                                         messenger.showSnackBar(
                                           const SnackBar(
                                             content: Text(
-                                                'Pickup completed successfully! Slot released.'),
+                                              'Pickup completed successfully! Slot released.',
+                                            ),
                                             backgroundColor: Colors.green,
                                           ),
                                         );
@@ -343,11 +356,14 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: Colors.white),
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
                                     )
                                   : const Icon(Icons.check_circle_outline),
-                              label:
-                                  const Text('Confirm Pickup & Release Slot'),
+                              label: const Text(
+                                'Confirm Pickup & Release Slot',
+                              ),
                             ),
                           ],
                         ),
@@ -359,6 +375,17 @@ class _PackagePickupPageState extends ConsumerState<PackagePickupPage> {
                 // Step 3: Success Result (O08 Pickup Done)
                 if (state.completedPickup != null) ...[
                   _PickupSuccessCard(pickup: state.completedPickup!),
+                  const SizedBox(height: 12),
+                  FilledButton.tonalIcon(
+                    key: const Key('pickup-next-button'),
+                    onPressed: () {
+                      _trackingController.clear();
+                      _codeController.clear();
+                      ref.read(pickupControllerProvider.notifier).reset();
+                    },
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('Scan next parcel'),
+                  ),
                 ],
               ],
             ),
@@ -452,8 +479,10 @@ class _OrderSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
@@ -548,13 +577,15 @@ class _PickupSuccessCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Order ${pickup.trackingNumber} is now marked DELIVERED.',
+              'Order ${pickup.trackingNumber} is now marked ${pickup.status}.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.green.shade800),
             ),
             const SizedBox(height: 12),
             Text(
-              'Slot ${pickup.slotId} is released to EMPTY and ready for future flights.',
+              pickup.slotReleased
+                  ? 'Slot ${pickup.slotId} is released to EMPTY and ready for future flights.'
+                  : 'Refresh station availability to check the slot status.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.green.shade700),
             ),

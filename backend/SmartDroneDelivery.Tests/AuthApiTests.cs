@@ -10,7 +10,7 @@ namespace SmartDroneDelivery.Tests;
 public class AuthApiTests : IClassFixture<AuthApiFactory>
 {
     private const string AdminEmail = "admin@smartdronedelivery.com";
-    private const string AdminPassword = "Admin@123456";
+    private const string AdminPassword = TestSettings.AdminPassword;
     private const string Password = "Passw0rd123";
 
     private static int _counter;

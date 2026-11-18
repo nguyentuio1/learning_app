@@ -188,17 +188,29 @@ public class DeliveryOrderService : IDeliveryOrderService
     /// <summary>Format DD-YYYYMM-NNNN: the next number of the month, starting at 0001.</summary>
     private async Task<string> NextTrackingNumberAsync(DateTime now)
     {
-        var prefix = $"DD-{now.ToString("yyyyMM", CultureInfo.InvariantCulture)}-";
-        var latest = await _db.DeliveryOrders.AsNoTracking()
+        var month = now.ToString("yyyyMM", CultureInfo.InvariantCulture);
+        var prefix = $"DD-{month}-";
+        if (_db.Database.IsNpgsql())
+        {
+            // One statement serializes allocation across API processes. Failed orders may leave gaps.
+            var values = await _db.Database.SqlQuery<long>($"""
+                INSERT INTO delivery_tracking_counters ("Month", "LastValue")
+                VALUES ({month}, 1)
+                ON CONFLICT ("Month") DO UPDATE
+                    SET "LastValue" = delivery_tracking_counters."LastValue" + 1
+                RETURNING "LastValue" AS "Value"
+                """).ToListAsync();
+            return prefix + values.Single().ToString("D4", CultureInfo.InvariantCulture);
+        }
+
+        // InMemory is a test provider; it cannot execute PostgreSQL allocation SQL.
+        var existing = await _db.DeliveryOrders.AsNoTracking()
             .Where(o => o.TrackingNumber.StartsWith(prefix))
             .Select(o => o.TrackingNumber)
-            .OrderByDescending(t => t)
-            .FirstOrDefaultAsync();
-
-        var next = latest is not null && int.TryParse(latest[prefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var n)
-            ? n + 1
-            : 1;
-        return $"{prefix}{next:D4}";
+            .ToListAsync();
+        var latest = existing.Select(t => long.TryParse(t[prefix.Length..], NumberStyles.None,
+            CultureInfo.InvariantCulture, out var n) ? n : 0L).DefaultIfEmpty().Max();
+        return prefix + checked(latest + 1).ToString("D4", CultureInfo.InvariantCulture);
     }
 
     /// <summary>Exactly 6 digits; leading zeros are allowed.</summary>

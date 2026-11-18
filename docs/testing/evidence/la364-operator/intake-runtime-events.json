@@ -1,0 +1,72 @@
+{
+  "events": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "status": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee/operations/expired-parcels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee/operations/orders/ORD-DEMO-002",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee/operations/intake",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee/availability",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/landing-stations/b2e05b6a-92d5-4b4f-87f8-7f5173bde2ee",
+      "status": 200
+    }
+  ],
+  "pageErrors": [],
+  "browser": "158.0.8127.36",
+  "limits": "Real operator confirmations against isolated PostgreSQL database; scheduled intake and ARRIVED pickup preconditions prepared, flight not executed."
+}

@@ -236,3 +236,9 @@ Table audit_logs {
   user_agent text
   timestamp timestamp [default: `now()`]
 }
+
+// LA-366: internal allocator, not a business relationship or customer identifier.
+Table delivery_tracking_counters {
+  month varchar(6) [pk, note: 'UTC yyyyMM; SQL column Month']
+  last_value bigint [not null, note: 'Last reserved numeric suffix; SQL column LastValue; gaps allowed']
+}

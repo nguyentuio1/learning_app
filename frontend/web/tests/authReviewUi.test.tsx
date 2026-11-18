@@ -60,6 +60,8 @@ function loginApp(role: Role | null, from?: string) {
           <Route path="/" element={<h1>Management home</h1>} />
         </Route>
         <Route path="/profile" element={<h1>Profile destination</h1>} />
+        <Route path="/manager/analytics" element={<h1>Dashboard destination</h1>} />
+        <Route path="/orders" element={<h1>Customer destination</h1>} />
         <Route path="/addresses/*" element={<h1>Customer destination</h1>} />
         <Route path="/packages/*" element={<h1>Customer destination</h1>} />
         <Route path="/admin/users" element={<h1>Admin destination</h1>} />
@@ -105,12 +107,16 @@ it.each([undefined, '/addresses/new', '/packages/new', 'https://example.com/else
   render(loginApp('CUSTOMER', from))
   expect(await screen.findByRole('heading', { name: 'Customer destination' })).toBeVisible()
 })
-it.each(['DISPATCHER', 'MANAGER'] as const)('keeps the profile destination for %s', async role => {
+it.each([['DISPATCHER', 'Management home'], ['MANAGER', 'Dashboard destination']] as const)('opens the workspace for %s', async (role, heading) => {
   render(loginApp(role))
-  expect(await screen.findByRole('heading', { name: 'Profile destination' })).toBeVisible()
+  expect(await screen.findByRole('heading', { name: heading })).toBeVisible()
 })
-it('retains the admin destination and rejects external redirect targets', async () => {
+it('opens the admin workspace when the requested redirect is external', async () => {
   render(loginApp('ADMIN', 'https://example.com/elsewhere'))
+  expect(await screen.findByRole('heading', { name: 'Management home' })).toBeVisible()
+})
+it('preserves an authorized administration deep link', async () => {
+  render(loginApp('ADMIN', '/admin/users'))
   expect(await screen.findByRole('heading', { name: 'Admin destination' })).toBeVisible()
 })
 it('blocks repeated sign-in while pending and redirects after the login transition', async () => {
@@ -124,7 +130,7 @@ it('blocks repeated sign-in while pending and redirects after the login transiti
   await waitFor(() => expect(login).toHaveBeenCalledTimes(1))
   expect(screen.getByLabelText('Email')).toBeDisabled()
   await act(async () => { view.rerender(loginApp('ADMIN')); finishLogin() })
-  expect(await screen.findByRole('heading', { name: 'Admin destination' })).toBeVisible()
+  expect(await screen.findByRole('heading', { name: 'Management home' })).toBeVisible()
 })
 it('allows another sign-in attempt after login fails', async () => {
   login.mockRejectedValue(new Error('Unable to sign in.'))

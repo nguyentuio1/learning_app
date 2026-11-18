@@ -1,0 +1,51 @@
+{
+  "browser": "158.0.8127.36",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "httpMode": "Synthetic fixtures; no live AI",
+  "outcomes": [
+    "Definite503: draft retained; retry enabled; no history-recovery block or automatic POST",
+    "Deliberate retry: supported transient HELP response rendered",
+    "Transport timeout: send blocked, session recovery required; successful recovery re-enables send without auto retry"
+  ],
+  "events": [
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "mode": "503"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications/unread-count",
+      "mode": "503"
+    },
+    {
+      "method": "GET",
+      "path": "/ai-assistant/sessions",
+      "mode": "503"
+    },
+    {
+      "method": "POST",
+      "path": "/ai-assistant/messages",
+      "mode": "503"
+    },
+    {
+      "method": "POST",
+      "path": "/ai-assistant/messages",
+      "mode": "help"
+    },
+    {
+      "method": "POST",
+      "path": "/ai-assistant/messages",
+      "mode": "timeout"
+    },
+    {
+      "method": "GET",
+      "path": "/ai-assistant/sessions",
+      "mode": "timeout"
+    }
+  ],
+  "pageErrors": []
+}

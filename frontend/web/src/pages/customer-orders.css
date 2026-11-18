@@ -36,6 +36,23 @@
 .order-primary-link { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 18px; border-radius:8px; background:#1e4f3c; color:#fff!important; box-shadow:0 2px 0 #143d2e; }
 .order-primary-link:hover { background:#163f2f; }
 .order-filter-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:16px; }
+.order-page .order-route small { color: #52654d; }
+.order-filter-panel .order-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.order-date-filters[hidden] { display: none; }
+.order-date-toggle { margin: 4px 0; min-height: 44px; }
+.order-list-mobile > ul { display: grid; gap: 12px; list-style: none; padding: 0; margin: 0 0 16px; }
+.order-list-card.order-panel { margin: 0; }
+.order-list-card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.order-list-card-top > a { color: #1e4f3c; font-weight: 700; overflow-wrap: anywhere; padding-block: 8px; }
+.order-list-card-top .order-status { margin-inline-end: 0; }
+.order-list-card > p { margin: 8px 0 12px; color: #3f5a4a; overflow-wrap: anywhere; }
+.order-list-card > .order-primary-link { min-height: 44px; }
+@media (max-width: 1140px) {
+  .order-filter-panel .order-filter-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .order-filter-panel .ant-form-item { margin-bottom: 10px; }
+  .order-filter-panel .order-actions { gap: 8px; }
+}
+
 .order-table { border:1px solid #cbd8ca; border-radius:12px; background:#fffffc; overflow:hidden; padding-bottom:8px; }
 .order-table .ant-table-thead > tr > th { background:#e4eddb; color:#36513f; }
 .order-table .ant-table-tbody > tr:hover > td { background:#f1f5ea!important; }
