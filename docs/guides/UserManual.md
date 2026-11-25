@@ -109,7 +109,7 @@ Use the [installation guide](InstallationGuide.md) first. A fresh Production sta
 ### 5.3 Configure Stations, Slots, Drones & Integration Keys
 1. Open **Landing Stations** (`/stations`) to create/edit stations, update station status (`OPERATIONAL` / `MAINTENANCE` / `OFFLINE`), and add/remove slots (up to 20 per station).
 2. Open **Drones** (`/drones`) to register drones (unique serial number enforced) and manage maintenance status.
-3. Provision/revoke partner `X-API-Key` credentials through the authenticated REST API `/api/admin/integration-keys`, using the [API documentation](../api/API_Documentation.md). This is an API workflow, not a web navigation page. The returned key is disclosed once; keep it server-side.
+3. Provision/revoke partner `X-API-Key` credentials through the authenticated REST API `/api/admin/integration-keys`, using the [API documentation](../api/api-documentation.md). This is an API workflow, not a web navigation page. The returned key is disclosed once; keep it server-side.
 
 ### 5.4 Review Security Audit Logs
 1. Open **Audit Logs** (`/admin/audit-logs`).

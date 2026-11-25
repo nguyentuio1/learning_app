@@ -1,8 +1,8 @@
 # LA-183: SmartDroneDelivery API Documentation
 
-**Baseline:** `develop` (`b6f7b7b03acb665164f2bd6f572930aa37d917c7`, ASP.NET Core 8)
+**Current integrated source baseline:** `develop` at `24c03ab25005044641df16a1c91e1ba3e0cff672` (PR #288, ASP.NET Core 8). Documentation reconciled on 25 November 2026; this is not a new runtime validation.
 **Interactive Explorer:** Swagger UI at `http://localhost:5055/swagger` (enabled when `ASPNETCORE_ENVIRONMENT=Development`)
-**OpenAPI Specs:** [sprint-6-openapi.json](sprint-6-openapi.json), [sprint-7-openapi.json](sprint-7-openapi.json)
+**Navigation:** [Service references and naming rules](README.md). Historical partial OpenAPI snapshots: [Sprint 6](history/sprint-6-openapi.json), [Sprint 7](history/sprint-7-openapi.json). These are not a complete current schema; use the configured running Swagger export for its actual endpoint set.
 
 ---
 
@@ -158,7 +158,9 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 | `GET` | `/api/landing-stations/{stationId:guid}/operations/expired-parcels` | `ADMIN`, `STATION_OPERATOR` (own) | List expired/24h-timeout parcels still occupying destination slots |
 | `POST` | `/api/landing-stations/{stationId:guid}/operations/clear-expired-parcel` | `ADMIN`, `STATION_OPERATOR` (own) | Clear expired parcel and release destination slot |
 
-### 3.5 Dispatch Workflow, Telemetry, Tracking & Analytics (`delivery-workflow-api.md`, `sprint-6-api-contract.md`)
+### 3.5 Dispatch Workflow, Telemetry, Tracking & Analytics
+
+See the [workflow reference](delivery-workflow-api.md) and [historical tracking/analytics handoff](history/sprint-6-api-contract.md).
 
 | Method | Endpoint | Auth / Roles | Description |
 | :---: | :--- | :--- | :--- |
@@ -181,7 +183,9 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 | `GET` | `/api/analytics/dashboard` | `MANAGER` | Date-bounded (`UTC+07:00`, `<= 366` days) KPI dashboard |
 | `GET` | `/api/analytics/reports/deliveries` | `MANAGER` | Paginated delivery report rows |
 
-### 3.6 External Partner v1 API & Integration Keys (`sprint-6-api-contract.md`)
+### 3.6 External Partner v1 API & Integration Keys
+
+The [historical external integration handoff](history/sprint-6-api-contract.md) records the original v1 contract in section 6.
 
 | Method | Endpoint | Auth / Roles | Description |
 | :---: | :--- | :--- | :--- |
@@ -192,7 +196,9 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 | `GET` | `/api/v1/delivery-orders/{id}` | `X-API-Key` (`orders:read`) | Read scoped order detail |
 | `GET` | `/api/v1/delivery-orders/{id}/tracking` | `X-API-Key` (`orders:read`) | Read scoped order tracking |
 
-### 3.7 AI Assistance Endpoints (`sprint-7-api-contract.md`)
+### 3.7 AI Assistance Endpoints
+
+Current references: [ETA prediction](eta-prediction-api.md), [delivery summary](delivery-summary-api.md) and [customer assistant](customer-assistant-api.md). The [Sprint 7 handoff](history/sprint-7-api-contract.md) is a historical design baseline.
 
 | Method | Endpoint | Auth / Roles | Description |
 | :---: | :--- | :--- | :--- |
@@ -209,4 +215,4 @@ curl -X POST http://localhost:5055/api/delivery-orders \
 
 ## 4. Integration and runtime scope
 
-The endpoint catalog describes implemented source. It does not establish deployment, live AI quality, native-device or load acceptance. AI services remain explicitly gated; see [Gemini configuration and policy](../deployment/gemini-ai.md). For current role navigation and scoped image evidence see [screen flows](../design/ui-screen-flows.md). Performance work in [PR #252](https://github.com/nguyentuio1/learning_app/pull/252) is separate and has unresolved failing results.
+The endpoint catalog describes implemented source. It does not establish deployment, live AI quality, native-device or load acceptance. AI services remain explicitly gated; see [Gemini configuration and policy](../deployment/gemini-ai.md). For current role navigation and scoped image evidence see [screen flows](../design/ui-screen-flows.md). The [performance report](../testing/PerformanceTestReport.md) preserves historical failures and later reference-environment passes associated with [PR #252](https://github.com/nguyentuio1/learning_app/pull/252); those passes do not establish every deployment's performance.

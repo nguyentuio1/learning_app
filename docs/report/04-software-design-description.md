@@ -12,7 +12,7 @@ The API checks authorization and validates business rules before applying change
 
 ### 1.2 Access and integration
 
-Web and mobile clients authenticate with bearer tokens. The backend checks the role and, where required, ownership of the requested record. External clients use scoped API keys with the versioned delivery-order integration API. AI features use the operational data permitted for the requester, and their responses are informational. [Authentication API](../api/auth-api.md) · [Tracking and integration API](../api/sprint-6-api-contract.md) · [AI access rules](../api/sprint-7-api-contract.md)
+Web and mobile clients authenticate with bearer tokens. The backend checks the role and, where required, ownership of the requested record. External clients use scoped API keys with the versioned delivery-order integration API. AI features use the operational data permitted for the requester, and their responses are informational. [Authentication API](../api/auth-api.md) · [Tracking and integration API](../api/history/sprint-6-api-contract.md) · [AI access rules](../api/history/sprint-7-api-contract.md)
 
 ## 2. Database design
 
@@ -56,11 +56,11 @@ The tracking and map screens display the last recorded position and delivery sta
 
 ### 3.6 Dashboard, reports and external access
 
-Logistics managers select a reporting period to view delivery metrics and paginated reports. Administrators manage scoped keys for authorized external reads. The API contract describes the access and filtering rules for these workflows. [Dashboard sequence](../design/sequence-dashboard.md) · [Analytics integration](https://github.com/nguyentuio1/learning_app/pull/202) · [Integration contract](../api/sprint-6-api-contract.md) · [Integration PR](https://github.com/nguyentuio1/learning_app/pull/203)
+Logistics managers select a reporting period to view delivery metrics and paginated reports. Administrators manage scoped keys for authorized external reads. The API contract describes the access and filtering rules for these workflows. [Dashboard sequence](../design/sequence-dashboard.md) · [Analytics integration](https://github.com/nguyentuio1/learning_app/pull/202) · [Integration contract](../api/history/sprint-6-api-contract.md) · [Integration PR](https://github.com/nguyentuio1/learning_app/pull/203)
 
 ### 3.7 AI-assisted delivery screens
 
-The Sprint 7 API handoff defines the inputs, outputs, role and ownership checks for ETA, summaries and the customer assistant. The table describes the web flows. Section 4 records the code and review status for each client and backend. [Sprint 7 contract](../api/sprint-7-api-contract.md) · [OpenAPI schemas](../api/sprint-7-openapi.json) · [AI class specification](../design/class-specification-ai-services.md)
+The [current API references](../api/README.md) describe integrated ETA, summary and assistant behavior, including Ollama/Gemini activation. The Sprint 7 handoff and its OpenAPI are historical design snapshots. The table describes the web flows; dated review states in section 4 preserve their original inspection scope, while the [report index](README.md) records final source integration and owner acceptance. [Historical Sprint 7 contract](../api/history/sprint-7-api-contract.md) · [Historical OpenAPI schemas](../api/history/sprint-7-openapi.json) · [AI class specification](../design/class-specification-ai-services.md)
 
 | Web screen | Flow and behavior | Design and implementation sources |
 | --- | --- | --- |
@@ -68,7 +68,7 @@ The Sprint 7 API handoff defines the inputs, outputs, role and ownership checks 
 | Delivery summary | Select an order and request a text summary alongside its delivery record. Refresh the record after a successful request and on a source conflict. Handle empty history and wait before retrying a rate-limited request. | [Summary sequence](../design/sequence-ai-delivery-summarization.md) · [LA-163 web PR](https://github.com/nguyentuio1/learning_app/pull/212) |
 | Customer assistant | Read saved conversations, select an order if needed, then send when enabled. Keep temporary replies out of stored history. An uncertain send requires checking history before a retry. A denial clears protected data and closes the composer until access is rechecked. | [Assistant sequence](../design/sequence-ai-customer-assistant.md) · [LA-166 web PR](https://github.com/nguyentuio1/learning_app/pull/213) |
 
-AI acceptance still requires evidence against the real backend and the applicable provider and activation settings. The web assistant defaults to read-only until sending is enabled under the conversation retention and deletion policy. [Contract release gates](../api/sprint-7-api-contract.md) · [LA-165 implementation](https://github.com/nguyentuio1/learning_app/pull/224)
+AI acceptance still requires evidence against the real backend and the applicable provider and activation settings. The web assistant defaults to read-only until sending is enabled under the conversation retention and deletion policy. [Contract release gates](../api/history/sprint-7-api-contract.md) · [LA-165 implementation](https://github.com/nguyentuio1/learning_app/pull/224)
 
 Reference drawings and implemented screen flows are in the [Detailed Design index](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=14090271), [UI/UX & Screen Flows (11894809)](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11894809), [Repository Screen Flows](../design/ui-screen-flows.md), the [web wireframes](../design/wireframes/web/index.md) and the [mobile wireframes](../design/wireframes/app/index.md).
 

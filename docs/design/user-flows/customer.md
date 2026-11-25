@@ -238,7 +238,7 @@ flowchart TB
   - C23 runs strictly in local simulation mode and makes no HTTP requests.
   - Optional order ID/tracking-number context may be passed from a customer's own order.
   - Refuse queries containing another customer's tracking code or explicitly asking about someone else's order; never reveal foreign order information.
-  - C23 does not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../api/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
+  - C23 does not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../api/history/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
 
 - **Profile and settings**
   - Profile editing validates fields before saving.

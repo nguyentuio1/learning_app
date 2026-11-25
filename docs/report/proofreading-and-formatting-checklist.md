@@ -1,5 +1,7 @@
 # Proofreading, formatting and publication checklist (LA-204 / LA-351)
 
+> **Historical checklist; current correction 25 November 2026:** This file records the earlier 71-page review packet and publication ledger. Its pending-proofreader and integration labels below are historical. LA-351 is integrated through PR #288. The owner explicitly accepted LA-204 consolidation/export in Jira comment 10272; LA-204 remains Done. Later report readability/member-metadata corrections are recorded in comment 10274 and the [v1.0.0 release assets](https://github.com/nguyentuio1/learning_app/releases/tag/v1.0.0). The [report index](README.md) records current asset digests. This correction does not invent peer confirmation, an instructor outcome or new Confluence versions. Flutter MinIO acceptance is also complete within the [recorded runtime scope](../testing/LA346-flutter-photo-completion.md); AI, device/WebSocket and actual team rehearsal remain separate.
+
 Review packet: 19 November 2026, documentation baseline `a90668c`, combined application `10c77d0`. Earlier source baselines are historical. The existing six-chapter structure and chapter numbering are retained; current corrections distinguish implementation, integration, runtime, deployment and acceptance.
 
 ## 1. Structure and terminology

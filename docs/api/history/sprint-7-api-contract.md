@@ -1,8 +1,10 @@
 # Sprint 7 AI API contract — working draft
 
+> Historical proposal from 16 November 2026. The task/PR states and local-only provider constraints below describe that inspection. ETA, summary, assistant and configurable Gemini transport are now integrated. Start with the [current catalog](../api-documentation.md), [service references](../README.md) and [provider configuration](../../deployment/gemini-ai.md); generation remains default-off.
+
 Task: [LA-342](https://hungndemail.atlassian.net/browse/LA-342). Status: **proposed implementation and mocking baseline**, based on `develop` at `321733b198834a25db6a8f04fbc4f9f1a4492ef0`. No endpoint below is advertised as implemented or deployed. Jira checked on 2026-11-16: Sprint 7 (ID 7, board 2) is active, 16–23 November. Sprint 6 is closed. Consumer approval is still pending; production gates below remain open.
 
-Sources: [AI class specification](../design/class-specification-ai-services.md), [ETA sequence](../design/sequence-ai-eta-estimation.md), [summary sequence](../design/sequence-ai-delivery-summarization.md), [assistant sequence](../design/sequence-ai-customer-assistant.md), [existing HTTP conventions](sprint-6-api-contract.md).
+Sources: [AI class specification](../../design/class-specification-ai-services.md), [ETA sequence](../../design/sequence-ai-eta-estimation.md), [summary sequence](../../design/sequence-ai-delivery-summarization.md), [assistant sequence](../../design/sequence-ai-customer-assistant.md), [existing HTTP conventions](sprint-6-api-contract.md).
 
 Machine-readable draft: [sprint-7-openapi.json](sprint-7-openapi.json). It reserves the proposed operations below; it does not advertise deployed functionality.
 
@@ -146,7 +148,7 @@ Owned session only; identical missing/foreign `404`. Same pagination limits. Ret
 
 ### DELETE /api/ai-assistant/sessions/{id} — LA-165 deletion extension
 
-Persisted active CUSTOMER and owned session only. Return `204` after atomically deleting the session and its messages. Unknown/foreign sessions have the same `404`. This operation remains available for existing owned data while generation is disabled. The [LA-165 retention proposal](LA-165-retention-policy-proposal.md) describes the approval/backup/cleanup activation gate; [implementation notes](LA-165-customer-assistant.md) record backend availability separately from rollout and story acceptance.
+Persisted active CUSTOMER and owned session only. Return `204` after atomically deleting the session and its messages. Unknown/foreign sessions have the same `404`. This operation remains available for existing owned data while generation is disabled. The [LA-165 retention proposal](../assistant-retention-policy-proposal.md) describes the approval/backup/cleanup activation gate; [implementation notes](../customer-assistant-api.md) record backend availability separately from rollout and story acceptance.
 
 ## 6. Release checklist
 

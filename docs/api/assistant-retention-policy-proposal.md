@@ -1,6 +1,8 @@
 # LA-165 conversation retention proposal
 
-Status: **DRAFT — not approved or enabled**. This proposal makes the activation gate in [LA-342](sprint-7-api-contract.md#5-customer-assistant--la-165) concrete. Backend code and tests may be reviewed/merged with storage and model generation disabled.
+> Local-provider proposal. This document intentionally retains its original local-only scope. It does not authorize Gemini processing; see the separate [cloud-policy decision package](../deployment/LA-348-cloud-policy-decision.md) and [current assistant API](customer-assistant-api.md). Both provider and retention gates remain enforced.
+
+Status: **DRAFT — not approved or enabled**. This proposal makes the activation gate in [LA-342](history/sprint-7-api-contract.md#5-customer-assistant--la-165) concrete. Backend code and tests may be reviewed/merged with storage and model generation disabled.
 
 Proposed version: `LA-165-retention-v1`.
 

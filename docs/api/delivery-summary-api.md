@@ -1,6 +1,8 @@
-# LA-162 transient delivery summary
+# Delivery summary API (LA-162)
 
-Implements `POST /api/delivery-orders/{id}/ai-summary` from [the Sprint 7 contract](sprint-7-api-contract.md#4-delivery-summary--la-162). No request body. Bearer authentication only. An active persisted CUSTOMER may summarize their own order; active DISPATCHER/MANAGER have the redacted project-wide scope established by that contract. ADMIN/STATION_OPERATOR are denied. This does not change customer-only order-detail authorization.
+Source availability: integrated with the LA-41 web/QA consumers in the released application. The original implementation and fake-provider/PostgreSQL checks below describe the API boundary; actual synthetic Gemini evidence is linked separately. Remaining activation/quality/load acceptance belongs to LA-348.
+
+Implements `POST /api/delivery-orders/{id}/ai-summary` from [the Sprint 7 contract](history/sprint-7-api-contract.md#4-delivery-summary--la-162). No request body. Bearer authentication only. An active persisted CUSTOMER may summarize their own order; active DISPATCHER/MANAGER have the redacted project-wide scope established by that contract. ADMIN/STATION_OPERATOR are denied. This does not change customer-only order-detail authorization.
 
 ## Behavior
 
@@ -17,14 +19,14 @@ At most 200 chronological events enter inference. Excessive history or required 
 
 Inference and its source recheck have a 10-second deadline (`504`). Request cancellation propagates; it never fabricates a success. Missing configuration/provider failures return `503`, not successful empty results. A process-local account gate rejects simultaneous generation with `429` and `Retry-After: 5`; slots are released on every outcome. Multi-instance rollout requires a shared limiter before claiming an account-wide limit across replicas.
 
-## Local provider activation gate
+## Provider activation gate
 
-`DeliverySummary:Enabled` defaults to false. The local Ollama `/api/generate` adapter requires a loopback HTTP(S) `BaseUrl`, a configured `ModelName` and an immutable `ModelRevision`. URL credentials/query/fragment and redirects are disallowed. The adapter sends structured status/time facts, requests JSON index selection, caps response bytes at 16 KiB, and validates completion/schema/index bounds. It does not install, download or start a model.
+`DeliverySummary:Enabled` defaults to false. The default local Ollama `/api/generate` adapter requires a loopback HTTP(S) `BaseUrl`, a configured `ModelName` and `ModelRevision`. URL credentials/query/fragment and redirects are disallowed. The explicit Gemini transport uses the same internal loopback request and sends to Google's fixed HTTPS endpoint with a server-side key. See [provider configuration](../deployment/gemini-ai.md); do not replace the loopback URL with a cloud URL. The structured index-selection boundary and existing grounding checks apply to both providers. No model is installed, downloaded or started automatically.
 
-No actual model is selected or enabled by this change. Before activation, the owner must select/version an already approved local model and validate representative real lifecycle, failure/recovery, rescheduling and performance cases. Passing adapter/fake-model tests establishes API behavior, not model quality or live end-to-end acceptance. Chat retention policy is unrelated to this transient endpoint; no chat persistence is enabled.
+No model is enabled by this documentation. Before deployment, configure the chosen provider/model and validate representative lifecycle, failure/recovery, rescheduling and performance cases. For Gemini, revision records the configured provider model identifier rather than an immutable weights checksum. [Synthetic Gemini gateway/API checks](../deployment/LA-348-synthetic-acceptance-20261119.md) have passed in their recorded environment; they do not establish deployed UI, sustained availability or model quality. Chat retention policy is unrelated to this transient endpoint; no chat persistence is enabled.
 
 ## Verification
 
 Behavior tests use the actual HTTP/auth/EF stack with a substituted structured selector. They cover persisted-role/ownership parity, no-history, privacy, failure/recovery/arrival, changed logs without order UpdatedAt changes, lost authorization/ownership, cancellation/deadline and account concurrency. The local HTTP adapter tests use a fake HTTP handler, not an actual model. PostgreSQL tests apply real migrations and verify numeric-ID chronology for tied timestamps, no transaction retained during model selection, no summary writes, and source-change rejection.
 
-Run `dotnet test backend/SmartDroneDelivery.Tests --filter FullyQualifiedName~Summary`, setting `TEST_POSTGRES_CONNECTION` to a local PostgreSQL server to include the database test. Full backend, web and mobile CI on the PR head remains the integration gate. Story LA-41 still requires web LA-163 and QA LA-164 acceptance before integration into `develop`.
+Run `dotnet test backend/SmartDroneDelivery.Tests --filter FullyQualifiedName~Summary`, setting `TEST_POSTGRES_CONNECTION` to a test PostgreSQL server to include the database test. Current backend, web and mobile CI remains the gate for future changes; the LA-41 source/consumer integration is already complete.
