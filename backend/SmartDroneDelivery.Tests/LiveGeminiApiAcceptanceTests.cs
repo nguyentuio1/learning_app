@@ -70,13 +70,15 @@ public class LiveGeminiApiAcceptanceTests(ITestOutputHelper output)
         Assert.InRange(prediction.PredictedDurationMinutes, 1, 1440);
         Assert.Null(prediction.ConfidenceScore);
         output.WriteLine($"etaPipeline elapsedMs={timer.ElapsedMilliseconds}; outcome={result}; durationMinutes={prediction.PredictedDurationMinutes}");
-        Assert.Equal(3, app.ProviderCalls);
+        Assert.InRange(app.ProviderCalls, 3, SyntheticGeminiApiFactory.RetryEnabled ? 6 : 3);
+        output.WriteLine($"logicalGenerations=3; providerAttempts={app.ProviderCalls}; retryEnabled={SyntheticGeminiApiFactory.RetryEnabled}");
         output.WriteLine("Synthetic integration only; single samples do not prove prediction quality, p95 latency, concurrency, production persistence or cloud approval.");
     }
 }
 
 internal sealed class SyntheticGeminiApiFactory(ITestOutputHelper output) : AuthApiFactory
 {
+    public static bool RetryEnabled => Environment.GetEnvironmentVariable("TEST_GEMINI_RETRY_ENABLED") == "true";
     private int providerCalls;
     public int ProviderCalls => providerCalls;
     private static string Model => Environment.GetEnvironmentVariable("TEST_GEMINI_MODEL") ?? "gemini-3.5-flash-lite";
@@ -104,6 +106,7 @@ internal sealed class SyntheticGeminiApiFactory(ITestOutputHelper output) : Auth
     private HttpClient Client(bool assistant = false) => new(new GeminiModelHandler(Options.Create(new ModelProviderOptions
     {
         Provider = "Gemini", GeminiApiKey = Environment.GetEnvironmentVariable("TEST_GEMINI_API_KEY")!,
+        GeminiRetryTransientFailures = RetryEnabled,
         // Test-only bypass is confined to this synthetic isolated fixture.
         GeminiAssistantApprovedPolicyVersion = ModelProviderOptions.GeminiAssistantPolicyVersion
     }), assistant) { InnerHandler = new ProvenanceHandler(this, output) }) { Timeout = TimeSpan.FromSeconds(20) };

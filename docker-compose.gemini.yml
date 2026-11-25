@@ -5,6 +5,7 @@ services:
     environment:
       ModelProvider__Provider: Gemini
       ModelProvider__GeminiApiKey: ${GEMINI_API_KEY:?set server-side GEMINI_API_KEY before using this overlay}
+      ModelProvider__GeminiRetryTransientFailures: ${AI_GEMINI_TRANSIENT_RETRY_ENABLED:-false}
       ModelProvider__GeminiAssistantApprovedPolicyVersion: ${GEMINI_ASSISTANT_APPROVED_POLICY:-}
       EtaPrediction__Enabled: ${AI_ETA_ENABLED:-false}
       EtaPrediction__ModelName: ${AI_MODEL_NAME:-gemini-3.5-flash-lite}

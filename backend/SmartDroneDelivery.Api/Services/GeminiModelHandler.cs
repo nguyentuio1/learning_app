@@ -6,7 +6,7 @@ using SmartDroneDelivery.Api.Options;
 
 namespace SmartDroneDelivery.Api.Services;
 
-public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool assistant = false) : DelegatingHandler
+public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool assistant = false, TimeProvider? clock = null) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -24,10 +24,8 @@ public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool ass
         if (string.IsNullOrWhiteSpace(model) || model.Length > 200)
             throw new JsonException("A model identifier is required.");
         var settings = root.GetProperty("options");
-        using var outbound = new HttpRequestMessage(HttpMethod.Post,
-            $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent")
-        {
-            Content = JsonContent.Create(new
+        var endpoint = new Uri($"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent");
+        var payload = JsonSerializer.SerializeToUtf8Bytes(new
             {
                 systemInstruction = new { parts = new[] { new { text = root.GetProperty("system").GetString() } } },
                 contents = new[] { new { role = "user", parts = new[] { new { text = root.GetProperty("prompt").GetString() } } } },
@@ -37,11 +35,42 @@ public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool ass
                     maxOutputTokens = settings.GetProperty("num_predict").GetInt32(),
                     responseMimeType = "application/json", responseJsonSchema = root.GetProperty("format").Clone()
                 }
-            })
+            });
+        if (!provider.GeminiRetryTransientFailures)
+            return await GenerateAsync(endpoint, payload, provider.GeminiApiKey, ct);
+
+        // Inference is read-only. Retry at most once, before any application persistence.
+        // Two four-second attempts + backoff fit inside the services' existing ten-second deadline.
+        for (var attempt = 0; ; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4), clock ?? TimeProvider.System);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+            try
+            {
+                var response = await GenerateAsync(endpoint, payload, provider.GeminiApiKey, linked.Token);
+                if (attempt != 0 || response.Headers.RetryAfter != null ||
+                    response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout))
+                    return response;
+                response.Dispose();
+            }
+            catch (OperationCanceledException) when (attempt == 0 && timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+            {
+                // Cancel the stalled inference attempt; never replay application/API writes.
+            }
+            await Task.Delay(TimeSpan.FromMilliseconds(200), clock ?? TimeProvider.System, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> GenerateAsync(Uri endpoint, byte[] payload, string key, CancellationToken ct)
+    {
+        using var outbound = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            // Fresh message/content on each attempt, with a known Content-Length.
+            Content = new ByteArrayContent(payload)
         };
-        outbound.Headers.Add("x-goog-api-key", provider.GeminiApiKey);
-        // Send a known Content-Length, avoiding chunked request buffering by provider proxies.
-        await outbound.Content.LoadIntoBufferAsync().WaitAsync(ct);
+        outbound.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        outbound.Headers.Add("x-goog-api-key", key);
         var upstream = await base.SendAsync(outbound, ct);
         if (!upstream.IsSuccessStatusCode) return upstream; // Preserve quota/auth failures; never invent a successful response.
         using (upstream)
