@@ -6,7 +6,7 @@ Architecture: existing ASP.NET Core/EF Core/PostgreSQL backend, persisted accoun
 
 Tech stack: .NET 8, PostgreSQL, existing backend test project, web/Flutter consumers and GitHub CI.
 
-Spec: [working contract](../../api/sprint-7-api-contract.md), existing LA-201 design and actual Jira acceptance criteria once access is restored.
+Spec: [working contract](../../api/history/sprint-7-api-contract.md), existing LA-201 design and actual Jira acceptance criteria once access is restored.
 
 Global constraints: correct hungndemail site; real task keys in commits; no external provider activation without a settled provider/privacy policy; no rebase/force-push; preserve unrelated root files; incomplete LA-40 stays out of develop.
 

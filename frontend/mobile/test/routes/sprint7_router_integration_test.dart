@@ -8,7 +8,6 @@ import 'package:smart_drone_delivery/data/models/delivery_order.dart';
 import 'package:smart_drone_delivery/data/providers/ai_assistant_providers.dart';
 import 'package:smart_drone_delivery/data/services/ai_assistant_api_service.dart';
 import 'package:smart_drone_delivery/domain/entities/user.dart';
-import 'package:smart_drone_delivery/presentation/customer/assistant/ai_assistant_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/assistant/customer_assistant_page.dart';
 import 'package:smart_drone_delivery/presentation/operator/home/station_availability_providers.dart';
 import 'package:smart_drone_delivery/presentation/operator/intake/package_intake_page.dart';
@@ -152,7 +151,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(AiAssistantPage), findsNothing);
       final page = tester.widget<CustomerAssistantPage>(
         find.byType(CustomerAssistantPage),
       );

@@ -5,7 +5,7 @@
 **Goal:** Implement the LA-342 assistant HTTP contract, owned history, grounded answers and atomic exchanges, with persistence/generation disabled until retention approval.
 **Architecture:** Persisted active CUSTOMER authorization; independent ownership checks for every explicit session/order; bounded validated inputs; model selects an allowlisted intent and server renders current facts. Existing AiChatSession/AiChatMessage store an atomic successful pair only. No raw model prose, operational tools, external provider, ETA-story or summary-story dependency.
 **Stack:** ASP.NET Core 8, EF Core 8/PostgreSQL, xUnit; local structured Ollama adapter.
-**Spec:** docs/api/sprint-7-api-contract.md section 5; docs/design/sequence-ai-customer-assistant.md.
+**Spec:** docs/api/history/sprint-7-api-contract.md section 5; docs/design/sequence-ai-customer-assistant.md.
 
 ## Constraints and review focus
 

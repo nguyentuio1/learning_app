@@ -39,6 +39,15 @@ The overlay refuses to load without the key and forwards it only to `api`.
 It does not start/download Ollama, enable billing or silently enable chat.
 Changing a frontend build flag requires rebuilding the web image.
 
+`dotnet run` does not automatically load the repository's `.env` file. That file
+is consumed by Compose; its key reaches the API only when the Gemini overlay is
+included. For a local .NET process, set the `ModelProvider__*` environment values
+above or use .NET user-secrets. A variable named `GEMINI_API_KEY` alone is not
+the API's `ModelProvider:GeminiApiKey` setting. The web composer independently
+needs `VITE_AI_ASSISTANT_SEND_ENABLED=true` at build/start time; that flag does
+not configure the server or grant cloud-processing permission. Never put the
+provider key in a `VITE_*` variable.
+
 ## Inputs, failures and quotas
 
 ETA sends numeric route/package features, not contact information. Summary sends
@@ -51,9 +60,19 @@ requirement or concurrency acceptance.
 
 The adapter requests schema-constrained JSON and rejects incomplete/safety-blocked
 generation or oversized responses. Quota/auth errors are not converted into fake
-successful AI output; the existing service reports unavailable/timeout. No
-automatic retry loop consumes additional quota and no automatic model substitution
-occurs. The free tier has model/project-specific limits and is not an unlimited
+successful AI output; the existing service reports unavailable/timeout. Automatic
+recovery is off by default. A deployment may explicitly enable
+`ModelProvider__GeminiRetryTransientFailures=true` (Compose:
+`AI_GEMINI_TRANSIENT_RETRY_ENABLED=true`). This permits at most two inference
+attempts, each bounded to four seconds including response-body parsing, separated
+by 200 ms. Only HTTP 502/503/504 or a first-attempt timeout permit a second call.
+The existing ten-second application deadline and caller cancellation still apply.
+Auth/quota errors, malformed or blocked output, and responses with `Retry-After`
+are not retried. Each attempt uses the same model and bounded payload; a retry
+may consume an additional provider request, even if the cancelled request was
+already processed remotely. Application writes and conversation commits are
+never replayed by this transport. There is no automatic model substitution.
+The free tier has model/project-specific limits and is not an unlimited
 availability guarantee. Check the actual project's limits in AI Studio.
 
 ## Customer-assistant activation
@@ -99,4 +118,4 @@ only on list-models.
 References: [Google pricing](https://ai.google.dev/gemini-api/docs/pricing),
 [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits),
 [terms](https://ai.google.dev/gemini-api/terms), and the repository's
-[original retention proposal](../api/LA-165-retention-policy-proposal.md).
+[original retention proposal](../decisions/assistant-retention-policy.md).

@@ -57,6 +57,7 @@ public class LiveGeminiGatewayTests(ITestOutputHelper output)
     private HttpClient Client(bool assistant = false) => new(new GeminiModelHandler(Options.Create(new ModelProviderOptions
     {
         Provider = "Gemini", GeminiApiKey = Environment.GetEnvironmentVariable("TEST_GEMINI_API_KEY")!,
+        GeminiRetryTransientFailures = Environment.GetEnvironmentVariable("TEST_GEMINI_RETRY_ENABLED") == "true",
         GeminiAssistantApprovedPolicyVersion = ModelProviderOptions.GeminiAssistantPolicyVersion
     }), assistant) { InnerHandler = new LiveGeminiProvenanceHandler(output) }) { Timeout = TimeSpan.FromSeconds(20) };
 }

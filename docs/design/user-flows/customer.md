@@ -179,7 +179,7 @@ flowchart TB
 | Confirm Delivery | Allow the Customer to enter the pickup secure code after the order reaches `ARRIVED`; disable keypad and submission while locked | Delivery confirmation use case |
 | Invalid / Locked Secure Code | Explain failed verification; after 3 wrong pickup OTP attempts, show HTTP 423 Locked, Retry-After: 600 (10 minutes), countdown and MSG-P-LS-16 | Delivery confirmation use case |
 | Notifications | Show order and delivery updates, support read-state actions, and open the associated order detail/tracking screen | Notification use case |
-| AI Assistant | Provide quick prompts and simulated local replies with optional own-order context; refuse requests about foreign tracking codes | AI Assistant use case |
+| AI Assistant | **Legacy / removed simulation:** C23 documented quick prompts and simulated local replies with optional own-order context; refused requests about foreign tracking codes | AI Assistant use case |
 | Profile and Settings | Provide access to profile editing, password, theme, addresses, notifications, assistant and logout | Profile management use case |
 | Theme Settings | Immediately apply System Default, Light or Dark and return to Profile & Settings | Profile management use case |
 | Edit Profile | Update editable profile details; email remains read-only if required by the source | Profile management use case |
@@ -235,10 +235,10 @@ flowchart TB
   - Read/unread behavior must match the notification API.
 
 - **AI Assistant**
-  - C23 runs strictly in local simulation mode and makes no HTTP requests.
+  - **Legacy / removed simulation:** C23 historically ran strictly in local simulation mode and made no HTTP requests.
   - Optional order ID/tracking-number context may be passed from a customer's own order.
   - Refuse queries containing another customer's tracking code or explicitly asking about someone else's order; never reveal foreign order information.
-  - C23 does not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../api/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
+  - The removed simulation did not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../api/history/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
 
 - **Profile and settings**
   - Profile editing validates fields before saving.
@@ -251,7 +251,7 @@ flowchart TB
   - C11–C13: Enter pickup OTP, incorrect OTP/10-minute lockout state, and delivery completed.
   - C14–C17: Create delivery, validation errors, review, and order submitted.
   - C18–C21: Packages, add package, saved addresses, and add/edit address.
-  - C22–C27: Notifications, local AI Assistant, Profile & Settings, Edit Profile, Change Password, and Theme Settings.
+  - C22–C27: Notifications, **legacy / removed simulation** AI Assistant, Profile & Settings, Edit Profile, Change Password, and Theme Settings.
 
 - **Scope**
   - This document describes the Customer mobile application only. Station Operator flows are documented separately.
