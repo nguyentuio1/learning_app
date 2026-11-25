@@ -1,6 +1,6 @@
 # API Contract - Delivery Workflow (Dispatcher, Scheduling, Tracking, Failures)
 
-Sprint 6 consumers: [LA-341 API handoff](sprint-6-api-contract.md) specifies the LA-143 tracking snapshot/SignalR and LA-150 customer confirmation, with exact story-branch availability, null/stale behavior and client recovery. Use that handoff for the Sprint 6 implementation; an older `develop` checkout does not expose those new routes yet.
+Sprint 6 consumers: [LA-341 API handoff](history/sprint-6-api-contract.md) specifies the LA-143 tracking snapshot/SignalR and LA-150 customer confirmation, with exact story-branch availability, null/stale behavior and client recovery. Use that handoff for the Sprint 6 implementation; an older `develop` checkout does not expose those new routes yet.
 
 Documentation task: [LA-339 - Sprint 5 API contracts](https://hungndemail.atlassian.net/browse/LA-339). Covers the original contract in commit `0c9fddc` (PR #139) and the dispatcher read-side supplement below.
 

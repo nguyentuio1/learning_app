@@ -1,5 +1,7 @@
 # LA-158 ETA read slice verification
 
+> Historical partial-slice results from 16 November 2026. Preserve the failures and test counts below as executed evidence. They are superseded for current implementation availability by the integrated [ETA service reference](../eta-prediction-api.md); they do not describe current Jira completion or new verification.
+
 This is a partial implementation of LA-158, not completion of the ETA estimator or LA-40. It builds on the proposed LA-342 contract. No prediction producer, provider activation, model-input generation persistence or reservation update is introduced.
 
 ## Scope

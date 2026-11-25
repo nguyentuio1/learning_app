@@ -5,7 +5,7 @@
 **Goal:** Implement the transient delivery-summary POST specified by LA-342.
 **Architecture:** Separate persisted authorization/frozen timeline reader, bounded generator, controlled factual renderer, and HTTP boundary. Local Ollama selects event indexes; the server validates them and renders trusted status phrases and UTC times. Raw model prose never becomes the response. No generation transaction or summary storage. Independent of unfinished ETA story.
 **Tech stack:** ASP.NET Core 8, EF Core 8, PostgreSQL, xUnit, HttpClient.
-**Spec:** docs/api/sprint-7-api-contract.md section 4 and docs/design/sequence-ai-delivery-summarization.md.
+**Spec:** docs/api/history/sprint-7-api-contract.md section 4 and docs/design/sequence-ai-delivery-summarization.md.
 
 ## Constraints and review focus
 

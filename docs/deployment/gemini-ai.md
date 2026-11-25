@@ -99,4 +99,4 @@ only on list-models.
 References: [Google pricing](https://ai.google.dev/gemini-api/docs/pricing),
 [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits),
 [terms](https://ai.google.dev/gemini-api/terms), and the repository's
-[original retention proposal](../api/LA-165-retention-policy-proposal.md).
+[original retention proposal](../api/assistant-retention-policy-proposal.md).

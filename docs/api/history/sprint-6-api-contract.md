@@ -1,5 +1,7 @@
 # Sprint 6 API contract - tracking, confirmation, analytics and integration
 
+> Historical handoff. Availability and decisions below belong to their recorded integration dates. Use the [current catalog](../api-documentation.md) for the implemented endpoint set; this file and its OpenAPI snapshot cover only selected operations.
+
 **Task:** [LA-341](https://hungndemail.atlassian.net/browse/LA-341). **Consumers:** web, Customer/Operator mobile and acceptance tests. Paths below include `/api`; a client whose base URL already ends in `/api` must not add that prefix again.
 
 This is the Sprint 6 handoff contract. Implemented shapes are checked against the backend integrations below. Tracking, map, analytics and external APIs have been integrated into `develop`; customer confirmation is included in the LA-37 integration. Metric/business and operational policy acceptance remain separate, with decisions listed in section 7. A document merge does not deploy an endpoint or approve those policies.
@@ -12,7 +14,7 @@ Machine-readable HTTP schemas: [sprint-6-openapi.json](sprint-6-openapi.json). S
 |---|---|---|
 | Tracking + map data, LA-35/36 | LA-143; web LA-144/147; mobile LA-145/148; tests LA-146/149 | Integrated into `develop` through [PR #205](https://github.com/nguyentuio1/learning_app/pull/205) and [PR #206](https://github.com/nguyentuio1/learning_app/pull/206). Deployment remains separate. |
 | Customer confirmation, LA-37 | LA-150; mobile LA-151; tests LA-152 | Backend [PR #186](https://github.com/nguyentuio1/learning_app/pull/186), mobile [PR #193](https://github.com/nguyentuio1/learning_app/pull/193) and testing [PR #199](https://github.com/nguyentuio1/learning_app/pull/199) are included in the LA-37 integration. Use that integration head or a `develop` checkout containing it. |
-| Operator confirmation | Existing LA-125/126/127 | Available on `develop`; existing [station contract](station-api.md) section 4.4. |
+| Operator confirmation | Existing LA-125/126/127 | Available on `develop`; existing [station contract](../station-api.md) section 4.4. |
 | Dashboard/reports, LA-38 | LA-153; web LA-154; tests LA-155 | Integrated into `develop` through [PR #202](https://github.com/nguyentuio1/learning_app/pull/202). Backend and web UI follow section 5; metric/business acceptance remains distinct from code integration. |
 | External integration, LA-39 | LA-156; tests LA-157 | Integrated into `develop` through [PR #203](https://github.com/nguyentuio1/learning_app/pull/203). Provisioning and v1 routes follow section 6; business/operational acceptance remains distinct from code integration. |
 
@@ -20,7 +22,7 @@ Check the linked PR/branch before trying a new endpoint. A `404` from an older b
 
 ## 2. Shared conventions
 
-- First-party endpoints use `Authorization: Bearer <accessToken>` from [auth-api.md](auth-api.md). All listed roles also require an ACTIVE persisted account; a stale token does not retain a removed role or ownership right.
+- First-party endpoints use `Authorization: Bearer <accessToken>` from [auth-api.md](../auth-api.md). All listed roles also require an ACTIVE persisted account; a stale token does not retain a removed role or ownership right.
 - UUIDs are strings. JSON uses camelCase. Date/time values are ISO 8601 UTC with `Z`; nullable timestamps mean unavailable, not the Unix epoch. Numeric coordinates are latitude -90..90 / longitude -180..180.
 - Order statuses are exactly `PENDING`, `APPROVED`, `READY_FOR_TAKEOFF`, `IN_TRANSIT`, `ARRIVED`, `DELIVERED`, `CANCELLED`, `FAILED`. `COMPLETED` is a mission status, never an order status.
 - `401`: missing/invalid/expired authentication. `403`: authenticated but inactive, wrong role or insufficient key scope. Unknown and foreign customer resources both use `404`. `400` is validation; `409` is an incompatible current state. Never infer success from an error or replace a failed load with empty data.
@@ -79,7 +81,7 @@ There is no durable replay or guarantee of every intermediate status between pas
 
 ### 3.3 Existing staff list
 
-`GET /api/dispatch/active-deliveries?stationId={optionalUuid}` is already implemented on `develop`. Auth: active `DISPATCHER`, `MANAGER`, `ADMIN`; not customers/operators. It returns an unpaged array of PLANNED/IN_AIR missions. The exact `ActiveDelivery` fields and nullable legacy schedule/ETA fields remain in [delivery-workflow-api.md](delivery-workflow-api.md) section 5.1. Malformed station ID: `400`.
+`GET /api/dispatch/active-deliveries?stationId={optionalUuid}` is already implemented on `develop`. Auth: active `DISPATCHER`, `MANAGER`, `ADMIN`; not customers/operators. It returns an unpaged array of PLANNED/IN_AIR missions. The exact `ActiveDelivery` fields and nullable legacy schedule/ETA fields remain in [delivery-workflow-api.md](../delivery-workflow-api.md) section 5.1. Malformed station ID: `400`.
 
 ## 4. Delivery confirmation - LA-150
 
@@ -128,7 +130,7 @@ The shared durable counter locks for ten minutes after three wrong codes across 
 ### 4.2 Existing operator routes
 
 - `POST /api/landing-stations/{stationId}/operations/pickup`: active assigned `STATION_OPERATOR` or `ADMIN`, body `{ "trackingNumber": "DD-202611-0012", "pickupSecureCode": "593284" }`; same success/lockout bodies and counter.
-- `POST /api/landing-stations/{stationId}/operations/validate-code`: advisory validation only, same authorization/counter; returns `{ isValid, attemptsRemaining, isLocked, lockoutExpiresAt }` under [station-api.md](station-api.md). A validation success does **not** mean DELIVERED or release a slot.
+- `POST /api/landing-stations/{stationId}/operations/validate-code`: advisory validation only, same authorization/counter; returns `{ isValid, attemptsRemaining, isLocked, lockoutExpiresAt }` under [station-api.md](../station-api.md). A validation success does **not** mean DELIVERED or release a slot.
 - Customer self-service and operator-assisted confirmation serialize on the same order: one can succeed; the other receives `409` after completion.
 
 ## 5. Dashboard and reports - LA-153/154/155
@@ -207,7 +209,7 @@ Name is trimmed, required and at most 100 characters. Scopes must be a nonempty 
 
 ### 6.2 POST /api/v1/delivery-orders
 
-Auth: valid eligible key with `orders:create`. Reuse first-party order creation validation and ownership, one-package/one-order uniqueness, operational distinct stations and owned address rules from [customer-order-api.md](customer-order-api.md) section 5.1.
+Auth: valid eligible key with `orders:create`. Reuse first-party order creation validation and ownership, one-package/one-order uniqueness, operational distinct stations and owned address rules from [customer-order-api.md](../customer-order-api.md) section 5.1.
 
 ```json
 {

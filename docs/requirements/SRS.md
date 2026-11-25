@@ -176,7 +176,7 @@ All 22 use cases (`UC-01` to `UC-22`) and their detailed function specifications
 
 ### 8.2 Business Rules & Application Error Messages
 - **Business Rules**: [business-rules.md](business-rules.md) defines domain invariants (`BR-*`), state machine transitions, OTP 3-attempt lockout, payload/range checks, and concurrency rules.
-- **Error & Status Messages**: [application-messages.md](application-messages.md) defines the user-facing validation and operational message catalog (`MSG-AUTH-*`, `MSG-ORD-*`, `MSG-STN-*`, `MSG-WF-*`, `MSG-SYS-*`). Concrete HTTP status and RFC 7807 `ProblemDetails` behavior is governed by the applicable API contracts in Section 8.3: standard `400`/`401`/`403`/`404`/`409` across module contracts, implemented `423 Locked` (`Retry-After`) for station pickup OTP lockout in [station-api.md](../api/station-api.md), implemented `429 Too Many Requests` (`Retry-After`) for external API key rate limiting in [sprint-6-api-contract.md](../api/sprint-6-api-contract.md), and proposed `429` (`Retry-After: 5`) for concurrent per-account AI generation in [sprint-7-api-contract.md](../api/sprint-7-api-contract.md).
+- **Error & Status Messages**: [application-messages.md](application-messages.md) defines the user-facing validation and operational message catalog (`MSG-AUTH-*`, `MSG-ORD-*`, `MSG-STN-*`, `MSG-WF-*`, `MSG-SYS-*`). Concrete HTTP status and RFC 7807 `ProblemDetails` behavior is governed by the applicable API contracts in Section 8.3: standard `400`/`401`/`403`/`404`/`409` across module contracts, implemented `423 Locked` (`Retry-After`) for station pickup OTP lockout in [station-api.md](../api/station-api.md), implemented `429 Too Many Requests` (`Retry-After`) for external API key rate limiting in [sprint-6-api-contract.md](../api/history/sprint-6-api-contract.md), and proposed `429` (`Retry-After: 5`) for concurrent per-account AI generation in [sprint-7-api-contract.md](../api/history/sprint-7-api-contract.md).
 
 ### 8.3 API Contract Cross-Reference
 | Contract Document | Scope |
@@ -187,8 +187,8 @@ All 22 use cases (`UC-01` to `UC-22`) and their detailed function specifications
 | [drone-api.md](../api/drone-api.md) | Drone fleet management (`FR-19`) |
 | [delivery-workflow-api.md](../api/delivery-workflow-api.md) | Approval, state machine, scheduling, failure handling, active deliveries (`FR-13`–`FR-18`) |
 | [notification-api.md](../api/notification-api.md) | Customer notifications (`FR-12`) |
-| [sprint-6-api-contract.md](../api/sprint-6-api-contract.md) | Real-time tracking, delivery map, customer confirmation, dashboard/reports, external v1 API (`FR-24`–`FR-28`, `FR-34`) |
-| [sprint-7-api-contract.md](../api/sprint-7-api-contract.md) | AI ETA estimation, delivery summarization, customer AI assistant (`FR-29`–`FR-31`) |
+| [sprint-6-api-contract.md](../api/history/sprint-6-api-contract.md) | Real-time tracking, delivery map, customer confirmation, dashboard/reports, external v1 API (`FR-24`–`FR-28`, `FR-34`) |
+| [sprint-7-api-contract.md](../api/history/sprint-7-api-contract.md) | AI ETA estimation, delivery summarization, customer AI assistant (`FR-29`–`FR-31`) |
 
 ### 8.4 Verification & Test Evidence Traceability
 - **CI Gates**: [ci.yml](../../.github/workflows/ci.yml) enforces `Backend tests` (including PostgreSQL 16 concurrency/transaction suites), `Web lint, test and build` (ESLint, Vitest, Vite production build), and `Mobile analyze and test` (`flutter analyze --no-fatal-infos`, `flutter test`).

@@ -15,7 +15,7 @@ Scope: FR-29 ETA, FR-30 delivery-history summaries and FR-31 customer chat. Sour
 | LA-243 | [Customer assistant](sequence-ai-customer-assistant.md); LA-165 |
 | LA-244 | This specification and [class diagram](class-diagram-ai-services.md) |
 
-Existing entities/migrations provide storage only; no AI controller/service/provider exists on the current `develop`. Operation names below are logical, not committed routes. The [Sprint 6 API handoff](../api/sprint-6-api-contract.md) does not define Sprint 7 AI wire contracts.
+Existing entities/migrations provide storage only; no AI controller/service/provider exists on the current `develop`. Operation names below are logical, not committed routes. The [Sprint 6 API handoff](../api/history/sprint-6-api-contract.md) does not define Sprint 7 AI wire contracts.
 
 ## 2. Existing persistence classes
 

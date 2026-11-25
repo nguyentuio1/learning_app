@@ -15,18 +15,18 @@ The system has an ASP.NET Core 8 Web API with PostgreSQL, a React web portal, Fl
 | Landing stations, slots, availability, drones & station intake/pickup | Implemented (backend, web, station operator mobile app, 24h timeout) |
 | Dispatcher approval, state machine, scheduling, drone assignment & failures | Implemented (backend, web, software flight simulator) |
 | Real-time tracking (SignalR), delivery map, confirmation, analytics & v1 API | Implemented (backend, web, mobile, OpenAPI 3.0) |
-| AI ETA estimation, delivery summary & customer assistant | Implemented behind default-off configuration/retention gates (`docs/api/sprint-7-api-contract.md`) |
+| AI ETA estimation, delivery summary & customer assistant | Implemented behind default-off configuration/retention gates ([current service references](docs/api/README.md)) |
 | Docker full-stack deployment, health checks & backup/restore scripts | Implemented (`docker-compose.yml`, `/health/live`, `/health/ready`, `scripts/backup-db.*`) |
 
 Reviewed application baseline: `develop` at [`10c77d0`](https://github.com/nguyentuio1/learning_app/commit/10c77d0781ff38448b07211da07731cf12598e27), including the completed Customer and Station Operator journeys. The combined Flutter suite passed **425 tests**, and backend, web and mobile CI passed on the same integration tree. Actual API-backed browser walkthroughs are recorded for [Customer](docs/testing/LA363-customer-completion.md) and [Operator](docs/testing/LA364-operator-completion.md).
 
-Additional candidate verification now includes [actual Flutter package-photo/avatar upload and MinIO display](docs/testing/LA346-flutter-photo-completion.md), with **432 combined Flutter tests passed**, and [real Gemini ETA/summary/assistant calls with synthetic data](docs/deployment/LA-348-synthetic-acceptance-20261119.md). The [71-page UTH report review packet](docs/report/final-review-manifest.json) records exact export hashes and published Confluence versions.
+The subsequent integrated/released baseline is `develop` at [`24c03ab`](https://github.com/nguyentuio1/learning_app/commit/24c03ab25005044641df16a1c91e1ba3e0cff672), through [PR #288](https://github.com/nguyentuio1/learning_app/pull/288) and the main release [PR #289](https://github.com/nguyentuio1/learning_app/pull/289). It includes [actual Flutter package-photo/avatar upload and MinIO display](docs/testing/LA346-flutter-photo-completion.md), with **432 combined Flutter tests passed**, [synthetic Gemini ETA/summary/assistant calls](docs/deployment/LA-348-synthetic-acceptance-20261119.md), and LA-351 report corrections. Backend/web/mobile and Docker CI passed for that integration. LA-204 consolidation/export was explicitly accepted by the owner; the latest [v1.0.0 report assets](https://github.com/nguyentuio1/learning_app/releases/tag/v1.0.0) include the later 108-page readability revision. The [71-page export manifest](docs/report/final-review-manifest.json) is a historical review packet, not the latest asset manifest.
 
-Acceptance remains scoped to its evidence. Native-device installation, production cloud-chat approval/quality/concurrency acceptance, actual team rehearsal and two-member report proofreading remain incomplete. The preview walkthrough verified HTTP tracking fallback, not healthy SignalR WebSocket delivery or a physical flight. The [performance report](docs/testing/PerformanceTestReport.md) preserves earlier failures and records later reference-environment passes; those results do not establish every deployment's performance.
+Acceptance remains scoped to its evidence. Native-device installation/WebSocket validation is tracked by LA-370, production cloud-chat approval/quality/concurrency acceptance by LA-348, and actual team rehearsal by LA-49/LA-188. Instructor evaluation is separate from the accepted LA-204 report deliverable; no academic result or human signature is inferred. The preview walkthrough verified HTTP tracking fallback, not healthy SignalR WebSocket delivery or a physical flight. The [performance report](docs/testing/PerformanceTestReport.md) preserves earlier failures and records later reference-environment passes; those results do not establish every deployment's performance.
 
 See the [current screen flows](docs/design/ui-screen-flows.md) and [Sprint 8 integration review](docs/testing/Sprint8IntegrationReview.md) for integration status and remaining acceptance gates. Closing a sprint does not change these evidence boundaries.
 
-> See [`docs/DeliverableList.md`](docs/DeliverableList.md), [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md), [`docs/operations/DeploymentGuide.md`](docs/operations/DeploymentGuide.md), and [`docs/guides/README.md`](docs/guides/README.md) for full documentation.
+> See [`docs/DeliverableList.md`](docs/DeliverableList.md), [`docs/api/api-documentation.md`](docs/api/api-documentation.md), [`docs/operations/DeploymentGuide.md`](docs/operations/DeploymentGuide.md), and [`docs/guides/README.md`](docs/guides/README.md) for full documentation.
 
 ## Repository layout
 
@@ -38,7 +38,7 @@ frontend/
   web/                         React 19 + TypeScript + Vite + Ant Design
   mobile/                      Flutter + Riverpod (Customer app and Station Operator app)
 docs/
-  api/                         API contracts (auth-api.md, customer-order-api.md, station-api.md, drone-api.md)
+  api/                         Service references and endpoint catalog; dated sprint handoffs in api/history/
   architecture/                architecture, ERD (erd.md, erd.dbml)
   design/                      sequence, class and activity diagrams, user flows, wireframes
   requirements/                SRS, use cases, business rules, functions, messages
@@ -252,9 +252,9 @@ A new push cancels an older run for the same pull request. The active `develop` 
 
 ## Documentation
 
-- Sprint 6 API handoff (LA-341): [`docs/api/sprint-6-api-contract.md`](docs/api/sprint-6-api-contract.md) and [OpenAPI schemas](docs/api/sprint-6-openapi.json). Includes branch availability, tracking/SignalR, confirmation, and explicitly proposed analytics/external contracts for mocks.
-- Sprint 7 AI handoff (LA-342): [`docs/api/sprint-7-api-contract.md`](docs/api/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/sprint-7-openapi.json). Implemented source availability and enabled-service/policy acceptance are tracked separately.
-- Current API index: [`docs/api/API_Documentation.md`](docs/api/API_Documentation.md). The individual auth/order/station/drone contracts also retain historical design material; use the index and running Swagger to establish current endpoint availability.
+- Sprint 6 API handoff (LA-341): [`docs/api/history/sprint-6-api-contract.md`](docs/api/history/sprint-6-api-contract.md) and [OpenAPI schemas](docs/api/history/sprint-6-openapi.json). Includes branch availability, tracking/SignalR, confirmation, and explicitly proposed analytics/external contracts for mocks.
+- Sprint 7 AI handoff (LA-342): [`docs/api/history/sprint-7-api-contract.md`](docs/api/history/sprint-7-api-contract.md) and [OpenAPI schemas](docs/api/history/sprint-7-openapi.json). Implemented source availability and enabled-service/policy acceptance are tracked separately.
+- Current API index: [`docs/api/api-documentation.md`](docs/api/api-documentation.md). The individual auth/order/station/drone contracts also retain historical design material; use the index and running Swagger to establish current endpoint availability.
 - Architecture and database: [`docs/architecture/`](docs/architecture/)
 - Requirements and business rules: [`docs/requirements/`](docs/requirements/) (start with `SRS.md` and `use-cases.md`)
 - Design diagrams: [`docs/design/`](docs/design/)
