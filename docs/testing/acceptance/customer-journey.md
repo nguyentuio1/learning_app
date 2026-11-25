@@ -22,12 +22,12 @@ Receipt navigation was also executed from the real order-detail screen into the 
 
 ## Evidence
 
-[Tests](evidence/la363-customer/final-test.txt), [analyzer](evidence/la363-customer/final-analyze.txt), [real API response statuses](evidence/la363-customer/runtime-events.json), [created order](evidence/la363-customer/created-order-public.json).
+[Tests](../evidence/la363-customer/final-test.txt), [analyzer](../evidence/la363-customer/final-analyze.txt), [real API response statuses](../evidence/la363-customer/runtime-events.json), [created order](../evidence/la363-customer/created-order-public.json).
 
-![Create package](evidence/la363-customer/package-filled.png)
-![Preserved draft](evidence/la363-customer/create-restored-draft.png)
-![Review delivery](evidence/la363-customer/review-order.png)
-![Created order details](evidence/la363-customer/created-order-detail.png)
-![HTTP tracking fallback](evidence/la363-customer/created-order-tracking.png)
+![Create package](../evidence/la363-customer/package-filled.png)
+![Preserved draft](../evidence/la363-customer/create-restored-draft.png)
+![Review delivery](../evidence/la363-customer/review-order.png)
+![Created order details](../evidence/la363-customer/created-order-detail.png)
+![HTTP tracking fallback](../evidence/la363-customer/created-order-tracking.png)
 
-![Receipt entry](evidence/la363-customer/receipt-entry.png)
+![Receipt entry](../evidence/la363-customer/receipt-entry.png)

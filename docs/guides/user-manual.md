@@ -2,7 +2,7 @@
 
 This manual covers operational workflows for all **5 user roles** across the **Web Portal** (`http://localhost:8080` or `http://localhost:5173`) and **Flutter Mobile Apps** (`customer` and `operator` flavors).
 
-Use the [installation guide](InstallationGuide.md) first. A fresh Production stack needs staff accounts, operational stations with assigned operators, available slots and eligible drones configured by an Administrator. For disposable synthetic data and a step-by-step cross-role run, follow the [demo prerequisites and script](../demo/demo-script.md). The software simulator must be explicitly enabled for simulated takeoff/arrival; scheduling alone does not fly a drone.
+Use the [installation guide](installation-guide.md) first. A fresh Production stack needs staff accounts, operational stations with assigned operators, available slots and eligible drones configured by an Administrator. For disposable synthetic data and a step-by-step cross-role run, follow the [demo prerequisites and script](../demo/demo-script.md). The software simulator must be explicitly enabled for simulated takeoff/arrival; scheduling alone does not fly a drone.
 
 ---
 

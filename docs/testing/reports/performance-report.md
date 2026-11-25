@@ -19,10 +19,10 @@
 
 | Item | Details |
 | --- | --- |
-| **In-Process Load Benchmark** | [PerformanceBenchmarkTests.cs](../../backend/SmartDroneDelivery.Tests/PerformanceBenchmarkTests.cs) (`RUN_PERFORMANCE_BENCHMARKS=true dotnet test --filter FullyQualifiedName~PerformanceBenchmarkTests -c Release`; skipped in default CI without the env var) |
-| **k6 Load Script (Docker/Staging)** | [scripts/k6-load-test.js](../../scripts/k6-load-test.js) (`10 / 50 / 100 VUs` constant-VU scenarios, `p(95)<3000`, `rate<0.01`) |
+| **In-Process Load Benchmark** | [PerformanceBenchmarkTests.cs](../../../backend/SmartDroneDelivery.Tests/PerformanceBenchmarkTests.cs) (`RUN_PERFORMANCE_BENCHMARKS=true dotnet test --filter FullyQualifiedName~PerformanceBenchmarkTests -c Release`; skipped in default CI without the env var) |
+| **k6 Load Script (Docker/Staging)** | [scripts/k6-load-test.js](../../../scripts/k6-load-test.js) (`10 / 50 / 100 VUs` constant-VU scenarios, `p(95)<3000`, `rate<0.01`) |
 | **Measured Environment** | Local Windows, .NET 8 ASP.NET Core `TestServer` (`AuthApiFactory`, EF Core InMemory provider, `-c Release`). No Docker/PostgreSQL daemon was running locally during this measurement; database-level row locking (`SELECT ... FOR UPDATE`) is verified separately in CI against PostgreSQL 16. |
-| **Raw Output Evidence** | [perf-benchmark-run.txt](evidence/perf-benchmark-run.txt) (complete 15/15 tier run; overall test assertion **FAILED** on `POST /api/auth/login` at 100 VUs) |
+| **Raw Output Evidence** | [perf-benchmark-run.txt](../evidence/perf-benchmark-run.txt) (complete 15/15 tier run; overall test assertion **FAILED** on `POST /api/auth/login` at 100 VUs) |
 
 ---
 
@@ -73,7 +73,7 @@
 | **Database** | Local PostgreSQL 18 (`localhost:5433`, `drone_delivery_db`, default `max_connections=100`, `shared_buffers=128MB`) |
 | **Dataset** | Seeded demo customer (`customer@smartdronedelivery.com`), operational stations `HCM-01` and `HCM-02`, plus packages/orders created during iterations |
 | **Workload & Volume** | `10 VUs` (15s), `50 VUs` (20s), `100 VUs` (20s); 1,118 total iterations, 6,713 HTTP requests (`92.84 req/s`) |
-| **Raw Output Evidence** | [k6-live-run.txt](evidence/k6-live-run.txt), [k6-live-api-errors-excerpt.txt](evidence/k6-live-api-errors-excerpt.txt) (**FAILED** on `create_order` 100 VUs latency and `http_req_failed`) |
+| **Raw Output Evidence** | [k6-live-run.txt](../evidence/k6-live-run.txt), [k6-live-api-errors-excerpt.txt](../evidence/k6-live-api-errors-excerpt.txt) (**FAILED** on `create_order` 100 VUs latency and `http_req_failed`) |
 
 | Endpoint | 10 VUs `p95` (max) | 50 VUs `p95` (max) | 100 VUs `p95` (max) | `< 3,000 ms` Target |
 | --- | ---: | ---: | ---: | :---: |
@@ -84,7 +84,7 @@
 | `POST /api/delivery-orders` | 49.5 ms (299.49 ms) | 1.25 s (2.11 s) | **4.32 s** (5.35 s) | **FAIL (100 VUs)** |
 
 - **Error Rate (`http_req_failed`):** **3.64%** (`245 / 6,713` failed, threshold `< 1%` — **FAIL**). All 245 failures occurred on `POST /api/delivery-orders` (`create order 201`: 873 passed / 245 failed).
-- **Suspected Collision / Retry-Exhaustion Diagnosis:** The API log for this run recorded **13,069** matching log occurrences for `IX_delivery_orders_TrackingNumber` (`SqlState 23505`; see [k6-live-api-errors-excerpt.txt](evidence/k6-live-api-errors-excerpt.txt)) and **0** other `fail:` categories. That figure is an un-deduplicated log-occurrence count (a single handled exception can span multiple EF Core log categories/lines), and because `DeliveryOrderService.CreateAsync` (`f67aa52`) already wraps `SaveChangesAsync()` in a `MaxSaveAttempts = 5` retry loop that catches `DbUpdateException`, clears tracking, regenerates the tracking number, and returns `409 Conflict` after exhaustion, individual `23505` log entries include handled retries. Additionally, `appsettings.json` sets `Microsoft.AspNetCore` logging to `Warning` and `scripts/k6-load-test.js` only asserts `r.status === 201`, so a per-status-code breakdown (`409` vs `5xx`/timeouts) of the 245 failed responses was not captured; `MaxSaveAttempts = 5` retry exhaustion on `IX_delivery_orders_TrackingNumber` is therefore recorded as the **suspected** cause rather than proven for every one of the 245 responses.
+- **Suspected Collision / Retry-Exhaustion Diagnosis:** The API log for this run recorded **13,069** matching log occurrences for `IX_delivery_orders_TrackingNumber` (`SqlState 23505`; see [k6-live-api-errors-excerpt.txt](../evidence/k6-live-api-errors-excerpt.txt)) and **0** other `fail:` categories. That figure is an un-deduplicated log-occurrence count (a single handled exception can span multiple EF Core log categories/lines), and because `DeliveryOrderService.CreateAsync` (`f67aa52`) already wraps `SaveChangesAsync()` in a `MaxSaveAttempts = 5` retry loop that catches `DbUpdateException`, clears tracking, regenerates the tracking number, and returns `409 Conflict` after exhaustion, individual `23505` log entries include handled retries. Additionally, `appsettings.json` sets `Microsoft.AspNetCore` logging to `Warning` and `scripts/k6-load-test.js` only asserts `r.status === 201`, so a per-status-code breakdown (`409` vs `5xx`/timeouts) of the 245 failed responses was not captured; `MaxSaveAttempts = 5` retry exhaustion on `IX_delivery_orders_TrackingNumber` is therefore recorded as the **suspected** cause rather than proven for every one of the 245 responses.
 
 ---
 
@@ -98,7 +98,7 @@ After merging `origin/develop` (`10700d2`, PR #281 / `LA-366` atomic `DeliveryTr
 | --- | --- |
 | **Application / Test SHA** | `1927fe9` (merge of `37f6523` + `origin/develop` `10700d2`) |
 | **Environment & Runtime** | Local Windows, .NET `8.0.31` (SDK `10.0.402`), `-c Release`, `AuthApiFactory` (EF Core InMemory) |
-| **Raw Output Evidence** | [perf-benchmark-rerun.txt](evidence/perf-benchmark-rerun.txt) (**FAILED** on `POST /api/auth/login` at 100 VUs) |
+| **Raw Output Evidence** | [perf-benchmark-rerun.txt](../evidence/perf-benchmark-rerun.txt) (**FAILED** on `POST /api/auth/login` at 100 VUs) |
 
 - **Results:** **14/15 PASS, 1/15 FAIL** (`0` HTTP errors):
   - `POST /api/auth/login`: 10 VUs `p95 = 539.1 ms` (**PASS**), 50 VUs `p95 = 2,280.8 ms` (**PASS**), 100 VUs `p95 = 4,285.0 ms` (`max = 4,306.5 ms`, **FAIL** — unchanged BCrypt CPU cost at 100 simultaneous logins).
@@ -112,7 +112,7 @@ After merging `origin/develop` (`10700d2`, PR #281 / `LA-366` atomic `DeliveryTr
 | **Application / Script SHA** | `1927fe9` (`SmartDroneDelivery.Api`, `-c Release`, `ASPNETCORE_ENVIRONMENT=Development`, `Seed__DevelopmentData=true`, `LA-366` migration `20261118175032_AddDeliveryTrackingCounters`) |
 | **Database** | Fresh PostgreSQL `18.4` (`localhost:5433`, `drone_delivery_db`, `max_connections=100`, `shared_buffers=128MB`) |
 | **Dataset & Volume** | Seeded demo customer (`customer@smartdronedelivery.com`), stations `HCM-01` & `HCM-02`, plus 2,305 packages and 2,305 orders created across 2,305 iterations (`13,833` HTTP requests, `205.12 req/s`) |
-| **Raw Output Evidence** | [k6-live-rerun.txt](evidence/k6-live-rerun.txt) (**15/15 PASS**, `0.00%` error rate) |
+| **Raw Output Evidence** | [k6-live-rerun.txt](../evidence/k6-live-rerun.txt) (**15/15 PASS**, `0.00%` error rate) |
 
 | Endpoint | 10 VUs `p95` (max) | 50 VUs `p95` (max) | 100 VUs `p95` (max) | `< 3,000 ms` Target |
 | --- | ---: | ---: | ---: | :---: |
@@ -139,13 +139,13 @@ Reference runs were executed by TBA Review/Codex, separately from Khai historica
 
 | Barrier repeat | Login10 p95 | Login50 p95 | Login100 p95 (max) | Complete result /raw output |
 | --- | ---: | ---: | ---: | --- |
-| 1 | 290.0ms | 562.9ms | 1177.3ms (1211.1ms) | 15/15PASS; [raw1](evidence/perf-reference-barrier-1.txt) |
-| 2 | 199.5ms | 813.8ms | 1234.4ms (1307.6ms) | 15/15PASS; [raw2](evidence/perf-reference-barrier-2.txt) |
-| 3 | 254.1ms | 590.2ms | 1202.2ms (1213.3ms) | 15/15PASS; [raw3](evidence/perf-reference-barrier-3.txt) |
+| 1 | 290.0ms | 562.9ms | 1177.3ms (1211.1ms) | 15/15PASS; [raw1](../evidence/perf-reference-barrier-1.txt) |
+| 2 | 199.5ms | 813.8ms | 1234.4ms (1307.6ms) | 15/15PASS; [raw2](../evidence/perf-reference-barrier-2.txt) |
+| 3 | 254.1ms | 590.2ms | 1202.2ms (1213.3ms) | 15/15PASS; [raw3](../evidence/perf-reference-barrier-3.txt) |
 
-The separate Docker/PostgreSQL16 mixed profile also passed all15 per-endpoint/per-tier p95 thresholds: **0/17111 HTTP failures**, all17107 checks passed,2851 complete iterations and no interrupted iterations. At100VUs, login p95=**1.09s** (max1.62s) and create-order p95=**280.74ms** (max982.53ms). See [full raw k6 output](evidence/k6-reference-docker-pg16.txt) for every endpoint/tier. API log scan found zero23505 and zero `fail:` entries; one tracking-constraint text occurrence was the migration's `CREATE UNIQUE INDEX`, not an error count.
+The separate Docker/PostgreSQL16 mixed profile also passed all15 per-endpoint/per-tier p95 thresholds: **0/17111 HTTP failures**, all17107 checks passed,2851 complete iterations and no interrupted iterations. At100VUs, login p95=**1.09s** (max1.62s) and create-order p95=**280.74ms** (max982.53ms). See [full raw k6 output](../evidence/k6-reference-docker-pg16.txt) for every endpoint/tier. API log scan found zero23505 and zero `fail:` entries; one tracking-constraint text occurrence was the migration's `CREATE UNIQUE INDEX`, not an error count.
 
-[Machine/runtime metadata, commands, timestamps and file hashes](evidence/performance-reference-environment.json) record the scope. The database/API/MinIO ran in a separate Compose project with synthetic data and were stopped after measurement. Existing application services were left running. Private generated secrets/configuration are excluded from evidence.
+[Machine/runtime metadata, commands, timestamps and file hashes](../evidence/performance-reference-environment.json) record the scope. The database/API/MinIO ran in a separate Compose project with synthetic data and were stopped after measurement. Existing application services were left running. Private generated secrets/configuration are excluded from evidence.
 
 These results demonstrate the existing p95<3000ms and zero-error criteria on **this recorded reference workstation/profile**. They do not establish the cause of earlier failures or guarantee the same timings on every machine. Shared background load was not controlled. Earlier Windows/PG18 and barrier FAIL outputs remain unchanged historical results. No revised login workload or weaker BCrypt criterion is being substituted.
 

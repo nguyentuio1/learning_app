@@ -1,10 +1,10 @@
 # Sprint 8 Final Demo Rehearsal Plan & Runbook (LA-188)
 
 Owner: [LA-188](https://hungndemail.atlassian.net/browse/LA-188), Hung Nguyen. Parent story: [LA-49](https://hungndemail.atlassian.net/browse/LA-49) (`story/LA-49-prepare-final-demo`).
-Companion demo script: [Final demo script (LA-186)](../demo/demo-script.md).
+Companion demo script: [Final demo script (LA-186)](demo-script.md).
 
 > [!IMPORTANT]
-> This runbook defines the pre-flight startup configuration, rehearsal guardrails, and live-rehearsal log for the whole-team dry-run of [demo-script.md](../demo/demo-script.md) on integrated `develop` (`cc1fc256cb7fdb4ee3b89234cb90b7d868235de0` or newer). Automated build and CI checks recorded below do **not** establish that the live demo works end-to-end; live rehearsal attendance, step-by-step `PASS`/`FAIL`/`BLOCKED` results, and Web + Flutter screenshots/videos must be recorded after the team runs through the script together.
+> This runbook defines the pre-flight startup configuration, rehearsal guardrails, and live-rehearsal log for the whole-team dry-run of [demo-script.md](demo-script.md) on integrated `develop` (`cc1fc256cb7fdb4ee3b89234cb90b7d868235de0` or newer). Automated build and CI checks recorded below do **not** establish that the live demo works end-to-end; live rehearsal attendance, step-by-step `PASS`/`FAIL`/`BLOCKED` results, and Web + Flutter screenshots/videos must be recorded after the team runs through the script together.
 
 ---
 
@@ -31,7 +31,7 @@ Choose **one** startup path (do not mix them, as both bind port `5055`):
 
 ## 2. Rehearsal data prerequisites & scene guardrails
 
-On `develop` (`cc1fc256cb7fdb4ee3b89234cb90b7d868235de0`, including **LA-187** demo data), the Development seed (`SeedDevelopmentDataAsync`) already seeds stations `HCM-01` and `HCM-02` (`OPERATIONAL`), `HCM-03` (`MAINTENANCE`), `Customer`, `Dispatcher`, `LogisticsManager` (`MANAGER`), origin/destination station operators (`HCM-01` and `HCM-02`), and `IDLE` drone(s) *(older pre-LA-187 checkouts lacked the drone, `MANAGER`, and `HCM-02` operator seeds)*. Before rehearsing [demo-script.md](../demo/demo-script.md) (demo order **`HCM-01` -> `HCM-02`**), verify these prerequisites in the live environment:
+On `develop` (`cc1fc256cb7fdb4ee3b89234cb90b7d868235de0`, including **LA-187** demo data), the Development seed (`SeedDevelopmentDataAsync`) already seeds stations `HCM-01` and `HCM-02` (`OPERATIONAL`), `HCM-03` (`MAINTENANCE`), `Customer`, `Dispatcher`, `LogisticsManager` (`MANAGER`), origin/destination station operators (`HCM-01` and `HCM-02`), and `IDLE` drone(s) *(older pre-LA-187 checkouts lacked the drone, `MANAGER`, and `HCM-02` operator seeds)*. Before rehearsing [demo-script.md](demo-script.md) (demo order **`HCM-01` -> `HCM-02`**), verify these prerequisites in the live environment:
 
 | Scene(s) in `demo-script.md` | Prerequisite / Guardrail | Why / Failure avoided |
 |---|---|---|

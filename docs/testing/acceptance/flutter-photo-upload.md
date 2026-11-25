@@ -23,8 +23,8 @@ This is supported Flutter browser-runtime acceptance. Native Android/iOS install
 
 ## Evidence
 
-[Actual API trace](evidence/la346-flutter/runtime-events.json), [package object comparison](evidence/la346-flutter/photo-result.json), [avatar object comparison](evidence/la346-flutter/avatar-result.json), [combined tests](evidence/la346-flutter/combined-full.txt), [analyzer](evidence/la346-flutter/combined-analyze.txt).
+[Actual API trace](../evidence/la346-flutter/runtime-events.json), [package object comparison](../evidence/la346-flutter/photo-result.json), [avatar object comparison](../evidence/la346-flutter/avatar-result.json), [combined tests](../evidence/la346-flutter/combined-full.txt), [analyzer](../evidence/la346-flutter/combined-analyze.txt).
 
-![Uploaded package photo](evidence/la346-flutter/package-photo-uploaded.png)
-![Photo persisted in package list](evidence/la346-flutter/package-photo-list.png)
-![Uploaded avatar](evidence/la346-flutter/avatar-uploaded.png)
+![Uploaded package photo](../evidence/la346-flutter/package-photo-uploaded.png)
+![Photo persisted in package list](../evidence/la346-flutter/package-photo-list.png)
+![Uploaded avatar](../evidence/la346-flutter/avatar-uploaded.png)

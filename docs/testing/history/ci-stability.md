@@ -1,5 +1,7 @@
 # LA-173 integration CI follow-up
 
+> Historical investigation at the source revisions recorded below. These failures and focused results are retained as executed evidence; old pending-integration wording is not the current task status. Use the [testing index](../README.md) and [deliverable inventory](../../deliverables.md) for the current handoff.
+
 The LA-158 producer's CI at ef5b9ed failed only `TrackingHubTests.Owner_can_connect_subscribe_and_unsubscribe_over_real_signalr_protocol` while 974 other tests passed. The same real-time handshake failure occurred on unrelated earlier heads. A complete serial local PostgreSQL run passed 975/975. Parallel unrelated API/Bcrypt fixtures can exhaust the test process during the real SignalR handshake; these protocol tests are functional checks, not a load benchmark.
 
 The six TrackingHubTests now share a nonparallel xUnit collection. Assertions, protocol behavior and production/test timeout values are unchanged. The full local default-parallel run then passed all six SignalR tests; two unrelated PostgreSQL 18 timing tests still timed out:

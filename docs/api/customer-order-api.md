@@ -290,7 +290,7 @@ Response `201 Created`: `DeliveryOrderDetail` with status `PENDING`, one `status
 ```
 This is the only time the code is returned, so the app must show it to the customer right away (see section 8, point 5).
 
-One database transaction saves the order, its pickup code, the first status log and the customer notification together. Tracking-number allocation is a separate atomic PostgreSQL monthly counter reservation; a failed order can consume a number, but leaves no partial order/status/notification artifacts. Numbers are unique, not gapless. See [allocation and migration notes](../operations/tracking-number-allocation.md).
+One database transaction saves the order, its pickup code, the first status log and the customer notification together. Tracking-number allocation is a separate atomic PostgreSQL monthly counter reservation; a failed order can consume a number, but leaves no partial order/status/notification artifacts. Numbers are unique, not gapless. See [allocation and migration notes](../architecture/tracking-number-allocation.md).
 
 Errors
 - `400` recipient data invalid, package over the drone limits, a station is not `OPERATIONAL`, origin equals destination.

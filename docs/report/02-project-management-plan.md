@@ -2,7 +2,7 @@
 
 > **Current lifecycle correction (19 November 2026):** Jira Sprint 8 (id 8) is CLOSED at `2026-11-18T23:09:56.278Z` (06:09:56 Asia/Ho_Chi_Minh). Older active-sprint statements below are dated historical planning snapshots. Unfinished acceptance remains in backlog/In Progress. See the [current report index](README.md) for application evidence and final review targets.
 
-Owner: [LA-252](https://hungndemail.atlassian.net/browse/LA-252), TBA Review. Evidence checked on 2026-11-16. Publication target: the existing [Project Management Plan](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566). Scope and quality sources: [SRS](../requirements/SRS.md), [test plan](../testing/test-plan.md), [test report](../testing/test-report.md) and [Sprint 7 handoff](../api/history/sprint-7-api-contract.md).
+Owner: [LA-252](https://hungndemail.atlassian.net/browse/LA-252), TBA Review. Evidence checked on 2026-11-16. Publication target: the existing [Project Management Plan](https://hungndemail.atlassian.net/wiki/pages/viewpage.action?pageId=11927566). Scope and quality sources: [SRS](../requirements/SRS.md), [test plan](../testing/test-plan.md), [test report](../testing/reports/test-report.md) and [Sprint 7 handoff](../api/history/sprint-7-api-contract.md).
 
 ## 1. Overview and scope
 

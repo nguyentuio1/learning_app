@@ -16,9 +16,9 @@ Start with the [current endpoint catalog](api-documentation.md). For the configu
 | AI ETA | [ETA prediction API](eta-prediction-api.md) |
 | AI delivery summary | [Delivery summary API](delivery-summary-api.md) |
 | Customer AI assistant | [Customer assistant API](customer-assistant-api.md) |
-| Assistant retention proposal | [Local-provider proposal](assistant-retention-policy-proposal.md), [cloud-policy decision package](../deployment/LA-348-cloud-policy-decision.md) |
+| Assistant retention proposal | [Local-provider proposal](../decisions/assistant-retention-policy.md), [cloud-policy decision package](../decisions/ai-cloud-processing.md) |
 
-AI generation remains default-off. See [provider configuration and activation](../deployment/gemini-ai.md) and [scoped synthetic Gemini results](../deployment/LA-348-synthetic-acceptance-20261119.md). Implementation, activation and acceptance are separate.
+AI generation remains default-off. See [provider configuration and activation](../deployment/gemini-ai.md) and [scoped synthetic Gemini results](../testing/acceptance/gemini-synthetic-acceptance.md). Implementation, activation and acceptance are separate.
 
 ## Naming and history
 

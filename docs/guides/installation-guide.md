@@ -38,7 +38,7 @@ For PowerShell, use `Copy-Item .env.example .env`. Open `.env` and fill in every
 
 For a disposable demonstration with seeded accounts and stations, set `ASPNETCORE_ENVIRONMENT=Development` in `.env`. Production is the default and creates only the configured initial administrator. Development data is gated by `Seed:DevelopmentData` (enabled in the Development settings). Verify the current accounts and station assignments in the [demo prerequisites](../demo/demo-script.md); do not enable demo data on a production database.
 
-Set `MINIO_PUBLIC_URL` to an address reachable by every browser/emulator/phone that will view photos, for example `http://<YOUR_HOST_LAN_IP>:9000`. The API uses `minio:9000` internally, but that container hostname is not a client photo URL. Changing Flutter's API address alone does not rewrite absolute photo URLs. See [MinIO photo verification](../testing/minio-photo-verification.md).
+Set `MINIO_PUBLIC_URL` to an address reachable by every browser/emulator/phone that will view photos, for example `http://<YOUR_HOST_LAN_IP>:9000`. The API uses `minio:9000` internally, but that container hostname is not a client photo URL. Changing Flutter's API address alone does not rewrite absolute photo URLs. See [MinIO photo verification](../testing/acceptance/minio-photo-verification.md).
 
 ### Step 2: Build and Start All Containers
 

@@ -99,7 +99,7 @@ Manual checks:
 
 ## 5. AI Feature Flags & Production Gates
 
-AI features (`EtaPrediction:Enabled`, `DeliverySummary:Enabled`, `CustomerAssistant:Enabled`) are **default-off (`false`)** in `appsettings.json`. Explicitly configure either the default local Ollama provider or the Gemini transport with server-side credentials/model settings; the internal BaseUrl remains loopback for both. Stored assistant chat additionally requires the relevant approved retention/privacy/backup controls and, for Gemini, the separate cloud-policy marker. Follow the [current provider configuration and activation guide](../deployment/gemini-ai.md); the [Sprint 7 contract](../api/history/sprint-7-api-contract.md) is a historical proposal.
+AI features (`EtaPrediction:Enabled`, `DeliverySummary:Enabled`, `CustomerAssistant:Enabled`) are **default-off (`false`)** in `appsettings.json`. Explicitly configure either the default local Ollama provider or the Gemini transport with server-side credentials/model settings; the internal BaseUrl remains loopback for both. Stored assistant chat additionally requires the relevant approved retention/privacy/backup controls and, for Gemini, the separate cloud-policy marker. Follow the [current provider configuration and activation guide](gemini-ai.md); the [Sprint 7 contract](../api/history/sprint-7-api-contract.md) is a historical proposal.
 
 ---
 
