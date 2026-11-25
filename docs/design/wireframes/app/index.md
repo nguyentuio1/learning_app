@@ -46,7 +46,7 @@ Wireframe conventions: [Mobile Wireframe Conventions](./mobile-wireframe-convent
 | **C20** | Saved Addresses List | Address book managing pickup and dropoff locations (UC-03) | [C20-Addresses.png](./customer/C20-Addresses.png) |
 | **C21** | Add / Edit Address | Address entry form with campus hub selection and location tagging (UC-03) | [C21-AddAddress.png](./customer/C21-AddAddress.png) |
 | **C22** | Notifications | Center displaying status updates, arrivals, mark-read actions, and direct navigation to the related order (UC-10) | [C22-Notifications.png](./customer/C22-Notifications.png) |
-| **C23** | AI Assistant | Local-simulation chat with quick prompts, optional own-order context, and refusal to disclose another customer's tracking information (UC-09) | [C23-Assistant.png](./customer/C23-Assistant.png) |
+| **C23** | AI Assistant | **Legacy / removed simulation:** local-simulation chat with quick prompts, optional own-order context, and refusal to disclose another customer's tracking information (UC-09) | [C23-Assistant.png](./customer/C23-Assistant.png) |
 | **C24** | Profile & Settings | Main customer profile overview and navigation to assistant, theme, profile editing, and security settings (UC-02) | [C24-Profile.png](./customer/C24-Profile.png) |
 | **C25** | Edit Profile | User contact information update form (UC-02) | [C25-EditProfile.png](./customer/C25-EditProfile.png) |
 | **C26** | Change Password | Security form to update account authentication password (UC-01, UC-02) | [C26-ChangePassword.png](./customer/C26-ChangePassword.png) |
@@ -79,7 +79,7 @@ Wireframe conventions: [Mobile Wireframe Conventions](./mobile-wireframe-convent
 
 ## 4. Scope Notes & Validation Remarks
 
-C23 runs in local simulation mode and does not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../../api/history/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
+**Legacy / removed simulation (C23):** This wireframe records the local-simulation chat and does not describe the current Flutter implementation. The historical simulation did not call the AI APIs. The ETA endpoint is implemented in `develop` through LA-40; summary and persisted assistant implementation are tracked separately by LA-41 and LA-42. See the [Sprint 7 API contract](../../../api/history/sprint-7-api-contract.md) for endpoint behavior. Code integration does not establish deployment or model activation.
 
 1. **Asset Type:** All 43 visual assets are static PNG preview images (`C01`–`C27`, `O01`–`O16`). Source vector files (SVG) and design project files (Draw.io / Figma) are managed in design asset repositories.
 2. **Asset Format:** All 43 wireframe screens are provided in `.png` format.
