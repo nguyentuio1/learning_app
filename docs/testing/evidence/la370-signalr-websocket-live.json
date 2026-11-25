@@ -1,0 +1,109 @@
+{
+  "baseUrl": "http://127.0.0.1:5055",
+  "wsProxyUrl": "http://127.0.0.1:5056",
+  "steps": [
+    {
+      "step": "signalr_negotiate",
+      "status": 200,
+      "availableTransports": [
+        "WebSockets",
+        "ServerSentEvents",
+        "LongPolling"
+      ]
+    },
+    {
+      "step": "signalr_connect_and_subscribe",
+      "state": "Connected",
+      "transport": "WebSockets(enforced)",
+      "subscribedOrderId": "cd047c74-18e8-48ff-a5c9-69d9b6c0b331"
+    },
+    {
+      "step": "status_and_telemetry_over_websocket",
+      "approveStatus": 200,
+      "scheduleStatus": 200,
+      "intakeStatus": 200,
+      "statusEventsCount": 3,
+      "observedStatuses": [
+        "READY_FOR_TAKEOFF",
+        "IN_TRANSIT"
+      ],
+      "statusEventsSample": [
+        {
+          "phase": "initial",
+          "payload": {
+            "orderId": "cd047c74-18e8-48ff-a5c9-69d9b6c0b331",
+            "trackingNumber": "DD-202611-0001",
+            "status": "READY_FOR_TAKEOFF",
+            "updatedAt": "2026-11-25T15:48:56.409026Z"
+          }
+        },
+        {
+          "phase": "initial",
+          "payload": {
+            "orderId": "cd047c74-18e8-48ff-a5c9-69d9b6c0b331",
+            "trackingNumber": "DD-202611-0001",
+            "status": "IN_TRANSIT",
+            "updatedAt": "2026-11-25T15:48:56.958507Z"
+          }
+        },
+        {
+          "phase": "after_reconnect",
+          "payload": {
+            "orderId": "cd047c74-18e8-48ff-a5c9-69d9b6c0b331",
+            "trackingNumber": "DD-202611-0001",
+            "status": "IN_TRANSIT",
+            "updatedAt": "2026-11-25T15:48:56.958507Z"
+          }
+        }
+      ],
+      "initialPositionEventsCount": 1,
+      "initialPositionSample": {
+        "latitude": 10.7769,
+        "longitude": 106.7009,
+        "altitudeMeters": 80,
+        "speedMps": 60,
+        "batteryPercentage": 100,
+        "timestamp": "2026-11-25T15:48:56.958507Z"
+      }
+    },
+    {
+      "step": "automatic_reconnect_and_resubscribe",
+      "lifecycle": [
+        "reconnecting",
+        "reconnected",
+        "resubscribed",
+        "reconnecting",
+        "closed_to_http_polling"
+      ],
+      "postReconnectPositionEventsCount": 1,
+      "postReconnectPositionSample": {
+        "latitude": 10.777687,
+        "longitude": 106.701658,
+        "altitudeMeters": 80,
+        "speedMps": 60,
+        "batteryPercentage": 100,
+        "timestamp": "2026-11-25T15:48:58.966087Z"
+      }
+    },
+    {
+      "step": "automatic_http_fallback_on_ws_outage",
+      "fallbackPolls": [
+        {
+          "status": 200,
+          "returnedOrderId": "cd047c74-18e8-48ff-a5c9-69d9b6c0b331",
+          "returnedStatus": "IN_TRANSIT",
+          "hasValidLastPosition": true,
+          "lastPositionLatitude": 10.77847,
+          "lastPositionLongitude": 106.702412,
+          "hasPickupSecureCode": false
+        }
+      ],
+      "negativeChecks": {
+        "unauthenticatedStatus": 401,
+        "wrongOrderIdStatus": 404
+      }
+    }
+  ],
+  "orderId": "cd047c74-18e8-48ff-a5c9-69d9b6c0b331",
+  "trackingNumber": "DD-202611-0001"
+}
