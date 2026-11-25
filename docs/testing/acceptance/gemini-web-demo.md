@@ -47,7 +47,9 @@ are local execution evidence, not files guaranteed to exist in a fresh clone.
 dotnet test backend/SmartDroneDelivery.Tests/SmartDroneDelivery.Tests.csproj --filter "FullyQualifiedName~GeminiModelHandlerTests|FullyQualifiedName~GeminiRecoveryApiTests"
 ```
 
-The 29 deterministic cases pass. They cover fresh identical requests, successful
+The 29 deterministic cases pass. Timeout regressions use a controlled clock,
+so thread-pool load cannot turn a nominal four-second test into a wall-clock
+failure. They cover fresh identical requests, successful
 recovery, two-call exhaustion, original default-off behavior, auth/quota errors,
 `Retry-After`, malformed/blocked output, caller cancellation, stalled headers,
 stalled successful response body, body disposal, and a stalled final attempt.
@@ -77,8 +79,11 @@ predictions. Optional recovery improves individual transient failures; it cannot
 guarantee provider capacity. There is no fabricated answer, automatic alternate
 model, quota retry, billing change, or longer application deadline.
 
-LA-348 remains open for reliable service/performance acceptance and any intended
-real-customer cloud/retention rollout. The mixed measurements do not establish a
+The project owner subsequently accepted provider overload/free-tier availability
+as a documented limitation and requested committing the PR and completing the
+demo task. LA-348 may close after the reviewed change is integrated into develop;
+its accepted scope is this synthetic web demonstration. Future real-customer
+cloud/retention rollout remains outside that completion. The mixed measurements do not establish a
 three-second percentile, sustained concurrency, prediction accuracy, native
 runtime, real backup expiry or permission to send real customer text. Preserve
 the [cloud decision boundary](../../decisions/ai-cloud-processing.md) and the

@@ -176,13 +176,17 @@ public class GeminiModelHandlerTests
     [Fact]
     public async Task Stalled_first_attempt_is_cancelled_before_one_recovery_call()
     {
+        var clock = new RecoveryClock();
         var calls = 0;
         using var client = RetryClient(async (_, ct) =>
         {
             if (++calls == 1) await Task.Delay(Timeout.InfiniteTimeSpan, ct);
             return SuccessfulIntent();
-        });
-        using var response = await client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", Generation).WaitAsync(TimeSpan.FromSeconds(15));
+        }, clock);
+        var pending = client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", Generation);
+        await clock.FireNextAsync(); // First attempt expires.
+        await clock.FireNextAsync(); // Backoff completes.
+        using var response = await pending;
         response.EnsureSuccessStatusCode();
         Assert.Equal(2, calls);
     }
@@ -204,12 +208,16 @@ public class GeminiModelHandlerTests
     [Fact]
     public async Task Stalled_success_body_is_cancelled_and_disposed_before_recovery()
     {
+        var clock = new RecoveryClock();
         var calls = 0;
         using var stream = new StalledBody();
         using var client = RetryClient((_, _) => Task.FromResult(++calls == 1
             ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(stream) }
-            : SuccessfulIntent()));
-        using var response = await client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", Generation).WaitAsync(TimeSpan.FromSeconds(15));
+            : SuccessfulIntent()), clock);
+        var pending = client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", Generation);
+        await clock.FireNextAsync();
+        await clock.FireNextAsync();
+        using var response = await pending;
         response.EnsureSuccessStatusCode();
         Assert.Equal(2, calls);
         Assert.True(stream.WasDisposed);
@@ -218,14 +226,21 @@ public class GeminiModelHandlerTests
     [Fact]
     public async Task Stalled_second_attempt_exits_without_starting_a_third_request()
     {
+        var clock = new RecoveryClock();
+        var secondStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var calls = 0;
         using var client = RetryClient(async (_, ct) =>
         {
             if (++calls == 1) return Json(HttpStatusCode.ServiceUnavailable, "{}");
+            secondStarted.SetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, ct);
             return SuccessfulIntent();
-        });
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", Generation).WaitAsync(TimeSpan.FromSeconds(15)));
+        }, clock);
+        var pending = client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", Generation);
+        await clock.FireNextAsync(); // Backoff, earlier than the first attempt's disposed timer.
+        await secondStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await clock.FireNextAsync(); // Second attempt expires.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
         Assert.Equal(2, calls);
     }
 
@@ -249,13 +264,64 @@ public class GeminiModelHandlerTests
 
     private static HttpResponseMessage SuccessfulIntent() => Json(HttpStatusCode.OK,
         """{"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":"{\"intent\":\"STATUS\"}"}]}}]}""");
-    private static HttpClient RetryClient(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send)
+    private static HttpClient RetryClient(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send, TimeProvider? clock = null)
         => new(new GeminiModelHandler(Options.Create(new ModelProviderOptions
-        { Provider = "Gemini", GeminiApiKey = "synthetic-test-key", GeminiRetryTransientFailures = true }))
+        { Provider = "Gemini", GeminiApiKey = "synthetic-test-key", GeminiRetryTransientFailures = true }), clock: clock)
         { InnerHandler = new CancellableProbe(send) });
     private sealed class CancellableProbe(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) => send(request, ct);
+    }
+
+    private sealed class RecoveryClock : TimeProvider
+    {
+        private readonly object gate = new();
+        private readonly List<ManualTimer> timers = [];
+        private readonly SemaphoreSlim created = new(0);
+        private long ticks;
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = new ManualTimer(this, callback, state);
+            lock (gate) timers.Add(timer);
+            timer.Change(dueTime, period);
+            return timer;
+        }
+        public async Task FireNextAsync()
+        {
+            while (true)
+            {
+                ManualTimer? next;
+                lock (gate)
+                {
+                    next = timers.Where(t => t.Active).OrderBy(t => t.Due).FirstOrDefault();
+                    if (next != null) { ticks = next.Due; next.Active = false; }
+                }
+                if (next != null) { next.Callback(next.State); return; }
+                if (!await created.WaitAsync(TimeSpan.FromSeconds(30)))
+                    throw new TimeoutException("The transport did not schedule the expected timer.");
+            }
+        }
+        private sealed class ManualTimer(RecoveryClock owner, TimerCallback callback, object? state) : ITimer
+        {
+            public TimerCallback Callback => callback;
+            public object? State => state;
+            public long Due { get; private set; }
+            public bool Active { get; set; }
+            private bool disposed;
+            public bool Change(TimeSpan dueTime, TimeSpan period)
+            {
+                lock (owner.gate)
+                {
+                    if (disposed) return false;
+                    Due = owner.ticks + dueTime.Ticks;
+                    Active = dueTime != Timeout.InfiniteTimeSpan;
+                }
+                owner.created.Release();
+                return true;
+            }
+            public void Dispose() { lock (owner.gate) { disposed = true; Active = false; } }
+            public ValueTask DisposeAsync() { Dispose(); return ValueTask.CompletedTask; }
+        }
     }
 
     private static HttpClient Client(string provider, Func<HttpRequestMessage, Task<HttpResponseMessage>> send)

@@ -6,7 +6,7 @@ using SmartDroneDelivery.Api.Options;
 
 namespace SmartDroneDelivery.Api.Services;
 
-public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool assistant = false) : DelegatingHandler
+public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool assistant = false, TimeProvider? clock = null) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -44,7 +44,7 @@ public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool ass
         for (var attempt = 0; ; attempt++)
         {
             ct.ThrowIfCancellationRequested();
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4), clock ?? TimeProvider.System);
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
             try
             {
@@ -58,7 +58,7 @@ public class GeminiModelHandler(IOptions<ModelProviderOptions> options, bool ass
             {
                 // Cancel the stalled inference attempt; never replay application/API writes.
             }
-            await Task.Delay(TimeSpan.FromMilliseconds(200), ct);
+            await Task.Delay(TimeSpan.FromMilliseconds(200), clock ?? TimeProvider.System, ct);
         }
     }
 
