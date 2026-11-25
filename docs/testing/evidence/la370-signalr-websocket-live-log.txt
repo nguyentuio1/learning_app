@@ -1,40 +1,39 @@
-[2026-11-25T14:09:15.293Z] Information: WebSocket connected to ws://127.0.0.1:5056/hubs/tracking?id=UBeMoOiblVVIbboXCX6aNA.
-[2026-11-25T14:09:15.295Z] Information: Using HubProtocol 'json'.
-[2026-11-25T14:09:17.881Z] Information: Connection reconnecting because of error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
-[2026-11-25T14:09:17.882Z] Information: Reconnect attempt number 1 will start in 0 ms.
-[2026-11-25T14:09:17.904Z] Information: WebSocket connected to ws://127.0.0.1:5056/hubs/tracking?id=L-3Q0ZVfNgZHLRBSiwJV1w.
-[2026-11-25T14:09:17.905Z] Information: Using HubProtocol 'json'.
-[2026-11-25T14:09:17.907Z] Information: HubConnection reconnected successfully.
-[2026-11-25T14:09:19.922Z] Information: Connection reconnecting because of error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
-[2026-11-25T14:09:19.922Z] Information: Reconnect attempt number 1 will start in 0 ms.
-[2026-11-25T14:09:19.928Z] Information: Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
-[2026-11-25T14:09:19.928Z] Information: Reconnect attempt number 2 will start in 300 ms.
-[2026-11-25T14:09:20.236Z] Information: Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
-[2026-11-25T14:09:20.237Z] Information: Reconnect attempt number 3 will start in 800 ms.
-[2026-11-25T14:09:21.045Z] Information: Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
-[2026-11-25T14:09:21.045Z] Information: Reconnect attempt number 4 will start in 1500 ms.
-[2026-11-25T14:09:22.556Z] Information: Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
-[2026-11-25T14:09:22.556Z] Information: Reconnect retries have been exhausted after 2634 ms and 4 failed attempts. Connection disconnecting.
----
-[2026-11-25T14:09:14.059Z] Authenticated customer, dispatcher, and station operator (200 OK).
-[2026-11-25T14:09:14.493Z] Created order DD-202611-0001 (633a9d55-1153-4243-981a-18a794fc0e8d).
-[2026-11-25T14:09:15.379Z] Connected over WebSockets and subscribed to owned order.
-[2026-11-25T14:09:15.749Z] Order lifecycle progressed: approve=200, schedule=200, assign=201, intake=200 (OK).
-[2026-11-25T14:09:15.850Z] Set ScheduledDepartureTime to past in test DB to trigger real DroneSimulatorService takeoff.
-[2026-11-25T14:09:17.876Z] Received 1 initial PositionUpdated frame(s) over WebSocket.
-[2026-11-25T14:09:17.881Z] Error: Connection disconnected with error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
-[2026-11-25T14:09:17.882Z] SignalR onreconnecting fired: WebSocket closed with status code: 1006 (no reason given).
-[2026-11-25T14:09:17.915Z] SignalR onreconnected fired and re-subscribed to 633a9d55-1153-4243-981a-18a794fc0e8d.
-[2026-11-25T14:09:19.919Z] Received live PositionUpdated with strictly newer timestamp after automatic reconnect and re-subscribe.
-[2026-11-25T14:09:19.922Z] Error: Connection disconnected with error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
-[2026-11-25T14:09:19.922Z] SignalR onreconnecting fired: WebSocket closed with status code: 1006 (no reason given).
-[2026-11-25T14:09:19.928Z] Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:19.928Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:20.236Z] Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:20.236Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:21.044Z] Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:21.045Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:22.556Z] Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:22.556Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
-[2026-11-25T14:09:22.583Z] SignalR onclose triggered automatic HTTP fallback poll -> HTTP 200, status=IN_TRANSIT, lastPos=(10.778469, 106.702411).
-[2026-11-25T14:09:22.791Z] Negative HTTP fallback checks passed: unauthenticated=401, wrongOrderId=404.
+[2026-11-25T15:48:54.653Z] Authenticated customer, dispatcher, and station operator (200 OK).
+[2026-11-25T15:48:55.228Z] Created order DD-202611-0001 (cd047c74-18e8-48ff-a5c9-69d9b6c0b331).
+[Information] WebSocket connected to ws://127.0.0.1:5056/hubs/tracking?id=2xNHJKrqgkSuYRct91btug.
+[Information] Using HubProtocol 'json'.
+[2026-11-25T15:48:56.129Z] Connected over WebSockets and subscribed to owned order.
+[2026-11-25T15:48:56.425Z] Order lifecycle progressed: approve=200, schedule=200, assign=201, intake=200 (OK).
+[2026-11-25T15:48:56.619Z] Set ScheduledDepartureTime to past in test DB to trigger real DroneSimulatorService takeoff.
+[2026-11-25T15:48:58.262Z] Received 1 initial PositionUpdated frame(s) over WebSocket.
+[Error] Connection disconnected with error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
+[Information] Connection reconnecting because of error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
+[2026-11-25T15:48:58.266Z] SignalR onreconnecting fired: WebSocket closed with status code: 1006 (no reason given).
+[Information] Reconnect attempt number 1 will start in 0 ms.
+[Information] WebSocket connected to ws://127.0.0.1:5056/hubs/tracking?id=xtKXcwgwq0Tl3GrW1kHviw.
+[Information] Using HubProtocol 'json'.
+[Information] HubConnection reconnected successfully.
+[2026-11-25T15:48:58.297Z] SignalR onreconnected fired and re-subscribed to cd047c74-18e8-48ff-a5c9-69d9b6c0b331.
+[2026-11-25T15:48:59.089Z] Received live PositionUpdated with strictly newer timestamp after automatic reconnect and re-subscribe.
+[Error] Connection disconnected with error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
+[Information] Connection reconnecting because of error 'Error: WebSocket closed with status code: 1006 (no reason given).'.
+[2026-11-25T15:48:59.092Z] SignalR onreconnecting fired: WebSocket closed with status code: 1006 (no reason given).
+[Information] Reconnect attempt number 1 will start in 0 ms.
+[Error] Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Error] Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Information] Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
+[Information] Reconnect attempt number 2 will start in 300 ms.
+[Error] Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Error] Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Information] Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
+[Information] Reconnect attempt number 3 will start in 800 ms.
+[Error] Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Error] Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Information] Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
+[Information] Reconnect attempt number 4 will start in 1500 ms.
+[Error] Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Error] Failed to start the connection: Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503'
+[Information] Reconnect attempt failed because of error 'Error: Failed to complete negotiation with the server: Error: Hub temporarily blocked for fallback verification: Status code '503''.
+[Information] Reconnect retries have been exhausted after 2636 ms and 4 failed attempts. Connection disconnecting.
+[2026-11-25T15:49:01.756Z] SignalR onclose triggered automatic HTTP fallback poll -> HTTP 200, status=IN_TRANSIT, lastPos=(10.77847, 106.702412).
+[2026-11-25T15:49:01.973Z] Negative HTTP fallback checks passed: unauthenticated=401, wrongOrderId=404.

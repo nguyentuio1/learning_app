@@ -195,7 +195,13 @@ async function main() {
         skipNegotiation: false,
       })
       .withAutomaticReconnect([0, 300, 800, 1500])
-      .configureLogging(signalR.LogLevel.Information)
+      .configureLogging({
+        log(level, message) {
+          if (level >= signalR.LogLevel.Information && level < signalR.LogLevel.None) {
+            console.error(`[${signalR.LogLevel[level]}] ${message}`);
+          }
+        },
+      })
       .build();
 
     conn.on('StatusChanged', (payload) => {
