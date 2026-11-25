@@ -89,7 +89,7 @@ docker exec -it drone_postgres psql -U postgres -d drone_delivery_db_verify -c "
 | Environment | Frequency | Retention Policy |
 | --- | --- | --- |
 | **Local / Staging** | Daily at `02:00 UTC` or before schema migrations (`dotnet ef database update`) | Keep last 7 daily dumps |
-| **Production** | Daily full `pg_dump -Fc` at `02:00 UTC` + automated off-host copy | Keep 30 days (aligned with [LA-165 retention policy](../api/assistant-retention-policy-proposal.md)) |
+| **Production** | Daily full `pg_dump -Fc` at `02:00 UTC` + automated off-host copy | Keep 30 days (aligned with [LA-165 retention policy](../decisions/assistant-retention-policy.md)) |
 
 ### Example Linux Cron Entry
 

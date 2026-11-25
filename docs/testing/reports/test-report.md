@@ -7,7 +7,7 @@
 
 ## Current LA-45 performance evidence
 
-The later [performance reference validation](PerformanceTestReport.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) at source `f7502b7` records three unchanged 10/50/100 barrier runs (45/45 measurements pass) and a separate PostgreSQL16 Docker mixed k6 run (15/15 thresholds, zero HTTP failures). Machine/runtime/command details and raw logs are linked there; previous failed runs are preserved. This establishes performance for that recorded reference instance, not native-device, enabled-AI or universal deployment acceptance. The older execution snapshots below keep their original dates and source revisions.
+The later [performance reference validation](performance-report.md#53-recorded-reference-workstation-and-postgresql16-docker-validation) at source `f7502b7` records three unchanged 10/50/100 barrier runs (45/45 measurements pass) and a separate PostgreSQL16 Docker mixed k6 run (15/15 thresholds, zero HTTP failures). Machine/runtime/command details and raw logs are linked there; previous failed runs are preserved. This establishes performance for that recorded reference instance, not native-device, enabled-AI or universal deployment acceptance. The older execution snapshots below keep their original dates and source revisions.
 
 ## 1. Execution Summary by Baseline & PR
 
@@ -17,9 +17,9 @@ Execution results are separated strictly by **Baseline / PR**, **Environment**, 
 
 | Baseline / PR | Layer | Environment | Commit SHA | Test Result | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| `origin/develop` (Sprint 8 current) | Backend (.NET 8, `dotnet test backend/SmartDroneDelivery.sln`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `2148e50` | **1,040 Passed, 0 Failed, 99 Skipped** (1,139 total; 99 `[PostgresFact]` skipped locally; 0 warnings/errors) | [backend-develop-test-run.txt](evidence/backend-develop-test-run.txt) |
-| `origin/develop` (Sprint 8 current) | Web (`eslint .`, `vitest run --no-file-parallelism`, `vite build`) | Local Windows, `jsdom` | `2148e50` | **31 files / 245 Passed, 0 Failed**; ESLint 0 errors; Vite build succeeded (`1.78s`) | [web-develop-test-run.txt](evidence/web-develop-test-run.txt), [web-develop-lint-build.txt](evidence/web-develop-lint-build.txt) |
-| `PR #252` (`LA-176` on `2148e50`) | Performance & Concurrency (`LA-176`, `10 / 50 / 100` concurrent requests) | Local Windows, ASP.NET Core `TestServer` (`AuthApiFactory`, `-c Release`) | `6c2c02c` | **FAIL (14/15 passed, 0 HTTP errors)**: 14/15 endpoint-tier combinations `< 3,000 ms`; `POST /api/auth/login` at 100 VUs **FAILED** (`p95 = 3,608.0 ms`, `max = 3,695.3 ms`) | [PerformanceTestReport.md](PerformanceTestReport.md), [perf-benchmark-run.txt](evidence/perf-benchmark-run.txt) (in PR #252) |
+| `origin/develop` (Sprint 8 current) | Backend (.NET 8, `dotnet test backend/SmartDroneDelivery.sln`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `2148e50` | **1,040 Passed, 0 Failed, 99 Skipped** (1,139 total; 99 `[PostgresFact]` skipped locally; 0 warnings/errors) | [backend-develop-test-run.txt](../evidence/backend-develop-test-run.txt) |
+| `origin/develop` (Sprint 8 current) | Web (`eslint .`, `vitest run --no-file-parallelism`, `vite build`) | Local Windows, `jsdom` | `2148e50` | **31 files / 245 Passed, 0 Failed**; ESLint 0 errors; Vite build succeeded (`1.78s`) | [web-develop-test-run.txt](../evidence/web-develop-test-run.txt), [web-develop-lint-build.txt](../evidence/web-develop-lint-build.txt) |
+| `PR #252` (`LA-176` on `2148e50`) | Performance & Concurrency (`LA-176`, `10 / 50 / 100` concurrent requests) | Local Windows, ASP.NET Core `TestServer` (`AuthApiFactory`, `-c Release`) | `6c2c02c` | **FAIL (14/15 passed, 0 HTTP errors)**: 14/15 endpoint-tier combinations `< 3,000 ms`; `POST /api/auth/login` at 100 VUs **FAILED** (`p95 = 3,608.0 ms`, `max = 3,695.3 ms`) | [performance-report.md](performance-report.md), [perf-benchmark-run.txt](../evidence/perf-benchmark-run.txt) (in PR #252) |
 | `origin/develop` (Sprint 5 snapshot) | Backend (.NET 8, `dotnet test`) | Local Windows, EF Core InMemory (`TEST_POSTGRES_CONNECTION` unset) | `636f9a4` | **372 Passed, 0 Failed, 21 Skipped** (393 total; 21 `[PostgresFact]` skipped locally) | Historical Sprint 5 snapshot |
 | `origin/develop` (Sprint 5 snapshot) | Web (Vitest, 20 files / 183 tests) | Local Windows, `jsdom` | `636f9a4` | **183 Passed, 0 Failed** (15 files / 117 tests passed in parallel; 5 AntD-heavy files / 66 tests passed 66/66 with `--no-file-parallelism`) | CI Web job on PR #176 (`c9ce9bc`) |
 
@@ -79,7 +79,7 @@ Execution results are separated strictly by **Baseline / PR**, **Environment**, 
 | `DEF-07` | PR #162 (`LA-326` Web) | P2 | Marking the sole unread item on page 2 left UI on empty page 2 with pagination hidden. | **Verified** | Commit `c4bd627`; `customerNotificationsUi.test.tsx` **7/7 passed** |
 | `DEF-08` | PR #162 (`LA-326` Backend) | P2 | Non-atomic read/read-all could overwrite first `ReadAt` or double-count `updatedCount` under concurrency. | **Verified** | Commit `c4bd627`; CI `Backend tests` (`NotificationConcurrencyTests` on Postgres 16) **success** |
 | `DEF-09` | PR #162 (`LA-326` Mobile) | P2 | `loadMore()` race condition: delayed `All` page 2 response could overwrite `Unread` list after filter switch. | **Verified** | Commit `c4bd627` (`_generation` guard + regression test); CI `Mobile analyze and test` **success** |
-| `DEF-10` | PR #216 (`LA-173` Backend CI) | P2 | Parallel API/BCrypt test fixtures contended with real SignalR WebSocket handshake in `TrackingHubTests`. | **Verified** | Commit `2b5b069` (`SignalRProtocolCollection` nonparallel isolation); [LA-173-ci-stability.md](LA-173-ci-stability.md) |
+| `DEF-10` | PR #216 (`LA-173` Backend CI) | P2 | Parallel API/BCrypt test fixtures contended with real SignalR WebSocket handshake in `TrackingHubTests`. | **Verified** | Commit `2b5b069` (`SignalRProtocolCollection` nonparallel isolation); [ci-stability.md](../history/ci-stability.md) |
 
 ---
 

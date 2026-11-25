@@ -14,14 +14,14 @@ PR #278 preserves Nhan's action queue and adds explicit physical inspection, ter
 
 ## Preconditions and limits
 
-The dedicated database was seeded for this test. Intake scheduling and drone assignment used authorized dispatcher APIs. Pickup ARRIVED state and the linked occupied destination slot were prepared using [the recorded SQL](evidence/la364-operator/arrival-precondition.sql). These are fixture preconditions, not evidence of an executed drone flight or a team rehearsal. Runtime scripts initially needed locator corrections for Flutter's merged accessibility labels; the successful intake POST was not repeated to fabricate another run.
+The dedicated database was seeded for this test. Intake scheduling and drone assignment used authorized dispatcher APIs. Pickup ARRIVED state and the linked occupied destination slot were prepared using [the recorded SQL](../evidence/la364-operator/arrival-precondition.sql). These are fixture preconditions, not evidence of an executed drone flight or a team rehearsal. Runtime scripts initially needed locator corrections for Flutter's merged accessibility labels; the successful intake POST was not repeated to fabricate another run.
 
 This validates the Flutter operator entry point in a browser, not a native Android/iOS installation. Parent LA-344/customer LA-363, MinIO customer-photo acceptance, AI acceptance and Sprint completion remain separate.
 
 ## Evidence
 
-[Full Flutter suite](evidence/la364-operator/flutter-test.txt), [intake requests](evidence/la364-operator/intake-runtime-events.json), [pickup requests](evidence/la364-operator/runtime-events.json), [independent reads](evidence/la364-operator/independent-verification.json).
+[Full Flutter suite](../evidence/la364-operator/flutter-test.txt), [intake requests](../evidence/la364-operator/intake-runtime-events.json), [pickup requests](../evidence/la364-operator/runtime-events.json), [independent reads](../evidence/la364-operator/independent-verification.json).
 
-![Operator home](evidence/la364-operator/01-final-home.png)
-![Intake completed](evidence/la364-operator/03-intake-confirmed.png)
-![Pickup completed with code form removed](evidence/la364-operator/06-pickup-completed.png)
+![Operator home](../evidence/la364-operator/01-final-home.png)
+![Intake completed](../evidence/la364-operator/03-intake-confirmed.png)
+![Pickup completed with code form removed](../evidence/la364-operator/06-pickup-completed.png)

@@ -148,7 +148,7 @@ Owned session only; identical missing/foreign `404`. Same pagination limits. Ret
 
 ### DELETE /api/ai-assistant/sessions/{id} — LA-165 deletion extension
 
-Persisted active CUSTOMER and owned session only. Return `204` after atomically deleting the session and its messages. Unknown/foreign sessions have the same `404`. This operation remains available for existing owned data while generation is disabled. The [LA-165 retention proposal](../assistant-retention-policy-proposal.md) describes the approval/backup/cleanup activation gate; [implementation notes](../customer-assistant-api.md) record backend availability separately from rollout and story acceptance.
+Persisted active CUSTOMER and owned session only. Return `204` after atomically deleting the session and its messages. Unknown/foreign sessions have the same `404`. This operation remains available for existing owned data while generation is disabled. The [LA-165 retention proposal](../../decisions/assistant-retention-policy.md) describes the approval/backup/cleanup activation gate; [implementation notes](../customer-assistant-api.md) record backend availability separately from rollout and story acceptance.
 
 ## 6. Release checklist
 

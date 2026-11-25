@@ -16,14 +16,14 @@ Executed by TBA Review / Codex on 2026-11-19 (Asia/Ho_Chi_Minh).
 | Check | Actual result | Evidence |
 | --- | --- | --- |
 | Focused assistant suite | 17 passed | Included in full suite below |
-| Full Flutter suite | 381 passed, exit 0 | [Raw test output](evidence/la365/flutter-test.txt) |
-| `flutter analyze --no-pub --no-fatal-infos` | Exit 0; 30 existing info-level findings, no errors/warnings | [Analyzer output](evidence/la365/flutter-analyze.txt) |
-| Customer release web, default flag | Build exit 0 | [Build output](evidence/la365/build-disabled.txt) |
-| Customer release web, enabled UI flag | Build exit 0 | [Build output](evidence/la365/build-enabled.txt) |
-| Default-off runtime | Notice visible, sending disabled, zero assistant POSTs, selected tracking route reached | [Runtime events](evidence/la365/disabled-events.json), [screenshot](evidence/la365/disabled-assistant.png) |
-| Definite 503 runtime | Draft retained, manual retry enabled, exactly one initial POST, no uncertain recovery requirement | [Runtime events](evidence/la365/enabled-events.json), [screenshot](evidence/la365/enabled-503.png) |
-| Deliberate retry | Second POST returns supported transient HELP outcome; reply rendered | [Screenshot](evidence/la365/enabled-retry-success.png) |
-| Transport timeout | Third POST fails; Send disabled until Check sessions succeeds; recovery makes only a GET, no additional POST | [Screenshot](evidence/la365/enabled-timeout-recovery.png) |
+| Full Flutter suite | 381 passed, exit 0 | [Raw test output](../evidence/la365/flutter-test.txt) |
+| `flutter analyze --no-pub --no-fatal-infos` | Exit 0; 30 existing info-level findings, no errors/warnings | [Analyzer output](../evidence/la365/flutter-analyze.txt) |
+| Customer release web, default flag | Build exit 0 | [Build output](../evidence/la365/build-disabled.txt) |
+| Customer release web, enabled UI flag | Build exit 0 | [Build output](../evidence/la365/build-enabled.txt) |
+| Default-off runtime | Notice visible, sending disabled, zero assistant POSTs, selected tracking route reached | [Runtime events](../evidence/la365/disabled-events.json), [screenshot](../evidence/la365/disabled-assistant.png) |
+| Definite 503 runtime | Draft retained, manual retry enabled, exactly one initial POST, no uncertain recovery requirement | [Runtime events](../evidence/la365/enabled-events.json), [screenshot](../evidence/la365/enabled-503.png) |
+| Deliberate retry | Second POST returns supported transient HELP outcome; reply rendered | [Screenshot](../evidence/la365/enabled-retry-success.png) |
+| Transport timeout | Third POST fails; Send disabled until Check sessions succeeds; recovery makes only a GET, no additional POST | [Screenshot](../evidence/la365/enabled-timeout-recovery.png) |
 
 The new 503, default-off, sign-out and production-theme tests were observed failing against the missing behaviors before the fixes. Existing tests additionally exercise enabled ANSWERED/REFUSED behavior, true timeout, HTTP 504, malformed 2xx, stale responses after session/new-chat/access changes, history deduplication and safe body logging.
 
@@ -40,7 +40,7 @@ flutter build web --no-pub --target lib/main_customer.dart --dart-define=API_BAS
 flutter build web --no-pub --target lib/main_customer.dart --dart-define=API_BASE_URL=http://127.0.0.1:5055/api --dart-define=AI_CHAT_ENABLED=true
 ```
 
-Copy each resulting `build/web` directory to `artifacts/la365-runtime/web-disabled` and `artifacts/la365-runtime/web-enabled`, respectively. [Recorded build arguments and source SHA](evidence/la365/build-metadata.json) identify the measured builds. With Python Playwright and local Chrome available, run from the repository root:
+Copy each resulting `build/web` directory to `artifacts/la365-runtime/web-disabled` and `artifacts/la365-runtime/web-enabled`, respectively. [Recorded build arguments and source SHA](../evidence/la365/build-metadata.json) identify the measured builds. With Python Playwright and local Chrome available, run from the repository root:
 
 ```text
 python scripts/tests/mobile-assistant-runtime.py disabled

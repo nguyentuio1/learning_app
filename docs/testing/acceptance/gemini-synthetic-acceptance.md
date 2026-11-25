@@ -41,7 +41,7 @@ Local ignored evidence in the acceptance worktree: `artifacts/ai-acceptance/live
 
 ## Acceptance still requiring evidence or an owner decision
 
-- Real customer cloud chat remains disabled. The [decision package](LA-348-cloud-policy-decision.md) contains the proposed data flow, notices, retention terms and exact approvals still missing.
+- Real customer cloud chat remains disabled. The [decision package](../../decisions/ai-cloud-processing.md) contains the proposed data flow, notices, retention terms and exact approvals still missing.
 - Six successful generation samples below three seconds do not prove any percentile, sustained three-second requirement, concurrency target or project quota capacity. No actual provider concurrent-load pass is claimed.
 - ETA bounds/grounding checks do not prove prediction accuracy. There is no labeled route-duration evaluation here.
 - The API fixture uses real routing/auth/service code with an in-memory database. PostgreSQL transaction/restore behavior, deployed UI, real backup expiry and customer end-to-end acceptance are outside this run.

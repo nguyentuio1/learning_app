@@ -1,7 +1,7 @@
 # Final demo script (LA-186)
 
 Owner: [LA-186](https://hungndemail.atlassian.net/browse/LA-186), TBA Review. Parent story: [LA-49](https://hungndemail.atlassian.net/browse/LA-49).
-Related: demo data [LA-187](https://hungndemail.atlassian.net/browse/LA-187) (Nhân Lưu Thiện), rehearsal [LA-188](https://hungndemail.atlassian.net/browse/LA-188) (Hung Nguyen, `docs/testing/LA-188-demo-rehearsal.md`).
+Related: demo data [LA-187](https://hungndemail.atlassian.net/browse/LA-187) (Nhân Lưu Thiện), rehearsal [LA-188](https://hungndemail.atlassian.net/browse/LA-188) (Hung Nguyen, `docs/demo/demo-rehearsal.md`).
 
 This script shows one parcel going through the whole delivery flow, so that every actor appears once: System Administrator, Customer, Dispatcher, Station Operator, Logistics Manager, and the system itself (drone simulator, real-time tracking, notifications). Each step lists what to click, what the audience must see, and what to do when something goes wrong.
 
