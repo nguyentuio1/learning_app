@@ -9,14 +9,16 @@ import 'package:smart_drone_delivery/data/models/delivery_order_detail_response_
 import 'package:smart_drone_delivery/data/models/delivery_order_filter_params.dart';
 import 'package:smart_drone_delivery/data/models/notification_model.dart';
 import 'package:smart_drone_delivery/data/models/paged_result.dart';
+import 'package:smart_drone_delivery/data/providers/ai_assistant_providers.dart';
 import 'package:smart_drone_delivery/data/providers/delivery_order_providers.dart';
 import 'package:smart_drone_delivery/data/providers/notification_providers.dart';
+import 'package:smart_drone_delivery/data/services/ai_assistant_api_service.dart';
 import 'package:smart_drone_delivery/data/services/delivery_order_api_service.dart';
 import 'package:smart_drone_delivery/data/services/notification_api_service.dart';
 import 'package:smart_drone_delivery/domain/entities/user.dart';
 import 'package:smart_drone_delivery/domain/repositories/profile_repository.dart';
 import 'package:smart_drone_delivery/data/providers/repository_providers.dart';
-import 'package:smart_drone_delivery/presentation/customer/assistant/ai_assistant_page.dart';
+import 'package:smart_drone_delivery/presentation/customer/assistant/customer_assistant_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/notifications/notifications_list_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_detail_page.dart';
 import 'package:smart_drone_delivery/presentation/customer/orders/order_history_page.dart';
@@ -25,6 +27,7 @@ import 'package:smart_drone_delivery/presentation/profile/profile_page.dart';
 import 'package:smart_drone_delivery/presentation/profile/theme_settings_page.dart';
 import 'package:smart_drone_delivery/routes/route_paths.dart';
 
+import '../../support/fake_http_adapter.dart';
 import '../../support/fake_tracking_repository.dart';
 
 const _orderId = 'order-1';
@@ -144,7 +147,7 @@ GoRouter _router(String initialLocation) => GoRouter(
     ),
     GoRoute(
       path: RoutePaths.customerAssistant,
-      builder: (_, state) => AiAssistantPage(
+      builder: (_, state) => CustomerAssistantPage(
         orderId: state.uri.queryParameters['orderId'],
         trackingNumber: state.uri.queryParameters['trackingNumber'],
       ),
@@ -181,9 +184,23 @@ Future<void> _pumpRouter(
 
   final router = _router(location);
   addTearDown(router.dispose);
+  final assistantDio = Dio(BaseOptions(baseUrl: 'https://test.invalid/api'));
+  assistantDio.httpClientAdapter = FakeHttpAdapter(
+    (_) => jsonBody({
+      'items': [],
+      'page': 1,
+      'pageSize': 20,
+      'totalCount': 0,
+    }),
+  );
+  addTearDown(() => assistantDio.close(force: true));
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        aiAssistantChatEnabledProvider.overrideWithValue(false),
+        aiAssistantApiServiceProvider.overrideWithValue(
+          AiAssistantApiService(assistantDio),
+        ),
         deliveryOrderApiServiceProvider.overrideWithValue(
           _FakeDeliveryOrderService(detail: detail),
         ),
@@ -256,49 +273,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('No order history found.'), findsOneWidget);
-    });
-  });
-
-  group('C23 AI Assistant local simulation', () {
-    testWidgets('shows quick prompts and returns local guidance', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: AiAssistantPage(
-            orderId: _orderId,
-            trackingNumber: _trackingNumber,
-          ),
-        ),
-      );
-      expect(find.byKey(const Key('assistant-prompt-0')), findsOneWidget);
-      await tester.tap(find.text('Where is my order?'));
-      await tester.pump();
-      expect(
-        find.textContaining('This local demo has your order context'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('refuses another customer tracking codes', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: AiAssistantPage(
-            orderId: _orderId,
-            trackingNumber: _trackingNumber,
-          ),
-        ),
-      );
-      await tester.enterText(
-        find.byKey(const Key('assistant-message-input')),
-        'Where is DD-202611-9999?',
-      );
-      await tester.tap(find.byKey(const Key('assistant-send-button')));
-      await tester.pump();
-      expect(
-        find.textContaining('I can’t access or discuss another customer’s'),
-        findsOneWidget,
-      );
     });
   });
 
