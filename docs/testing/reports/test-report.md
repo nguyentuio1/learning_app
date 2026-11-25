@@ -90,3 +90,6 @@ Execution results are separated strictly by **Baseline / PR**, **Environment**, 
    - **PR #228 (`LA-164`):** Delivery summarization Web UI & integration tests open against `story/LA-41-delivery-summarization`.
    - **PR #229 (`LA-168`):** Customer AI assistant acceptance & regression tests open against `story/LA-42-customer-ai-assistant`.
    - **`LA-172` (`LA-44`):** End-to-end full system integration tests (`FullSystemIntegrationTests.cs`) and updated Sprint 6–7 test evidence.
+3. **Post-Release SignalR WebSocket & Native Mobile Verification (`LA-370` on `develop` `bd2860a`):**
+   - SignalR WebSocket delivery (`StatusChanged`, live `PositionUpdated` from `DroneSimulatorService`, `withAutomaticReconnect`, and automatic HTTP fallback) passed in [LA-370-signalr-and-native-mobile-acceptance.md](../LA-370-signalr-and-native-mobile-acceptance.md) alongside `TrackingHubTests` (**6/6 passed**).
+   - Native Android and iOS runtime acceptance remain **UNTESTED / BLOCKED** on the Windows QA workstation (missing Flutter SDK, Android SDK/emulator, and macOS/Xcode).
